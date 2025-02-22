@@ -1,0 +1,4 @@
+// tests/errors/type_errors.orus
+let a: u32 = -1;     // Should error: negative number for u32
+let b: bool = 42;    // Should error: type mismatch
+let c: i32 = true;   // Should error: type mismatch

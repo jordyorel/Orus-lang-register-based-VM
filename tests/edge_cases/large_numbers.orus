@@ -1,0 +1,8 @@
+let max_i32: i32 = 2147483647;
+let max_plus_one: i32 = max_i32 + 1;
+let max_u32: u32 = 4294967295;
+let max_f64: f64 = 1.7976931348623157e308;
+print(max_i32);
+print(max_plus_one);
+print(max_u32);
+print(max_f64);
