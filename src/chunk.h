@@ -62,6 +62,7 @@ typedef enum {
     OP_JUMP,
     OP_JUMP_IF_FALSE,
     OP_JUMP_IF_TRUE,
+    OP_LOOP,         // Jump backward (for loops)
 
     OP_RETURN,
     OP_POP,

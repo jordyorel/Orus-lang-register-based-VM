@@ -26,11 +26,8 @@ static void emitConstant(Compiler* compiler, Value value) {
 
 static void typeCheckNode(Compiler* compiler, ASTNode* node) {
     if (!node) {
-        printf("DEBUG: Skipping type check for null node\n");
         return;
     }
-
-    printf("DEBUG: Type checking node type %d\n", node->type);
 
     switch (node->type) {
         case AST_LITERAL: {
@@ -41,7 +38,6 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_BINARY: {
-            printf("DEBUG: Checking binary node\n");
 
             typeCheckNode(compiler, node->left);
             typeCheckNode(compiler, node->right);
@@ -54,8 +50,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 return;
             }
 
-            printf("DEBUG: Left type: %s, Right type: %s\n",
-                   getTypeName(leftType->kind), getTypeName(rightType->kind));
+
 
             TokenType operator= node->data.operation.operator.type;
             switch (operator) {
@@ -70,16 +65,14 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
                         // Mark operands for conversion if needed
                         if (leftType->kind == TYPE_I32 || leftType->kind == TYPE_U32) {
-                            printf("DEBUG: Marking left operand for conversion from %s to f64\n",
-                                   getTypeName(leftType->kind));
+
                             node->data.operation.convertLeft = true;
                         } else {
                             node->data.operation.convertLeft = false;
                         }
 
                         if (rightType->kind == TYPE_I32 || rightType->kind == TYPE_U32) {
-                            printf("DEBUG: Marking right operand for conversion from %s to f64\n",
-                                   getTypeName(rightType->kind));
+
                             node->data.operation.convertRight = true;
                         } else {
                             node->data.operation.convertRight = false;
@@ -139,7 +132,6 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_UNARY: {
-            printf("DEBUG: Checking unary node\n");
             typeCheckNode(compiler, node->left);
             if (compiler->hadError) return;
 
@@ -170,7 +162,6 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_VARIABLE: {
-            printf("DEBUG: Checking variable node\n");
             uint8_t index = resolveVariable(compiler, node->data.variable.name);
             if (index == UINT8_MAX) {
                 error(compiler, "Undefined variable.");
@@ -186,7 +177,6 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_LET: {
-            printf("DEBUG: Type checking let node\n");
             // First type check the initializer
             if (node->data.let.initializer) {
                 typeCheckNode(compiler, node->data.let.initializer);
@@ -247,14 +237,12 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_PRINT: {
-            printf("DEBUG: Checking print node\n");
             typeCheckNode(compiler, node->data.print.expr);
             if (compiler->hadError) return;
             break;
         }
 
         case AST_ASSIGNMENT: {
-            printf("DEBUG: Checking assignment node\n");
             // First type check the value expression
             if (node->left) {
                 typeCheckNode(compiler, node->left);
@@ -326,7 +314,6 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_IF: {
-            printf("DEBUG: Checking if statement\n");
             // Type check the condition
             typeCheckNode(compiler, node->data.ifStmt.condition);
             if (compiler->hadError) return;
@@ -378,7 +365,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_BLOCK: {
-            printf("DEBUG: Checking block\n");
+
             // Type check each statement in the block
             ASTNode* stmt = node->data.block.statements;
             while (stmt) {
@@ -392,6 +379,63 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             break;
         }
 
+        case AST_WHILE: {
+            // Type check the condition
+            typeCheckNode(compiler, node->data.whileStmt.condition);
+            if (compiler->hadError) return;
+
+            // Ensure the condition is a boolean
+            Type* condType = node->data.whileStmt.condition->valueType;
+            if (!condType || condType->kind != TYPE_BOOL) {
+                error(compiler, "While condition must be a boolean expression.");
+                return;
+            }
+
+            // Type check the body
+            typeCheckNode(compiler, node->data.whileStmt.body);
+            if (compiler->hadError) return;
+
+            // While statements don't have a value type
+            node->valueType = NULL;
+            break;
+        }
+
+        case AST_FOR: {
+            // Type check the range start expression
+            typeCheckNode(compiler, node->data.forStmt.startExpr);
+            if (compiler->hadError) return;
+
+            // Type check the range end expression
+            typeCheckNode(compiler, node->data.forStmt.endExpr);
+            if (compiler->hadError) return;
+
+            // Ensure the range expressions are integers
+            Type* startType = node->data.forStmt.startExpr->valueType;
+            Type* endType = node->data.forStmt.endExpr->valueType;
+
+            if (!startType || (startType->kind != TYPE_I32 && startType->kind != TYPE_U32)) {
+                error(compiler, "For loop range start must be an integer.");
+                return;
+            }
+
+            if (!endType || (endType->kind != TYPE_I32 && endType->kind != TYPE_U32)) {
+                error(compiler, "For loop range end must be an integer.");
+                return;
+            }
+
+            // Define the iterator variable
+            uint8_t index = defineVariable(compiler, node->data.forStmt.iteratorName, startType);
+            node->data.forStmt.iteratorIndex = index;
+
+            // Type check the body
+            typeCheckNode(compiler, node->data.forStmt.body);
+            if (compiler->hadError) return;
+
+            // For statements don't have a value type
+            node->valueType = NULL;
+            break;
+        }
+
         default:
             error(compiler, "Unsupported AST node type in type checker.");
             break;
@@ -400,21 +444,16 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
 static void generateCode(Compiler* compiler, ASTNode* node) {
     if (!node || compiler->hadError) {
-        printf("DEBUG: Skipping code generation due to null node or error\n");
         return;
     }
 
-    printf("DEBUG: Generating code for node type %d\n", node->type);
-
     switch (node->type) {
         case AST_LITERAL: {
-            printf("DEBUG: Generating literal value\n");
             emitConstant(compiler, node->data.literal);
             break;
         }
 
         case AST_BINARY: {
-            printf("DEBUG: Generating binary operation\n");
 
             // Generate code for operands
             generateCode(compiler, node->left);
@@ -428,8 +467,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
             // Convert right operand to result type if needed
             if (node->data.operation.convertRight) {
-                printf("DEBUG: Converting right operand from %s to %s\n",
-                       getTypeName(rightType->kind), getTypeName(resultType));
+
                 switch (resultType) {
                     case TYPE_F64:
                         if (rightType->kind == TYPE_I32)
@@ -452,8 +490,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
             // Convert left operand to result type if needed
             if (node->data.operation.convertLeft) {
-                printf("DEBUG: Converting left operand from %s to %s\n",
-                       getTypeName(leftType->kind), getTypeName(resultType));
+
                 switch (resultType) {
                     case TYPE_F64:
                         if (leftType->kind == TYPE_I32)
@@ -476,8 +513,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
             // Emit the operator instruction
             TokenType operator= node->data.operation.operator.type;
-            printf("DEBUG: Emitting operator %d for result type %s\n", operator,
-                   getTypeName(resultType));
+
             switch (operator) {
                 case TOKEN_PLUS:
                     switch (resultType) {
@@ -650,7 +686,6 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_UNARY: {
-            printf("DEBUG: Generating unary operation\n");
             generateCode(compiler, node->left);
             if (compiler->hadError) return;
 
@@ -683,14 +718,12 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_VARIABLE: {
-            printf("DEBUG: Generating variable access\n");
             writeOp(compiler, OP_GET_GLOBAL);
             writeOp(compiler, node->data.variable.index);
             break;
         }
 
         case AST_LET: {
-            printf("DEBUG: Generating variable definition\n");
             generateCode(compiler, node->data.let.initializer);
             if (compiler->hadError) return;
             writeOp(compiler, OP_DEFINE_GLOBAL);
@@ -699,7 +732,6 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_PRINT: {
-            printf("DEBUG: Generating print statement\n");
             generateCode(compiler, node->data.print.expr);
             if (compiler->hadError) return;
             writeOp(compiler, OP_PRINT);
@@ -707,7 +739,6 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_ASSIGNMENT: {
-            printf("DEBUG: Generating assignment statement\n");
             generateCode(compiler, node->left);
             if (compiler->hadError) return;
             writeOp(compiler, OP_SET_GLOBAL);
@@ -716,7 +747,6 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_IF: {
-            printf("DEBUG: Generating if statement\n");
 
             // Generate code for the condition
             generateCode(compiler, node->data.ifStmt.condition);
@@ -839,7 +869,6 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_BLOCK: {
-            printf("DEBUG: Generating block\n");
             // Generate code for each statement in the block
             ASTNode* stmt = node->data.block.statements;
             while (stmt) {
@@ -850,10 +879,130 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             break;
         }
 
+        case AST_WHILE: {
+
+            // Store the current position to jump back to for the loop condition
+            int loopStart = compiler->chunk->count;
+
+            // Generate code for the condition
+            generateCode(compiler, node->data.whileStmt.condition);
+            if (compiler->hadError) return;
+
+            // Emit a jump-if-false instruction
+            // We'll patch this jump later
+            int exitJump = compiler->chunk->count;
+            writeOp(compiler, OP_JUMP_IF_FALSE);
+            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+
+            // Pop the condition value from the stack
+            writeOp(compiler, OP_POP);
+
+            // Generate code for the body
+            generateCode(compiler, node->data.whileStmt.body);
+            if (compiler->hadError) return;
+
+            // Emit a loop instruction to jump back to the condition
+            writeOp(compiler, OP_LOOP);
+            int offset = compiler->chunk->count - loopStart + 2;
+            writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0);
+            writeChunk(compiler->chunk, offset & 0xFF, 0);
+
+            // Patch the exit jump
+            int exitDest = compiler->chunk->count;
+            compiler->chunk->code[exitJump + 1] = (exitDest - exitJump - 3) >> 8;
+            compiler->chunk->code[exitJump + 2] = (exitDest - exitJump - 3) & 0xFF;
+
+            break;
+        }
+
+        case AST_FOR: {
+
+            // Generate code for the range start expression and store it in the iterator variable
+            generateCode(compiler, node->data.forStmt.startExpr);
+            if (compiler->hadError) return;
+
+            writeOp(compiler, OP_DEFINE_GLOBAL);
+            writeOp(compiler, node->data.forStmt.iteratorIndex);
+
+            // Store the current position to jump back to for the loop condition
+            int loopStart = compiler->chunk->count;
+
+            // Generate code to check if the iterator is less than the end value
+            // Get the current iterator value
+            writeOp(compiler, OP_GET_GLOBAL);
+            writeOp(compiler, node->data.forStmt.iteratorIndex);
+
+            // Generate code for the range end expression
+            generateCode(compiler, node->data.forStmt.endExpr);
+            if (compiler->hadError) return;
+
+            // Compare the iterator with the end value
+            // Use the appropriate comparison based on the iterator type
+            Type* iterType = node->data.forStmt.startExpr->valueType;
+            if (iterType->kind == TYPE_I32) {
+                writeOp(compiler, OP_LESS_I32);
+            } else if (iterType->kind == TYPE_U32) {
+                writeOp(compiler, OP_LESS_U32);
+            } else {
+                error(compiler, "Unsupported iterator type for for loop.");
+                return;
+            }
+
+            // Emit a jump-if-false instruction to exit the loop
+            // We'll patch this jump later
+            int exitJump = compiler->chunk->count;
+            writeOp(compiler, OP_JUMP_IF_FALSE);
+            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+
+            // Pop the condition value from the stack
+            writeOp(compiler, OP_POP);
+
+            // Generate code for the body
+            generateCode(compiler, node->data.forStmt.body);
+            if (compiler->hadError) return;
+
+            // Increment the iterator
+            writeOp(compiler, OP_GET_GLOBAL);
+            writeOp(compiler, node->data.forStmt.iteratorIndex);
+
+            // Add 1 to the iterator
+            emitConstant(compiler, I32_VAL(1));
+
+            // Use the appropriate addition based on the iterator type
+            if (iterType->kind == TYPE_I32) {
+                writeOp(compiler, OP_ADD_I32);
+            } else if (iterType->kind == TYPE_U32) {
+                writeOp(compiler, OP_ADD_U32);
+            }
+
+            // Store the incremented value back in the iterator
+            writeOp(compiler, OP_SET_GLOBAL);
+            writeOp(compiler, node->data.forStmt.iteratorIndex);
+
+            // Emit a loop instruction to jump back to the condition
+            writeOp(compiler, OP_LOOP);
+            int offset = compiler->chunk->count - loopStart + 2;
+            writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0);
+            writeChunk(compiler->chunk, offset & 0xFF, 0);
+
+            // Patch the exit jump
+            int exitDest = compiler->chunk->count;
+            compiler->chunk->code[exitJump + 1] = (exitDest - exitJump - 3) >> 8;
+            compiler->chunk->code[exitJump + 2] = (exitDest - exitJump - 3) & 0xFF;
+
+            break;
+        }
+
         default:
             error(compiler, "Unsupported AST node type in code generator.");
             break;
     }
+}
+
+uint8_t defineVariable(Compiler* compiler, Token name, Type* type) {
+    return addLocal(compiler, name, type);
 }
 
 uint8_t addLocal(Compiler* compiler, Token name, Type* type) {
@@ -875,8 +1024,7 @@ uint8_t addLocal(Compiler* compiler, Token name, Type* type) {
         return 0;
     }
     vm.variableNames[index].name = name_copy;
-    printf("DEBUG: Added variable '%.*s' at index %d, address %p\n",
-           name.length, name.start, index, vm.variableNames[index].name);
+
     vm.variableNames[index].length = name.length;
     variableTypes[index] = type;  // Should be getPrimitiveType result
     vm.globalTypes[index] = type;

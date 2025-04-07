@@ -17,5 +17,6 @@ void initCompiler(Compiler* compiler, Chunk* chunk);
 bool compile(ASTNode* ast, Compiler* compiler);
 uint8_t resolveVariable(Compiler* compiler, Token name);       // Added
 uint8_t addLocal(Compiler* compiler, Token name, Type* type);  // Added
+uint8_t defineVariable(Compiler* compiler, Token name, Type* type);  // Added
 
 #endif

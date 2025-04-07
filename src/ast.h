@@ -16,7 +16,9 @@ typedef enum {
     AST_LET,
     AST_PRINT,
     AST_IF,
-    AST_BLOCK
+    AST_BLOCK,
+    AST_WHILE,
+    AST_FOR
 } ASTNodeType;
 
 typedef struct {
@@ -47,6 +49,19 @@ typedef struct {
     struct ASTNode* statements;  // Linked list of statements
 } BlockData;
 
+typedef struct {
+    struct ASTNode* condition;  // Loop condition
+    struct ASTNode* body;       // Loop body
+} WhileData;
+
+typedef struct {
+    Token iteratorName;         // Iterator variable name
+    uint8_t iteratorIndex;      // Iterator variable index
+    struct ASTNode* startExpr;  // Start of range
+    struct ASTNode* endExpr;    // End of range
+    struct ASTNode* body;       // Loop body
+} ForData;
+
 typedef struct ASTNode {
     ASTNodeType type;
     struct ASTNode* left;
@@ -65,6 +80,8 @@ typedef struct ASTNode {
         PrintData print;
         IfData ifStmt;
         BlockData block;
+        WhileData whileStmt;
+        ForData forStmt;
     } data;
     Type* valueType;
 } ASTNode;
@@ -78,6 +95,8 @@ ASTNode* createPrintNode(ASTNode* expr);  // Ensure this is declared
 ASTNode* createAssignmentNode(Token name, ASTNode* value);
 ASTNode* createIfNode(ASTNode* condition, ASTNode* thenBranch, ASTNode* elifConditions, ASTNode* elifBranches, ASTNode* elseBranch);
 ASTNode* createBlockNode(ASTNode* statements);
+ASTNode* createWhileNode(ASTNode* condition, ASTNode* body);
+ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr, ASTNode* body);
 
 void freeASTNode(ASTNode* node);
 

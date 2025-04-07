@@ -120,6 +120,33 @@ ASTNode* createAssignmentNode(Token name, ASTNode* value) {
     return node;
 }
 
+ASTNode* createWhileNode(ASTNode* condition, ASTNode* body) {
+    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    node->type = AST_WHILE;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.whileStmt.condition = condition;
+    node->data.whileStmt.body = body;
+    node->valueType = NULL;
+    return node;
+}
+
+ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr, ASTNode* body) {
+    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    node->type = AST_FOR;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.forStmt.iteratorName = iteratorName;
+    node->data.forStmt.iteratorIndex = 0; // Will be resolved during compilation
+    node->data.forStmt.startExpr = startExpr;
+    node->data.forStmt.endExpr = endExpr;
+    node->data.forStmt.body = body;
+    node->valueType = NULL;
+    return node;
+}
+
 void freeASTNode(ASTNode* node) {
     if (node == NULL) return;
     if (node->left) freeASTNode(node->left);
@@ -138,6 +165,15 @@ void freeASTNode(ASTNode* node) {
     }
     if (node->type == AST_BLOCK && node->data.block.statements)
         freeASTNode(node->data.block.statements);
+    if (node->type == AST_WHILE) {
+        if (node->data.whileStmt.condition) freeASTNode(node->data.whileStmt.condition);
+        if (node->data.whileStmt.body) freeASTNode(node->data.whileStmt.body);
+    }
+    if (node->type == AST_FOR) {
+        if (node->data.forStmt.startExpr) freeASTNode(node->data.forStmt.startExpr);
+        if (node->data.forStmt.endExpr) freeASTNode(node->data.forStmt.endExpr);
+        if (node->data.forStmt.body) freeASTNode(node->data.forStmt.body);
+    }
     if (node->next) freeASTNode(node->next);
     free(node);
 }

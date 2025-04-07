@@ -32,16 +32,16 @@ void init_keyword_table() {
         keywordTable[i].type = TOKEN_ERROR;
     }
 
-    const char* keywords[] = {"and",    "class", "else", "elif", "false", "for",
+    const char* keywords[] = {"and", "class", "else", "elif", "false", "for",
                               "fn",     "if",    "nil",  "or",    "print",
                               "return", "super", "this", "true",  "let",
-                              "while",  "i32",   "u32",  "f64",   "bool",
+                              "while",  "i32",   "u32",  "f64",   "bool", "in",
                               NULL};
     TokenType types[] = {
         TOKEN_AND, TOKEN_CLASS, TOKEN_ELSE, TOKEN_ELIF, TOKEN_FALSE, TOKEN_FOR, TOKEN_FN,
         TOKEN_IF, TOKEN_NIL, TOKEN_OR, TOKEN_PRINT, TOKEN_RETURN, TOKEN_SUPER,
         TOKEN_THIS, TOKEN_TRUE, TOKEN_LET, TOKEN_WHILE, TOKEN_INT, TOKEN_U32,
-        TOKEN_F64, TOKEN_BOOL,
+        TOKEN_F64, TOKEN_BOOL, TOKEN_IN,
     };
 
     for (int i = 0; keywords[i] != NULL; i++) {
@@ -56,12 +56,10 @@ void init_keyword_table() {
 }
 
 void init_scanner(const char* source) {
-    printf("DEBUG: Initializing scanner with source: '%s'\n", source);
     scanner.start = source;
     scanner.current = source;
     scanner.line = 1;
     init_keyword_table();
-    printf("DEBUG: Scanner initialized successfully\n");
 }
 
 // Check if a character is alphabetic
@@ -128,65 +126,50 @@ static Token error_token(const char* message) {
 
 // Skip whitespace and comments
 static void skip_whitespace() {
-    printf("DEBUG: Skipping whitespace\n");
     for (;;) {
         char c = peek();
-        printf("DEBUG: Checking character '%c' (code %d)\n", c, (int)c);
         switch (c) {
             case ' ':
             case '\r':
             case '\t':
-                printf("DEBUG: Skipping whitespace character\n");
                 advance();
                 break;
             case '\n':
                 // Don't skip newlines, they're significant
-                printf("DEBUG: Found newline, returning\n");
                 return;
             case '/':
-                printf("DEBUG: Found slash, checking for comment\n");
                 if (peek_next() == '/') {
-                    printf("DEBUG: Found single-line comment\n");
                     // Single-line comment
                     while (peek() != '\n' && !is_at_end()) {
-                        printf("DEBUG: Skipping comment character '%c'\n", peek());
                         advance();
                     }
-                    printf("DEBUG: End of single-line comment\n");
                 } else if (peek_next() == '*') {
-                    printf("DEBUG: Found block comment\n");
                     // Block comment
                     advance();
                     advance();
                     while (!is_at_end()) {
                         if (peek() == '*' && peek_next() == '/') {
-                            printf("DEBUG: Found end of block comment\n");
                             advance();
                             advance();
                             break;
                         }
                         if (peek() == '\n') {
-                            printf("DEBUG: Found newline in block comment\n");
                             // Return newline token even in comments
                             return;
                         }
                         advance();
                     }
                     if (is_at_end()) {
-                        printf("DEBUG: Unterminated block comment\n");
                         error_token("Unterminated block comment.");
                     }
                 } else {
-                    printf("DEBUG: Not a comment, returning\n");
                     return;
                 }
                 break;
             default:
-                printf("DEBUG: Non-whitespace character, returning\n");
                 return;
         }
     }
-    printf("DEBUG: Finished skipping whitespace\n");
 }
 
 static TokenType get_keyword_type(const char* start, int length) {
@@ -220,12 +203,9 @@ static Token identifier() {
 
 // Scan a number literal
 static Token number() {
-    bool has_underscore = false;
-
     // Process the integer part
     while (is_digit(peek()) || peek() == '_') {
         if (peek() == '_') {
-            has_underscore = true;
             advance();
             if (!is_digit(peek())) {
                 return error_token("Invalid underscore placement in number.");
@@ -240,7 +220,6 @@ static Token number() {
         advance();  // Consume the dot
         while (is_digit(peek()) || peek() == '_') {
             if (peek() == '_') {
-                has_underscore = true;
                 advance();
                 if (!is_digit(peek())) {
                     return error_token(
@@ -268,7 +247,6 @@ static Token number() {
 
         while (is_digit(peek()) || peek() == '_') {
             if (peek() == '_') {
-                has_underscore = true;
                 advance();
                 if (!is_digit(peek())) {
                     return error_token(
@@ -280,10 +258,7 @@ static Token number() {
         }
     }
 
-    // ✅ Use has_underscore to enforce a rule or log a message
-    if (has_underscore) {
-        printf("Info: Number contains underscores.\n");  // Optional logging
-    }
+    // Number contains underscores, which is allowed
 
     return make_token(TOKEN_NUMBER);
 }
@@ -323,10 +298,7 @@ Token scan_token() {
     // Handle newline as a token
     if (c == '\n') {
         scanner.line++;
-        printf("DEBUG: Scanner found newline at line %d\n", scanner.line);
-        Token token = make_token(TOKEN_NEWLINE);
-        printf("DEBUG: Created newline token with type %d\n", token.type);
-        return token;
+        return make_token(TOKEN_NEWLINE);
     }
 
     if (is_alpha(c)) {
@@ -342,7 +314,12 @@ Token scan_token() {
         case '}': return make_token(TOKEN_RIGHT_BRACE);
         case ';': return make_token(TOKEN_SEMICOLON);
         case ',': return make_token(TOKEN_COMMA);
-        case '.': return make_token(TOKEN_DOT);
+        case '.':
+            if (peek() == '.') {
+                advance();
+                return make_token(TOKEN_DOT_DOT);
+            }
+            return make_token(TOKEN_DOT);
         case '-': return make_token(TOKEN_MINUS);
         case '+': return make_token(TOKEN_PLUS);
         case '/': return make_token(TOKEN_SLASH);

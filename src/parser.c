@@ -43,16 +43,12 @@ static void error(Parser* parser, const char* message) {
 }
 
 static void advance(Parser* parser) {
-    printf("DEBUG: Advancing parser\n");
     parser->previous = parser->current;
     for (;;) {
-        printf("DEBUG: Scanning token\n");
         Token token = scan_token();
-        printf("DEBUG: Token scanned: type=%d\n", token.type);
 
         // Special handling for newline tokens
         if (token.type == TOKEN_NEWLINE) {
-            printf("DEBUG: Handling newline token safely\n");
             parser->current = token;
             break;
         }
@@ -62,10 +58,8 @@ static void advance(Parser* parser) {
             break;
         }
 
-        printf("DEBUG: Error token encountered\n");
         errorAt(parser, &token, token.start);
     }
-    printf("DEBUG: Parser advanced successfully\n");
 }
 
 static void consume(Parser* parser, TokenType type, const char* message) {
@@ -77,17 +71,14 @@ static void consume(Parser* parser, TokenType type, const char* message) {
 }
 
 static bool match(Parser* parser, TokenType type) {
-    printf("DEBUG: Matching token type %d with current token type %d\n", type, parser->current.type);
     if (parser->current.type != type) return false;
 
     // Special handling for newlines to avoid potential issues
     if (type == TOKEN_NEWLINE) {
-        printf("DEBUG: Matching newline token safely\n");
         parser->previous = parser->current;
 
         // Safely get the next token
         Token next = scan_token();
-        printf("DEBUG: After newline, got token type %d\n", next.type);
         parser->current = next;
         return true;
     }
@@ -173,38 +164,31 @@ static ASTNode* parseVariable(Parser* parser) {
 }
 
 static ASTNode* parse_precedence(Parser* parser, Precedence precedence) {
-    printf("DEBUG: Parsing precedence %d\n", precedence);
     advance(parser);
 
     // Check for EOF
     if (check(parser, TOKEN_EOF)) {
-        printf("DEBUG: Found EOF in parse_precedence\n");
         error(parser, "Unexpected end of file.");
         return NULL;
     }
 
     ParseFn prefixRule = get_rule(parser->previous.type)->prefix;
     if (prefixRule == NULL) {
-        printf("DEBUG: No prefix rule for token type %d\n", parser->previous.type);
         error(parser, "Expected expression.");
         return NULL;
     }
 
-    printf("DEBUG: Calling prefix rule for token type %d\n", parser->previous.type);
     ASTNode* left = prefixRule(parser);
     if (left == NULL) {
-        printf("DEBUG: Prefix rule returned NULL\n");
         return NULL;
     }
 
     while (!parser->hadError &&
            precedence <= get_rule(parser->current.type)->precedence) {
-        printf("DEBUG: Processing infix operation with token type %d\n", parser->current.type);
         advance(parser);
         ASTNode* (*infixRule)(Parser*, ASTNode*) =
             get_rule(parser->previous.type)->infix;
         if (infixRule == NULL) {
-            printf("DEBUG: No infix rule for token type %d\n", parser->previous.type);
             error(parser, "Invalid infix operator.");
             freeASTNode(left);
             return NULL;
@@ -212,14 +196,12 @@ static ASTNode* parse_precedence(Parser* parser, Precedence precedence) {
 
         ASTNode* newLeft = infixRule(parser, left);
         if (newLeft == NULL) {
-            printf("DEBUG: Infix rule returned NULL\n");
             freeASTNode(left);
             return NULL;
         }
         left = newLeft;
     }
 
-    printf("DEBUG: Parsed expression successfully\n");
     return left;
 }
 
@@ -244,29 +226,22 @@ static ASTNode* parse_precedence(Parser* parser, Precedence precedence) {
 // }
 
 static void expression(Parser* parser, ASTNode** ast) {
-    printf("DEBUG: Parsing expression\n");
     *ast = NULL; // Initialize to NULL in case of error
     ASTNode* expr = parse_precedence(parser, PREC_ASSIGNMENT);
     if (expr == NULL) {
-        printf("DEBUG: Expression parsing failed\n");
         return;
     }
     *ast = expr;
-    printf("DEBUG: Expression parsed successfully\n");
 }
 
 static void consumeStatementEnd(Parser* parser) {
-    printf("DEBUG: Consuming statement end\n");
-
     // Check for EOF first
     if (check(parser, TOKEN_EOF)) {
-        printf("DEBUG: Found EOF at statement end\n");
         return;
     }
 
     // Check for semicolon - this is now an error
     if (check(parser, TOKEN_SEMICOLON)) {
-        printf("DEBUG: Found semicolon at statement end - this is an error\n");
         error(parser, "Semicolons are not used in this language. Use newlines to terminate statements.");
         // Skip the semicolon to continue parsing
         match(parser, TOKEN_SEMICOLON);
@@ -275,54 +250,92 @@ static void consumeStatementEnd(Parser* parser) {
 
     // Check for newline
     if (check(parser, TOKEN_NEWLINE)) {
-        printf("DEBUG: Found newline at statement end\n");
         match(parser, TOKEN_NEWLINE); // Use our safer match function
 
         // Consume any additional newlines safely
-        printf("DEBUG: Checking for additional newlines\n");
         int newlineCount = 0;
         while (check(parser, TOKEN_NEWLINE) && newlineCount < 10) { // Limit to avoid infinite loops
-            printf("DEBUG: Found additional newline %d\n", ++newlineCount);
+            newlineCount++;
             match(parser, TOKEN_NEWLINE); // Use our safer match function
         }
         return;
     }
 
-    printf("DEBUG: Expected newline or EOF, but got token type %d\n", parser->current.type);
     error(parser, "Expect newline after statement.");
+}
+
+static void whileStatement(Parser* parser, ASTNode** ast) {
+    // Parse a while statement
+
+    // Parse the condition
+    ASTNode* condition;
+    expression(parser, &condition);
+
+    // Parse the body
+    ASTNode* body;
+    block(parser, &body);
+
+    *ast = createWhileNode(condition, body);
+}
+
+static void forStatement(Parser* parser, ASTNode** ast) {
+    // Parse a for statement
+
+    // Parse the iterator variable
+    consume(parser, TOKEN_IDENTIFIER, "Expect iterator variable name.");
+    Token iteratorName = parser->previous;
+
+    // Parse the 'in' keyword
+    consume(parser, TOKEN_IN, "Expect 'in' after iterator variable.");
+
+    // Parse the range start expression
+    ASTNode* startExpr;
+    expression(parser, &startExpr);
+
+    // Parse the range operator
+    consume(parser, TOKEN_DOT_DOT, "Expect '..' in range expression.");
+
+    // Parse the range end expression
+    ASTNode* endExpr;
+    expression(parser, &endExpr);
+
+    // Parse the body
+    ASTNode* body;
+    block(parser, &body);
+
+    *ast = createForNode(iteratorName, startExpr, endExpr, body);
 }
 
 static void statement(Parser* parser, ASTNode** ast) {
     // Skip any leading newlines
     while (check(parser, TOKEN_NEWLINE)) {
-        printf("DEBUG: Skipping leading newline in statement\n");
         advance(parser);
     }
 
     // Check for EOF
     if (check(parser, TOKEN_EOF)) {
-        printf("DEBUG: Found EOF at start of statement\n");
         *ast = NULL;
         return;
     }
-
-    printf("DEBUG: Current token type at statement start: %d\n", parser->current.type);
 
     // Initialize ast to NULL in case of error
     *ast = NULL;
 
     if (match(parser, TOKEN_PRINT)) {
-        printf("DEBUG: Parsing print statement\n");
         consume(parser, TOKEN_LEFT_PAREN, "Expect '(' after 'print'.");
         ASTNode* expr;
         expression(parser, &expr);
         consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after print value.");
         consumeStatementEnd(parser);
         *ast = createPrintNode(expr);
-        printf("DEBUG: Created AST_PRINT node\n");
     } else if (match(parser, TOKEN_IF)) {
-        printf("DEBUG: Parsing if statement\n");
         ifStatement(parser, ast);
+        // No need to consume statement end here as blocks handle their own termination
+    } else if (match(parser, TOKEN_WHILE)) {
+        whileStatement(parser, ast);
+        // No need to consume statement end here as blocks handle their own termination
+    } else if (match(parser, TOKEN_FOR)) {
+        forStatement(parser, ast);
         // No need to consume statement end here as blocks handle their own termination
     } else if (match(parser, TOKEN_LEFT_BRACE)) {
         // Rewind to the left brace so block() can consume it
@@ -330,25 +343,18 @@ static void statement(Parser* parser, ASTNode** ast) {
         block(parser, ast);
         // No need to consume statement end here as blocks handle their own termination
     } else if (match(parser, TOKEN_LET)) {
-#ifdef DEBUG_PARSER
-        printf("DEBUG: Parsing let statement\n");
-#endif
         consume(parser, TOKEN_IDENTIFIER, "Expect variable name.");
         Token name = parser->previous;
         Type* type = NULL;
 
         if (match(parser, TOKEN_COLON)) {
             type = parseType(parser);
-            printf("DEBUG: Variable type annotation: %s\n",
-                   type ? getTypeName(type->kind) : "null");
             if (parser->hadError) return;
         }
 
         consume(parser, TOKEN_EQUAL, "Expect '=' after variable name.");
         ASTNode* initializer;
         expression(parser, &initializer);
-        printf("DEBUG: Initializer type: %s\n",
-               initializer->valueType ? getTypeName(initializer->valueType->kind) : "null");
 
         consumeStatementEnd(parser);
         *ast = createLetNode(name, type, initializer);
@@ -359,12 +365,10 @@ static void statement(Parser* parser, ASTNode** ast) {
 
         if (match(parser, TOKEN_EQUAL)) {
             // Variable assignment: identifier = expression
-            printf("DEBUG: Parsing assignment statement\n");
             ASTNode* value;
             expression(parser, &value);
             consumeStatementEnd(parser);
             *ast = createAssignmentNode(name, value);
-            printf("DEBUG: Created AST_ASSIGNMENT node\n");
         } else {
             // This is a standalone expression starting with an identifier
             // Rewind the parser to the identifier
@@ -417,72 +421,51 @@ void initParser(Parser* parser, Scanner* scanner) {
 }
 
 bool parse(const char* source, ASTNode** ast) {
-    printf("DEBUG: Starting parse function\n");
     Scanner scanner;
-    printf("DEBUG: Scanner declared\n");
     init_scanner(source);
-    printf("DEBUG: Scanner initialized\n");
     Parser parser;
-    printf("DEBUG: Parser declared\n");
     initParser(&parser, &scanner);
-    printf("DEBUG: Parser initialized\n");
-    printf("DEBUG: About to advance parser\n");
     advance(&parser);
-    printf("DEBUG: Parser advanced\n");
 
     *ast = NULL;
     ASTNode* current = NULL;
-    printf("DEBUG: Entering main parse loop\n");
 
     // Skip any leading newlines
     while (check(&parser, TOKEN_NEWLINE)) {
-        printf("DEBUG: Skipping leading newline in parse\n");
         advance(&parser);
     }
 
     while (!check(&parser, TOKEN_EOF)) {
-        printf("DEBUG: Processing statement\n");
         ASTNode* stmt = NULL;
         statement(&parser, &stmt);
 
         // If statement returned NULL (e.g., for EOF), break the loop
         if (stmt == NULL) {
-            printf("DEBUG: Statement returned NULL, breaking loop\n");
             break;
         }
 
-        printf("DEBUG: Statement processed\n");
         if (parser.hadError) {
-            printf("DEBUG: Parser had error\n");
             if (*ast) {
-                printf("DEBUG: Freeing AST\n");
                 freeASTNode(*ast);
                 *ast = NULL; // Set to NULL after freeing
             }
             if (stmt) {
-                printf("DEBUG: Freeing statement\n");
                 freeASTNode(stmt);
                 stmt = NULL; // Set to NULL after freeing
             }
-            printf("DEBUG: Synchronizing parser\n");
             synchronize(&parser);
             if (parser.hadError) {
-                printf("DEBUG: Parser still has error after synchronization\n");
                 return false;
             }
-            printf("DEBUG: Continuing after synchronization\n");
             continue;
         }
         if (!*ast) {
-            printf("DEBUG: Setting root AST node\n");
             *ast = stmt;
         } else {
-            printf("DEBUG: Adding statement to AST\n");
             current->next = stmt;
         }
         current = stmt;
     }
-    printf("DEBUG: Parse loop completed\n");
     return !parser.hadError;
 }
 
@@ -496,14 +479,12 @@ static Type* parseType(Parser* parser) {
         type = getPrimitiveType(TYPE_F64);
     } else if (match(parser, TOKEN_BOOL)) {
         type = getPrimitiveType(TYPE_BOOL);
-        printf("DEBUG: Parsed bool type\n");
     } else {
         error(parser, "Expected type name (int, u32, f64, or bool).");
         return NULL;
     }
 
     if (type == NULL) {
-        printf("DEBUG: Failed to get primitive type\n");
         error(parser, "Failed to get primitive type");
         return NULL;
     }
@@ -513,16 +494,13 @@ static Type* parseType(Parser* parser) {
 
 static ASTNode* parseBoolean(Parser* parser) {
     bool value = parser->previous.type == TOKEN_TRUE;
-    printf("DEBUG: Creating boolean node with value: %s\n", value ? "true" : "false");
     ASTNode* node = createLiteralNode(BOOL_VAL(value));
     node->valueType = getPrimitiveType(TYPE_BOOL);
-    printf("DEBUG: Boolean node type set to: %s\n", getTypeName(node->valueType->kind));
     return node;
 }
 
 static void ifStatement(Parser* parser, ASTNode** ast) {
     // Parse an if statement
-    printf("DEBUG: Parsing if statement\n");
 
     // Parse the condition
     ASTNode* condition;
@@ -573,12 +551,10 @@ static void ifStatement(Parser* parser, ASTNode** ast) {
     }
 
     *ast = createIfNode(condition, thenBranch, elifConditions, elifBranches, elseBranch);
-    printf("DEBUG: Created AST_IF node\n");
 }
 
 static void block(Parser* parser, ASTNode** ast) {
     // Parse a block of statements enclosed in { }
-    printf("DEBUG: Parsing block\n");
     consume(parser, TOKEN_LEFT_BRACE, "Expect '{' before block.");
 
     // Skip any newlines after the opening brace
@@ -615,7 +591,6 @@ static void block(Parser* parser, ASTNode** ast) {
     consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after block.");
 
     *ast = createBlockNode(statements);
-    printf("DEBUG: Created AST_BLOCK node\n");
 }
 
 static void synchronize(Parser* parser) {

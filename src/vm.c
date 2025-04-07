@@ -29,17 +29,10 @@ void initVM() {
 }
 
 void freeVM() {
-    printf("DEBUG: vm.variableCount = %d\n", vm.variableCount);
     for (int i = 0; i < vm.variableCount; i++) {
-        // printf("DEBUG: Before free: vm.variableNames[%d].name = %s at %p\n", i,
-        //        vm.variableNames[i].name ? vm.variableNames[i].name : "(null)",
-        //        vm.variableNames[i].name);
         if (vm.variableNames[i].name != NULL) {
-            // printf("DEBUG: About to free variable name at index %d: %s at %p\n",
-            //        i, vm.variableNames[i].name, vm.variableNames[i].name);
             free(vm.variableNames[i].name);
             vm.variableNames[i].name = NULL;
-            printf("DEBUG: Freed variable name at index %d\n", i);
         }
         vm.globalTypes[i] = NULL;  // No freeing here
     }
@@ -68,7 +61,7 @@ static void traceExecution() {
 InterpretResult runChunk(Chunk* chunk) {
     vm.chunk = chunk;
     vm.ip = chunk->code;
-    printf("DEBUG: Running chunk at %p\n", (void*)chunk);
+
     #ifdef DEBUG_TRACE_EXECUTION
         disassembleChunk(chunk, "chunk to execute");
     #endif
@@ -293,6 +286,11 @@ InterpretResult runChunk(Chunk* chunk) {
                 if (AS_BOOL(condition)) {
                     vm.ip += offset;
                 }
+                break;
+            }
+            case OP_LOOP: {
+                uint16_t offset = READ_SHORT();
+                vm.ip -= offset;
                 break;
             }
             default:
