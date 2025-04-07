@@ -1,0 +1,48 @@
+// Test type coercion in binary operations
+// This file uses only newlines as statement terminators
+
+// Integer to float coercion
+let a = 42
+let b = 3.14
+let c = a + b  // Should convert a to float
+
+print("===== Type Coercion Test =====")
+print("a (integer) =")
+print(a)
+print("b (float) =")
+print(b)
+print("a + b =")
+print(c)
+
+// More complex expressions with mixed types
+let d = 10
+let e = 2.5
+let f = d * e  // Should convert d to float
+
+print("d (integer) =")
+print(d)
+print("e (float) =")
+print(e)
+print("d * e =")
+print(f)
+
+// Division with mixed types
+let g = 20
+let h = 4.0
+let i = g / h  // Should convert g to float
+
+print("g (integer) =")
+print(g)
+print("h (float) =")
+print(h)
+print("g / h =")
+print(i)
+
+// Complex expression with mixed types
+let j = (a + d) * e / h  // Should convert all integers to float
+
+print("(a + d) * e / h =")
+print(j)
+
+// End of test
+print("===== Test Complete =====")

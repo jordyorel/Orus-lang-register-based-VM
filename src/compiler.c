@@ -29,7 +29,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         printf("DEBUG: Skipping type check for null node\n");
         return;
     }
-    
+
     printf("DEBUG: Type checking node type %d\n", node->type);
 
     switch (node->type) {
@@ -61,14 +61,38 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             switch (operator) {
                 case TOKEN_PLUS:
                 case TOKEN_MINUS:
-                case TOKEN_STAR: {
+                case TOKEN_STAR:
+                case TOKEN_SLASH: {
+                    // If either operand is a float, the result is a float
                     if (leftType->kind == TYPE_F64 ||
                         rightType->kind == TYPE_F64) {
-                        node->valueType = getPrimitiveType(
-                            TYPE_F64);  // Use existing primitive type
-                    } else if (typesEqual(leftType, rightType)) {
+                        node->valueType = getPrimitiveType(TYPE_F64);
+
+                        // Mark operands for conversion if needed
+                        if (leftType->kind == TYPE_I32 || leftType->kind == TYPE_U32) {
+                            printf("DEBUG: Marking left operand for conversion from %s to f64\n",
+                                   getTypeName(leftType->kind));
+                            node->data.operation.convertLeft = true;
+                        } else {
+                            node->data.operation.convertLeft = false;
+                        }
+
+                        if (rightType->kind == TYPE_I32 || rightType->kind == TYPE_U32) {
+                            printf("DEBUG: Marking right operand for conversion from %s to f64\n",
+                                   getTypeName(rightType->kind));
+                            node->data.operation.convertRight = true;
+                        } else {
+                            node->data.operation.convertRight = false;
+                        }
+                    }
+                    // If both operands are the same type, the result is that type
+                    else if (typesEqual(leftType, rightType)) {
                         node->valueType = leftType;
-                    } else {
+                        node->data.operation.convertLeft = false;
+                        node->data.operation.convertRight = false;
+                    }
+                    // Otherwise, it's a type mismatch
+                    else {
                         error(compiler,
                               "Type mismatch in arithmetic operation.");
                         return;
@@ -171,7 +195,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             if (declType) {
                 // Allow i32 literals to be used for u32 variables if the value is non-negative
                 if (declType->kind == TYPE_U32 && initType->kind == TYPE_I32) {
-                    if (IS_I32(node->data.let.initializer->data.literal) && 
+                    if (IS_I32(node->data.let.initializer->data.literal) &&
                         AS_I32(node->data.let.initializer->data.literal) >= 0) {
                         // Convert the literal to u32
                         int32_t value = AS_I32(node->data.let.initializer->data.literal);
@@ -181,7 +205,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     }
                 }
                 // Allow i32/u32 literals to be used for f64 variables
-                else if (declType->kind == TYPE_F64 && 
+                else if (declType->kind == TYPE_F64 &&
                         (initType->kind == TYPE_I32 || initType->kind == TYPE_U32)) {
                     if (IS_I32(node->data.let.initializer->data.literal)) {
                         int32_t value = AS_I32(node->data.let.initializer->data.literal);
@@ -214,6 +238,78 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             printf("DEBUG: Checking print node\n");
             typeCheckNode(compiler, node->data.print.expr);
             if (compiler->hadError) return;
+            break;
+        }
+
+        case AST_ASSIGNMENT: {
+            printf("DEBUG: Checking assignment node\n");
+            // First type check the value expression
+            if (node->left) {
+                typeCheckNode(compiler, node->left);
+                if (compiler->hadError) return;
+            } else {
+                error(compiler, "Assignment requires a value expression");
+                return;
+            }
+
+            // Resolve the variable being assigned to
+            uint8_t index = resolveVariable(compiler, node->data.variable.name);
+            if (index == UINT8_MAX) {
+                error(compiler, "Cannot assign to undefined variable.");
+                return;
+            }
+            node->data.variable.index = index;
+
+            // Check that the types are compatible
+            Type* varType = variableTypes[index];
+            Type* valueType = node->left->valueType;
+
+            if (!varType) {
+                error(compiler, "Variable has no type defined.");
+                return;
+            }
+
+            if (!valueType) {
+                error(compiler, "Could not determine value type.");
+                return;
+            }
+
+            // Allow i32 literals to be used for u32 variables if the value is non-negative
+            if (varType->kind == TYPE_U32 && valueType->kind == TYPE_I32 &&
+                node->left->type == AST_LITERAL) {
+                if (IS_I32(node->left->data.literal) &&
+                    AS_I32(node->left->data.literal) >= 0) {
+                    // Convert the literal to u32
+                    int32_t value = AS_I32(node->left->data.literal);
+                    node->left->data.literal = U32_VAL((uint32_t)value);
+                    node->left->valueType = varType;
+                    valueType = varType;
+                }
+            }
+            // Allow i32/u32 literals to be used for f64 variables
+            else if (varType->kind == TYPE_F64 &&
+                    (valueType->kind == TYPE_I32 || valueType->kind == TYPE_U32) &&
+                    node->left->type == AST_LITERAL) {
+                if (IS_I32(node->left->data.literal)) {
+                    int32_t value = AS_I32(node->left->data.literal);
+                    node->left->data.literal = F64_VAL((double)value);
+                    node->left->valueType = varType;
+                    valueType = varType;
+                } else if (IS_U32(node->left->data.literal)) {
+                    uint32_t value = AS_U32(node->left->data.literal);
+                    node->left->data.literal = F64_VAL((double)value);
+                    node->left->valueType = varType;
+                    valueType = varType;
+                }
+            }
+
+            if (!typesEqual(varType, valueType)) {
+                error(compiler, "Type mismatch in assignment.");
+                return;
+            }
+
+            // The assignment expression has the same type as the variable
+            node->valueType = varType;
             break;
         }
 
@@ -252,7 +348,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             TypeKind resultType = node->valueType->kind;
 
             // Convert right operand to result type if needed
-            if (rightType->kind != resultType) {
+            if (node->data.operation.convertRight) {
                 printf("DEBUG: Converting right operand from %s to %s\n",
                        getTypeName(rightType->kind), getTypeName(resultType));
                 switch (resultType) {
@@ -276,7 +372,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             }
 
             // Convert left operand to result type if needed
-            if (leftType->kind != resultType) {
+            if (node->data.operation.convertLeft) {
                 printf("DEBUG: Converting left operand from %s to %s\n",
                        getTypeName(leftType->kind), getTypeName(resultType));
                 switch (resultType) {
@@ -450,6 +546,15 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             generateCode(compiler, node->data.print.expr);
             if (compiler->hadError) return;
             writeOp(compiler, OP_PRINT);
+            break;
+        }
+
+        case AST_ASSIGNMENT: {
+            printf("DEBUG: Generating assignment statement\n");
+            generateCode(compiler, node->left);
+            if (compiler->hadError) return;
+            writeOp(compiler, OP_SET_GLOBAL);
+            writeOp(compiler, node->data.variable.index);
             break;
         }
 

@@ -88,17 +88,22 @@ static char* readFile(const char* path) {
 }
 
 static void runFile(const char* path) {
+    printf("DEBUG: Running file: %s\n", path);
     char* source = readFile(path);
+    printf("DEBUG: File content read\n");
     ASTNode* ast;
+    printf("DEBUG: About to parse\n");
     if (!parse(source, &ast)) {
         fprintf(stderr, "Parsing failed for \"%s\".\n", path);
         free(source);
         exit(65);
     }
+    printf("DEBUG: Parsing successful\n");
     Chunk chunk;
     initChunk(&chunk);
     Compiler compiler;
     initCompiler(&compiler, &chunk);
+    printf("DEBUG: About to compile\n");
     if (!compile(ast, &compiler)) {
         fprintf(stderr, "Compilation failed for \"%s\".\n", path);
         freeASTNode(ast);
@@ -106,8 +111,11 @@ static void runFile(const char* path) {
         free(source);
         exit(65);
     }
+    printf("DEBUG: Compilation successful\n");
+    printf("DEBUG: About to run chunk\n");
     InterpretResult result = runChunk(&chunk);
-    // freeASTNode(ast);   // Free AST after execution
+    printf("DEBUG: Chunk execution completed\n");
+    freeASTNode(ast);   // Free AST after execution
     freeChunk(&chunk);  // Free chunk after execution
     free(source);
     if (result == INTERPRET_RUNTIME_ERROR) exit(70);

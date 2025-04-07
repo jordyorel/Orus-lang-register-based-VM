@@ -43,6 +43,8 @@ typedef struct ASTNode {
         struct {
             Token operator;
             int arity;
+            bool convertLeft;   // Flag to indicate if left operand needs conversion
+            bool convertRight;  // Flag to indicate if right operand needs conversion
         } operation;
         VariableData variable;
         LetData let;
@@ -57,6 +59,7 @@ ASTNode* createUnaryNode(Token operator, ASTNode * operand);
 ASTNode* createVariableNode(Token name, uint8_t index);
 ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer);
 ASTNode* createPrintNode(ASTNode* expr);  // Ensure this is declared
+ASTNode* createAssignmentNode(Token name, ASTNode* value);
 
 void freeASTNode(ASTNode* node);
 

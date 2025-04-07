@@ -1,0 +1,17 @@
+// Simple type coercion test
+// This file uses only newlines as statement terminators
+
+// Integer to float coercion
+let a = 42
+let b = 3.14
+let c = b + a  // Should convert a to float
+
+print("a =")
+print(a)
+print("b =")
+print(b)
+print("b + a =")
+print(c)
+
+// End of test
+print("===== Test Complete =====")

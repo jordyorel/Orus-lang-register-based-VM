@@ -31,12 +31,12 @@ void initVM() {
 void freeVM() {
     printf("DEBUG: vm.variableCount = %d\n", vm.variableCount);
     for (int i = 0; i < vm.variableCount; i++) {
-        printf("DEBUG: Before free: vm.variableNames[%d].name = %s at %p\n", i,
-               vm.variableNames[i].name ? vm.variableNames[i].name : "(null)",
-               vm.variableNames[i].name);
+        // printf("DEBUG: Before free: vm.variableNames[%d].name = %s at %p\n", i,
+        //        vm.variableNames[i].name ? vm.variableNames[i].name : "(null)",
+        //        vm.variableNames[i].name);
         if (vm.variableNames[i].name != NULL) {
-            printf("DEBUG: About to free variable name at index %d: %s at %p\n",
-                   i, vm.variableNames[i].name, vm.variableNames[i].name);
+            // printf("DEBUG: About to free variable name at index %d: %s at %p\n",
+            //        i, vm.variableNames[i].name, vm.variableNames[i].name);
             free(vm.variableNames[i].name);
             vm.variableNames[i].name = NULL;
             printf("DEBUG: Freed variable name at index %d\n", i);
@@ -52,8 +52,6 @@ static void runtimeError(const char* format, ...) {
     va_end(args);
     fputs("\n", stderr);
 }
-
-static Value peek(int distance) { return vm.stackTop[-1 - distance]; }
 
 static void traceExecution() {
     #ifdef DEBUG_TRACE_EXECUTION
@@ -86,7 +84,7 @@ InterpretResult runChunk(Chunk* chunk) {
 
         switch (instruction) {
             case OP_PRINT: {
-                Value value = pop();
+                Value value = vmPop(&vm);
                 printValue(value);
                 printf("\n");
                 fflush(stdout);
@@ -94,7 +92,7 @@ InterpretResult runChunk(Chunk* chunk) {
             }
             case OP_CONSTANT: {
                 Value constant = READ_CONSTANT();
-                push(constant);
+                vmPush(&vm, constant);
                 break;
             }
             case OP_ADD_I32:
@@ -140,52 +138,56 @@ InterpretResult runChunk(Chunk* chunk) {
                 binaryOpF64(&vm, '/', &result);
                 break;
             case OP_NEGATE_I32: {
-                if (!IS_I32(peek(0))) {
+                if (!IS_I32(vmPeek(&vm, 0))) {
                     runtimeError("Operand must be an integer.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                int32_t value = AS_I32(pop());
-                push(I32_VAL(-value));
+                int32_t value = AS_I32(vmPop(&vm));
+                vmPush(&vm, I32_VAL(-value));
                 break;
             }
             case OP_NEGATE_U32: {
-                if (!IS_U32(peek(0))) {
+                if (!IS_U32(vmPeek(&vm, 0))) {
                     runtimeError("Operand must be an unsigned integer.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                uint32_t value = AS_U32(pop());
-                push(U32_VAL(-value));
+                uint32_t value = AS_U32(vmPop(&vm));
+                vmPush(&vm, U32_VAL(-value));
                 break;
             }
             case OP_NEGATE_F64: {
-                if (!IS_F64(peek(0))) {
+                if (!IS_F64(vmPeek(&vm, 0))) {
                     runtimeError("Operand must be a floating point number.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                double value = AS_F64(pop());
-                push(F64_VAL(-value));
+                double value = AS_F64(vmPop(&vm));
+                vmPush(&vm, F64_VAL(-value));
                 break;
             }
             case OP_I32_TO_F64: {
-                if (!IS_I32(peek(0))) {
-                    runtimeError("Operand must be an integer.");
+                Value value = vmPop(&vm);
+                InterpretResult convResult = INTERPRET_OK;
+                double floatValue = convertToF64(&vm, value, &convResult);
+                if (convResult != INTERPRET_OK) {
+                    runtimeError("Failed to convert value to float.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                int32_t value = AS_I32(pop());
-                push(F64_VAL((double)value));
+                vmPush(&vm, F64_VAL(floatValue));
                 break;
             }
             case OP_U32_TO_F64: {
-                if (!IS_U32(peek(0))) {
-                    runtimeError("Operand must be an unsigned integer.");
+                Value value = vmPop(&vm);
+                InterpretResult convResult = INTERPRET_OK;
+                double floatValue = convertToF64(&vm, value, &convResult);
+                if (convResult != INTERPRET_OK) {
+                    runtimeError("Failed to convert value to float.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                uint32_t value = AS_U32(pop());
-                push(F64_VAL((double)value));
+                vmPush(&vm, F64_VAL(floatValue));
                 break;
             }
             case OP_POP: {
-                pop();
+                vmPop(&vm);
                 break;
             }
             case OP_RETURN: {
@@ -193,7 +195,7 @@ InterpretResult runChunk(Chunk* chunk) {
             }
             case OP_DEFINE_GLOBAL: {
                 uint8_t index = READ_BYTE();
-                vm.globals[index] = pop();
+                vm.globals[index] = vmPop(&vm);
                 vm.globalTypes[index] = variableTypes[index];
                 break;
             }
@@ -204,7 +206,7 @@ InterpretResult runChunk(Chunk* chunk) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 Value value = vm.globals[index];
-                push(value);
+                vmPush(&vm, value);
                 break;
             }
             case OP_SET_GLOBAL: {
@@ -213,10 +215,10 @@ InterpretResult runChunk(Chunk* chunk) {
                     runtimeError("Attempt to assign to undefined variable.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                Value value = pop();
+                Value value = vmPop(&vm);
                 vm.globals[index] = value;
-                push(value);  // Push back for expression value
-                pop();        // Immediately pop since assignment isn't used
+                vmPush(&vm, value);  // Push back for expression value
+                vmPop(&vm);        // Immediately pop since assignment isn't used
                 break;
             }
             default:
@@ -231,13 +233,11 @@ InterpretResult runChunk(Chunk* chunk) {
 }
 
 void push(Value value) {
-    *vm.stackTop = value;
-    vm.stackTop++;
+    vmPush(&vm, value);
 }
 
 Value pop() {
-    vm.stackTop--;
-    return *vm.stackTop;
+    return vmPop(&vm);
 }
 
 InterpretResult interpret(const char* source) {

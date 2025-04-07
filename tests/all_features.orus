@@ -1,0 +1,131 @@
+// Comprehensive test of all features in the Orus language
+// This file uses only newlines as statement terminators
+
+// ===== 1. Variable declarations with different types =====
+print("===== Variable Declarations =====")
+
+// Integer variables
+let a = 42
+print("a (integer) =")
+print(a)
+
+// Floating point variables
+let b = 3.14159
+print("b (float) =")
+print(b)
+
+// Boolean variables
+let c = true
+print("c (boolean) =")
+print(c)
+
+// String variables
+let d = "Hello, Orus!"
+print("d (string) =")
+print(d)
+
+// ===== 2. Arithmetic operations =====
+print("===== Arithmetic Operations =====")
+
+// Addition
+let sum_int = 10 + 20
+print("10 + 20 =")
+print(sum_int)
+
+let sum_float = 1.5 + 2.5
+print("1.5 + 2.5 =")
+print(sum_float)
+
+// Subtraction
+let diff_int = 50 - 30
+print("50 - 30 =")
+print(diff_int)
+
+let diff_float = 5.5 - 2.2
+print("5.5 - 2.2 =")
+print(diff_float)
+
+// Multiplication
+let prod_int = 6 * 7
+print("6 * 7 =")
+print(prod_int)
+
+let prod_float = 2.5 * 3.0
+print("2.5 * 3.0 =")
+print(prod_float)
+
+// Division
+let div_int = 20 / 4
+print("20 / 4 =")
+print(div_int)
+
+let div_float = 10.0 / 3.0
+print("10.0 / 3.0 =")
+print(div_float)
+
+// Modulo
+let mod_result = 17 % 5
+print("17 % 5 =")
+print(mod_result)
+
+// ===== 3. Variable reassignment =====
+print("===== Variable Reassignment =====")
+
+let x = 10
+print("Initial x =")
+print(x)
+
+x = 20
+print("After x = 20:")
+print(x)
+
+x = x + 5
+print("After x = x + 5:")
+print(x)
+
+let y = 3.5
+print("Initial y =")
+print(y)
+
+y = 7.25
+print("After y = 7.25:")
+print(y)
+
+// ===== 4. Complex expressions =====
+print("===== Complex Expressions =====")
+
+// Operator precedence
+let expr1 = 2 + 3 * 4
+print("2 + 3 * 4 =")
+print(expr1)
+
+let expr2 = (2 + 3) * 4
+print("(2 + 3) * 4 =")
+print(expr2)
+
+// Mixed operations
+let expr3 = 10 + 20 / 5 - 2
+print("10 + 20 / 5 - 2 =")
+print(expr3)
+
+let expr4 = 10 * (5 + 3) / 2
+print("10 * (5 + 3) / 2 =")
+print(expr4)
+
+// ===== 5. Type coercion =====
+print("===== Type Coercion =====")
+
+let int_to_float = 3.14 + 42
+print("3.14 + 42 =")
+print(int_to_float)
+
+// ===== 6. Print statements =====
+print("===== Print Statements =====")
+print("This is a string literal")
+print(123)
+print(4.56)
+print(true)
+print(false)
+
+// ===== End of test =====
+print("===== Test Complete =====")

@@ -1,0 +1,25 @@
+// This test file uses only newlines as statement terminators
+let a = 42
+let b = 100
+let c = 3.14
+let d = true
+
+// Variable declarations with type inference
+let x = 10
+let y = 20
+let z = x + y
+
+// Print statements
+print(a)
+print(b)
+print(c)
+print(d)
+print(z)
+
+// Arithmetic operations
+let sum = x + y
+let diff = b - a
+let prod = x * y
+print(sum)
+print(diff)
+print(prod)

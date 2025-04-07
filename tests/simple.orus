@@ -1,0 +1,3 @@
+// simple.orus
+let x = 42;
+print(x);

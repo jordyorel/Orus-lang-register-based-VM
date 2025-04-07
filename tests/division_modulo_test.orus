@@ -1,0 +1,71 @@
+// Test division and modulo operations
+// This file uses only newlines as statement terminators
+
+// Integer division
+let a = 10
+let b = 3
+let div_i32 = a / b  // Should be 3
+
+// Unsigned integer division
+let c = 10
+let d = 2
+let div_u32 = c / d  // Should be 5
+
+// Floating point division
+let e = 10.0
+let f = 3.0
+let div_f64 = e / f  // Should be approximately 3.333...
+
+// Integer modulo
+let g = 10
+let h = 3
+let mod_i32 = g % h  // Should be 1
+
+// Unsigned integer modulo
+let i = 10
+let j = 3
+let mod_u32 = i % j  // Should be 1
+
+// Print results
+print("===== Division Operations =====")
+print("a / b =")
+print(div_i32)
+print("c / d =")
+print(div_u32)
+print("e / f =")
+print(div_f64)
+
+print("===== Modulo Operations =====")
+print("g % h =")
+print(mod_i32)
+print("i % j =")
+print(mod_u32)
+
+// Test division by zero handling
+// Uncomment to test error handling
+// let zero_div = a / 0
+
+// Test with variables
+let k = 20
+let l = 4
+let div_var = k / l  // Should be 5
+let mod_var = k % l  // Should be 0
+
+print("===== Variable Operations =====")
+print("k / l =")
+print(div_var)
+print("k % l =")
+print(mod_var)
+
+// Test with expressions
+let expr_div = (a + b) / c  // Should be 13 / 10 = 1
+let expr_mod = (a + b) % c  // Should be 13 % 10 = 3
+
+print("===== Expression Operations =====")
+print("(a + b) / c =")
+print(expr_div)
+print("(a + b) % c =")
+print(expr_mod)
+
+// End of test
+print("===== Test Complete =====")

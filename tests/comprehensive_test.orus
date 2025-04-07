@@ -1,0 +1,101 @@
+// Comprehensive test for Orus language features
+// This file uses only newlines as statement terminators
+
+// 1. Variable declarations with different types
+// Integer variables
+let a = 42
+let b = 100
+
+// Floating point variables
+let c = 3.14
+let d = 2.71828
+
+// Boolean variables
+let e = true
+let f = false
+
+// 2. Arithmetic operations
+// Addition
+let sum1 = a + b
+let sum2 = c + d
+
+// Subtraction
+let diff1 = b - a
+let diff2 = d - c
+
+// Multiplication
+let prod1 = a * b
+let prod2 = c * d
+
+// Division
+let div1 = b / a
+let div2 = d / c
+
+// Modulo
+let mod1 = b % a
+
+// 3. Boolean operations
+let bool1 = true
+let bool2 = false
+
+// 4. Type coercion
+// Integer to float
+let int_to_float = a + c
+
+// 5. Print statements
+print("===== Variable Values =====")
+print("a =")
+print(a)
+print("b =")
+print(b)
+print("c =")
+print(c)
+print("d =")
+print(d)
+print("e =")
+print(e)
+print("f =")
+print(f)
+
+print("===== Arithmetic Operations =====")
+print("a + b =")
+print(sum1)
+print("c + d =")
+print(sum2)
+print("b - a =")
+print(diff1)
+print("d - c =")
+print(diff2)
+print("a * b =")
+print(prod1)
+print("c * d =")
+print(prod2)
+print("b / a =")
+print(div1)
+print("d / c =")
+print(div2)
+print("b % a =")
+print(mod1)
+
+print("===== Type Coercion =====")
+print("a + c =")
+print(int_to_float)
+
+// 6. Complex expressions
+let complex1 = a + b * c
+let complex2 = (a + b) * c
+let complex3 = a + b / c
+let complex4 = (a + b) / c
+
+print("===== Complex Expressions =====")
+print("a + b * c =")
+print(complex1)
+print("(a + b) * c =")
+print(complex2)
+print("a + b / c =")
+print(complex3)
+print("(a + b) / c =")
+print(complex4)
+
+// End of test
+print("===== Test Complete =====")
