@@ -155,4 +155,83 @@ static inline void moduloOpU32(VM* vm, InterpretResult* result) {
     vmPush(vm, U32_VAL(a % b));
 }
 
+// Comparison operations for i32
+static inline void compareOpI32(VM* vm, char op, InterpretResult* result) {
+    if (!IS_I32(vmPeek(vm, 0)) || !IS_I32(vmPeek(vm, 1))) {
+        fprintf(stderr, "Operands must be integers.\n");
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+    int32_t b = AS_I32(vmPop(vm));
+    int32_t a = AS_I32(vmPop(vm));
+    bool value = false;
+    switch (op) {
+        case '<': value = a < b; break;
+        case '>': value = a > b; break;
+        case 'L': value = a <= b; break; // 'L' for Less or Equal
+        case 'G': value = a >= b; break; // 'G' for Greater or Equal
+        case '=': value = a == b; break;
+        case '!': value = a != b; break;
+        default:
+            fprintf(stderr, "Unknown comparison operator: %c\n", op);
+            *result = INTERPRET_RUNTIME_ERROR;
+            return;
+    }
+    vmPush(vm, BOOL_VAL(value));
+}
+
+// Comparison operations for u32
+static inline void compareOpU32(VM* vm, char op, InterpretResult* result) {
+    if (!IS_U32(vmPeek(vm, 0)) || !IS_U32(vmPeek(vm, 1))) {
+        fprintf(stderr, "Operands must be unsigned integers.\n");
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+    uint32_t b = AS_U32(vmPop(vm));
+    uint32_t a = AS_U32(vmPop(vm));
+    bool value = false;
+    switch (op) {
+        case '<': value = a < b; break;
+        case '>': value = a > b; break;
+        case 'L': value = a <= b; break; // 'L' for Less or Equal
+        case 'G': value = a >= b; break; // 'G' for Greater or Equal
+        case '=': value = a == b; break;
+        case '!': value = a != b; break;
+        default:
+            fprintf(stderr, "Unknown comparison operator: %c\n", op);
+            *result = INTERPRET_RUNTIME_ERROR;
+            return;
+    }
+    vmPush(vm, BOOL_VAL(value));
+}
+
+// Comparison operations for f64
+static inline void compareOpF64(VM* vm, char op, InterpretResult* result) {
+    // Pop both values first
+    Value b_val = vmPop(vm);
+    Value a_val = vmPop(vm);
+
+    // Convert both values to f64
+    double b = convertToF64(vm, b_val, result);
+    if (*result != INTERPRET_OK) return;
+
+    double a = convertToF64(vm, a_val, result);
+    if (*result != INTERPRET_OK) return;
+
+    bool value = false;
+    switch (op) {
+        case '<': value = a < b; break;
+        case '>': value = a > b; break;
+        case 'L': value = a <= b; break; // 'L' for Less or Equal
+        case 'G': value = a >= b; break; // 'G' for Greater or Equal
+        case '=': value = a == b; break;
+        case '!': value = a != b; break;
+        default:
+            fprintf(stderr, "Unknown comparison operator: %c\n", op);
+            *result = INTERPRET_RUNTIME_ERROR;
+            return;
+    }
+    vmPush(vm, BOOL_VAL(value));
+}
+
 #endif // VM_OPS_H

@@ -38,9 +38,30 @@ typedef enum {
     OP_MODULO_I32,
     OP_MODULO_U32,
 
+    // Comparison operations
+    OP_EQUAL,
+    OP_NOT_EQUAL,
+    OP_LESS_I32,
+    OP_LESS_U32,
+    OP_LESS_F64,
+    OP_LESS_EQUAL_I32,
+    OP_LESS_EQUAL_U32,
+    OP_LESS_EQUAL_F64,
+    OP_GREATER_I32,
+    OP_GREATER_U32,
+    OP_GREATER_F64,
+    OP_GREATER_EQUAL_I32,
+    OP_GREATER_EQUAL_U32,
+    OP_GREATER_EQUAL_F64,
+
     // Type conversion opcodes
     OP_I32_TO_F64,
     OP_U32_TO_F64,
+
+    // Control flow opcodes
+    OP_JUMP,
+    OP_JUMP_IF_FALSE,
+    OP_JUMP_IF_TRUE,
 
     OP_RETURN,
     OP_POP,
@@ -69,7 +90,7 @@ typedef struct {
     int line_count; // 8 bytes
     int line_capcity;
     ValueArray constants; // 16 bytes
-} Chunk; // 40 bytes 
+} Chunk; // 40 bytes
 
 
 void initChunk(Chunk* chunk);

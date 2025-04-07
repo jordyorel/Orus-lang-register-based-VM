@@ -21,6 +21,8 @@ static ASTNode* parseVariable(Parser* parser);
 static Type* parseType(Parser* parser);
 static void expression(Parser* parser, ASTNode** ast);
 static void statement(Parser* parser, ASTNode** ast);
+static void ifStatement(Parser* parser, ASTNode** ast);
+static void block(Parser* parser, ASTNode** ast);
 static void consumeStatementEnd(Parser* parser);
 static void synchronize(Parser* parser);
 
@@ -318,6 +320,15 @@ static void statement(Parser* parser, ASTNode** ast) {
         consumeStatementEnd(parser);
         *ast = createPrintNode(expr);
         printf("DEBUG: Created AST_PRINT node\n");
+    } else if (match(parser, TOKEN_IF)) {
+        printf("DEBUG: Parsing if statement\n");
+        ifStatement(parser, ast);
+        // No need to consume statement end here as blocks handle their own termination
+    } else if (match(parser, TOKEN_LEFT_BRACE)) {
+        // Rewind to the left brace so block() can consume it
+        parser->current = parser->previous;
+        block(parser, ast);
+        // No need to consume statement end here as blocks handle their own termination
     } else if (match(parser, TOKEN_LET)) {
 #ifdef DEBUG_PARSER
         printf("DEBUG: Parsing let statement\n");
@@ -383,6 +394,13 @@ ParseRule rules[] = {
     [TOKEN_STRING] = {parseString, NULL, PREC_NONE},
     [TOKEN_TRUE] = {parseBoolean, NULL, PREC_NONE},
     [TOKEN_FALSE] = {parseBoolean, NULL, PREC_NONE},
+    // Comparison operators
+    [TOKEN_LESS] = {NULL, parseBinary, PREC_COMPARISON},
+    [TOKEN_LESS_EQUAL] = {NULL, parseBinary, PREC_COMPARISON},
+    [TOKEN_GREATER] = {NULL, parseBinary, PREC_COMPARISON},
+    [TOKEN_GREATER_EQUAL] = {NULL, parseBinary, PREC_COMPARISON},
+    [TOKEN_EQUAL_EQUAL] = {NULL, parseBinary, PREC_EQUALITY},
+    [TOKEN_BANG_EQUAL] = {NULL, parseBinary, PREC_EQUALITY},
     // Add other tokens as needed
     [TOKEN_EOF] = {NULL, NULL, PREC_NONE},
     [TOKEN_NEWLINE] = {NULL, NULL, PREC_NONE}, // Add explicit rule for newlines
@@ -500,6 +518,104 @@ static ASTNode* parseBoolean(Parser* parser) {
     node->valueType = getPrimitiveType(TYPE_BOOL);
     printf("DEBUG: Boolean node type set to: %s\n", getTypeName(node->valueType->kind));
     return node;
+}
+
+static void ifStatement(Parser* parser, ASTNode** ast) {
+    // Parse an if statement
+    printf("DEBUG: Parsing if statement\n");
+
+    // Parse the condition
+    ASTNode* condition;
+    expression(parser, &condition);
+
+    // Parse the then branch
+    ASTNode* thenBranch;
+    block(parser, &thenBranch);
+
+    // Parse elif branches if any
+    ASTNode* elifConditions = NULL;
+    ASTNode* elifBranches = NULL;
+    ASTNode* currentElifCondition = NULL;
+    ASTNode* currentElifBranch = NULL;
+
+    while (match(parser, TOKEN_ELIF)) {
+        // Parse elif condition
+        ASTNode* elifCondition;
+        expression(parser, &elifCondition);
+
+        // Add to elif conditions list
+        if (elifConditions == NULL) {
+            elifConditions = elifCondition;
+            currentElifCondition = elifCondition;
+        } else {
+            currentElifCondition->next = elifCondition;
+            currentElifCondition = elifCondition;
+        }
+
+        // Parse elif branch
+        ASTNode* elifBranch;
+        block(parser, &elifBranch);
+
+        // Add to elif branches list
+        if (elifBranches == NULL) {
+            elifBranches = elifBranch;
+            currentElifBranch = elifBranch;
+        } else {
+            currentElifBranch->next = elifBranch;
+            currentElifBranch = elifBranch;
+        }
+    }
+
+    // Parse else branch if any
+    ASTNode* elseBranch = NULL;
+    if (match(parser, TOKEN_ELSE)) {
+        block(parser, &elseBranch);
+    }
+
+    *ast = createIfNode(condition, thenBranch, elifConditions, elifBranches, elseBranch);
+    printf("DEBUG: Created AST_IF node\n");
+}
+
+static void block(Parser* parser, ASTNode** ast) {
+    // Parse a block of statements enclosed in { }
+    printf("DEBUG: Parsing block\n");
+    consume(parser, TOKEN_LEFT_BRACE, "Expect '{' before block.");
+
+    // Skip any newlines after the opening brace
+    while (check(parser, TOKEN_NEWLINE)) {
+        advance(parser);
+    }
+
+    // Parse statements until we reach the closing brace
+    ASTNode* statements = NULL;
+    ASTNode* current = NULL;
+
+    while (!check(parser, TOKEN_RIGHT_BRACE) && !check(parser, TOKEN_EOF)) {
+        ASTNode* stmt = NULL;
+        statement(parser, &stmt);
+
+        if (stmt == NULL) {
+            // Skip empty statements (e.g., extra newlines)
+            continue;
+        }
+
+        if (statements == NULL) {
+            statements = stmt;
+        } else {
+            current->next = stmt;
+        }
+        current = stmt;
+
+        // Skip any newlines between statements
+        while (check(parser, TOKEN_NEWLINE)) {
+            advance(parser);
+        }
+    }
+
+    consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after block.");
+
+    *ast = createBlockNode(statements);
+    printf("DEBUG: Created AST_BLOCK node\n");
 }
 
 static void synchronize(Parser* parser) {

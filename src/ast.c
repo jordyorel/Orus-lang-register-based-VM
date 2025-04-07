@@ -80,6 +80,32 @@ ASTNode* createPrintNode(ASTNode* expr) {
     return node;
 }
 
+ASTNode* createIfNode(ASTNode* condition, ASTNode* thenBranch, ASTNode* elifConditions, ASTNode* elifBranches, ASTNode* elseBranch) {
+    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    node->type = AST_IF;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.ifStmt.condition = condition;
+    node->data.ifStmt.thenBranch = thenBranch;
+    node->data.ifStmt.elifConditions = elifConditions;
+    node->data.ifStmt.elifBranches = elifBranches;
+    node->data.ifStmt.elseBranch = elseBranch;
+    node->valueType = NULL;
+    return node;
+}
+
+ASTNode* createBlockNode(ASTNode* statements) {
+    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    node->type = AST_BLOCK;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.block.statements = statements;
+    node->valueType = NULL;
+    return node;
+}
+
 ASTNode* createAssignmentNode(Token name, ASTNode* value) {
     ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
     node->type = AST_ASSIGNMENT;
@@ -103,6 +129,15 @@ void freeASTNode(ASTNode* node) {
     if (node->type == AST_PRINT && node->data.print.expr)
         freeASTNode(node->data.print.expr);
     // Assignment nodes store their value in the left child, which is already freed above
+    if (node->type == AST_IF) {
+        if (node->data.ifStmt.condition) freeASTNode(node->data.ifStmt.condition);
+        if (node->data.ifStmt.thenBranch) freeASTNode(node->data.ifStmt.thenBranch);
+        if (node->data.ifStmt.elifConditions) freeASTNode(node->data.ifStmt.elifConditions);
+        if (node->data.ifStmt.elifBranches) freeASTNode(node->data.ifStmt.elifBranches);
+        if (node->data.ifStmt.elseBranch) freeASTNode(node->data.ifStmt.elseBranch);
+    }
+    if (node->type == AST_BLOCK && node->data.block.statements)
+        freeASTNode(node->data.block.statements);
     if (node->next) freeASTNode(node->next);
     free(node);
 }

@@ -1,0 +1,132 @@
+// Comprehensive test of the Orus language
+// Tests all implemented language features
+
+print("===== BASIC VARIABLE DECLARATIONS =====")
+let a = 42
+let b = 3.14
+let c = true
+let d = false
+let e = "Hello, Orus!"
+
+print("a (i32):")
+print(a)
+print("b (f64):")
+print(b)
+print("c (bool):")
+print(c)
+print("d (bool):")
+print(d)
+print("e (string):")
+print(e)
+
+print("===== ARITHMETIC OPERATIONS =====")
+let num1 = 10
+let num2 = 3
+print("num1 = 10, num2 = 3")
+print("Addition:")
+print(num1 + num2)
+print("Subtraction:")
+print(num1 - num2)
+print("Multiplication:")
+print(num1 * num2)
+print("Division:")
+print(num1 / num2)
+print("Modulo:")
+print(num1 % num2)
+
+print("===== TYPE COERCION =====")
+let int_val = 5
+let float_val = 2.5
+print("int_val = 5, float_val = 2.5")
+print("int + float:")
+print(int_val + float_val)
+print("int - float:")
+print(int_val - float_val)
+print("int * float:")
+print(int_val * float_val)
+print("int / float:")
+print(int_val / float_val)
+
+print("===== VARIABLE REASSIGNMENT =====")
+let x = 10
+print("Initial x:")
+print(x)
+x = 20
+print("After reassignment:")
+print(x)
+x = x + 5
+print("After x = x + 5:")
+print(x)
+
+print("===== COMPARISON OPERATORS =====")
+let p = 10
+let q = 20
+print("p = 10, q = 20")
+print("p < q:")
+print(p < q)
+print("p <= q:")
+print(p <= q)
+print("p > q:")
+print(p > q)
+print("p >= q:")
+print(p >= q)
+print("p == q:")
+print(p == q)
+print("p != q:")
+print(p != q)
+
+print("===== SIMPLE IF STATEMENTS =====")
+if true {
+    print("This should be printed (if true)")
+}
+
+if false {
+    print("This should NOT be printed (if false)")
+}
+
+print("===== IF-ELSE STATEMENTS =====")
+if p > q {
+    print("This should NOT be printed (p > q)")
+} else {
+    print("This should be printed (p <= q)")
+}
+
+print("===== IF-ELIF-ELSE STATEMENTS =====")
+if p > q {
+    print("This should NOT be printed (p > q)")
+} elif p < q {
+    print("This should be printed (p < q)")
+} else {
+    print("This should NOT be printed (p == q)")
+}
+
+print("===== MULTIPLE ELIF BRANCHES =====")
+let grade = 85
+if grade >= 90 {
+    print("Grade: A")
+} elif grade >= 80 {
+    print("Grade: B")
+} elif grade >= 70 {
+    print("Grade: C")
+} elif grade >= 60 {
+    print("Grade: D")
+} else {
+    print("Grade: F")
+}
+
+print("===== NESTED IF STATEMENTS =====")
+if p < q {
+    print("Outer if: p < q")
+    if p < 15 {
+        print("Inner if: p < 15")
+    } else {
+        print("Inner else: p >= 15")
+    }
+}
+
+print("===== COMPLEX EXPRESSIONS =====")
+let result = (p + q) * 2 - (p / 2)
+print("(p + q) * 2 - (p / 2) =")
+print(result)
+
+print("===== TEST COMPLETE =====")

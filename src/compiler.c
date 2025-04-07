@@ -118,6 +118,18 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     break;
                 }
 
+                // Comparison operators
+                case TOKEN_LESS:
+                case TOKEN_LESS_EQUAL:
+                case TOKEN_GREATER:
+                case TOKEN_GREATER_EQUAL:
+                case TOKEN_EQUAL_EQUAL:
+                case TOKEN_BANG_EQUAL: {
+                    // Comparison operators always return a boolean
+                    node->valueType = getPrimitiveType(TYPE_BOOL);
+                    break;
+                }
+
                 default:
                     error(compiler,
                           "Unsupported binary operator in type checker.");
@@ -313,6 +325,73 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             break;
         }
 
+        case AST_IF: {
+            printf("DEBUG: Checking if statement\n");
+            // Type check the condition
+            typeCheckNode(compiler, node->data.ifStmt.condition);
+            if (compiler->hadError) return;
+
+            // Ensure the condition is a boolean
+            Type* condType = node->data.ifStmt.condition->valueType;
+            if (!condType || condType->kind != TYPE_BOOL) {
+                error(compiler, "If condition must be a boolean expression.");
+                return;
+            }
+
+            // Type check the then branch
+            typeCheckNode(compiler, node->data.ifStmt.thenBranch);
+            if (compiler->hadError) return;
+
+            // Type check the elif conditions and branches
+            ASTNode* elifCondition = node->data.ifStmt.elifConditions;
+            ASTNode* elifBranch = node->data.ifStmt.elifBranches;
+            while (elifCondition != NULL && elifBranch != NULL) {
+                // Type check the elif condition
+                typeCheckNode(compiler, elifCondition);
+                if (compiler->hadError) return;
+
+                // Ensure the elif condition is a boolean
+                Type* elifCondType = elifCondition->valueType;
+                if (!elifCondType || elifCondType->kind != TYPE_BOOL) {
+                    error(compiler, "Elif condition must be a boolean expression.");
+                    return;
+                }
+
+                // Type check the elif branch
+                typeCheckNode(compiler, elifBranch);
+                if (compiler->hadError) return;
+
+                // Move to the next elif condition and branch
+                elifCondition = elifCondition->next;
+                elifBranch = elifBranch->next;
+            }
+
+            // Type check the else branch if it exists
+            if (node->data.ifStmt.elseBranch) {
+                typeCheckNode(compiler, node->data.ifStmt.elseBranch);
+                if (compiler->hadError) return;
+            }
+
+            // If statements don't have a value type
+            node->valueType = NULL;
+            break;
+        }
+
+        case AST_BLOCK: {
+            printf("DEBUG: Checking block\n");
+            // Type check each statement in the block
+            ASTNode* stmt = node->data.block.statements;
+            while (stmt) {
+                typeCheckNode(compiler, stmt);
+                if (compiler->hadError) return;
+                stmt = stmt->next;
+            }
+
+            // Blocks don't have a value type
+            node->valueType = NULL;
+            break;
+        }
+
         default:
             error(compiler, "Unsupported AST node type in type checker.");
             break;
@@ -485,6 +564,84 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             return;
                     }
                     break;
+
+                // Comparison operators
+                case TOKEN_LESS:
+                    switch (leftType->kind) {
+                        case TYPE_I32:
+                            writeOp(compiler, OP_LESS_I32);
+                            break;
+                        case TYPE_U32:
+                            writeOp(compiler, OP_LESS_U32);
+                            break;
+                        case TYPE_F64:
+                            writeOp(compiler, OP_LESS_F64);
+                            break;
+                        default:
+                            error(compiler, "Less than not supported for this type.");
+                            return;
+                    }
+                    break;
+
+                case TOKEN_LESS_EQUAL:
+                    switch (leftType->kind) {
+                        case TYPE_I32:
+                            writeOp(compiler, OP_LESS_EQUAL_I32);
+                            break;
+                        case TYPE_U32:
+                            writeOp(compiler, OP_LESS_EQUAL_U32);
+                            break;
+                        case TYPE_F64:
+                            writeOp(compiler, OP_LESS_EQUAL_F64);
+                            break;
+                        default:
+                            error(compiler, "Less than or equal not supported for this type.");
+                            return;
+                    }
+                    break;
+
+                case TOKEN_GREATER:
+                    switch (leftType->kind) {
+                        case TYPE_I32:
+                            writeOp(compiler, OP_GREATER_I32);
+                            break;
+                        case TYPE_U32:
+                            writeOp(compiler, OP_GREATER_U32);
+                            break;
+                        case TYPE_F64:
+                            writeOp(compiler, OP_GREATER_F64);
+                            break;
+                        default:
+                            error(compiler, "Greater than not supported for this type.");
+                            return;
+                    }
+                    break;
+
+                case TOKEN_GREATER_EQUAL:
+                    switch (leftType->kind) {
+                        case TYPE_I32:
+                            writeOp(compiler, OP_GREATER_EQUAL_I32);
+                            break;
+                        case TYPE_U32:
+                            writeOp(compiler, OP_GREATER_EQUAL_U32);
+                            break;
+                        case TYPE_F64:
+                            writeOp(compiler, OP_GREATER_EQUAL_F64);
+                            break;
+                        default:
+                            error(compiler, "Greater than or equal not supported for this type.");
+                            return;
+                    }
+                    break;
+
+                case TOKEN_EQUAL_EQUAL:
+                    writeOp(compiler, OP_EQUAL);
+                    break;
+
+                case TOKEN_BANG_EQUAL:
+                    writeOp(compiler, OP_NOT_EQUAL);
+                    break;
+
                 default:
                     error(compiler, "Unsupported binary operator.");
                     return;
@@ -555,6 +712,141 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             if (compiler->hadError) return;
             writeOp(compiler, OP_SET_GLOBAL);
             writeOp(compiler, node->data.variable.index);
+            break;
+        }
+
+        case AST_IF: {
+            printf("DEBUG: Generating if statement\n");
+
+            // Generate code for the condition
+            generateCode(compiler, node->data.ifStmt.condition);
+            if (compiler->hadError) return;
+
+            // Emit a jump-if-false instruction
+            // We'll patch this jump later
+            int thenJump = compiler->chunk->count;
+            writeOp(compiler, OP_JUMP_IF_FALSE);
+            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+
+            // Pop the condition value from the stack
+            writeOp(compiler, OP_POP);
+
+            // Generate code for the then branch
+            generateCode(compiler, node->data.ifStmt.thenBranch);
+            if (compiler->hadError) return;
+
+            // Emit a jump instruction to skip the else branch
+            // We'll patch this jump later
+            int elseJump = compiler->chunk->count;
+            writeOp(compiler, OP_JUMP);
+            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+
+            // Patch the then jump
+            int thenEnd = compiler->chunk->count;
+            compiler->chunk->code[thenJump + 1] = (thenEnd - thenJump - 3) >> 8;
+            compiler->chunk->code[thenJump + 2] = (thenEnd - thenJump - 3) & 0xFF;
+
+            // Generate code for elif branches if any
+            ASTNode* elifCondition = node->data.ifStmt.elifConditions;
+            ASTNode* elifBranch = node->data.ifStmt.elifBranches;
+            int* elifJumps = NULL;
+            int elifCount = 0;
+
+            // Count the number of elif branches
+            ASTNode* tempCondition = elifCondition;
+            while (tempCondition != NULL) {
+                elifCount++;
+                tempCondition = tempCondition->next;
+            }
+
+            // Allocate memory for elif jumps
+            if (elifCount > 0) {
+                elifJumps = (int*)malloc(sizeof(int) * elifCount);
+            }
+
+            // Generate code for each elif branch
+            int elifIndex = 0;
+            while (elifCondition != NULL && elifBranch != NULL) {
+                // Generate code for the elif condition
+                generateCode(compiler, elifCondition);
+                if (compiler->hadError) {
+                    if (elifJumps) free(elifJumps);
+                    return;
+                }
+
+                // Emit a jump-if-false instruction
+                // We'll patch this jump later
+                int elifThenJump = compiler->chunk->count;
+                writeOp(compiler, OP_JUMP_IF_FALSE);
+                writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+                writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+
+                // Pop the condition value from the stack
+                writeOp(compiler, OP_POP);
+
+                // Generate code for the elif branch
+                generateCode(compiler, elifBranch);
+                if (compiler->hadError) {
+                    if (elifJumps) free(elifJumps);
+                    return;
+                }
+
+                // Emit a jump instruction to skip the remaining branches
+                // We'll patch this jump later
+                elifJumps[elifIndex] = compiler->chunk->count;
+                writeOp(compiler, OP_JUMP);
+                writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+                writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+
+                // Patch the elif jump
+                int elifEnd = compiler->chunk->count;
+                compiler->chunk->code[elifThenJump + 1] = (elifEnd - elifThenJump - 3) >> 8;
+                compiler->chunk->code[elifThenJump + 2] = (elifEnd - elifThenJump - 3) & 0xFF;
+
+                // Move to the next elif condition and branch
+                elifCondition = elifCondition->next;
+                elifBranch = elifBranch->next;
+                elifIndex++;
+            }
+
+            // Generate code for the else branch if it exists
+            if (node->data.ifStmt.elseBranch) {
+                generateCode(compiler, node->data.ifStmt.elseBranch);
+                if (compiler->hadError) {
+                    if (elifJumps) free(elifJumps);
+                    return;
+                }
+            }
+
+            // Patch the else jump
+            int end = compiler->chunk->count;
+            compiler->chunk->code[elseJump + 1] = (end - elseJump - 3) >> 8;
+            compiler->chunk->code[elseJump + 2] = (end - elseJump - 3) & 0xFF;
+
+            // Patch all elif jumps
+            for (int i = 0; i < elifCount; i++) {
+                int elifJump = elifJumps[i];
+                compiler->chunk->code[elifJump + 1] = (end - elifJump - 3) >> 8;
+                compiler->chunk->code[elifJump + 2] = (end - elifJump - 3) & 0xFF;
+            }
+
+            // Free the elif jumps array
+            if (elifJumps) free(elifJumps);
+
+            break;
+        }
+
+        case AST_BLOCK: {
+            printf("DEBUG: Generating block\n");
+            // Generate code for each statement in the block
+            ASTNode* stmt = node->data.block.statements;
+            while (stmt) {
+                generateCode(compiler, stmt);
+                if (compiler->hadError) return;
+                stmt = stmt->next;
+            }
             break;
         }
 

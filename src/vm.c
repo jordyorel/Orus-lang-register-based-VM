@@ -74,6 +74,7 @@ InterpretResult runChunk(Chunk* chunk) {
     #endif
 
     #define READ_BYTE() (*vm.ip++)
+    #define READ_SHORT() (vm.ip += 2, (uint16_t)((vm.ip[-2] << 8) | vm.ip[-1]))
     #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 
     InterpretResult result = INTERPRET_OK;
@@ -124,6 +125,50 @@ InterpretResult runChunk(Chunk* chunk) {
                 break;
             case OP_MODULO_U32:
                 moduloOpU32(&vm, &result);
+                break;
+
+            // Comparison operations
+            case OP_EQUAL:
+                compareOpI32(&vm, '=', &result);
+                break;
+            case OP_NOT_EQUAL:
+                compareOpI32(&vm, '!', &result);
+                break;
+            case OP_LESS_I32:
+                compareOpI32(&vm, '<', &result);
+                break;
+            case OP_LESS_U32:
+                compareOpU32(&vm, '<', &result);
+                break;
+            case OP_LESS_F64:
+                compareOpF64(&vm, '<', &result);
+                break;
+            case OP_LESS_EQUAL_I32:
+                compareOpI32(&vm, 'L', &result);
+                break;
+            case OP_LESS_EQUAL_U32:
+                compareOpU32(&vm, 'L', &result);
+                break;
+            case OP_LESS_EQUAL_F64:
+                compareOpF64(&vm, 'L', &result);
+                break;
+            case OP_GREATER_I32:
+                compareOpI32(&vm, '>', &result);
+                break;
+            case OP_GREATER_U32:
+                compareOpU32(&vm, '>', &result);
+                break;
+            case OP_GREATER_F64:
+                compareOpF64(&vm, '>', &result);
+                break;
+            case OP_GREATER_EQUAL_I32:
+                compareOpI32(&vm, 'G', &result);
+                break;
+            case OP_GREATER_EQUAL_U32:
+                compareOpU32(&vm, 'G', &result);
+                break;
+            case OP_GREATER_EQUAL_F64:
+                compareOpF64(&vm, 'G', &result);
                 break;
             case OP_ADD_F64:
                 binaryOpF64(&vm, '+', &result);
@@ -221,6 +266,35 @@ InterpretResult runChunk(Chunk* chunk) {
                 vmPop(&vm);        // Immediately pop since assignment isn't used
                 break;
             }
+            case OP_JUMP: {
+                uint16_t offset = READ_SHORT();
+                vm.ip += offset;
+                break;
+            }
+            case OP_JUMP_IF_FALSE: {
+                uint16_t offset = READ_SHORT();
+                Value condition = vmPeek(&vm, 0);
+                if (!IS_BOOL(condition)) {
+                    runtimeError("Condition must be a boolean.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                if (!AS_BOOL(condition)) {
+                    vm.ip += offset;
+                }
+                break;
+            }
+            case OP_JUMP_IF_TRUE: {
+                uint16_t offset = READ_SHORT();
+                Value condition = vmPeek(&vm, 0);
+                if (!IS_BOOL(condition)) {
+                    runtimeError("Condition must be a boolean.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                if (AS_BOOL(condition)) {
+                    vm.ip += offset;
+                }
+                break;
+            }
             default:
                 runtimeError("Unknown opcode: %d", instruction);
                 return INTERPRET_RUNTIME_ERROR;
@@ -229,6 +303,7 @@ InterpretResult runChunk(Chunk* chunk) {
     }
 
 #undef READ_BYTE
+#undef READ_SHORT
 #undef READ_CONSTANT
 }
 

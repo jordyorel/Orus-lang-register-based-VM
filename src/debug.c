@@ -7,6 +7,7 @@
 static int constantInstruction(const char* name, Chunk* chunk, int offset);
 static int simpleInstruction(const char* name, int offset);
 static int byteInstruction(const char* name, Chunk* chunk, int offset);
+static int jumpInstruction(const char* name, int sign, Chunk* chunk, int offset);
 
 void disassembleChunk(Chunk* chunk, const char* name) {
     printf("== %s ==\n", name);
@@ -54,7 +55,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
     switch (instruction) {
         case OP_CONSTANT:
             return constantInstruction("OP_CONSTANT", chunk, offset);
-            
+
         // Integer operations
         case OP_ADD_I32:
             return simpleInstruction("OP_ADD_I32", offset);
@@ -66,7 +67,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_DIVIDE_I32", offset);
         case OP_NEGATE_I32:
             return simpleInstruction("OP_NEGATE_I32", offset);
-            
+
         // Unsigned integer operations
         case OP_ADD_U32:
             return simpleInstruction("OP_ADD_U32", offset);
@@ -78,7 +79,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_DIVIDE_U32", offset);
         case OP_NEGATE_U32:
             return simpleInstruction("OP_NEGATE_U32", offset);
-            
+
         // Floating point operations
         case OP_ADD_F64:
             return simpleInstruction("OP_ADD_F64", offset);
@@ -94,25 +95,62 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_MODULO_I32", offset);
         case OP_MODULO_U32:
             return simpleInstruction("OP_MODULO_U32", offset);
+
+        // Comparison operations
+        case OP_EQUAL:
+            return simpleInstruction("OP_EQUAL", offset);
+        case OP_NOT_EQUAL:
+            return simpleInstruction("OP_NOT_EQUAL", offset);
+        case OP_LESS_I32:
+            return simpleInstruction("OP_LESS_I32", offset);
+        case OP_LESS_U32:
+            return simpleInstruction("OP_LESS_U32", offset);
+        case OP_LESS_F64:
+            return simpleInstruction("OP_LESS_F64", offset);
+        case OP_LESS_EQUAL_I32:
+            return simpleInstruction("OP_LESS_EQUAL_I32", offset);
+        case OP_LESS_EQUAL_U32:
+            return simpleInstruction("OP_LESS_EQUAL_U32", offset);
+        case OP_LESS_EQUAL_F64:
+            return simpleInstruction("OP_LESS_EQUAL_F64", offset);
+        case OP_GREATER_I32:
+            return simpleInstruction("OP_GREATER_I32", offset);
+        case OP_GREATER_U32:
+            return simpleInstruction("OP_GREATER_U32", offset);
+        case OP_GREATER_F64:
+            return simpleInstruction("OP_GREATER_F64", offset);
+        case OP_GREATER_EQUAL_I32:
+            return simpleInstruction("OP_GREATER_EQUAL_I32", offset);
+        case OP_GREATER_EQUAL_U32:
+            return simpleInstruction("OP_GREATER_EQUAL_U32", offset);
+        case OP_GREATER_EQUAL_F64:
+            return simpleInstruction("OP_GREATER_EQUAL_F64", offset);
         case OP_POP:
             return simpleInstruction("OP_POP", offset);
         case OP_PRINT:
             return simpleInstruction("OP_PRINT", offset);
         case OP_RETURN:
             return simpleInstruction("OP_RETURN", offset);
-            
+
         case OP_I32_TO_F64:
             return simpleInstruction("OP_I32_TO_F64", offset);
         case OP_U32_TO_F64:
             return simpleInstruction("OP_U32_TO_F64", offset);
-            
+
         case OP_DEFINE_GLOBAL:
             return byteInstruction("OP_DEFINE_GLOBAL", chunk, offset);
         case OP_GET_GLOBAL:
             return byteInstruction("OP_GET_GLOBAL", chunk, offset);
         case OP_SET_GLOBAL:
             return byteInstruction("OP_SET_GLOBAL", chunk, offset);
-            
+
+        case OP_JUMP:
+            return jumpInstruction("OP_JUMP", 1, chunk, offset);
+        case OP_JUMP_IF_FALSE:
+            return jumpInstruction("OP_JUMP_IF_FALSE", 1, chunk, offset);
+        case OP_JUMP_IF_TRUE:
+            return jumpInstruction("OP_JUMP_IF_TRUE", 1, chunk, offset);
+
         default:
             printf("Unknown opcode %d\n", instruction);
             return offset + 1;
@@ -135,4 +173,11 @@ static int byteInstruction(const char* name, Chunk* chunk, int offset) {
     uint8_t slot = chunk->code[offset + 1];
     printf("%-16s %4d\n", name, slot);
     return offset + 2;  // Skip the opcode and the byte operand
+}
+
+// Implementation of jumpInstruction
+static int jumpInstruction(const char* name, int sign, Chunk* chunk, int offset) {
+    uint16_t jump = (uint16_t)((chunk->code[offset + 1] << 8) | chunk->code[offset + 2]);
+    printf("%-16s %4d -> %d\n", name, offset, offset + 3 + sign * jump);
+    return offset + 3;  // Skip the opcode and the 2-byte operand
 }

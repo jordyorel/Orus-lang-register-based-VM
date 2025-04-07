@@ -14,7 +14,9 @@ typedef enum {
     AST_ASSIGNMENT,
     AST_CALL,
     AST_LET,
-    AST_PRINT
+    AST_PRINT,
+    AST_IF,
+    AST_BLOCK
 } ASTNodeType;
 
 typedef struct {
@@ -33,6 +35,18 @@ typedef struct {
     struct ASTNode* expr;
 } PrintData;
 
+typedef struct {
+    struct ASTNode* condition;
+    struct ASTNode* thenBranch;
+    struct ASTNode* elifConditions;  // Linked list of elif conditions
+    struct ASTNode* elifBranches;    // Linked list of elif branches
+    struct ASTNode* elseBranch;
+} IfData;
+
+typedef struct {
+    struct ASTNode* statements;  // Linked list of statements
+} BlockData;
+
 typedef struct ASTNode {
     ASTNodeType type;
     struct ASTNode* left;
@@ -49,6 +63,8 @@ typedef struct ASTNode {
         VariableData variable;
         LetData let;
         PrintData print;
+        IfData ifStmt;
+        BlockData block;
     } data;
     Type* valueType;
 } ASTNode;
@@ -60,6 +76,8 @@ ASTNode* createVariableNode(Token name, uint8_t index);
 ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer);
 ASTNode* createPrintNode(ASTNode* expr);  // Ensure this is declared
 ASTNode* createAssignmentNode(Token name, ASTNode* value);
+ASTNode* createIfNode(ASTNode* condition, ASTNode* thenBranch, ASTNode* elifConditions, ASTNode* elifBranches, ASTNode* elseBranch);
+ASTNode* createBlockNode(ASTNode* statements);
 
 void freeASTNode(ASTNode* node);
 

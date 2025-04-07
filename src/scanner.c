@@ -32,13 +32,13 @@ void init_keyword_table() {
         keywordTable[i].type = TOKEN_ERROR;
     }
 
-    const char* keywords[] = {"and",    "class", "else", "false", "for",
+    const char* keywords[] = {"and",    "class", "else", "elif", "false", "for",
                               "fn",     "if",    "nil",  "or",    "print",
                               "return", "super", "this", "true",  "let",
                               "while",  "i32",   "u32",  "f64",   "bool",
                               NULL};
     TokenType types[] = {
-        TOKEN_AND, TOKEN_CLASS, TOKEN_ELSE, TOKEN_FALSE, TOKEN_FOR, TOKEN_FN,
+        TOKEN_AND, TOKEN_CLASS, TOKEN_ELSE, TOKEN_ELIF, TOKEN_FALSE, TOKEN_FOR, TOKEN_FN,
         TOKEN_IF, TOKEN_NIL, TOKEN_OR, TOKEN_PRINT, TOKEN_RETURN, TOKEN_SUPER,
         TOKEN_THIS, TOKEN_TRUE, TOKEN_LET, TOKEN_WHILE, TOKEN_INT, TOKEN_U32,
         TOKEN_F64, TOKEN_BOOL,
