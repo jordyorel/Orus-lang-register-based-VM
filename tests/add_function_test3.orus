@@ -1,0 +1,8 @@
+// Function that adds two integers
+
+fn add(a: i32, b: i32) -> i32 {
+    return 7  // Just return 7 for now
+}
+
+// Call the function with literal arguments
+print(add(3, 4))

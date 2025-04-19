@@ -1,0 +1,24 @@
+// Test for loops with step values
+
+print("===== FOR LOOPS WITH STEP VALUES =====")
+
+// For loop with step value 2
+print("Counting from 0 to 10 with step 2:")
+for i in 0..10..2 {
+    print(i)
+}
+
+// For loop with step value 3
+print("Counting from 0 to 10 with step 3:")
+for i in 0..10..3 {
+    print(i)
+}
+
+// For loop with variable step
+let step = 4
+print("Counting from 0 to 20 with step 4:")
+for i in 0..20..step {
+    print(i)
+}
+
+print("===== TEST COMPLETE =====")

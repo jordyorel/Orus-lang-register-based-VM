@@ -1,0 +1,6 @@
+// Simple addition test
+
+let a: i32 = 2
+let b: i32 = 3
+let c: i32 = a + b
+print(c)

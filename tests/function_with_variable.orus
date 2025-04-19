@@ -1,0 +1,11 @@
+// Function test with variable
+
+fn get_number() -> i32 {
+    print("Inside function")
+    return 42
+}
+
+// Call the function and store the result
+let result = get_number()
+print("Result:")
+print(result)

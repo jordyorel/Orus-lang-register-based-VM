@@ -132,7 +132,7 @@ ASTNode* createWhileNode(ASTNode* condition, ASTNode* body) {
     return node;
 }
 
-ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr, ASTNode* body) {
+ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr, ASTNode* stepExpr, ASTNode* body) {
     ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
     node->type = AST_FOR;
     node->left = NULL;
@@ -142,7 +142,69 @@ ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr,
     node->data.forStmt.iteratorIndex = 0; // Will be resolved during compilation
     node->data.forStmt.startExpr = startExpr;
     node->data.forStmt.endExpr = endExpr;
+    node->data.forStmt.stepExpr = stepExpr;
     node->data.forStmt.body = body;
+    node->valueType = NULL;
+    return node;
+}
+
+ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType, ASTNode* body) {
+    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    node->type = AST_FUNCTION;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.function.name = name;
+    node->data.function.parameters = parameters;
+    node->data.function.returnType = returnType;
+    node->data.function.body = body;
+    node->data.function.index = 0; // Will be resolved during compilation
+    node->valueType = NULL;
+    return node;
+}
+
+ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount) {
+    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    node->type = AST_CALL;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.call.name = name;
+    node->data.call.arguments = arguments;
+    node->data.call.index = 0; // Will be resolved during compilation
+    node->data.call.convertArgs = NULL; // Will be allocated during type checking
+    node->data.call.argCount = argCount;
+    node->valueType = NULL;
+    return node;
+}
+
+ASTNode* createReturnNode(ASTNode* value) {
+    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    node->type = AST_RETURN;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.returnStmt.value = value;
+    node->valueType = NULL;
+    return node;
+}
+
+ASTNode* createBreakNode() {
+    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    node->type = AST_BREAK;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->valueType = NULL;
+    return node;
+}
+
+ASTNode* createContinueNode() {
+    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    node->type = AST_CONTINUE;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
     node->valueType = NULL;
     return node;
 }
@@ -172,7 +234,19 @@ void freeASTNode(ASTNode* node) {
     if (node->type == AST_FOR) {
         if (node->data.forStmt.startExpr) freeASTNode(node->data.forStmt.startExpr);
         if (node->data.forStmt.endExpr) freeASTNode(node->data.forStmt.endExpr);
+        if (node->data.forStmt.stepExpr) freeASTNode(node->data.forStmt.stepExpr);
         if (node->data.forStmt.body) freeASTNode(node->data.forStmt.body);
+    }
+    if (node->type == AST_FUNCTION) {
+        if (node->data.function.parameters) freeASTNode(node->data.function.parameters);
+        if (node->data.function.body) freeASTNode(node->data.function.body);
+    }
+    if (node->type == AST_CALL) {
+        if (node->data.call.arguments) freeASTNode(node->data.call.arguments);
+        if (node->data.call.convertArgs) free(node->data.call.convertArgs);
+    }
+    if (node->type == AST_RETURN) {
+        if (node->data.returnStmt.value) freeASTNode(node->data.returnStmt.value);
     }
     if (node->next) freeASTNode(node->next);
     free(node);

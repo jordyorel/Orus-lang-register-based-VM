@@ -1,0 +1,9 @@
+fn get_value() -> i32 {
+    return 42
+}
+
+print("About to call get_value()...")
+let x = get_value()
+print("The value of x is:")
+print(x)
+print("End of program")

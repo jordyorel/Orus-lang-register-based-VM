@@ -1,0 +1,8 @@
+// Function call and print statement
+
+fn get_value() -> i32 {
+    return 42
+}
+
+let x = get_value()
+print(x)

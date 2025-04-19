@@ -1,0 +1,10 @@
+// Simple function test
+
+fn get_five() -> i32 {
+    print(5)
+    return 5
+}
+
+// Call the function
+let result = get_five()
+print(result)

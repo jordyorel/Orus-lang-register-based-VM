@@ -7,11 +7,18 @@
 #include "value.h"
 
 #define STACK_MAX 256
+#define FRAMES_MAX 64
 
 typedef struct VarName {
     char* name;
     int length;
 } VarName;
+
+typedef struct {
+    uint8_t* returnAddress;  // Where to return to after function completes
+    int stackOffset;         // Where this frame's stack starts
+    uint8_t functionIndex;   // Index of the function being called
+} CallFrame;
 
 typedef struct {
     Chunk* chunk;
@@ -22,6 +29,10 @@ typedef struct {
     Type* globalTypes[UINT8_COUNT];
     VarName variableNames[UINT8_COUNT];
     uint16_t variableCount;
+
+    // Call frames for function calls
+    CallFrame frames[FRAMES_MAX];
+    int frameCount;
 } VM;
 
 typedef enum {

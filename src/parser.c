@@ -16,12 +16,15 @@ static ASTNode* parseNumber(Parser* parser);
 static ASTNode* parseGrouping(Parser* parser);
 static ASTNode* parseUnary(Parser* parser);
 static ASTNode* parseBinary(Parser* parser, ASTNode* left);
+static ASTNode* parseCall(Parser* parser, ASTNode* left);
 static ASTNode* parseBoolean(Parser* parser);
 static ASTNode* parseVariable(Parser* parser);
 static Type* parseType(Parser* parser);
 static void expression(Parser* parser, ASTNode** ast);
 static void statement(Parser* parser, ASTNode** ast);
 static void ifStatement(Parser* parser, ASTNode** ast);
+static void functionDeclaration(Parser* parser, ASTNode** ast);
+static void returnStatement(Parser* parser, ASTNode** ast);
 static void block(Parser* parser, ASTNode** ast);
 static void consumeStatementEnd(Parser* parser);
 static void synchronize(Parser* parser);
@@ -158,6 +161,45 @@ static ASTNode* parseBinary(Parser* parser, ASTNode* left) {
     return createBinaryNode(operator, left, right);
 }
 
+static ASTNode* parseCall(Parser* parser, ASTNode* left) {
+    // Function calls are only valid for identifiers
+    if (left->type != AST_VARIABLE) {
+        error(parser, "Can only call functions.");
+        return NULL;
+    }
+
+    // Get the function name from the variable node
+    Token name = left->data.variable.name;
+
+    // Parse arguments
+    ASTNode* arguments = NULL;
+    ASTNode* lastArg = NULL;
+    int argCount = 0;
+
+    if (!check(parser, TOKEN_RIGHT_PAREN)) {
+        do {
+            ASTNode* arg;
+            expression(parser, &arg);
+
+            // Add to argument list
+            if (arguments == NULL) {
+                arguments = arg;
+            } else {
+                lastArg->next = arg;
+            }
+            lastArg = arg;
+            argCount++;
+        } while (match(parser, TOKEN_COMMA));
+    }
+
+    consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
+
+    // Free the variable node as we're replacing it with a call node
+    free(left);
+
+    return createCallNode(name, arguments, argCount);
+}
+
 static ASTNode* parseVariable(Parser* parser) {
     Token name = parser->previous;
     return createVariableNode(name, 0);  // Index will be resolved by Compiler
@@ -261,6 +303,16 @@ static void consumeStatementEnd(Parser* parser) {
         return;
     }
 
+    // Check for end of file
+    if (check(parser, TOKEN_EOF)) {
+        return;
+    }
+
+    // Check for right parenthesis (for function calls as statements)
+    if (parser->previous.type == TOKEN_RIGHT_PAREN) {
+        return;
+    }
+
     error(parser, "Expect newline after statement.");
 }
 
@@ -299,11 +351,88 @@ static void forStatement(Parser* parser, ASTNode** ast) {
     ASTNode* endExpr;
     expression(parser, &endExpr);
 
+    // Check for optional step value
+    ASTNode* stepExpr = NULL;
+    if (match(parser, TOKEN_DOT_DOT)) {
+        // Parse the step expression
+        expression(parser, &stepExpr);
+    } else {
+        // Default step is 1
+        stepExpr = createLiteralNode(I32_VAL(1));
+        stepExpr->valueType = getPrimitiveType(TYPE_I32);
+    }
+
     // Parse the body
     ASTNode* body;
     block(parser, &body);
 
-    *ast = createForNode(iteratorName, startExpr, endExpr, body);
+    *ast = createForNode(iteratorName, startExpr, endExpr, stepExpr, body);
+}
+
+static void functionDeclaration(Parser* parser, ASTNode** ast) {
+    // Parse function name
+    consume(parser, TOKEN_IDENTIFIER, "Expect function name.");
+    Token name = parser->previous;
+
+    // Parse parameter list
+    consume(parser, TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+
+    // Parse parameters
+    ASTNode* parameters = NULL;
+    ASTNode* lastParam = NULL;
+
+    if (!check(parser, TOKEN_RIGHT_PAREN)) {
+        do {
+            // Parse parameter name
+            consume(parser, TOKEN_IDENTIFIER, "Expect parameter name.");
+            Token paramName = parser->previous;
+
+            // Parse parameter type
+            consume(parser, TOKEN_COLON, "Expect ':' after parameter name.");
+            Type* paramType = parseType(parser);
+            if (parser->hadError) return;
+
+            // Create parameter node (using let node for now)
+            ASTNode* param = createLetNode(paramName, paramType, NULL);
+
+            // Add to parameter list
+            if (parameters == NULL) {
+                parameters = param;
+            } else {
+                lastParam->next = param;
+            }
+            lastParam = param;
+        } while (match(parser, TOKEN_COMMA));
+    }
+
+    consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
+
+    // Parse return type
+    Type* returnType = NULL;
+    if (match(parser, TOKEN_ARROW)) {
+        returnType = parseType(parser);
+        if (parser->hadError) return;
+    }
+
+    // Parse function body
+    consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after function return type.");
+    parser->current = parser->previous; // Rewind to the left brace so block() can consume it
+    ASTNode* body;
+    block(parser, &body);
+
+    *ast = createFunctionNode(name, parameters, returnType, body);
+}
+
+static void returnStatement(Parser* parser, ASTNode** ast) {
+    ASTNode* value = NULL;
+
+    // Check if there's a return value
+    if (!check(parser, TOKEN_NEWLINE) && !check(parser, TOKEN_RIGHT_BRACE)) {
+        expression(parser, &value);
+    }
+
+    consumeStatementEnd(parser);
+    *ast = createReturnNode(value);
 }
 
 static void statement(Parser* parser, ASTNode** ast) {
@@ -337,6 +466,18 @@ static void statement(Parser* parser, ASTNode** ast) {
     } else if (match(parser, TOKEN_FOR)) {
         forStatement(parser, ast);
         // No need to consume statement end here as blocks handle their own termination
+    } else if (match(parser, TOKEN_FN)) {
+        functionDeclaration(parser, ast);
+        // No need to consume statement end here as blocks handle their own termination
+    } else if (match(parser, TOKEN_RETURN)) {
+        returnStatement(parser, ast);
+        // No need to consume statement end here as returnStatement handles it
+    } else if (match(parser, TOKEN_BREAK)) {
+        consumeStatementEnd(parser);
+        *ast = createBreakNode();
+    } else if (match(parser, TOKEN_CONTINUE)) {
+        consumeStatementEnd(parser);
+        *ast = createContinueNode();
     } else if (match(parser, TOKEN_LEFT_BRACE)) {
         // Rewind to the left brace so block() can consume it
         parser->current = parser->previous;
@@ -376,18 +517,18 @@ static void statement(Parser* parser, ASTNode** ast) {
             ASTNode* expr;
             expression(parser, &expr);
             consumeStatementEnd(parser);
-            *ast = createPrintNode(expr);  // Wrap standalone expressions in print
+            *ast = expr;  // Don't wrap in print, allow function calls as statements
         }
     } else {
         ASTNode* expr;
         expression(parser, &expr);
         consumeStatementEnd(parser);
-        *ast = createPrintNode(expr);  // Wrap standalone expressions in print
+        *ast = expr;  // Don't wrap in print, allow function calls as statements
     }
 }
 
 ParseRule rules[] = {
-    [TOKEN_LEFT_PAREN] = {parseGrouping, NULL, PREC_NONE},
+    [TOKEN_LEFT_PAREN] = {parseGrouping, parseCall, PREC_CALL},
     [TOKEN_MINUS] = {parseUnary, parseBinary, PREC_TERM},
     [TOKEN_PLUS] = {NULL, parseBinary, PREC_TERM},
     [TOKEN_SLASH] = {NULL, parseBinary, PREC_FACTOR},

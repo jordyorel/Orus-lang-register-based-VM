@@ -1,0 +1,10 @@
+// Minimal function test
+
+fn say_hello() -> i32 {
+    print("Hello from function!")
+    return 42
+}
+
+// Call the function
+let result = say_hello()
+print(result)

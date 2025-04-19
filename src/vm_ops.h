@@ -24,6 +24,12 @@ static inline Value vmPop(VM* vm) {
 static inline void binaryOpI32(VM* vm, char op, InterpretResult* result) {
     if (!IS_I32(vmPeek(vm, 0)) || !IS_I32(vmPeek(vm, 1))) {
         fprintf(stderr, "Operands must be integers.\n");
+        fprintf(stderr, "Top of stack: %d, Next: %d\n", (int)(vm->stackTop - vm->stack), (int)(vm->stackTop - vm->stack - 1));
+        fprintf(stderr, "Values: ");
+        printValue(vmPeek(vm, 0));
+        fprintf(stderr, " and ");
+        printValue(vmPeek(vm, 1));
+        fprintf(stderr, "\n");
         *result = INTERPRET_RUNTIME_ERROR;
         return;
     }

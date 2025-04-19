@@ -1,0 +1,65 @@
+// Test for function parameter edge cases
+// Tests various edge cases with function parameters
+
+// Function with no parameters
+fn no_params() -> i32 {
+    return 42
+}
+
+// Function with many parameters
+fn many_params(a: i32, b: i32, c: i32, d: i32, e: i32) -> i32 {
+    return a + b + c + d + e
+}
+
+// Function with default behavior (no explicit return)
+fn implicit_return() {
+    let x = 10
+    // No return statement - should return nil
+}
+
+// Function with early returns
+fn early_return(x: i32) -> i32 {
+    if x < 0 {
+        return 0
+    }
+    if x > 100 {
+        return 100
+    }
+    return x
+}
+
+// Testing functions as first-class values (if supported)
+fn apply_function(a: i32, b: i32) -> i32 {
+    return a + b
+}
+
+fn choose_operation(op: i32) -> i32 {
+    if op == 1 {
+        // In a more advanced implementation, this would return the function itself
+        return 1
+    } else {
+        // Return a different code
+        return 2
+    }
+}
+
+print("Testing function with no parameters:")
+print(no_params())  // Should print 42
+
+print("Testing function with many parameters:")
+print(many_params(1, 2, 3, 4, 5))  // Should print 15
+
+print("Testing implicit return:")
+print(implicit_return())  // Should print nil or undefined
+
+print("Testing early returns:")
+print(early_return(-10))  // Should print 0
+print(early_return(50))   // Should print 50
+print(early_return(200))  // Should print 100
+
+// Simple test of operation selection
+let op = choose_operation(1)
+if op == 1 {
+    print("Selected addition:")
+    print(apply_function(5, 10))  // Should print 15
+}

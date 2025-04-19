@@ -1,0 +1,242 @@
+// Comprehensive test of all features in the Orus language
+// This file demonstrates all language features, including newly added function support
+
+print("===== 1. VARIABLE DECLARATIONS =====")
+
+// Integer variables
+let int_val = 42
+print("int_val =")
+print(int_val)
+
+// Floating point variables
+let float_val = 3.14159
+print("float_val =")
+print(float_val)
+
+// Boolean variables
+let bool_true = true
+let bool_false = false
+print("bool_true =")
+print(bool_true)
+print("bool_false =")
+print(bool_false)
+
+// String variables
+let string_val = "Hello, Orus!"
+print("string_val =")
+print(string_val)
+
+print("===== 2. ARITHMETIC OPERATIONS =====")
+
+// Addition
+print("Addition:")
+print("10 + 20 =")
+print(10 + 20)
+print("1.5 + 2.5 =")
+print(1.5 + 2.5)
+
+// Subtraction
+print("Subtraction:")
+print("50 - 30 =")
+print(50 - 30)
+print("5.5 - 2.2 =")
+print(5.5 - 2.2)
+
+// Multiplication
+print("Multiplication:")
+print("6 * 7 =")
+print(6 * 7)
+print("2.5 * 3.0 =")
+print(2.5 * 3.0)
+
+// Division
+print("Division:")
+print("20 / 4 =")
+print(20 / 4)
+print("10.0 / 3.0 =")
+print(10.0 / 3.0)
+
+// Modulo
+print("Modulo:")
+print("17 % 5 =")
+print(17 % 5)
+
+print("===== 3. VARIABLE REASSIGNMENT =====")
+
+let counter = 10
+print("Initial counter =")
+print(counter)
+
+counter = 20
+print("After counter = 20:")
+print(counter)
+
+counter = counter + 5
+print("After counter = counter + 5:")
+print(counter)
+
+print("===== 4. COMPLEX EXPRESSIONS =====")
+
+// Operator precedence
+print("Operator precedence:")
+print("2 + 3 * 4 =")
+print(2 + 3 * 4)
+print("(2 + 3) * 4 =")
+print((2 + 3) * 4)
+
+// Mixed operations
+print("Mixed operations:")
+print("10 + 20 / 5 - 2 =")
+print(10 + 20 / 5 - 2)
+print("10 * (5 + 3) / 2 =")
+print(10 * (5 + 3) / 2)
+
+print("===== 5. TYPE COERCION =====")
+
+// Integer to float coercion
+let int_value = 42
+let float_value = 3.14
+let mixed_result = int_value + float_value
+print("Integer to float coercion:")
+print("42 + 3.14 =")
+print(mixed_result)
+
+print("===== 6. CONDITIONAL STATEMENTS =====")
+
+let a = 10
+let b = 20
+
+print("If statement with true condition:")
+if a < b {
+    print("a is less than b")
+}
+
+print("If-else statement:")
+if a > b {
+    print("a is greater than b")
+} else {
+    print("a is not greater than b")
+}
+
+print("Nested if statements:")
+if a < b {
+    print("a is less than b")
+    if a < 5 {
+        print("a is less than 5")
+    } else {
+        print("a is greater than or equal to 5")
+    }
+}
+
+print("===== 7. LOOPS =====")
+
+print("While loop:")
+let i = 0
+while i < 5 {
+    print(i)
+    i = i + 1
+}
+
+print("For loop:")
+for j in 0..5 {
+    print(j)
+}
+
+print("Nested loops:")
+for x in 0..3 {
+    print("Outer loop:")
+    print(x)
+    
+    for y in 0..2 {
+        print("  Inner loop:")
+        print(y)
+    }
+}
+
+print("===== 8. FUNCTIONS =====")
+
+// Simple function that returns a constant
+fn get_number() -> i32 {
+    return 42
+}
+
+print("Function that returns a constant:")
+print(get_number())
+
+// Function with parameters
+fn add(a: i32, b: i32) -> i32 {
+    return a + b
+}
+
+print("Function with parameters:")
+print("3 + 4 =")
+print(add(3, 4))
+
+// Function with local variables
+fn multiply(a: i32, b: i32) -> i32 {
+    let result = a * b
+    return result
+}
+
+print("Function with local variables:")
+print("5 * 6 =")
+print(multiply(5, 6))
+
+// Function with conditionals
+fn max(a: i32, b: i32) -> i32 {
+    if a > b {
+        return a
+    } else {
+        return b
+    }
+}
+
+print("Function with conditionals:")
+print("max(8, 12) =")
+print(max(8, 12))
+
+// Recursive function
+fn factorial(n: i32) -> i32 {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+
+print("Recursive function:")
+print("factorial(5) =")
+print(factorial(5))
+
+// Function with mixed types
+fn double_and_add_half(x: i32) -> f64 {
+    let doubled = x * 2
+    return doubled + 0.5
+}
+
+print("Function with mixed types:")
+print("double_and_add_half(10) =")
+print(double_and_add_half(10))
+
+print("===== 9. CALLING FUNCTIONS WITH VARIABLES =====")
+
+let param1 = 15
+let param2 = 7
+
+print("Calling functions with variables:")
+print("add(param1, param2) =")
+print(add(param1, param2))
+
+let result = multiply(param1, param2)
+print("result of multiply(param1, param2) =")
+print(result)
+
+print("===== 10. FUNCTION COMPOSITION =====")
+
+print("Function composition:")
+print("add(get_number(), 10) =")
+print(add(get_number(), 10))
+
+print("max(factorial(3), factorial(4)) =")
+print(max(factorial(3), factorial(4)))
+
+print("===== TEST COMPLETE =====")

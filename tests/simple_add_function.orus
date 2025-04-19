@@ -1,0 +1,7 @@
+// Simple function that just returns a constant
+
+fn get_five() -> i32 {
+    return 5
+}
+
+print(get_five())

@@ -1,0 +1,4 @@
+DEBUG: Defining function at index 0
+DEBUG: Function has 0 parameters
+DEBUG: Generating call to function at index 0 with 0 arguments
+nil

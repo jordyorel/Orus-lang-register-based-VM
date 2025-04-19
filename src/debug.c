@@ -132,6 +132,19 @@ int disassembleInstruction(Chunk* chunk, int offset) {
         case OP_RETURN:
             return simpleInstruction("OP_RETURN", offset);
 
+        case OP_NIL:
+            return simpleInstruction("OP_NIL", offset);
+
+        case OP_DEFINE_FUNCTION:
+            return byteInstruction("OP_DEFINE_FUNCTION", chunk, offset);
+
+        case OP_CALL: {
+            uint8_t functionIndex = chunk->code[offset + 1];
+            uint8_t argCount = chunk->code[offset + 2];
+            printf("%-16s %4d %4d\n", "OP_CALL", functionIndex, argCount);
+            return offset + 3;
+        }
+
         case OP_I32_TO_F64:
             return simpleInstruction("OP_I32_TO_F64", offset);
         case OP_U32_TO_F64:
@@ -152,6 +165,10 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return jumpInstruction("OP_JUMP_IF_TRUE", 1, chunk, offset);
         case OP_LOOP:
             return jumpInstruction("OP_LOOP", -1, chunk, offset);
+        case OP_BREAK:
+            return simpleInstruction("OP_BREAK", offset);
+        case OP_CONTINUE:
+            return simpleInstruction("OP_CONTINUE", offset);
 
         default:
             printf("Unknown opcode %d\n", instruction);

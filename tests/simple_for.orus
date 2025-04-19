@@ -1,0 +1,6 @@
+// Test simple for loop
+
+// Simple for loop
+for i in 0..5 {
+    print(i)
+}

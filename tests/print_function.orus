@@ -1,0 +1,9 @@
+// Function that prints a value
+
+fn print_value(value: i32) -> i32 {
+    print(value)
+    return value
+}
+
+// Call the function
+print_value(42)

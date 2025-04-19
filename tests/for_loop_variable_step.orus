@@ -1,0 +1,14 @@
+// Test for loops with variable step values
+
+// Define a variable for the step
+let step_value = 4
+print("For loop with variable step 4:")
+for i in 0..20..step_value {
+    print(i)
+}
+
+// For loop with expression as step
+print("For loop with expression as step (2+3):")
+for j in 0..20..(2+3) {
+    print(j)
+}

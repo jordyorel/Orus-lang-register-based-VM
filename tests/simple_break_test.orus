@@ -1,0 +1,14 @@
+// Test simple break statement
+
+print("While loop with break:")
+let i = 0
+while i < 10 {
+    print(i)
+    if i == 5 {
+        print("Breaking out of the loop")
+        break
+    }
+    i = i + 1
+}
+
+print("After the loop")

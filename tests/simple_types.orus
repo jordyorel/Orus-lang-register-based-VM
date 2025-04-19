@@ -1,0 +1,13 @@
+// Test simple type declarations
+
+// Integer type
+let a: i32 = 42
+print(a)
+
+// Float type
+let b: f64 = 3.14
+print(b)
+
+// Boolean type
+let c: bool = true
+print(c)

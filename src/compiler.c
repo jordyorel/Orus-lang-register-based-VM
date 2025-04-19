@@ -9,6 +9,10 @@
 
 extern VM vm;
 
+static void generateCode(Compiler* compiler, ASTNode* node);
+static void addBreakJump(Compiler* compiler, int jumpPos);
+static void patchBreakJumps(Compiler* compiler);
+
 static void error(Compiler* compiler, const char* message) {
     if (compiler->panicMode) return;
     compiler->panicMode = true;
@@ -177,62 +181,67 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_LET: {
-            // First type check the initializer
+            // First type check the initializer if present
             if (node->data.let.initializer) {
                 typeCheckNode(compiler, node->data.let.initializer);
                 if (compiler->hadError) return;
-            } else {
-                error(compiler, "Let statement requires an initializer");
-                return;
             }
 
-            Type* initType = node->data.let.initializer->valueType;
+            Type* initType = NULL;
             Type* declType = node->data.let.type;
 
-            if (!initType) {
-                error(compiler, "Could not determine initializer type");
-                return;
-            }
-
-            if (declType) {
-                // Allow i32 literals to be used for u32 variables if the value is non-negative
-                if (declType->kind == TYPE_U32 && initType->kind == TYPE_I32) {
-                    if (IS_I32(node->data.let.initializer->data.literal) &&
-                        AS_I32(node->data.let.initializer->data.literal) >= 0) {
-                        // Convert the literal to u32
-                        int32_t value = AS_I32(node->data.let.initializer->data.literal);
-                        node->data.let.initializer->data.literal = U32_VAL((uint32_t)value);
-                        node->data.let.initializer->valueType = declType;
-                        initType = declType;
-                    }
-                }
-                // Allow i32/u32 literals to be used for f64 variables
-                else if (declType->kind == TYPE_F64 &&
-                        (initType->kind == TYPE_I32 || initType->kind == TYPE_U32)) {
-                    if (IS_I32(node->data.let.initializer->data.literal)) {
-                        int32_t value = AS_I32(node->data.let.initializer->data.literal);
-                        node->data.let.initializer->data.literal = F64_VAL((double)value);
-                        node->data.let.initializer->valueType = declType;
-                        initType = declType;
-                    } else if (IS_U32(node->data.let.initializer->data.literal)) {
-                        uint32_t value = AS_U32(node->data.let.initializer->data.literal);
-                        node->data.let.initializer->data.literal = F64_VAL((double)value);
-                        node->data.let.initializer->valueType = declType;
-                        initType = declType;
-                    }
-                }
-                if (!typesEqual(declType, initType)) {
-                    error(compiler, "Type mismatch in let declaration.");
+            if (node->data.let.initializer) {
+                initType = node->data.let.initializer->valueType;
+                if (!initType) {
+                    error(compiler, "Could not determine initializer type");
                     return;
                 }
             }
 
-            // Add the variable to the symbol table
-            uint8_t index = addLocal(compiler, node->data.let.name, initType);
-            node->data.let.index = index;
+            if (declType) {
+                if (initType) {
+                    // Allow i32 literals to be used for u32 variables if the value is non-negative
+                    if (declType->kind == TYPE_U32 && initType->kind == TYPE_I32) {
+                        if (IS_I32(node->data.let.initializer->data.literal) &&
+                            AS_I32(node->data.let.initializer->data.literal) >= 0) {
+                            // Convert the literal to u32
+                            int32_t value = AS_I32(node->data.let.initializer->data.literal);
+                            node->data.let.initializer->data.literal = U32_VAL((uint32_t)value);
+                            node->data.let.initializer->valueType = declType;
+                            initType = declType;
+                        }
+                    }
+                    // Allow i32/u32 literals to be used for f64 variables
+                    else if (declType->kind == TYPE_F64 &&
+                            (initType->kind == TYPE_I32 || initType->kind == TYPE_U32)) {
+                        if (IS_I32(node->data.let.initializer->data.literal)) {
+                            int32_t value = AS_I32(node->data.let.initializer->data.literal);
+                            node->data.let.initializer->data.literal = F64_VAL((double)value);
+                            node->data.let.initializer->valueType = declType;
+                            initType = declType;
+                        } else if (IS_U32(node->data.let.initializer->data.literal)) {
+                            uint32_t value = AS_U32(node->data.let.initializer->data.literal);
+                            node->data.let.initializer->data.literal = F64_VAL((double)value);
+                            node->data.let.initializer->valueType = declType;
+                            initType = declType;
+                        }
+                    }
+                    if (!typesEqual(declType, initType)) {
+                        error(compiler, "Type mismatch in let declaration.");
+                        return;
+                    }
+                }
+                node->valueType = declType;
+            } else if (initType) {
+                node->valueType = initType;
+            } else {
+                error(compiler, "Cannot determine variable type");
+                return;
+            }
 
-            // Set the node's type to the initializer type
-            node->valueType = initType;
+            // Add the variable to the symbol table
+            uint8_t index = addLocal(compiler, node->data.let.name, node->valueType);
+            node->data.let.index = index;
             break;
         }
 
@@ -409,9 +418,16 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             typeCheckNode(compiler, node->data.forStmt.endExpr);
             if (compiler->hadError) return;
 
+            // Type check the step expression if it exists
+            if (node->data.forStmt.stepExpr) {
+                typeCheckNode(compiler, node->data.forStmt.stepExpr);
+                if (compiler->hadError) return;
+            }
+
             // Ensure the range expressions are integers
             Type* startType = node->data.forStmt.startExpr->valueType;
             Type* endType = node->data.forStmt.endExpr->valueType;
+            Type* stepType = node->data.forStmt.stepExpr ? node->data.forStmt.stepExpr->valueType : NULL;
 
             if (!startType || (startType->kind != TYPE_I32 && startType->kind != TYPE_U32)) {
                 error(compiler, "For loop range start must be an integer.");
@@ -420,6 +436,11 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
             if (!endType || (endType->kind != TYPE_I32 && endType->kind != TYPE_U32)) {
                 error(compiler, "For loop range end must be an integer.");
+                return;
+            }
+
+            if (stepType && (stepType->kind != TYPE_I32 && stepType->kind != TYPE_U32)) {
+                error(compiler, "For loop step must be an integer.");
                 return;
             }
 
@@ -432,6 +453,83 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             if (compiler->hadError) return;
 
             // For statements don't have a value type
+            node->valueType = NULL;
+            break;
+        }
+
+        case AST_FUNCTION: {
+            // Define the function in the symbol table
+            uint8_t index = defineVariable(compiler, node->data.function.name, node->data.function.returnType);
+            node->data.function.index = index;
+
+            // Type check parameters
+            ASTNode* param = node->data.function.parameters;
+            while (param != NULL) {
+                typeCheckNode(compiler, param);
+                if (compiler->hadError) return;
+                param = param->next;
+            }
+
+            // Type check the function body
+            typeCheckNode(compiler, node->data.function.body);
+            if (compiler->hadError) return;
+
+            // Function declarations don't have a value type
+            node->valueType = NULL;
+            break;
+        }
+
+        case AST_CALL: {
+            // Resolve the function
+            uint8_t index = resolveVariable(compiler, node->data.call.name);
+            node->data.call.index = index;
+
+            // Get the function's return type
+            Type* returnType = vm.globalTypes[index];
+            if (!returnType) {
+                error(compiler, "Function has no return type.");
+                return;
+            }
+
+            // Type check arguments
+            ASTNode* arg = node->data.call.arguments;
+            while (arg != NULL) {
+                typeCheckNode(compiler, arg);
+                if (compiler->hadError) return;
+                arg = arg->next;
+            }
+
+            // Allocate the conversion flags array
+            node->data.call.convertArgs = (bool*)malloc(node->data.call.argCount * sizeof(bool));
+            for (int i = 0; i < node->data.call.argCount; i++) {
+                node->data.call.convertArgs[i] = false;
+            }
+
+            // Set the call's value type to the function's return type
+            node->valueType = returnType;
+            break;
+        }
+
+        case AST_RETURN: {
+            // Type check the return value if present
+            if (node->data.returnStmt.value != NULL) {
+                typeCheckNode(compiler, node->data.returnStmt.value);
+                if (compiler->hadError) return;
+            }
+
+            // Return statements don't have a value type
+            node->valueType = NULL;
+            break;
+        }
+
+        case AST_BREAK: {
+            // Break statements don't have a value type
+            node->valueType = NULL;
+            break;
+        }
+
+        case AST_CONTINUE: {
+            // Continue statements don't have a value type
             node->valueType = NULL;
             break;
         }
@@ -724,8 +822,13 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_LET: {
-            generateCode(compiler, node->data.let.initializer);
-            if (compiler->hadError) return;
+            if (node->data.let.initializer) {
+                generateCode(compiler, node->data.let.initializer);
+                if (compiler->hadError) return;
+            } else {
+                // If no initializer, push nil as the default value
+                writeOp(compiler, OP_NIL);
+            }
             writeOp(compiler, OP_DEFINE_GLOBAL);
             writeOp(compiler, node->data.let.index);
             break;
@@ -880,9 +983,15 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_WHILE: {
+            // Save the enclosing loop context
+            int enclosingLoopStart = compiler->loopStart;
+            int enclosingLoopEnd = compiler->loopEnd;
+            int enclosingLoopContinue = compiler->loopContinue;
+            int enclosingLoopDepth = compiler->loopDepth;
 
             // Store the current position to jump back to for the loop condition
-            int loopStart = compiler->chunk->count;
+            compiler->loopStart = compiler->chunk->count;
+            compiler->loopDepth++;
 
             // Generate code for the condition
             generateCode(compiler, node->data.whileStmt.condition);
@@ -898,13 +1007,16 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             // Pop the condition value from the stack
             writeOp(compiler, OP_POP);
 
+            // Set the continue position to the start of the loop
+            compiler->loopContinue = compiler->loopStart;
+
             // Generate code for the body
             generateCode(compiler, node->data.whileStmt.body);
             if (compiler->hadError) return;
 
             // Emit a loop instruction to jump back to the condition
             writeOp(compiler, OP_LOOP);
-            int offset = compiler->chunk->count - loopStart + 2;
+            int offset = compiler->chunk->count - compiler->loopStart + 2;
             writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0);
             writeChunk(compiler->chunk, offset & 0xFF, 0);
 
@@ -913,10 +1025,27 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             compiler->chunk->code[exitJump + 1] = (exitDest - exitJump - 3) >> 8;
             compiler->chunk->code[exitJump + 2] = (exitDest - exitJump - 3) & 0xFF;
 
+            // Set the loop end position
+            compiler->loopEnd = exitDest;
+
+            // Patch all break jumps to jump to the current position
+            patchBreakJumps(compiler);
+
+            // Restore the enclosing loop context
+            compiler->loopStart = enclosingLoopStart;
+            compiler->loopEnd = enclosingLoopEnd;
+            compiler->loopContinue = enclosingLoopContinue;
+            compiler->loopDepth = enclosingLoopDepth;
+
             break;
         }
 
         case AST_FOR: {
+            // Save the enclosing loop context
+            int enclosingLoopStart = compiler->loopStart;
+            int enclosingLoopEnd = compiler->loopEnd;
+            int enclosingLoopContinue = compiler->loopContinue;
+            int enclosingLoopDepth = compiler->loopDepth;
 
             // Generate code for the range start expression and store it in the iterator variable
             generateCode(compiler, node->data.forStmt.startExpr);
@@ -926,7 +1055,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             writeOp(compiler, node->data.forStmt.iteratorIndex);
 
             // Store the current position to jump back to for the loop condition
-            int loopStart = compiler->chunk->count;
+            compiler->loopStart = compiler->chunk->count;
+            compiler->loopDepth++;
 
             // Generate code to check if the iterator is less than the end value
             // Get the current iterator value
@@ -963,12 +1093,16 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             generateCode(compiler, node->data.forStmt.body);
             if (compiler->hadError) return;
 
+            // Set the continue position to here (before incrementing)
+            compiler->loopContinue = compiler->chunk->count;
+
             // Increment the iterator
             writeOp(compiler, OP_GET_GLOBAL);
             writeOp(compiler, node->data.forStmt.iteratorIndex);
 
-            // Add 1 to the iterator
-            emitConstant(compiler, I32_VAL(1));
+            // Add the step value to the iterator
+            generateCode(compiler, node->data.forStmt.stepExpr);
+            if (compiler->hadError) return;
 
             // Use the appropriate addition based on the iterator type
             if (iterType->kind == TYPE_I32) {
@@ -983,7 +1117,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
             // Emit a loop instruction to jump back to the condition
             writeOp(compiler, OP_LOOP);
-            int offset = compiler->chunk->count - loopStart + 2;
+            int offset = compiler->chunk->count - compiler->loopStart + 2;
             writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0);
             writeChunk(compiler->chunk, offset & 0xFF, 0);
 
@@ -991,6 +1125,125 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             int exitDest = compiler->chunk->count;
             compiler->chunk->code[exitJump + 1] = (exitDest - exitJump - 3) >> 8;
             compiler->chunk->code[exitJump + 2] = (exitDest - exitJump - 3) & 0xFF;
+
+            // Set the loop end position
+            compiler->loopEnd = exitDest;
+
+            // Patch all break jumps to jump to the current position
+            patchBreakJumps(compiler);
+
+            // Restore the enclosing loop context
+            compiler->loopStart = enclosingLoopStart;
+            compiler->loopEnd = enclosingLoopEnd;
+            compiler->loopContinue = enclosingLoopContinue;
+            compiler->loopDepth = enclosingLoopDepth;
+
+            break;
+        }
+
+        case AST_FUNCTION: {
+            // Count and collect parameters
+            ASTNode* paramList[256];  // Max 256 params
+            int paramCount = 0;
+
+            ASTNode* param = node->data.function.parameters;
+            while (param != NULL && paramCount < 256) {
+                paramList[paramCount++] = param;
+                param = param->next;
+            }
+
+            // Bind arguments to parameter names
+            // Arguments were pushed right-to-left, so we pop in left-to-right
+            for (int i = paramCount - 1; i >= 0; i--) {
+                writeOp(compiler, OP_SET_GLOBAL);
+                writeOp(compiler, paramList[i]->data.let.index);
+            }
+
+            // Compile function body
+            generateCode(compiler, node->data.function.body);
+            writeOp(compiler, OP_NIL);
+            writeOp(compiler, OP_RETURN);
+
+            // Define the function *after* body so IP is correct
+            writeOp(compiler, OP_DEFINE_FUNCTION);
+            writeOp(compiler, node->data.function.index);
+            break;
+        }
+
+        case AST_CALL: {
+            // Generate code for each argument in reverse order
+            // (arguments are pushed onto the stack from right to left)
+            int argCount = 0;
+            ASTNode* arg = node->data.call.arguments;
+
+            // First, count the arguments and build a list in reverse order
+            ASTNode* args[256]; // Assuming a reasonable maximum number of arguments
+            while (arg != NULL) {
+                args[argCount++] = arg;
+                arg = arg->next;
+            }
+
+            // Now generate code for each argument in reverse order
+            for (int i = argCount - 1; i >= 0; i--) {
+                generateCode(compiler, args[i]);
+                if (compiler->hadError) return;
+
+                // Apply type conversion if needed
+                if (node->data.call.convertArgs[i]) {
+                    // Add conversion code here based on the parameter type
+                    // For now, we'll assume no conversions are needed
+                }
+            }
+
+            // Call the function
+            printf("DEBUG: Generating call to function at index %d with %d arguments\n", node->data.call.index, argCount);
+            writeOp(compiler, OP_CALL);
+            writeOp(compiler, node->data.call.index);
+            writeOp(compiler, argCount); // Number of arguments
+
+            break;
+        }
+
+        case AST_RETURN: {
+            // Generate code for the return value if present
+            if (node->data.returnStmt.value != NULL) {
+                generateCode(compiler, node->data.returnStmt.value);
+                if (compiler->hadError) return;
+            } else {
+                // If no return value, return nil
+                writeOp(compiler, OP_NIL);
+            }
+
+            // Return from the function
+            writeOp(compiler, OP_RETURN);
+
+            break;
+        }
+
+        case AST_BREAK: {
+            if (compiler->loopDepth == 0) {
+                error(compiler, "Cannot use 'break' outside of a loop.");
+                return;
+            }
+
+            // For now, we'll just end the program when break is encountered
+            // This is not correct, but it's a temporary solution
+            writeOp(compiler, OP_NIL);
+            writeOp(compiler, OP_RETURN);
+
+            break;
+        }
+
+        case AST_CONTINUE: {
+            if (compiler->loopDepth == 0) {
+                error(compiler, "Cannot use 'continue' outside of a loop.");
+                return;
+            }
+
+            // For now, we'll just end the program when continue is encountered
+            // This is not correct, but it's a temporary solution
+            writeOp(compiler, OP_NIL);
+            writeOp(compiler, OP_RETURN);
 
             break;
         }
@@ -1042,11 +1295,62 @@ uint8_t resolveVariable(Compiler* compiler, Token name) {
     return UINT8_MAX;  // Not found
 }
 
+// Add a break jump to the array
+static void addBreakJump(Compiler* compiler, int jumpPos) {
+    // Grow the array if needed
+    if (compiler->breakJumpCount >= compiler->breakJumpCapacity) {
+        int oldCapacity = compiler->breakJumpCapacity;
+        compiler->breakJumpCapacity = oldCapacity == 0 ? 8 : oldCapacity * 2;
+        compiler->breakJumps = realloc(compiler->breakJumps,
+                                     sizeof(int) * compiler->breakJumpCapacity);
+    }
+
+    // Add the jump position to the array
+    compiler->breakJumps[compiler->breakJumpCount++] = jumpPos;
+}
+
+// Patch all break jumps to jump to the current position
+static void patchBreakJumps(Compiler* compiler) {
+    int breakDest = compiler->chunk->count;
+
+    // Patch all break jumps to jump to the current position
+    for (int i = 0; i < compiler->breakJumpCount; i++) {
+        int jumpPos = compiler->breakJumps[i];
+        int offset = breakDest - jumpPos - 3;
+        compiler->chunk->code[jumpPos + 1] = (offset >> 8) & 0xFF;
+        compiler->chunk->code[jumpPos + 2] = offset & 0xFF;
+    }
+
+    // Reset the break jumps array
+    compiler->breakJumpCount = 0;
+}
+
 void initCompiler(Compiler* compiler, Chunk* chunk) {
+    compiler->loopStart = -1;
+    compiler->loopEnd = -1;
+    compiler->loopContinue = -1;
+    compiler->loopDepth = 0;
+
+    // Initialize break jumps array
+    compiler->breakJumps = NULL;
+    compiler->breakJumpCount = 0;
+    compiler->breakJumpCapacity = 0;
+
     compiler->symbols = NULL;  // Initialize later if needed
     compiler->chunk = chunk;
     compiler->hadError = false;
     compiler->panicMode = false;
+}
+
+// Free resources used by the compiler
+static void freeCompiler(Compiler* compiler) {
+    // Free the break jumps array
+    if (compiler->breakJumps != NULL) {
+        free(compiler->breakJumps);
+        compiler->breakJumps = NULL;
+        compiler->breakJumpCount = 0;
+        compiler->breakJumpCapacity = 0;
+    }
 }
 
 bool compile(ASTNode* ast, Compiler* compiler) {
@@ -1058,5 +1362,9 @@ bool compile(ASTNode* ast, Compiler* compiler) {
         current = current->next;
     }
     writeOp(compiler, OP_RETURN);
+
+    // Free compiler resources
+    freeCompiler(compiler);
+
     return !compiler->hadError;
 }

@@ -1,0 +1,6 @@
+fn minimal() -> i32 {
+    return 42
+}
+
+let result = minimal()
+print(result)

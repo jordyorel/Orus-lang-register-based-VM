@@ -1,0 +1,9 @@
+// Test nil values
+
+// Nil variable
+let nothing = nil
+print(nothing)
+
+// Reassignment
+nothing = 42
+print(nothing)

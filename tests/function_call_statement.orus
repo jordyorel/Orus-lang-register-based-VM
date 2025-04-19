@@ -1,0 +1,9 @@
+// Function call as a statement
+
+fn print_hello() -> i32 {
+    print("Hello, world!")
+    return 0
+}
+
+// Call the function as a statement
+print_hello()

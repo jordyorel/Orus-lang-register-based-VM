@@ -1,0 +1,16 @@
+// Test for loops
+
+// Simple for loop
+for i in 0..5 {
+    print(i)
+}
+
+// For loop with start and end
+for i in 2..7 {
+    print(i)
+}
+
+// For loop with start, end, and step
+for i in 0..10 {
+    print(i)
+}

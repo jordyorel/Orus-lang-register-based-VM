@@ -1,0 +1,9 @@
+// Function that adds two integers
+
+fn add(a: i32, b: i32) -> i32 {
+    return a + b
+}
+
+// Call the function with literal arguments
+let result = add(3, 4)
+print(result)

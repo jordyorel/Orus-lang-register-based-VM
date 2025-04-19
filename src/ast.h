@@ -18,7 +18,11 @@ typedef enum {
     AST_IF,
     AST_BLOCK,
     AST_WHILE,
-    AST_FOR
+    AST_FOR,
+    AST_FUNCTION,
+    AST_RETURN,
+    AST_BREAK,
+    AST_CONTINUE
 } ASTNodeType;
 
 typedef struct {
@@ -59,8 +63,29 @@ typedef struct {
     uint8_t iteratorIndex;      // Iterator variable index
     struct ASTNode* startExpr;  // Start of range
     struct ASTNode* endExpr;    // End of range
+    struct ASTNode* stepExpr;   // Step value (optional)
     struct ASTNode* body;       // Loop body
 } ForData;
+
+typedef struct {
+    Token name;                // Function name
+    struct ASTNode* parameters; // Linked list of parameter nodes
+    Type* returnType;          // Return type
+    struct ASTNode* body;      // Function body
+    uint8_t index;             // Function index in the function table
+} FunctionData;
+
+typedef struct {
+    Token name;               // Function name
+    struct ASTNode* arguments; // Linked list of argument nodes
+    uint8_t index;            // Function index in the function table
+    bool* convertArgs;         // Array of flags for argument conversion
+    int argCount;             // Number of arguments
+} CallData;
+
+typedef struct {
+    struct ASTNode* value;    // Return value expression
+} ReturnData;
 
 typedef struct ASTNode {
     ASTNodeType type;
@@ -82,6 +107,9 @@ typedef struct ASTNode {
         BlockData block;
         WhileData whileStmt;
         ForData forStmt;
+        FunctionData function;
+        CallData call;
+        ReturnData returnStmt;
     } data;
     Type* valueType;
 } ASTNode;
@@ -96,7 +124,12 @@ ASTNode* createAssignmentNode(Token name, ASTNode* value);
 ASTNode* createIfNode(ASTNode* condition, ASTNode* thenBranch, ASTNode* elifConditions, ASTNode* elifBranches, ASTNode* elseBranch);
 ASTNode* createBlockNode(ASTNode* statements);
 ASTNode* createWhileNode(ASTNode* condition, ASTNode* body);
-ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr, ASTNode* body);
+ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr, ASTNode* stepExpr, ASTNode* body);
+ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType, ASTNode* body);
+ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount);
+ASTNode* createReturnNode(ASTNode* value);
+ASTNode* createBreakNode();
+ASTNode* createContinueNode();
 
 void freeASTNode(ASTNode* node);
 

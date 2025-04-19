@@ -63,13 +63,20 @@ typedef enum {
     OP_JUMP_IF_FALSE,
     OP_JUMP_IF_TRUE,
     OP_LOOP,         // Jump backward (for loops)
+    OP_BREAK,        // Break out of a loop
+    OP_CONTINUE,     // Continue to the next iteration of a loop
 
+    // Function opcodes
+    OP_CALL,
     OP_RETURN,
+    OP_DEFINE_FUNCTION,
+
     OP_POP,
     OP_PRINT,
     OP_DEFINE_GLOBAL,
     OP_GET_GLOBAL,
     OP_SET_GLOBAL,
+    OP_NIL,
 } opCode;
 
 typedef struct {

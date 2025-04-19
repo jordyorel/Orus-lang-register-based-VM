@@ -1,0 +1,82 @@
+// Test break and continue statements
+
+print("===== BREAK STATEMENT IN WHILE LOOP =====")
+
+// Break in a while loop
+print("While loop with break:")
+let i = 0
+while i < 10 {
+    print(i)
+    if i == 5 {
+        print("Breaking out of the loop")
+        break
+    }
+    i = i + 1
+}
+print("After the loop")
+
+print("===== CONTINUE STATEMENT IN WHILE LOOP =====")
+
+// Continue in a while loop
+print("While loop with continue:")
+let j = 0
+while j < 10 {
+    j = j + 1
+    if j == 5 {
+        print("Skipping 5")
+        continue
+    }
+    print(j)
+}
+print("After the loop")
+
+print("===== BREAK STATEMENT IN FOR LOOP =====")
+
+// Break in a for loop
+print("For loop with break:")
+for k in 0..10 {
+    print(k)
+    if k == 5 {
+        print("Breaking out of the loop")
+        break
+    }
+}
+print("After the loop")
+
+print("===== CONTINUE STATEMENT IN FOR LOOP =====")
+
+// Continue in a for loop
+print("For loop with continue:")
+for m in 0..10 {
+    if m == 5 {
+        print("Skipping 5")
+        continue
+    }
+    print(m)
+}
+print("After the loop")
+
+print("===== NESTED LOOPS WITH BREAK AND CONTINUE =====")
+
+// Nested loops with break and continue
+print("Nested loops with break and continue:")
+for outer in 0..5 {
+    print("Outer loop:")
+    print(outer)
+
+    for inner in 0..5 {
+        if inner == 2 {
+            print("  Skipping inner 2")
+            continue
+        }
+        if inner == 4 {
+            print("  Breaking inner loop")
+            break
+        }
+        print("  Inner loop:")
+        print(inner)
+    }
+}
+print("After the nested loops")
+
+print("===== TEST COMPLETE =====")

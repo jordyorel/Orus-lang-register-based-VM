@@ -1,0 +1,9 @@
+fn get_simple_value() -> i32 {
+    print(21)  // Print inside function
+    return 42
+}
+
+print("Calling function...")
+let result = get_simple_value()
+print("Got result:")
+print(result)

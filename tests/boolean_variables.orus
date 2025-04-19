@@ -1,0 +1,9 @@
+// Test boolean variables
+
+// Boolean variable
+let is_true = true
+print(is_true)
+
+// Reassignment
+is_true = false
+print(is_true)

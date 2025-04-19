@@ -1,0 +1,9 @@
+// Function test with print statements
+
+fn get_number() -> i32 {
+    print(42)
+    return 42
+}
+
+// Call the function and print the result
+print(get_number())

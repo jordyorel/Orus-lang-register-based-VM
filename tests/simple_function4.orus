@@ -1,0 +1,8 @@
+// Simple function test
+
+fn get_five() -> i32 {
+    print(5)
+    return 5
+}
+
+get_five()
