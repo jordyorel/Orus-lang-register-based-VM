@@ -7,15 +7,30 @@
 
 // Helper functions for stack operations
 static inline Value vmPeek(VM* vm, int distance) {
+    // Safety check to prevent segfaults when trying to peek into an invalid stack position
+    if (vm->stackTop - 1 - distance < vm->stack) {
+        fprintf(stderr, "Error: Attempted to peek at an invalid stack position\n");
+        return NIL_VAL;
+    }
     return vm->stackTop[-1 - distance];
 }
 
 static inline void vmPush(VM* vm, Value value) {
+    // Safety check for stack overflow
+    if (vm->stackTop - vm->stack >= STACK_MAX) {
+        fprintf(stderr, "Error: Stack overflow\n");
+        return;
+    }
     *vm->stackTop = value;
     vm->stackTop++;
 }
 
 static inline Value vmPop(VM* vm) {
+    // Safety check for stack underflow
+    if (vm->stackTop <= vm->stack) {
+        fprintf(stderr, "Error: Stack underflow\n");
+        return NIL_VAL;
+    }
     vm->stackTop--;
     return *vm->stackTop;
 }
@@ -163,14 +178,34 @@ static inline void moduloOpU32(VM* vm, InterpretResult* result) {
 
 // Comparison operations for i32
 static inline void compareOpI32(VM* vm, char op, InterpretResult* result) {
-    if (!IS_I32(vmPeek(vm, 0)) || !IS_I32(vmPeek(vm, 1))) {
-        fprintf(stderr, "Operands must be integers.\n");
+    // First check if we have two values on the stack
+    if (vm->stackTop - vm->stack < 2) {
+        // Not enough values on stack, push a default false value
+        fprintf(stderr, "Error: Not enough values on stack for comparison\n");
+        vmPush(vm, BOOL_VAL(false));
         *result = INTERPRET_RUNTIME_ERROR;
         return;
     }
+    
+    if (!IS_I32(vmPeek(vm, 0)) || !IS_I32(vmPeek(vm, 1))) {
+        // If one of the values isn't an i32, try to safely handle the error
+        fprintf(stderr, "Operands must be integers for comparison.\n");
+        
+        // Pop the values safely (already checked we have 2 values above)
+        vmPop(vm);
+        vmPop(vm);
+        
+        // Push a default false value to keep the stack consistent
+        vmPush(vm, BOOL_VAL(false));
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+    
+    // Now safely perform the operation
     int32_t b = AS_I32(vmPop(vm));
     int32_t a = AS_I32(vmPop(vm));
     bool value = false;
+    
     switch (op) {
         case '<': value = a < b; break;
         case '>': value = a > b; break;
@@ -181,21 +216,43 @@ static inline void compareOpI32(VM* vm, char op, InterpretResult* result) {
         default:
             fprintf(stderr, "Unknown comparison operator: %c\n", op);
             *result = INTERPRET_RUNTIME_ERROR;
+            vmPush(vm, BOOL_VAL(false));
             return;
     }
+    
     vmPush(vm, BOOL_VAL(value));
 }
 
 // Comparison operations for u32
 static inline void compareOpU32(VM* vm, char op, InterpretResult* result) {
-    if (!IS_U32(vmPeek(vm, 0)) || !IS_U32(vmPeek(vm, 1))) {
-        fprintf(stderr, "Operands must be unsigned integers.\n");
+    // First check if we have two values on the stack
+    if (vm->stackTop - vm->stack < 2) {
+        // Not enough values on stack, push a default false value
+        fprintf(stderr, "Error: Not enough values on stack for comparison\n");
+        vmPush(vm, BOOL_VAL(false));
         *result = INTERPRET_RUNTIME_ERROR;
         return;
     }
+    
+    if (!IS_U32(vmPeek(vm, 0)) || !IS_U32(vmPeek(vm, 1))) {
+        // If one of the values isn't a u32, try to safely handle the error
+        fprintf(stderr, "Operands must be unsigned integers for comparison.\n");
+        
+        // Pop the values safely (already checked we have 2 values above)
+        vmPop(vm);
+        vmPop(vm);
+        
+        // Push a default false value to keep the stack consistent
+        vmPush(vm, BOOL_VAL(false));
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+    
+    // Now safely perform the operation
     uint32_t b = AS_U32(vmPop(vm));
     uint32_t a = AS_U32(vmPop(vm));
     bool value = false;
+    
     switch (op) {
         case '<': value = a < b; break;
         case '>': value = a > b; break;
@@ -206,23 +263,40 @@ static inline void compareOpU32(VM* vm, char op, InterpretResult* result) {
         default:
             fprintf(stderr, "Unknown comparison operator: %c\n", op);
             *result = INTERPRET_RUNTIME_ERROR;
+            vmPush(vm, BOOL_VAL(false));
             return;
     }
+    
     vmPush(vm, BOOL_VAL(value));
 }
 
 // Comparison operations for f64
 static inline void compareOpF64(VM* vm, char op, InterpretResult* result) {
-    // Pop both values first
+    // First check if we have two values on the stack
+    if (vm->stackTop - vm->stack < 2) {
+        // Not enough values on stack, push a default false value
+        fprintf(stderr, "Error: Not enough values on stack for comparison\n");
+        vmPush(vm, BOOL_VAL(false));
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+    
+    // Pop both values safely
     Value b_val = vmPop(vm);
     Value a_val = vmPop(vm);
 
     // Convert both values to f64
     double b = convertToF64(vm, b_val, result);
-    if (*result != INTERPRET_OK) return;
+    if (*result != INTERPRET_OK) {
+        vmPush(vm, BOOL_VAL(false)); // Ensure we keep the stack consistent even on error
+        return;
+    }
 
     double a = convertToF64(vm, a_val, result);
-    if (*result != INTERPRET_OK) return;
+    if (*result != INTERPRET_OK) {
+        vmPush(vm, BOOL_VAL(false)); // Ensure we keep the stack consistent even on error
+        return;
+    }
 
     bool value = false;
     switch (op) {
@@ -235,8 +309,10 @@ static inline void compareOpF64(VM* vm, char op, InterpretResult* result) {
         default:
             fprintf(stderr, "Unknown comparison operator: %c\n", op);
             *result = INTERPRET_RUNTIME_ERROR;
+            vmPush(vm, BOOL_VAL(false));
             return;
     }
+    
     vmPush(vm, BOOL_VAL(value));
 }
 

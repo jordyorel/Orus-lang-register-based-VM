@@ -12,6 +12,12 @@ ASTNode* createLiteralNode(Value value) {
     node->next = NULL;
     node->data.literal = value;
     node->valueType = NULL;  // Set by type checker
+
+    // Comment out debug print
+    // fprintf(stderr, "DEBUG: Initializing AST_LITERAL node with value: ");
+    // printValue(node->data.literal);
+    // fprintf(stderr, "\n");
+
     return node;
 }
 

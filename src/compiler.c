@@ -12,6 +12,7 @@ extern VM vm;
 static void generateCode(Compiler* compiler, ASTNode* node);
 static void addBreakJump(Compiler* compiler, int jumpPos);
 static void patchBreakJumps(Compiler* compiler);
+static void emitForLoop(Compiler* compiler, ASTNode* node);
 
 static void error(Compiler* compiler, const char* message) {
     if (compiler->panicMode) return;
@@ -25,7 +26,22 @@ static void writeOp(Compiler* compiler, uint8_t op) {
 }
 
 static void emitConstant(Compiler* compiler, Value value) {
-    writeConstant(compiler->chunk, value, 0);
+    // Ensure constants are emitted with valid values
+    // Allow VAL_STRING for now to fix compilation, may need VM changes later.
+    if (IS_I32(value) || IS_U32(value) || IS_F64(value) || IS_BOOL(value) || IS_NIL(value) || IS_STRING(value)) {
+        // fprintf(stderr, "DEBUG: Emitting valid constant: ");
+        // printValue(value);
+        // fprintf(stderr, "\n");
+        writeConstant(compiler->chunk, value, 0);
+    } else {
+        // fprintf(stderr, "ERROR: Invalid constant type\n");
+        // Debug log to trace invalid constants
+        // fprintf(stderr, "DEBUG: Invalid constant encountered. Value type: %d\n", value.type);
+        // fprintf(stderr, "DEBUG: Value details: ");
+        // printValue(value);
+        // fprintf(stderr, "\n");
+        compiler->hadError = true;
+    }
 }
 
 static void typeCheckNode(Compiler* compiler, ASTNode* node) {
@@ -547,6 +563,13 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
     switch (node->type) {
         case AST_LITERAL: {
+            // Debug log to trace AST nodes generating constants
+            // fprintf(stderr, "DEBUG: Generating constant from AST node of type: %d\n", node->type);
+            if (node->type == AST_LITERAL) {
+                // fprintf(stderr, "DEBUG: Literal value: ");
+                // printValue(node->data.literal);
+                // fprintf(stderr, "\n");
+            }
             emitConstant(compiler, node->data.literal);
             break;
         }
@@ -822,12 +845,15 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_LET: {
+            // Debug log to verify global variable initialization
+            // fprintf(stderr, "DEBUG: Initializing global variable %.*s with value: ",
+            //         node->data.let.name.length, node->data.let.name.start);
             if (node->data.let.initializer) {
                 generateCode(compiler, node->data.let.initializer);
-                if (compiler->hadError) return;
+                writeOp(compiler, OP_PRINT); // Print the initializer value
             } else {
-                // If no initializer, push nil as the default value
                 writeOp(compiler, OP_NIL);
+                // fprintf(stderr, "nil\n");
             }
             writeOp(compiler, OP_DEFINE_GLOBAL);
             writeOp(compiler, node->data.let.index);
@@ -1041,106 +1067,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_FOR: {
-            // Save the enclosing loop context
-            int enclosingLoopStart = compiler->loopStart;
-            int enclosingLoopEnd = compiler->loopEnd;
-            int enclosingLoopContinue = compiler->loopContinue;
-            int enclosingLoopDepth = compiler->loopDepth;
-
-            // Generate code for the range start expression and store it in the iterator variable
-            generateCode(compiler, node->data.forStmt.startExpr);
-            if (compiler->hadError) return;
-
-            writeOp(compiler, OP_DEFINE_GLOBAL);
-            writeOp(compiler, node->data.forStmt.iteratorIndex);
-
-            // Store the current position to jump back to for the loop condition
-            compiler->loopStart = compiler->chunk->count;
-            compiler->loopDepth++;
-
-            // Generate code to check if the iterator is less than the end value
-            // Get the current iterator value
-            writeOp(compiler, OP_GET_GLOBAL);
-            writeOp(compiler, node->data.forStmt.iteratorIndex);
-
-            // Generate code for the range end expression
-            generateCode(compiler, node->data.forStmt.endExpr);
-            if (compiler->hadError) return;
-
-            // Compare the iterator with the end value
-            // Use the appropriate comparison based on the iterator type
-            Type* iterType = node->data.forStmt.startExpr->valueType;
-            if (iterType->kind == TYPE_I32) {
-                writeOp(compiler, OP_LESS_I32);
-            } else if (iterType->kind == TYPE_U32) {
-                writeOp(compiler, OP_LESS_U32);
-            } else {
-                error(compiler, "Unsupported iterator type for for loop.");
-                return;
-            }
-
-            // Emit a jump-if-false instruction to exit the loop
-            // We'll patch this jump later
-            int exitJump = compiler->chunk->count;
-            writeOp(compiler, OP_JUMP_IF_FALSE);
-            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
-            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
-
-            // Pop the condition value from the stack
-            writeOp(compiler, OP_POP);
-
-            // Generate code for the body
-            generateCode(compiler, node->data.forStmt.body);
-            if (compiler->hadError) return;
-
-            // Set the continue position to here (before incrementing)
-            compiler->loopContinue = compiler->chunk->count;
-
-            // Increment the iterator
-            writeOp(compiler, OP_GET_GLOBAL);
-            writeOp(compiler, node->data.forStmt.iteratorIndex);
-
-            // Add the step value to the iterator
-            generateCode(compiler, node->data.forStmt.stepExpr);
-            if (compiler->hadError) return;
-
-            // Use the appropriate addition based on the iterator type
-            if (iterType->kind == TYPE_I32) {
-                writeOp(compiler, OP_ADD_I32);
-            } else if (iterType->kind == TYPE_U32) {
-                writeOp(compiler, OP_ADD_U32);
-            }
-
-            // Store the incremented value back in the iterator
-            writeOp(compiler, OP_SET_GLOBAL);
-            writeOp(compiler, node->data.forStmt.iteratorIndex);
-
-            // Emit a loop instruction to jump back to the condition
-            writeOp(compiler, OP_LOOP);
-            int offset = compiler->chunk->count - compiler->loopStart + 2;
-            writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0);
-            writeChunk(compiler->chunk, offset & 0xFF, 0);
-
-            // Patch the exit jump
-            int exitDest = compiler->chunk->count;
-            compiler->chunk->code[exitJump + 1] = (exitDest - exitJump - 3) >> 8;
-            compiler->chunk->code[exitJump + 2] = (exitDest - exitJump - 3) & 0xFF;
-
-            // Set the loop end position
-            compiler->loopEnd = exitDest;
-
-            // Patch all break jumps to jump to the current position
-            patchBreakJumps(compiler);
-
-            // Restore the enclosing loop context
-            compiler->loopStart = enclosingLoopStart;
-            compiler->loopEnd = enclosingLoopEnd;
-            compiler->loopContinue = enclosingLoopContinue;
-            compiler->loopDepth = enclosingLoopDepth;
-
+            emitForLoop(compiler, node);
             break;
         }
-
         case AST_FUNCTION: {
             // Count and collect parameters
             ASTNode* paramList[256];  // Max 256 params
@@ -1152,24 +1081,46 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 param = param->next;
             }
 
-            // Bind arguments to parameter names
-            // Arguments were pushed right-to-left, so we pop in left-to-right
+            // Reserve jump over function body
+            int jumpOverFunction = compiler->chunk->count;
+            writeOp(compiler, OP_JUMP);
+            writeChunk(compiler->chunk, 0xFF, 0);
+            writeChunk(compiler->chunk, 0xFF, 0);
+
+            // Record function body start
+            int functionStart = compiler->chunk->count;
+            // fprintf(stderr, "DEBUG: Function bytecode starts at offset %d\n",
+            //         functionStart);
+
+            // Bind parameters to globals
             for (int i = paramCount - 1; i >= 0; i--) {
                 writeOp(compiler, OP_SET_GLOBAL);
                 writeOp(compiler, paramList[i]->data.let.index);
             }
 
-            // Compile function body
+            // Emit body and return
             generateCode(compiler, node->data.function.body);
             writeOp(compiler, OP_NIL);
             writeOp(compiler, OP_RETURN);
 
-            // Define the function *after* body so IP is correct
+            // Patch jump over function
+            int afterFunction = compiler->chunk->count;
+            compiler->chunk->code[jumpOverFunction + 1] =
+                (afterFunction - jumpOverFunction - 3) >> 8;
+            compiler->chunk->code[jumpOverFunction + 2] =
+                (afterFunction - jumpOverFunction - 3) & 0xFF;
+
+            // Store function position in globals
+            vm.globals[node->data.function.index] = I32_VAL(functionStart);
+            // fprintf(stderr,
+            //         "DEBUG: Stored function position %d in global index %d\n",
+            //         functionStart, node->data.function.index);
+
             writeOp(compiler, OP_DEFINE_FUNCTION);
             writeOp(compiler, node->data.function.index);
+
             break;
         }
-
         case AST_CALL: {
             // Generate code for each argument in reverse order
             // (arguments are pushed onto the stack from right to left)
@@ -1196,7 +1147,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             }
 
             // Call the function
-            printf("DEBUG: Generating call to function at index %d with %d arguments\n", node->data.call.index, argCount);
+            // printf("DEBUG: Generating call to function at index %d with %d arguments\n", node->data.call.index, argCount);
             writeOp(compiler, OP_CALL);
             writeOp(compiler, node->data.call.index);
             writeOp(compiler, argCount); // Number of arguments
@@ -1226,11 +1177,11 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 return;
             }
 
-            // For now, we'll just end the program when break is encountered
-            // This is not correct, but it's a temporary solution
-            writeOp(compiler, OP_NIL);
-            writeOp(compiler, OP_RETURN);
-
+            int jumpPos = compiler->chunk->count;
+            writeOp(compiler, OP_JUMP);
+            writeChunk(compiler->chunk, 0xFF, 0);
+            writeChunk(compiler->chunk, 0xFF, 0);
+            addBreakJump(compiler, jumpPos);
             break;
         }
 
@@ -1239,12 +1190,20 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 error(compiler, "Cannot use 'continue' outside of a loop.");
                 return;
             }
-
-            // For now, we'll just end the program when continue is encountered
-            // This is not correct, but it's a temporary solution
-            writeOp(compiler, OP_NIL);
-            writeOp(compiler, OP_RETURN);
-
+            
+            // Clean up the stack before continuing
+            // This was previously just OP_POP, but we may need to pop multiple values
+            // depending on what's been pushed onto the stack in the loop body
+            writeOp(compiler, OP_POP);
+            
+            // Now emit the loop jump instruction to go back to the continue position
+            // For for-loops, this is the increment position (compiler->loopContinue)
+            writeOp(compiler, OP_LOOP);
+            int offset = compiler->chunk->count - compiler->loopContinue + 2;
+            writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0);
+            writeChunk(compiler->chunk, offset & 0xFF, 0);
+            
+            // fprintf(stderr, "DEBUG: Continue statement jumping back with offset %d\n", offset);
             break;
         }
 
@@ -1252,6 +1211,131 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             error(compiler, "Unsupported AST node type in code generator.");
             break;
     }
+}
+
+static void emitForLoop(Compiler* compiler, ASTNode* node) {
+    // Save the enclosing loop context
+    int enclosingLoopStart = compiler->loopStart;
+    int enclosingLoopEnd = compiler->loopEnd;
+    int enclosingLoopContinue = compiler->loopContinue;
+    int enclosingLoopDepth = compiler->loopDepth;
+    
+    // Generate code for the range start expression and store it in the iterator variable
+    generateCode(compiler, node->data.forStmt.startExpr);
+    if (compiler->hadError) return;
+
+    // fprintf(stderr, "DEBUG: Initializing for loop iterator variable %.*s\n",
+    //        node->data.forStmt.iteratorName.length,
+    //        node->data.forStmt.iteratorName.start);
+
+    // Define and initialize the iterator variable
+    writeOp(compiler, OP_DEFINE_GLOBAL);
+    writeOp(compiler, node->data.forStmt.iteratorIndex);
+
+    // Store the current position to jump back to for the loop condition
+    int loopStart = compiler->chunk->count;
+    compiler->loopStart = loopStart;
+    compiler->loopDepth++;
+    
+    // Get the iterator value for comparison
+    writeOp(compiler, OP_GET_GLOBAL);
+    writeOp(compiler, node->data.forStmt.iteratorIndex);
+    
+    // Get the end value for comparison
+    generateCode(compiler, node->data.forStmt.endExpr);
+    if (compiler->hadError) return;
+
+    // Compare the iterator with the end value
+    Type* iterType = node->data.forStmt.startExpr->valueType;
+    if (iterType->kind == TYPE_I32) {
+        writeOp(compiler, OP_LESS_I32);
+        // fprintf(stderr, "DEBUG: Using I32 comparison for loop condition\n");
+    } else if (iterType->kind == TYPE_U32) {
+        writeOp(compiler, OP_LESS_U32);
+        // fprintf(stderr, "DEBUG: Using U32 comparison for loop condition\n");
+    } else {
+        error(compiler, "Unsupported iterator type for for loop.");
+        return;
+    }
+
+    // Emit a jump-if-false instruction to exit the loop when condition is false
+    int exitJump = compiler->chunk->count;
+    writeOp(compiler, OP_JUMP_IF_FALSE);
+    writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+    writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+    // fprintf(stderr, "DEBUG: Created exit jump at position %d\n", exitJump);
+
+    // Pop the condition value from the stack
+    writeOp(compiler, OP_POP);
+
+    // Set the continue position for the inner loop body
+    // This is where continue statements will jump to (just before the increment)
+    int incrementPosition = compiler->chunk->count;
+    compiler->loopContinue = incrementPosition;
+
+    // Generate code for the body
+    generateCode(compiler, node->data.forStmt.body);
+    if (compiler->hadError) return;
+
+    // After the body, increment the iterator
+    // Get the current iterator value
+    writeOp(compiler, OP_GET_GLOBAL);
+    writeOp(compiler, node->data.forStmt.iteratorIndex);
+
+    // Add the step value
+    if (node->data.forStmt.stepExpr) {
+        generateCode(compiler, node->data.forStmt.stepExpr);
+        if (compiler->hadError) return;
+    } else {
+        // Default step value is 1
+        if (iterType->kind == TYPE_I32) {
+            writeOp(compiler, OP_CONSTANT);
+            emitConstant(compiler, I32_VAL(1));
+        } else if (iterType->kind == TYPE_U32) {
+            writeOp(compiler, OP_CONSTANT);
+            emitConstant(compiler, U32_VAL(1));
+        }
+    }
+
+    // Add the step to the iterator
+    if (iterType->kind == TYPE_I32) {
+        writeOp(compiler, OP_ADD_I32);
+    } else if (iterType->kind == TYPE_U32) {
+        writeOp(compiler, OP_ADD_U32);
+    }
+
+    // Store the incremented value back in the iterator variable
+    writeOp(compiler, OP_SET_GLOBAL);
+    writeOp(compiler, node->data.forStmt.iteratorIndex);
+    
+    // Pop the value from the stack after SET_GLOBAL (important for stack cleanliness!)
+    writeOp(compiler, OP_POP);
+
+    // Jump back to the condition check
+    writeOp(compiler, OP_LOOP);
+    int offset = compiler->chunk->count - loopStart + 2;
+    writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0);
+    writeChunk(compiler->chunk, offset & 0xFF, 0);
+    // fprintf(stderr, "DEBUG: Created loop jump with offset %d\n", offset);
+
+    // Patch the exit jump
+    int exitDest = compiler->chunk->count;
+    compiler->chunk->code[exitJump + 1] = (exitDest - exitJump - 3) >> 8;
+    compiler->chunk->code[exitJump + 2] = (exitDest - exitJump - 3) & 0xFF;
+    // fprintf(stderr, "DEBUG: Patched exit jump to destination %d (offset %d)\n", 
+    //        exitDest, exitDest - exitJump - 3);
+    
+    // Set the loop end position to the destination of the exit jump
+    compiler->loopEnd = exitDest;
+    
+    // Patch all break jumps to jump to the current position
+    patchBreakJumps(compiler);
+
+    // Restore the enclosing loop context
+    compiler->loopStart = enclosingLoopStart;
+    compiler->loopEnd = enclosingLoopEnd;
+    compiler->loopContinue = enclosingLoopContinue;
+    compiler->loopDepth = enclosingLoopDepth;
 }
 
 uint8_t defineVariable(Compiler* compiler, Token name, Type* type) {

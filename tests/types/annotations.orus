@@ -1,8 +1,0 @@
-let a: i32 = 42;
-let b: u32 = 42;
-let c: f64 = 42.0;
-let d: bool = true;
-print(a);
-print(b);
-print(c);
-print(d);

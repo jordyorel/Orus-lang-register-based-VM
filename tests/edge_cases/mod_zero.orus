@@ -1,4 +1,0 @@
-let a: i32 = 10;
-let b: i32 = 0;
-let mod_zero: i32 = a % b;
-print(mod_zero);

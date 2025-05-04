@@ -1,8 +1,0 @@
-// Function that returns a constant
-
-fn get_seven() -> i32 {
-    return 7
-}
-
-// Call the function
-print(get_seven())

@@ -1,9 +1,0 @@
-// Function call as an expression
-
-fn get_hello() -> i32 {
-    print("Hello from function!")
-    return 42
-}
-
-// Call the function and print the result
-print(get_hello())

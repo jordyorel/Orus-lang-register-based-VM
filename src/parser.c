@@ -95,6 +95,10 @@ static bool check(Parser* parser, TokenType type) {
 }
 
 static ASTNode* parseString(Parser* parser) {
+    // Comment out debug statement
+    // fprintf(stderr, "DEBUG: parseString processing token: type=%d, '%.*s'\n",
+    //         parser->previous.type, parser->previous.length, parser->previous.start);
+
     const char* start = parser->previous.start + 1;  // Skip opening quote
     int length = parser->previous.length - 2;        // Exclude both quotes
     char* string = (char*)malloc(length + 1);
@@ -109,35 +113,53 @@ static ASTNode* parseString(Parser* parser) {
 }
 
 static ASTNode* parseNumber(Parser* parser) {
+    // Comment out debug output
+    // fprintf(stderr, "DEBUG: parseNumber processing token: type=%d, '%.*s'\n",
+    //        parser->previous.type, parser->previous.length, parser->previous.start);
+
     const char* start = parser->previous.start;
     int length = parser->previous.length;
     char* endptr;
     bool isFloat = false;
+    
+    // Check if the number contains a decimal point
     for (int i = 0; i < length; i++) {
         if (start[i] == '.') {
             isFloat = true;
             break;
         }
     }
+    
+    // Create a null-terminated copy of the token text for conversion
+    char* numStr = (char*)malloc(length + 1);
+    memcpy(numStr, start, length);
+    numStr[length] = '\0';
+    
     ASTNode* node;
     if (isFloat) {
-        double value = strtod(start, &endptr);
+        double value = strtod(numStr, &endptr);
+        // fprintf(stderr, "DEBUG: Created F64 literal with value: %f\n", value);
         node = createLiteralNode(F64_VAL(value));
         node->valueType = createPrimitiveType(TYPE_F64);
     } else {
-        long value = strtol(start, &endptr, 10);
+        long value = strtol(numStr, &endptr, 10);
         if (value >= INT32_MIN && value <= INT32_MAX) {
+            // fprintf(stderr, "DEBUG: Created I32 literal with value: %ld\n", value);
             node = createLiteralNode(I32_VAL((int32_t)value));
             node->valueType = createPrimitiveType(TYPE_I32);
         } else if (value >= 0 && value <= UINT32_MAX) {
+            // fprintf(stderr, "DEBUG: Created U32 literal with value: %lu\n", (unsigned long)value);
             node = createLiteralNode(U32_VAL((uint32_t)value));
             node->valueType = createPrimitiveType(TYPE_U32);
         } else {
-            double dvalue = strtod(start, &endptr);
+            double dvalue = strtod(numStr, &endptr);
+            // fprintf(stderr, "DEBUG: Created F64 literal (from large int) with value: %f\n", dvalue);
             node = createLiteralNode(F64_VAL(dvalue));
             node->valueType = createPrimitiveType(TYPE_F64);
         }
     }
+    
+    free(numStr);
     return node;
 }
 
@@ -246,26 +268,6 @@ static ASTNode* parse_precedence(Parser* parser, Precedence precedence) {
 
     return left;
 }
-
-// static ASTNode* parsePrimary(Parser* parser) {
-//     if (match(parser, TOKEN_LEFT_PAREN)) {
-//         return parseGrouping(parser);
-//     }
-//     if (match(parser, TOKEN_NUMBER)) {
-//         return parseNumber(parser);
-//     }
-//     if (match(parser, TOKEN_STRING)) {
-//         return parseString(parser);
-//     }
-//     if (match(parser, TOKEN_IDENTIFIER)) {
-//         return parseVariable(parser);
-//     }
-//     if (match(parser, TOKEN_TRUE) || match(parser, TOKEN_FALSE)) {
-//         return parseBoolean(parser);
-//     }
-//     error(parser, "Expected expression.");
-//     return NULL;
-// }
 
 static void expression(Parser* parser, ASTNode** ast) {
     *ast = NULL; // Initialize to NULL in case of error

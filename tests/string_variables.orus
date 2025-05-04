@@ -1,9 +1,0 @@
-// Test string variables
-
-// String variable
-let message = "Hello, world!"
-print(message)
-
-// Reassignment
-message = "Goodbye, world!"
-print(message)

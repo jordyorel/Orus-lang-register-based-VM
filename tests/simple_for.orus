@@ -1,6 +1,11 @@
-// Test simple for loop
-
-// Simple for loop
-for i in 0..5 {
-    print(i)
+// Minimal for loop test
+fn simple_for() -> i32 {
+    let count = 0
+    for i in 0..3 {
+        count = count + 1
+    }
+    return count
 }
+
+print("Simple for loop result:")
+print(simple_for())

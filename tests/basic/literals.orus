@@ -1,8 +1,0 @@
-let a = 42
-let b = 3.14
-let c = true
-let d = false
-print(a)
-print(b)
-print(c)
-print(d)

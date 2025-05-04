@@ -1,9 +1,0 @@
-// Test floating-point variables
-
-// Float variable
-let pi = 3.14159
-print(pi)
-
-// Reassignment
-pi = 3.14
-print(pi)

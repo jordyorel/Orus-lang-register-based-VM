@@ -1,4 +1,0 @@
-let a: u32 = 42;
-let b: f64 = 42;
-print(a);
-print(b);

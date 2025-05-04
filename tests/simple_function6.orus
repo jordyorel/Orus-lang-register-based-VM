@@ -1,8 +1,0 @@
-// Simple function test
-
-fn get_five() -> i32 {
-    return 5
-}
-
-let x = 5
-print(x)

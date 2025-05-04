@@ -1,0 +1,22 @@
+// Test to identify the continue statement stack issue
+print("Stack Test for Continue:")
+
+let i = 0
+let value = 0
+
+while i < 5 {
+    print(i) // Print the current value before potential continue
+    i = i + 1
+    
+    if i == 3 {
+        print("About to continue")
+        continue
+    }
+    
+    value = value + i
+    print("After increment:")
+    print(value)
+}
+
+print("Final value:")
+print(value)

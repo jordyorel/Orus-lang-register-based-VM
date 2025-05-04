@@ -33,26 +33,35 @@ void freeValueArray(ValueArray* array) {
 }
 
 void printValue(Value value) {
+    printf("[");
     switch (value.type) {
         case VAL_I32:
-            printf("%d", value.as.i32);
+            printf("I32:%d", value.as.i32);
             break;
         case VAL_U32:
-            printf("%u", value.as.u32);
+            printf("U32:%u", value.as.u32);
             break;
         case VAL_F64:
-            printf("%g", value.as.f64);
+            printf("F64:%g", value.as.f64);
             break;
         case VAL_BOOL:
-            printf(value.as.boolean ? "true" : "false");
+            printf("BOOL:%s", value.as.boolean ? "true" : "false");
             break;
         case VAL_NIL:
-            printf("nil");
+            printf("NIL");
             break;
         case VAL_STRING:
-            printf("%.*s", value.as.string.length, value.as.string.chars);
+            if (value.as.string.chars != NULL) {
+                printf("STR:%.*s", value.as.string.length, value.as.string.chars);
+            } else {
+                printf("STR:(null)");
+            }
+            break;
+        default:
+            printf("UNKNOWN_TYPE:%d", value.type);
             break;
     }
+    printf("]");
 }
 
 bool valuesEqual(Value a, Value b) {

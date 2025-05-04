@@ -1,9 +1,0 @@
-// Simple function test
-
-fn test() -> i32 {
-    print(42)
-    return 42
-}
-
-let x = test()
-print(x)

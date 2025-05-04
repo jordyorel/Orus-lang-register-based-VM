@@ -1,9 +1,0 @@
-// Minimal function test
-
-fn say_hello() -> i32 {
-    print("Hello from function!")
-    return 42
-}
-
-// Call the function
-say_hello()

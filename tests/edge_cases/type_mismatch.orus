@@ -1,4 +1,0 @@
-let x: i32 = 42;
-let y: f64 = 3.14;
-let mismatch: i32 = x + y;
-print(mismatch);

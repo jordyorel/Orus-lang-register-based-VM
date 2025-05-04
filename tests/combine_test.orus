@@ -1,0 +1,30 @@
+// A test that tries both continue and break with a safety counter
+fn test_combined() -> i32 {
+    let counter = 0
+    let sum = 0
+
+    for i in 0..10 {
+        counter = counter + 1
+        
+        if counter > 20 {
+            // Safety exit to prevent infinite loops
+            break
+        }
+        
+        if i % 2 == 0 {
+            // Skip even numbers
+            continue
+        }
+        
+        sum = sum + i
+        
+        if i >= 7 {
+            break
+        }
+    }
+    
+    return sum
+}
+
+print("Combined test result:")
+print(test_combined())
