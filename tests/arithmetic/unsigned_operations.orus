@@ -1,0 +1,27 @@
+// Test unsigned integer arithmetic operations
+fn test_u32_operations() -> u32 {
+    let a: u32 = 10
+    let b: u32 = 3
+    
+    let sum = a + b
+    let diff = a - b
+    let product = a * b
+    let quotient = a / b
+    let remainder = a % b
+    
+    print("u32 Operations:")
+    print("10 + 3 =")
+    print(sum)
+    print("10 - 3 =")
+    print(diff)
+    print("10 * 3 =")
+    print(product)
+    print("10 / 3 =")
+    print(quotient)
+    print("10 % 3 =")
+    print(remainder)
+    
+    return 0
+}
+
+test_u32_operations()

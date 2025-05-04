@@ -1,0 +1,34 @@
+// Test if-else control flow
+fn test_if_else() -> i32 {
+    let x = 10
+    let y = 20
+    let result = 0
+    
+    print("If-Else Test:")
+    
+    if x > y {
+        result = 1
+        print("x is greater than y")
+    } else {
+        result = 2
+        print("x is not greater than y")
+    }
+    
+    // Test with elif
+    if x > y {
+        print("x is greater than y")
+    } elif x < y {
+        print("x is less than y")
+    } else {
+        print("x is equal to y")
+    }
+    
+    // Test with expression
+    let z = if x > y { 100 } else { 200 }
+    print("z =")
+    print(z)
+    
+    return result
+}
+
+test_if_else()

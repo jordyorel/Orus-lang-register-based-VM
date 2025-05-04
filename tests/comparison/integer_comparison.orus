@@ -1,0 +1,39 @@
+// Test integer comparison operations
+fn test_i32_comparisons() -> bool {
+    let a: i32 = 10
+    let b: i32 = 20
+    let c: i32 = 10
+    
+    print("i32 Comparisons:")
+    
+    print("10 == 20 is")
+    print(a == b)
+    
+    print("10 == 10 is")
+    print(a == c)
+    
+    print("10 != 20 is")
+    print(a != b)
+    
+    print("10 < 20 is")
+    print(a < b)
+    
+    print("10 <= 20 is")
+    print(a <= b)
+    
+    print("10 <= 10 is")
+    print(a <= c)
+    
+    print("10 > 20 is")
+    print(a > b)
+    
+    print("10 >= 20 is")
+    print(a >= b)
+    
+    print("10 >= 10 is")
+    print(a >= c)
+    
+    return true
+}
+
+test_i32_comparisons()

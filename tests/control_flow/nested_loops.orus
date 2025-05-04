@@ -1,0 +1,43 @@
+// Test nested loops with break and continue
+fn test_nested_loops() -> i32 {
+    let sum = 0
+    
+    print("Nested Loops Test:")
+    
+    // Outer loop
+    for i in 0..3 {
+        print("Outer loop iteration i =")
+        print(i)
+        
+        // Inner loop
+        for j in 0..3 {
+            print("  Inner loop iteration j =")
+            print(j)
+            
+            // Skip some combinations
+            if i == 1 && j == 1 {
+                print("  Skipping i=1, j=1 with continue")
+                continue
+            }
+            
+            // Break from inner loop
+            if i == 2 && j == 2 {
+                print("  Breaking inner loop at i=2, j=2")
+                break
+            }
+            
+            sum = sum + (i * 10 + j)
+            print("  Added to sum:")
+            print(i * 10 + j)
+            print("  Current sum:")
+            print(sum)
+        }
+    }
+    
+    print("Final sum from nested loops:")
+    print(sum)
+    
+    return sum
+}
+
+test_nested_loops()

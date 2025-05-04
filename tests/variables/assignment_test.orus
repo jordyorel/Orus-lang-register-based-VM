@@ -1,0 +1,25 @@
+// Tests variable assignments
+let x: i32 = 10
+let y: i32 = 20
+
+print("Initial values:")
+print(x)
+print(y)
+
+x = 30
+print("After first assignment:")
+print(x)
+
+y = 40
+print("After second assignment:")
+print(y)
+
+// Advanced assignments 
+x = y = 50
+print("After chained assignment:")
+print(x)
+print(y)
+
+x = x + 5
+print("After expression assignment:")
+print(x)

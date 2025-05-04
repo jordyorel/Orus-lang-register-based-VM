@@ -1,0 +1,17 @@
+// Tests variable declarations with different types
+let i32_var: i32 = 42
+let u32_var: u32 = 100
+let f64_var: f64 = 3.14
+let bool_var: bool = true
+let inferred_i32 = 24
+let inferred_u32 = 200
+let inferred_f64 = 2.71
+
+print("Variable declaration test:")
+print(i32_var) 
+print(u32_var)
+print(f64_var)
+print(bool_var)
+print(inferred_i32)
+print(inferred_u32)
+print(inferred_f64)
