@@ -126,10 +126,10 @@ static InterpretResult run() {
 
             // Comparison operations
             case OP_EQUAL:
-                compareOpI32(&vm, '=', &result);
+                compareOpAny(&vm, '=', &result);
                 break;
             case OP_NOT_EQUAL:
-                compareOpI32(&vm, '!', &result);
+                compareOpAny(&vm, '!', &result);
                 break;
             case OP_LESS_I32: {
                 // Check for stack underflow

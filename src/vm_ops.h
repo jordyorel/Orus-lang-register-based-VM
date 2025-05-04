@@ -316,4 +316,86 @@ static inline void compareOpF64(VM* vm, char op, InterpretResult* result) {
     vmPush(vm, BOOL_VAL(value));
 }
 
+// Compare any two values for equality, regardless of type
+static inline void compareOpAny(VM* vm, char op, InterpretResult* result) {
+    // First check if we have two values on the stack
+    if (vm->stackTop - vm->stack < 2) {
+        // Not enough values on stack, push a default false value
+        fprintf(stderr, "Error: Not enough values on stack for comparison\n");
+        vmPush(vm, BOOL_VAL(false));
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+    
+    // Pop both values safely
+    Value b = vmPop(vm);
+    Value a = vmPop(vm);
+    
+    bool value = false;
+    
+    // Handle equality based on the value types
+    if (op == '=') {
+        if (IS_I32(a) && IS_I32(b)) {
+            value = AS_I32(a) == AS_I32(b);
+        } else if (IS_U32(a) && IS_U32(b)) {
+            value = AS_U32(a) == AS_U32(b);
+        } else if (IS_F64(a) && IS_F64(b)) {
+            value = AS_F64(a) == AS_F64(b);
+        } else if (IS_BOOL(a) && IS_BOOL(b)) {
+            value = AS_BOOL(a) == AS_BOOL(b);
+        } else if (IS_NIL(a) && IS_NIL(b)) {
+            value = true;  // Two nil values are always equal
+        } else if (IS_STRING(a) && IS_STRING(b)) {
+            // For strings, compare the actual string contents instead of pointer equality
+            String strA = AS_STRING(a);
+            String strB = AS_STRING(b);
+            
+            // First check if lengths match
+            if (strA.length == strB.length) {
+                // Then compare the actual characters
+                value = (memcmp(strA.chars, strB.chars, strA.length) == 0);
+            } else {
+                value = false; // Different lengths means different strings
+            }
+        } else {
+            // Different types are never equal
+            value = false;
+        }
+    } else if (op == '!') {
+        if (IS_I32(a) && IS_I32(b)) {
+            value = AS_I32(a) != AS_I32(b);
+        } else if (IS_U32(a) && IS_U32(b)) {
+            value = AS_U32(a) != AS_U32(b);
+        } else if (IS_F64(a) && IS_F64(b)) {
+            value = AS_F64(a) != AS_F64(b);
+        } else if (IS_BOOL(a) && IS_BOOL(b)) {
+            value = AS_BOOL(a) != AS_BOOL(b);
+        } else if (IS_NIL(a) && IS_NIL(b)) {
+            value = false;  // Two nil values are always equal, so not equal is false
+        } else if (IS_STRING(a) && IS_STRING(b)) {
+            // For strings, compare the actual string contents instead of pointer equality
+            String strA = AS_STRING(a);
+            String strB = AS_STRING(b);
+            
+            // First check if lengths match
+            if (strA.length == strB.length) {
+                // Then compare the actual characters - if they're equal, result is false
+                value = (memcmp(strA.chars, strB.chars, strA.length) != 0);
+            } else {
+                value = true; // Different lengths means different strings
+            }
+        } else {
+            // Different types are never equal, so they're always not equal
+            value = true;
+        }
+    } else {
+        fprintf(stderr, "Unknown comparison operator: %c\n", op);
+        *result = INTERPRET_RUNTIME_ERROR;
+        vmPush(vm, BOOL_VAL(false));
+        return;
+    }
+    
+    vmPush(vm, BOOL_VAL(value));
+}
+
 #endif // VM_OPS_H

@@ -1,21 +1,15 @@
 // Test for loop control flow
-fn test_for_loop() -> i32 {
-    let sum = 0
-    
-    print("For Loop Test:")
-    
-    for i in 1..5 {
-        print("Iteration:")
-        print(i)
-        sum = sum + i
-        print("Current sum:")
-        print(sum)
-    }
-    
-    print("Final sum:")
+let sum = 0
+
+print("For Loop Test:")
+
+for i in 1..5 {
+    print("Iteration:")
+    print(i)
+    sum = sum + i
+    print("Current sum:")
     print(sum)
-    
-    return sum
 }
 
-test_for_loop()
+print("Final sum:")
+print(sum)

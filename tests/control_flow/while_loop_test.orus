@@ -1,23 +1,19 @@
 // Test while loop control flow
-fn test_while_loop() -> i32 {
-    let count = 0
-    let sum = 0
-    
-    print("While Loop Test:")
-    
-    while count < 5 {
-        count = count + 1
-        sum = sum + count
-        print("Iteration:")
-        print(count)
-        print("Current sum:")
-        print(sum)
-    }
-    
-    print("Final sum:")
+
+let count = 0
+let sum = 0
+
+print("While Loop Test:")
+
+while count < 5 {
+    count = count + 1
+    sum = sum + count
+    print("Iteration:")
+    print(count)
+    print("Current sum:")
     print(sum)
-    
-    return sum
 }
 
-test_while_loop()
+print("Final sum:")
+print(sum)
+

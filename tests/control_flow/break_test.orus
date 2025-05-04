@@ -1,48 +1,43 @@
 // Test break statement in loops
-fn test_break() -> i32 {
-    let sum = 0
-    
-    print("Break Test in While Loop:")
-    
-    let i = 0
-    while i < 10 {
-        i = i + 1
-        if i == 6 {
-            print("Breaking at i =")
-            print(i)
-            break
-        }
-        sum = sum + i
-        print("Added")
+let sum = 0
+
+print("Break Test in While Loop:")
+
+let i = 0
+while i < 10 {
+    i = i + 1
+    if i == 6 {
+        print("Breaking at i =")
         print(i)
-        print("Sum =")
-        print(sum)
+        break
     }
-    
-    print("Final sum after break:")
+    sum = sum + i
+    print("Added")
+    print(i)
+    print("Sum =")
     print(sum)
-    
-    // Test break in for loop
-    print("Break Test in For Loop:")
-    sum = 0
-    
-    for j in 1..10 {
-        if j == 6 {
-            print("Breaking at j =")
-            print(j)
-            break
-        }
-        sum = sum + j
-        print("Added")
-        print(j)
-        print("Sum =")
-        print(sum)
-    }
-    
-    print("Final sum after break:")
-    print(sum)
-    
-    return sum
 }
 
-test_break()
+print("Final sum after break:")
+print(sum)
+
+// Test break in for loop
+print("Break Test in For Loop:")
+sum = 0
+
+for j in 1..10 {
+    if j == 6 {
+        print("Breaking at j =")
+        print(j)
+        break
+    }
+    sum = sum + j
+    print("Added")
+    print(j)
+    print("Sum =")
+    print(sum)
+}
+
+print("Final sum after break:")
+print(sum)
+
