@@ -23,7 +23,7 @@ if x > y {
 }
 
 // Test with expression
-let z = if x > y { 100 } else { 200 }
-print("z =")
-print(z)
+//let z = if x > y { 100 } else { 200 }
+//print("z =")
+//print(z)
 

@@ -1,16 +1,13 @@
 // Test division by zero error handling
-fn test_division_by_zero() -> i32 {
-    let a: i32 = 10
-    let b: i32 = 0
-    
-    print("Division by Zero Test:")
-    print("Attempting to divide 10 by 0...")
-    
-    // This should produce a runtime error
-    let result = a / b
-    
-    print("This line should not be executed")
-    return result
-}
 
-test_division_by_zero()
+let a: i32 = 10
+let b: i32 = 0
+
+print("Division by Zero Test:")
+print("Attempting to divide 10 by 0...")
+
+// This should produce a runtime error
+let result = a / b
+
+
+

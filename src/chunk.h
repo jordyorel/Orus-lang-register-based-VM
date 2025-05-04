@@ -58,6 +58,10 @@ typedef enum {
     OP_I32_TO_F64,
     OP_U32_TO_F64,
 
+    // Logical operators
+    OP_AND,
+    OP_OR,
+
     // Control flow opcodes
     OP_JUMP,
     OP_JUMP_IF_FALSE,

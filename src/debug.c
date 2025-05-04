@@ -125,6 +125,13 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_GREATER_EQUAL_U32", offset);
         case OP_GREATER_EQUAL_F64:
             return simpleInstruction("OP_GREATER_EQUAL_F64", offset);
+            
+        // Logical operators
+        case OP_AND:
+            return simpleInstruction("OP_AND", offset);
+        case OP_OR:
+            return simpleInstruction("OP_OR", offset);
+            
         case OP_POP:
             return simpleInstruction("OP_POP", offset);
         case OP_PRINT:

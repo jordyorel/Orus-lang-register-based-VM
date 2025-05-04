@@ -76,8 +76,6 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 return;
             }
 
-
-
             TokenType operator= node->data.operation.operator.type;
             switch (operator) {
                 case TOKEN_PLUS:
@@ -134,6 +132,23 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     }
                     node->valueType =
                         leftType;  // Result matches left operand type
+                    break;
+                }
+
+                // Logical operators
+                case TOKEN_AND:
+                case TOKEN_OR: {
+                    // Both operands must be boolean
+                    if (leftType->kind != TYPE_BOOL) {
+                        error(compiler, "Left operand of logical operator must be a boolean.");
+                        return;
+                    }
+                    if (rightType->kind != TYPE_BOOL) {
+                        error(compiler, "Right operand of logical operator must be a boolean.");
+                        return;
+                    }
+                    // Logical operators return a boolean
+                    node->valueType = getPrimitiveType(TYPE_BOOL);
                     break;
                 }
 
@@ -836,6 +851,15 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                     writeOp(compiler, OP_NOT_EQUAL);
                     break;
 
+                // Logical operators
+                case TOKEN_AND:
+                    writeOp(compiler, OP_AND);
+                    break;
+                    
+                case TOKEN_OR:
+                    writeOp(compiler, OP_OR);
+                    break;
+
                 default:
                     error(compiler, "Unsupported binary operator.");
                     return;
@@ -1247,20 +1271,29 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 error(compiler, "Cannot use 'continue' outside of a loop.");
                 return;
             }
+
+            // In for loops, the continue should jump to the increment section
+            // In while loops, it should jump to the condition check (beginning of loop)
             
-            // Clean up the stack before continuing
-            // This was previously just OP_POP, but we may need to pop multiple values
-            // depending on what's been pushed onto the stack in the loop body
-            writeOp(compiler, OP_POP);
+            // Don't pop in for loops, as this can cause stack underflow
+            // We can detect if we're in a for loop by checking if loopContinue != loopStart
+            bool isInForLoop = compiler->loopContinue != compiler->loopStart;
             
-            // Now emit the loop jump instruction to go back to the continue position
-            // For for-loops, this is the increment position (compiler->loopContinue)
+            if (!isInForLoop) {
+                // For while loops, we need to pop the condition value
+                writeOp(compiler, OP_POP);
+            }
+            
+            // Jump back to the appropriate location
             writeOp(compiler, OP_LOOP);
+            
+            // Calculate the jump offset
             int offset = compiler->chunk->count - compiler->loopContinue + 2;
+            
+            // Write the offset as two bytes (high byte, low byte)
             writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0);
             writeChunk(compiler->chunk, offset & 0xFF, 0);
             
-            // fprintf(stderr, "DEBUG: Continue statement jumping back with offset %d\n", offset);
             break;
         }
 
@@ -1280,10 +1313,6 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     // Generate code for the range start expression and store it in the iterator variable
     generateCode(compiler, node->data.forStmt.startExpr);
     if (compiler->hadError) return;
-
-    // fprintf(stderr, "DEBUG: Initializing for loop iterator variable %.*s\n",
-    //        node->data.forStmt.iteratorName.length,
-    //        node->data.forStmt.iteratorName.start);
 
     // Define and initialize the iterator variable
     writeOp(compiler, OP_DEFINE_GLOBAL);
@@ -1306,10 +1335,8 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     Type* iterType = node->data.forStmt.startExpr->valueType;
     if (iterType->kind == TYPE_I32) {
         writeOp(compiler, OP_LESS_I32);
-        // fprintf(stderr, "DEBUG: Using I32 comparison for loop condition\n");
     } else if (iterType->kind == TYPE_U32) {
         writeOp(compiler, OP_LESS_U32);
-        // fprintf(stderr, "DEBUG: Using U32 comparison for loop condition\n");
     } else {
         error(compiler, "Unsupported iterator type for for loop.");
         return;
@@ -1320,19 +1347,17 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     writeOp(compiler, OP_JUMP_IF_FALSE);
     writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
     writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
-    // fprintf(stderr, "DEBUG: Created exit jump at position %d\n", exitJump);
 
     // Pop the condition value from the stack
     writeOp(compiler, OP_POP);
 
-    // Set the continue position for the inner loop body
-    // This is where continue statements will jump to (just before the increment)
-    int incrementPosition = compiler->chunk->count;
-    compiler->loopContinue = incrementPosition;
-
     // Generate code for the body
     generateCode(compiler, node->data.forStmt.body);
     if (compiler->hadError) return;
+
+    // Store the current position where we're about to emit the increment code
+    // This is where continue statements will jump to
+    compiler->loopContinue = compiler->chunk->count;
 
     // After the body, increment the iterator
     // Get the current iterator value
@@ -1346,10 +1371,8 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     } else {
         // Default step value is 1
         if (iterType->kind == TYPE_I32) {
-            writeOp(compiler, OP_CONSTANT);
             emitConstant(compiler, I32_VAL(1));
         } else if (iterType->kind == TYPE_U32) {
-            writeOp(compiler, OP_CONSTANT);
             emitConstant(compiler, U32_VAL(1));
         }
     }
@@ -1373,14 +1396,11 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     int offset = compiler->chunk->count - loopStart + 2;
     writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0);
     writeChunk(compiler->chunk, offset & 0xFF, 0);
-    // fprintf(stderr, "DEBUG: Created loop jump with offset %d\n", offset);
 
     // Patch the exit jump
     int exitDest = compiler->chunk->count;
     compiler->chunk->code[exitJump + 1] = (exitDest - exitJump - 3) >> 8;
     compiler->chunk->code[exitJump + 2] = (exitDest - exitJump - 3) & 0xFF;
-    // fprintf(stderr, "DEBUG: Patched exit jump to destination %d (offset %d)\n", 
-    //        exitDest, exitDest - exitJump - 3);
     
     // Set the loop end position to the destination of the exit jump
     compiler->loopEnd = exitDest;
@@ -1497,39 +1517,22 @@ static void freeCompiler(Compiler* compiler) {
 bool compile(ASTNode* ast, Compiler* compiler) {
     initTypeSystem();
     ASTNode* current = ast;
+    // Removed unused index variable
     while (current) {
         typeCheckNode(compiler, current);
-        if (!compiler->hadError) generateCode(compiler, current);
+        if (!compiler->hadError) {
+            generateCode(compiler, current);
+        }
         current = current->next;
     }
-    // disassembleChunk(compiler->chunk, "code");
+
     writeOp(compiler, OP_RETURN);
-
-    // Free compiler resources
+    
+    // Only show code disassembly when debugging is enabled
+    #ifdef DEBUG_TRACE_EXECUTION
+    disassembleChunk(compiler->chunk, "code");
+    #endif
+    
     freeCompiler(compiler);
-
     return !compiler->hadError;
 }
-
-// bool compile(ASTNode* ast, Compiler* compiler) {
-//     initTypeSystem();
-//     ASTNode* current = ast;
-//     int index = 0;
-//     while (current) {
-//         fprintf(stderr, "[compile] Visiting node #%d, type = %d\n", index++,
-//                 current->type);
-
-//         typeCheckNode(compiler, current);
-//         if (!compiler->hadError) {
-//             fprintf(stderr, "[compile] Generating code for node #%d\n",
-//                     index - 1);
-//             generateCode(compiler, current);
-//         }
-//         current = current->next;
-//     }
-
-//     writeOp(compiler, OP_RETURN);
-//     disassembleChunk(compiler->chunk, "code");  // Only reached if loop succeeds
-//     freeCompiler(compiler);
-//     return !compiler->hadError;
-// }

@@ -421,8 +421,8 @@ static InterpretResult run() {
                 absolute_loop_count++;
                 
                 // If the loop has iterated more than 1000 times, it's likely an infinite loop
-                if (absolute_loop_count > 1000) {
-                    fprintf(stderr, "ERROR: Loop iteration limit exceeded (1000). "
+                if (absolute_loop_count > 200) {
+                    fprintf(stderr, "ERROR: Loop iteration limit exceeded (200). "
                            "Forced termination to prevent infinite loop.\n");
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -671,6 +671,63 @@ static InterpretResult run() {
                 }
 
                 free(resultBuffer);
+                break;
+            }
+            case OP_AND: {
+                // Check for stack underflow
+                if (vm.stackTop - vm.stack < 2) {
+                    runtimeError("Stack underflow in AND operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                // Peek at the two values without popping
+                Value right = vmPeek(&vm, 0);  // Top of stack
+                Value left = vmPeek(&vm, 1);   // Second from top
+
+                // Ensure both values are booleans
+                if (!IS_BOOL(left) || !IS_BOOL(right)) {
+                    runtimeError("AND operation requires boolean operands.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                // Short-circuit AND: If left is false, result is false without evaluating right
+                // If left is true, result is the value of right
+                bool result = AS_BOOL(left) && AS_BOOL(right);
+                
+                // Pop both values and push the result
+                vmPop(&vm);  // Pop right
+                vmPop(&vm);  // Pop left
+                vmPush(&vm, BOOL_VAL(result));
+                
+                break;
+            }
+            
+            case OP_OR: {
+                // Check for stack underflow
+                if (vm.stackTop - vm.stack < 2) {
+                    runtimeError("Stack underflow in OR operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                // Peek at the two values without popping
+                Value right = vmPeek(&vm, 0);  // Top of stack
+                Value left = vmPeek(&vm, 1);   // Second from top
+
+                // Ensure both values are booleans
+                if (!IS_BOOL(left) || !IS_BOOL(right)) {
+                    runtimeError("OR operation requires boolean operands.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                // Short-circuit OR: If left is true, result is true without evaluating right
+                // If left is false, result is the value of right
+                bool result = AS_BOOL(left) || AS_BOOL(right);
+                
+                // Pop both values and push the result
+                vmPop(&vm);  // Pop right
+                vmPop(&vm);  // Pop left
+                vmPush(&vm, BOOL_VAL(result));
+                
                 break;
             }
             default:

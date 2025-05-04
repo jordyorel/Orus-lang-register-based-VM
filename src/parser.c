@@ -16,6 +16,7 @@ static ASTNode* parseNumber(Parser* parser);
 static ASTNode* parseGrouping(Parser* parser);
 static ASTNode* parseUnary(Parser* parser);
 static ASTNode* parseBinary(Parser* parser, ASTNode* left);
+static ASTNode* parseLogical(Parser* parser, ASTNode* left);  // New logical operator function
 static ASTNode* parseCall(Parser* parser, ASTNode* left);
 static ASTNode* parseBoolean(Parser* parser);
 static ASTNode* parseVariable(Parser* parser);
@@ -180,6 +181,21 @@ static ASTNode* parseBinary(Parser* parser, ASTNode* left) {
     ParseRule* rule = get_rule(operator.type);
     ASTNode* right =
         parse_precedence(parser, (Precedence)(rule->precedence + 1));
+    return createBinaryNode(operator, left, right);
+}
+
+static ASTNode* parseLogical(Parser* parser, ASTNode* left) {
+    // Similar to parseBinary, but creates a logical node instead
+    Token operator= parser->previous;
+    
+    // Get the precedence rule for the current operator
+    ParseRule* rule = get_rule(operator.type);
+    
+    // Parse the right operand with higher precedence to ensure proper nesting
+    ASTNode* right = parse_precedence(parser, (Precedence)(rule->precedence + 1));
+    
+    // Create binary node - we're using the existing binary node structure 
+    // since logical operations can be represented by binary operations
     return createBinaryNode(operator, left, right);
 }
 
@@ -593,6 +609,9 @@ ParseRule rules[] = {
     [TOKEN_STRING] = {parseString, NULL, PREC_NONE},
     [TOKEN_TRUE] = {parseBoolean, NULL, PREC_NONE},
     [TOKEN_FALSE] = {parseBoolean, NULL, PREC_NONE},
+    // Logical operators
+    [TOKEN_AND] = {NULL, parseLogical, PREC_AND},
+    [TOKEN_OR] = {NULL, parseLogical, PREC_OR},
     // Comparison operators
     [TOKEN_LESS] = {NULL, parseBinary, PREC_COMPARISON},
     [TOKEN_LESS_EQUAL] = {NULL, parseBinary, PREC_COMPARISON},
