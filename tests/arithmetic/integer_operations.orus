@@ -3,26 +3,21 @@
 print("i32 Operations:")
 
 // Addition
-print("10 + 3 =")
-print(10 + 3)
+print("10 + 3 = {} ", 10 + 3)
 
 // Subtraction
-print("10 - 3 =")
-print(10 - 3)
+print("10 - 3 = {} ", 10 - 3)
+
 
 // Multiplication
-print("10 * 3 =")
-print(10 * 3)
+print("10 * 3 = {} ", 10 * 3)
 
 // Division
-print("10 / 3 =")
-print(10 / 3)
+print("10 / 3 = {} ", 10 / 3)
 
 // Modulo
-print("10 % 3 =")
-print(10 % 3)
+print("10 % 3 = {} ", 10 % 3)
 
 // Negation
-print("-10 =")
-print(-10)
+print("-10 = {} ", -10)
 

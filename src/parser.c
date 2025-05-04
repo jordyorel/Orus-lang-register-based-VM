@@ -453,54 +453,64 @@ static void statement(Parser* parser, ASTNode** ast) {
     if (match(parser, TOKEN_PRINT)) {
         consume(parser, TOKEN_LEFT_PAREN, "Expect '(' after 'print'.");
 
-        // Parse format string
+        // Parse format string or direct expression
         ASTNode* formatExpr;
         expression(parser, &formatExpr);
 
-        bool validFormat = formatExpr != NULL &&
-                           formatExpr->type == AST_LITERAL &&
-                           formatExpr->data.literal.type == VAL_STRING;
+        // Handle both print formats
+        if (match(parser, TOKEN_COMMA)) {
+            // This is a formatted print with interpolation
+            bool validFormat = formatExpr != NULL &&
+                           formatExpr->valueType != NULL &&
+                           formatExpr->valueType->kind == TYPE_STRING;
 
-        if (!validFormat) {
-            error(parser,
-                  "First argument to print must be a string literal for "
+            if (!validFormat) {
+                error(parser,
+                  "First argument to print must evaluate to a string for "
                   "interpolation.");
-            if (formatExpr) freeASTNode(formatExpr);
-            return;
-        }
-
-        // Parse comma-separated arguments
-        ASTNode* arguments = NULL;
-        ASTNode* lastArg = NULL;
-        int argCount = 0;
-
-        while (match(parser, TOKEN_COMMA)) {
-            ASTNode* arg;
-            expression(parser, &arg);
-
-            if (arg == NULL) {
-                error(parser, "Expected expression as argument.");
-                freeASTNode(formatExpr);
-                freeASTNode(arguments);
+                if (formatExpr) freeASTNode(formatExpr);
                 return;
             }
 
-            arg->next = NULL;  // 🔒 important!
+            // Parse comma-separated arguments
+            ASTNode* arguments = NULL;
+            ASTNode* lastArg = NULL;
+            int argCount = 0;
 
-            if (arguments == NULL) {
-                arguments = arg;
-            } else {
-                lastArg->next = arg;
-            }
-            lastArg = arg;
-            argCount++;
+            do {
+                ASTNode* arg;
+                expression(parser, &arg);
+
+                if (arg == NULL) {
+                    error(parser, "Expected expression as argument.");
+                    freeASTNode(formatExpr);
+                    freeASTNode(arguments);
+                    return;
+                }
+
+                arg->next = NULL;  // 🔒 important!
+
+                if (arguments == NULL) {
+                    arguments = arg;
+                } else {
+                    lastArg->next = arg;
+                }
+                lastArg = arg;
+                argCount++;
+            } while (match(parser, TOKEN_COMMA));
+
+            consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after print arguments.");
+            consumeStatementEnd(parser);
+
+            *ast = createPrintNode(formatExpr, arguments, argCount);
+        } else {
+            // This is a simple print without interpolation
+            consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after print argument.");
+            consumeStatementEnd(parser);
+            
+            // Create a print node with no additional arguments
+            *ast = createPrintNode(formatExpr, NULL, 0);
         }
-
-        consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after print arguments.");
-        consumeStatementEnd(parser);
-
-        *ast = createPrintNode(formatExpr, arguments, argCount);
-
     } else if (match(parser, TOKEN_IF)) {
         ifStatement(parser, ast);
 

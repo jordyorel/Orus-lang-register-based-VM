@@ -1,39 +1,37 @@
 // Test floating point comparison operations
-fn test_f64_comparisons() -> bool {
-    let a: f64 = 10.5
-    let b: f64 = 20.7
-    let c: f64 = 10.5
-    
-    print("f64 Comparisons:")
-    
-    print("10.5 == 20.7 is")
-    print(a == b)
-    
-    print("10.5 == 10.5 is")
-    print(a == c)
-    
-    print("10.5 != 20.7 is")
-    print(a != b)
-    
-    print("10.5 < 20.7 is")
-    print(a < b)
-    
-    print("10.5 <= 20.7 is")
-    print(a <= b)
-    
-    print("10.5 <= 10.5 is")
-    print(a <= c)
-    
-    print("10.5 > 20.7 is")
-    print(a > b)
-    
-    print("10.5 >= 20.7 is")
-    print(a >= b)
-    
-    print("10.5 >= 10.5 is")
-    print(a >= c)
-    
-    return true
-}
 
-test_f64_comparisons()
+let a: f64 = 10.5
+let b: f64 = 20.7
+let c: f64 = 10.5
+
+print("f64 Comparisons:")
+
+print("10.5 == 20.7 is")
+print(a == b)
+
+print("10.5 == 10.5 is")
+print(a == c)
+
+print("10.5 != 20.7 is")
+print(a != b)
+
+print("10.5 < 20.7 is")
+print(a < b)
+
+print("10.5 <= 20.7 is")
+print(a <= b)
+
+print("10.5 <= 10.5 is")
+print(a <= c)
+
+print("10.5 > 20.7 is")
+print(a > b)
+
+print("10.5 >= 20.7 is")
+print(a >= b)
+
+print("10.5 >= 10.5 is")
+print(a >= c)
+
+return true
+

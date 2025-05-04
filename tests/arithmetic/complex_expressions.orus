@@ -2,24 +2,19 @@
 print("Complex Expressions Test:")
 
 // Test operator precedence
-print("2 + 3 * 4 =")
-print(2 + 3 * 4)
+print("2 + 3 * 4 = {}", 2 + 3 * 4)
 
 // Test parentheses
-print("(2 + 3) * 4 =")
-print((2 + 3) * 4)
+print("(2 + 3) * 4 = {} ", (2 + 3) * 4)
 
 // Test mixed operators
-print("10 - 2 * 3 + 4 / 2 =")
-print(10 - 2 * 3 + 4 / 2)
+print("10 - 2 * 3 + 4 / 2 = {}", 10 - 2 * 3 + 4 / 2)
 
 // Complex with mixed values
-print("5 * 3 + 5 / 2 - 3 % 2 =")
-print(5 * 3 + 5 / 2 - 3 % 2)
+print("5 * 3 + 5 / 2 - 3 % 2 = {} ", 5 * 3 + 5 / 2 - 3 % 2)
 
 // Mixed types
-print("10 * 2.5 =")
-print(10 * 2.5)
+print("10 * 2.5 = {} ", 10 * 2.5)
 
 
 

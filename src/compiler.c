@@ -270,7 +270,18 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         case AST_PRINT: {
             ASTNode* format = node->data.print.format;
             ASTNode* arg = node->data.print.arguments;
+            
+            // Type check the format expression first
+            typeCheckNode(compiler, format);
+            if (compiler->hadError) return;
+            
             if (arg != NULL) {
+                // This is a formatted print with interpolation
+                // Verify format is a string
+                if (format->valueType == NULL || format->valueType->kind != TYPE_STRING) {
+                    error(compiler, "First argument to print must evaluate to a string for interpolation.");
+                    return;
+                }
 
                 // Count arguments safely and validate linked list
                 ASTNode* current = arg;
@@ -280,19 +291,14 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                         return;
                     }
 
-                    typeCheckNode(compiler, current);  // ✅ Perform type check
+                    typeCheckNode(compiler, current);  // Perform type check
                     if (compiler->hadError) return;
 
                     current = current->next;
                 }
-
-                typeCheckNode(compiler, format);
-                if (compiler->hadError) return;
-
             } else {
-                // No arguments, just check the format string
-                typeCheckNode(compiler, format);
-                if (compiler->hadError) return;
+                // This is a simple print, format can be any type
+                // No additional type checking needed
             }
 
             break;
@@ -890,34 +896,27 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
         case AST_PRINT: {
             if (node->data.print.arguments != NULL) {
-                // 1. Count arguments
-                int argCount = 0;
+                // This is a formatted print with interpolation
+                
+                // 1. Generate code for each argument (in order)
                 ASTNode* arg = node->data.print.arguments;
-                while (arg != NULL) {
-                    argCount++;
-                    arg = arg->next;
-                }
-
-                // 2. Generate code for each argument (in order)
-                arg = node->data.print.arguments;
                 while (arg != NULL) {
                     generateCode(compiler, arg);
                     if (compiler->hadError) return;
                     arg = arg->next;
                 }
 
-                // 3. Then generate code for the format string
+                // 2. Then generate code for the format string
                 generateCode(compiler, node->data.print.format);
                 if (compiler->hadError) return;
 
-                // 4. Push the argument count as constant
-                emitConstant(compiler, I32_VAL(argCount));
+                // 3. Push the argument count as constant
+                emitConstant(compiler, I32_VAL(node->data.print.argCount));
 
-                // 5. Emit formatted print instruction
+                // 4. Emit formatted print instruction
                 writeOp(compiler, OP_FORMAT_PRINT);
-
             } else {
-                // No interpolation, just a direct print of the string
+                // This is a simple print without interpolation
                 generateCode(compiler, node->data.print.format);
                 if (compiler->hadError) return;
                 writeOp(compiler, OP_PRINT);

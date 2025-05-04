@@ -24,4 +24,4 @@ build/debug/clox/%.o: src/%.c
 
 # Clean rule to remove all generated files
 clean:
-	rm -rf build $(TARGET)
+	rm -rf build $(TARGET) 

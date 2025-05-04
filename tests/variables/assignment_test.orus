@@ -15,8 +15,9 @@ print("After second assignment:")
 print(y)
 
 // Advanced assignments 
-x = y = 50
-print("After chained assignment:")
+y = 50
+x = y
+print("After assignment:")
 print(x)
 print(y)
 
