@@ -6,6 +6,7 @@
 #include "memory.h"
 #include "value.h"
 #include "vm.h"
+#include "debug.h"
 
 extern VM vm;
 
@@ -13,6 +14,7 @@ static void generateCode(Compiler* compiler, ASTNode* node);
 static void addBreakJump(Compiler* compiler, int jumpPos);
 static void patchBreakJumps(Compiler* compiler);
 static void emitForLoop(Compiler* compiler, ASTNode* node);
+void disassembleChunk(Chunk* chunk, const char* name);
 
 static void error(Compiler* compiler, const char* message) {
     if (compiler->panicMode) return;
@@ -23,6 +25,10 @@ static void error(Compiler* compiler, const char* message) {
 
 static void writeOp(Compiler* compiler, uint8_t op) {
     writeChunk(compiler->chunk, op, 0);  // Line number could be stored in AST
+}
+
+static void writeByte(Compiler* compiler, uint8_t byte) {
+    writeChunk(compiler->chunk, byte, 0); // Replace 0 with the appropriate line number if available
 }
 
 static void emitConstant(Compiler* compiler, Value value) {
@@ -262,8 +268,33 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_PRINT: {
-            typeCheckNode(compiler, node->data.print.expr);
-            if (compiler->hadError) return;
+            ASTNode* format = node->data.print.format;
+            ASTNode* arg = node->data.print.arguments;
+            if (arg != NULL) {
+
+                // Count arguments safely and validate linked list
+                ASTNode* current = arg;
+                while (current != NULL) {
+                    if (current == current->next) {
+                        compiler->hadError = true;
+                        return;
+                    }
+
+                    typeCheckNode(compiler, current);  // ✅ Perform type check
+                    if (compiler->hadError) return;
+
+                    current = current->next;
+                }
+
+                typeCheckNode(compiler, format);
+                if (compiler->hadError) return;
+
+            } else {
+                // No arguments, just check the format string
+                typeCheckNode(compiler, format);
+                if (compiler->hadError) return;
+            }
+
             break;
         }
 
@@ -845,25 +876,52 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_LET: {
-            // Debug log to verify global variable initialization
-            // fprintf(stderr, "DEBUG: Initializing global variable %.*s with value: ",
-            //         node->data.let.name.length, node->data.let.name.start);
             if (node->data.let.initializer) {
-                generateCode(compiler, node->data.let.initializer);
-                writeOp(compiler, OP_PRINT); // Print the initializer value
+                generateCode(compiler,
+                             node->data.let.initializer);  // push value
             } else {
-                writeOp(compiler, OP_NIL);
-                // fprintf(stderr, "nil\n");
+                writeOp(compiler, OP_NIL);  // no initializer → nil
             }
+
             writeOp(compiler, OP_DEFINE_GLOBAL);
-            writeOp(compiler, node->data.let.index);
+            writeByte(compiler, node->data.let.index);  // correct index
             break;
         }
 
         case AST_PRINT: {
-            generateCode(compiler, node->data.print.expr);
-            if (compiler->hadError) return;
-            writeOp(compiler, OP_PRINT);
+            if (node->data.print.arguments != NULL) {
+                // 1. Count arguments
+                int argCount = 0;
+                ASTNode* arg = node->data.print.arguments;
+                while (arg != NULL) {
+                    argCount++;
+                    arg = arg->next;
+                }
+
+                // 2. Generate code for each argument (in order)
+                arg = node->data.print.arguments;
+                while (arg != NULL) {
+                    generateCode(compiler, arg);
+                    if (compiler->hadError) return;
+                    arg = arg->next;
+                }
+
+                // 3. Then generate code for the format string
+                generateCode(compiler, node->data.print.format);
+                if (compiler->hadError) return;
+
+                // 4. Push the argument count as constant
+                emitConstant(compiler, I32_VAL(argCount));
+
+                // 5. Emit formatted print instruction
+                writeOp(compiler, OP_FORMAT_PRINT);
+
+            } else {
+                // No interpolation, just a direct print of the string
+                generateCode(compiler, node->data.print.format);
+                if (compiler->hadError) return;
+                writeOp(compiler, OP_PRINT);
+            }
             break;
         }
 
@@ -1445,6 +1503,7 @@ bool compile(ASTNode* ast, Compiler* compiler) {
         if (!compiler->hadError) generateCode(compiler, current);
         current = current->next;
     }
+    // disassembleChunk(compiler->chunk, "code");
     writeOp(compiler, OP_RETURN);
 
     // Free compiler resources
@@ -1452,3 +1511,26 @@ bool compile(ASTNode* ast, Compiler* compiler) {
 
     return !compiler->hadError;
 }
+
+// bool compile(ASTNode* ast, Compiler* compiler) {
+//     initTypeSystem();
+//     ASTNode* current = ast;
+//     int index = 0;
+//     while (current) {
+//         fprintf(stderr, "[compile] Visiting node #%d, type = %d\n", index++,
+//                 current->type);
+
+//         typeCheckNode(compiler, current);
+//         if (!compiler->hadError) {
+//             fprintf(stderr, "[compile] Generating code for node #%d\n",
+//                     index - 1);
+//             generateCode(compiler, current);
+//         }
+//         current = current->next;
+//     }
+
+//     writeOp(compiler, OP_RETURN);
+//     disassembleChunk(compiler->chunk, "code");  // Only reached if loop succeeds
+//     freeCompiler(compiler);
+//     return !compiler->hadError;
+// }

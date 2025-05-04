@@ -73,6 +73,7 @@ typedef enum {
 
     OP_POP,
     OP_PRINT,
+    OP_FORMAT_PRINT, // New opcode for string interpolation
     OP_DEFINE_GLOBAL,
     OP_GET_GLOBAL,
     OP_SET_GLOBAL,

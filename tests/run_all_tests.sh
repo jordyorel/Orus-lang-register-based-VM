@@ -8,7 +8,8 @@ NC='\033[0m' # No Color
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ORUS_EXECUTABLE="../orus"
+# Fix the path to the Orus executable
+ORUS_EXECUTABLE="$(cd "$SCRIPT_DIR/.." && pwd)/orus"
 
 # Function to run tests in a category
 run_category_tests() {

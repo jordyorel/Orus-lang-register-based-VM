@@ -76,191 +76,60 @@ static InterpretResult run() {
 
         switch (instruction) {
             case OP_PRINT: {
-                // Check for stack underflow before attempting to pop
                 if (vm.stackTop <= vm.stack) {
                     runtimeError("Stack underflow in PRINT operation.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                
+
                 Value value = vmPop(&vm);
-                printf("OUTPUT: ");  // Add a clear prefix to program output
                 printValue(value);
-                printf("\n");
-                fflush(stdout);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
+                putchar('\n');
                 break;
             }
+
             case OP_CONSTANT: {
                 Value constant = READ_CONSTANT();
                 vmPush(&vm, constant);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: OP_CONSTANT pushing value: ");
-                // printValue(constant);
-                // fprintf(stderr, "\n");
-
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             }
             case OP_ADD_I32:
                 binaryOpI32(&vm, '+', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_SUBTRACT_I32:
                 binaryOpI32(&vm, '-', &result);
 
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_MULTIPLY_I32:
                 binaryOpI32(&vm, '*', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_DIVIDE_I32:
                 binaryOpI32(&vm, '/', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_ADD_U32:
                 binaryOpU32(&vm, '+', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_SUBTRACT_U32:
                 binaryOpU32(&vm, '-', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_MULTIPLY_U32:
                 binaryOpU32(&vm, '*', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_DIVIDE_U32:
                 binaryOpU32(&vm, '/', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_MODULO_I32:
                 moduloOpI32(&vm, &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_MODULO_U32:
                 moduloOpU32(&vm, &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
 
             // Comparison operations
             case OP_EQUAL:
                 compareOpI32(&vm, '=', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_NOT_EQUAL:
                 compareOpI32(&vm, '!', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_LESS_I32: {
                 // Check for stack underflow
@@ -282,203 +151,56 @@ static InterpretResult run() {
                 int32_t aValue = AS_I32(a);
                 int32_t bValue = AS_I32(b);
                 bool result = aValue < bValue;
-                
-                // Enhanced debug for loop conditions
-                // fprintf(stderr, "DEBUG: LESS_I32 comparing %d < %d = %s\n", 
-                //         aValue, bValue, result ? "true" : "false");
-                
-                // Push the result back onto the stack
-                vmPush(&vm, BOOL_VAL(result));
 
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack after LESS_I32: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
+                vmPush(&vm, BOOL_VAL(result));
 
                 break;
             }
             case OP_LESS_U32:
                 compareOpU32(&vm, '<', &result);
 
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_LESS_F64:
                 compareOpF64(&vm, '<', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_LESS_EQUAL_I32:
                 compareOpI32(&vm, 'L', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_LESS_EQUAL_U32:
                 compareOpU32(&vm, 'L', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_LESS_EQUAL_F64:
                 compareOpF64(&vm, 'L', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_GREATER_I32:
                 compareOpI32(&vm, '>', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_GREATER_U32:
                 compareOpU32(&vm, '>', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_GREATER_F64:
                 compareOpF64(&vm, '>', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_GREATER_EQUAL_I32:
                 compareOpI32(&vm, 'G', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_GREATER_EQUAL_U32:
                 compareOpU32(&vm, 'G', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_GREATER_EQUAL_F64:
                 compareOpF64(&vm, 'G', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_ADD_F64:
                 binaryOpF64(&vm, '+', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_SUBTRACT_F64:
                 binaryOpF64(&vm, '-', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_MULTIPLY_F64:
                 binaryOpF64(&vm, '*', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_DIVIDE_F64:
                 binaryOpF64(&vm, '/', &result);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             case OP_NEGATE_I32: {
                 if (!IS_I32(vmPeek(&vm, 0))) {
@@ -487,15 +209,6 @@ static InterpretResult run() {
                 }
                 int32_t value = AS_I32(vmPop(&vm));
                 vmPush(&vm, I32_VAL(-value));
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             }
             case OP_NEGATE_U32: {
@@ -505,15 +218,6 @@ static InterpretResult run() {
                 }
                 uint32_t value = AS_U32(vmPop(&vm));
                 vmPush(&vm, U32_VAL(-value));
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             }
             case OP_NEGATE_F64: {
@@ -523,15 +227,6 @@ static InterpretResult run() {
                 }
                 double value = AS_F64(vmPop(&vm));
                 vmPush(&vm, F64_VAL(-value));
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             }
             case OP_I32_TO_F64: {
@@ -543,15 +238,6 @@ static InterpretResult run() {
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 vmPush(&vm, F64_VAL(floatValue));
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             }
             case OP_U32_TO_F64: {
@@ -563,39 +249,13 @@ static InterpretResult run() {
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 vmPush(&vm, F64_VAL(floatValue));
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             }
             case OP_POP: {
                 vmPop(&vm);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             }
             case OP_RETURN: {
-                // Comment out debug prints
-                // fprintf(
-                //     stderr, "DEBUG: OP_RETURN: stackTop=%ld, stackBase=%d\n",
-                //     vm.stackTop - vm.stack,
-                //     vm.frameCount > 0 ? (int)vm.frames[vm.frameCount - 1].stackOffset
-                //                       : -1);
-
-                // Get the return value from the top of the stack
                 Value returnValue;
 
                 // If the stack is empty, use NIL_VAL as a default return value
@@ -624,11 +284,6 @@ static InterpretResult run() {
                         vmPush(&vm, returnValue);
                     }
 
-                    // Comment out debug prints
-                    // fprintf(stderr, "DEBUG: Function returned: ");
-                    // printValue(returnValue);
-                    // fprintf(stderr, "\n");
-
                     // For debugging, print the return value
                     printf("OUTPUT: Function returned: ");
                     printValue(returnValue);
@@ -638,57 +293,28 @@ static InterpretResult run() {
                     // If we're not in a function call, just push the return value back
                     vmPush(&vm, returnValue);
 
-                    // Comment out debug prints
-                    // fprintf(stderr, "DEBUG: Program finished with value: ");
-                    // printValue(returnValue);
-                    // fprintf(stderr, "\n");
-
                     return INTERPRET_OK;
                 }
 
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
 
                 break;
             }
             case OP_DEFINE_GLOBAL: {
                 uint8_t index = READ_BYTE();
-                
-                // Check for stack underflow - but don't error, handle it gracefully
+
+                // Check for stack underflow
                 if (vm.stackTop <= vm.stack) {
-                    // If stack is empty, initialize with a default value (0 for the sum variable)
-                    vm.globals[index] = I32_VAL(0);
-                    vm.globalTypes[index] = variableTypes[index];
-                    
-                    // Make sure we have something on the stack for subsequent operations
-                    vmPush(&vm, I32_VAL(0));
-                } else {
-                    // Normal case - copy value from stack to global
-                    Value value = vmPeek(&vm, 0);
-                    vm.globals[index] = value;
-                    vm.globalTypes[index] = variableTypes[index];
-                    
-                    // Leave the value on the stack for any subsequent operations
-                    // This is critical for the initial "sum = 0" assignment that gets printed
-                    vmPop(&vm);  // Safe to pop now because we already stored it
-                    vmPush(&vm, value);  // Push it back for the next operation
+                    runtimeError("Stack underflow in DEFINE_GLOBAL.");
+                    return INTERPRET_RUNTIME_ERROR;
                 }
 
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
+                Value value = vmPop(&vm);  // Pop the value to store
+                vm.globals[index] = value;
+                vm.globalTypes[index] = variableTypes[index];
+                // Do NOT push value again!
                 break;
             }
+
             case OP_GET_GLOBAL: {
                 uint8_t index = READ_BYTE();
                 if (vm.globalTypes[index] == NULL) {
@@ -697,18 +323,6 @@ static InterpretResult run() {
                 }
                 Value value = vm.globals[index];
                 vmPush(&vm, value);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: OP_GET_GLOBAL pushing value: ");
-                // printValue(value);
-                // fprintf(stderr, "\n");
-
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
 
                 break;
             }
@@ -731,11 +345,6 @@ static InterpretResult run() {
                     char varName[256] = {0};
                     strncpy(varName, vm.variableNames[index].name, vm.variableNames[index].length);
                     varName[vm.variableNames[index].length] = '\0';
-                    
-                    // fprintf(stderr, "DEBUG: Setting global %s (index %d) to ", 
-                    //         varName, index);
-                    // printValue(value);
-                    // fprintf(stderr, "\n");
                     
                     // Special tracking for the loop test
                     if (strcmp(varName, "sum") == 0 || strcmp(varName, "i") == 0) {
@@ -765,38 +374,17 @@ static InterpretResult run() {
                                 break;
                         }
                         
-                        // fprintf(stderr, "\n");
                     }
                 }
 
                 // Store the value in the global variable
                 vm.globals[index] = value;
-                
-                // IMPORTANT CHANGE: We DON'T pop the value from the stack anymore
-                // This ensures the value remains on the stack for subsequent operations
-                // This fixes the stack underflow issues in loops and other complex code
-                
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
 
                 break;
             }
             case OP_JUMP: {
                 uint16_t offset = READ_SHORT();
                 vm.ip += offset;
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
 
                 break;
             }
@@ -811,14 +399,6 @@ static InterpretResult run() {
                     vm.ip += offset;
                 }
 
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             }
             case OP_JUMP_IF_TRUE: {
@@ -831,14 +411,6 @@ static InterpretResult run() {
                 if (AS_BOOL(condition)) {
                     vm.ip += offset;
                 }
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
 
                 break;
             }
@@ -854,25 +426,7 @@ static InterpretResult run() {
                            "Forced termination to prevent infinite loop.\n");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                
-                // fprintf(stderr, "DEBUG: OP_LOOP executing with offset %d\n", offset);
-                
-                // The OP_LOOP instruction should not be checking condition itself
-                // It should simply jump back to where the condition is evaluated
-                
-                // Execute loop behavior - jump back to where conditions are evaluated
                 vm.ip -= offset;
-                
-                // fprintf(stderr, "DEBUG: Jumped back to position %ld for next iteration\n", 
-                //         vm.ip - vm.chunk->code);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after loop operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
 
                 break;
             }
@@ -891,32 +445,9 @@ static InterpretResult run() {
             case OP_NIL: {
                 vmPush(&vm, NIL_VAL);
 
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
-
                 break;
             }
             case OP_DEFINE_FUNCTION: {
-                uint8_t index = READ_BYTE();
-
-                // Nothing to do — compiler already stored function offset
-                // fprintf(
-                //     stderr,
-                //     "DEBUG: OP_DEFINE_FUNCTION runtime for index %d (noop)\n",
-                //     index);
-
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
 
                 break;
             }
@@ -932,22 +463,12 @@ static InterpretResult run() {
                 }
 
                 int32_t functionPos = AS_I32(vm.globals[functionIndex]);
-                // fprintf(stderr,
-                //         "DEBUG: Retrieved function position %d from global "
-                //         "index %d\n",
-                //         functionPos, functionIndex);
 
                 // Check call stack limit
                 if (vm.frameCount >= FRAMES_MAX) {
                     runtimeError("Stack overflow.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-
-                // Debug output
-                // fprintf(stderr,
-                //         "DEBUG: Executing function at bytecode offset %d with "
-                //         "%d args\n",
-                //         functionPos, argCount);
 
                 // Set up new call frame
                 CallFrame* frame = &vm.frames[vm.frameCount++];
@@ -956,7 +477,6 @@ static InterpretResult run() {
                 // Ensure we have a valid stack offset
                 int stackOffset = (int)(vm.stackTop - vm.stack - argCount);
                 if (stackOffset < 0) {
-                    // fprintf(stderr, "Warning: Correcting negative stack offset from %d to 0\n", stackOffset);
                     stackOffset = 0;
                 }
                 
@@ -967,24 +487,190 @@ static InterpretResult run() {
                 if (vm.stackTop == vm.stack) {
                     // Stack is empty, initialize it with at least one value
                     vmPush(&vm, I32_VAL(0));  // Push a dummy value that won't be used
-                    // We don't pop this value - it's needed to ensure stack operations work
                 }
 
                 // Jump to function body
                 vm.ip = vm.chunk->code + functionPos;
-                // fprintf(stderr, "DEBUG: Entered function at offset %d\n",
-                //         (int)(vm.ip - vm.chunk->code));
-                // fprintf(stderr, "DEBUG: Stack top = %ld\n",
-                //         vm.stackTop - vm.stack);
 
-                // Comment out debug prints
-                // fprintf(stderr, "DEBUG: Stack state after operation: ");
-                // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-                //     printValue(*slot);
-                //     fprintf(stderr, " ");
-                // }
-                // fprintf(stderr, "\n");
+                break;
+            }
+            case OP_FORMAT_PRINT: {
+                // Ensure stack has at least format string and argument count
+                if (vm.stackTop - vm.stack < 2) {
+                    runtimeError(
+                        "FORMAT_PRINT expects format string and argument count "
+                        "on stack.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
 
+                Value countValue = vm.stackTop[-1];
+                Value formatValue = vm.stackTop[-2];
+
+                // Type checks
+                if (!IS_I32(countValue)) {
+                    runtimeError("Argument count must be an integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                if (!IS_STRING(formatValue)) {
+                    runtimeError("Format string must be a string.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                int argCount = AS_I32(countValue);
+                String formatStr = AS_STRING(formatValue);
+
+                // Check that we have enough arguments below the format string
+                if (vm.stackTop - vm.stack < 2 + argCount) {
+                    runtimeError(
+                        "Not enough arguments for string interpolation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                // Allocate buffer
+                int resultCapacity = formatStr.length * 2;
+                char* resultBuffer = (char*)malloc(resultCapacity);
+                if (!resultBuffer) {
+                    runtimeError("Memory allocation failed for print buffer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                int resultLength = 0;
+                int formatIndex = 0;
+                int argIndex = 0;
+
+                while (formatIndex < formatStr.length) {
+                    if (formatIndex + 1 < formatStr.length &&
+                        formatStr.chars[formatIndex] == '{' &&
+                        formatStr.chars[formatIndex + 1] == '}') {
+                        if (argIndex >= argCount) {
+                            runtimeError(
+                                "Too few arguments for format string (needed "
+                                "more than %d).",
+                                argIndex);
+                            free(resultBuffer);
+                            return INTERPRET_RUNTIME_ERROR;
+                        }
+
+                        Value arg = vm.stack[(int)(vm.stackTop - vm.stack) -
+                                             argCount - 2 + argIndex];
+
+                        char valueStr[100];
+                        int valueLen = 0;
+
+                        switch (arg.type) {
+                            case VAL_I32:
+                                valueLen = snprintf(valueStr, sizeof(valueStr),
+                                                    "%d", AS_I32(arg));
+                                break;
+                            case VAL_U32:
+                                valueLen = snprintf(valueStr, sizeof(valueStr),
+                                                    "%u", AS_U32(arg));
+                                break;
+                            case VAL_F64:
+                                valueLen = snprintf(valueStr, sizeof(valueStr),
+                                                    "%g", AS_F64(arg));
+                                break;
+                            case VAL_BOOL:
+                                valueLen =
+                                    snprintf(valueStr, sizeof(valueStr), "%s",
+                                             AS_BOOL(arg) ? "true" : "false");
+                                break;
+                            case VAL_NIL:
+                                valueLen =
+                                    snprintf(valueStr, sizeof(valueStr), "nil");
+                                break;
+                            case VAL_STRING: {
+                                valueLen = AS_STRING(arg).length;
+                                if (resultLength + valueLen >= resultCapacity) {
+                                    resultCapacity =
+                                        (resultLength + valueLen) * 2;
+                                    resultBuffer = (char*)realloc(
+                                        resultBuffer, resultCapacity);
+                                    if (!resultBuffer) {
+                                        runtimeError(
+                                            "Memory reallocation failed for "
+                                            "string argument.");
+                                        return INTERPRET_RUNTIME_ERROR;
+                                    }
+                                }
+                                memcpy(resultBuffer + resultLength,
+                                       AS_STRING(arg).chars, valueLen);
+                                resultLength += valueLen;
+                                valueLen = 0;
+                                break;
+                            }
+                        }
+
+                        if (valueLen > 0) {
+                            if (resultLength + valueLen >= resultCapacity) {
+                                resultCapacity = (resultLength + valueLen) * 2;
+                                resultBuffer = (char*)realloc(resultBuffer,
+                                                              resultCapacity);
+                                if (!resultBuffer) {
+                                    runtimeError(
+                                        "Memory reallocation failed for value "
+                                        "conversion.");
+                                    return INTERPRET_RUNTIME_ERROR;
+                                }
+                            }
+                            memcpy(resultBuffer + resultLength, valueStr,
+                                   valueLen);
+                            resultLength += valueLen;
+                        }
+
+                        formatIndex += 2;
+                        argIndex++;
+
+                    } else {
+                        if (resultLength + 1 >= resultCapacity) {
+                            resultCapacity = (resultLength + 1) * 2;
+                            resultBuffer =
+                                (char*)realloc(resultBuffer, resultCapacity);
+                            if (!resultBuffer) {
+                                runtimeError(
+                                    "Memory reallocation failed while copying "
+                                    "character.");
+                                return INTERPRET_RUNTIME_ERROR;
+                            }
+                        }
+                        resultBuffer[resultLength++] =
+                            formatStr.chars[formatIndex++];
+                    }
+                }
+
+                if (argIndex < argCount) {
+                    runtimeError(
+                        "Too many arguments for format string (used %d, given "
+                        "%d).",
+                        argIndex, argCount);
+
+                    free(resultBuffer);
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                // Null-terminate
+                if (resultLength + 1 >= resultCapacity) {
+                    resultCapacity = (resultLength + 1) * 2;
+                    resultBuffer = (char*)realloc(resultBuffer, resultCapacity);
+                    if (!resultBuffer) {
+                        runtimeError(
+                            "Memory reallocation failed during final "
+                            "null-termination.");
+                        return INTERPRET_RUNTIME_ERROR;
+                    }
+                }
+                resultBuffer[resultLength] = '\0';
+
+                // Print
+                printf("%s\n", resultBuffer);
+                fflush(stdout);
+
+                // Clean up: pop args + format + count
+                for (int i = 0; i < argCount + 2; i++) {
+                    vmPop(&vm);
+                }
+
+                free(resultBuffer);
                 break;
             }
             default:

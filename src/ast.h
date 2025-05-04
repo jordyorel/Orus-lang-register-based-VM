@@ -38,7 +38,9 @@ typedef struct {
 } LetData;
 
 typedef struct {
-    struct ASTNode* expr;
+    struct ASTNode* format;     // Format string expression
+    struct ASTNode* arguments;  // Linked list of argument expressions
+    int argCount;               // Number of arguments
 } PrintData;
 
 typedef struct {
@@ -119,7 +121,7 @@ ASTNode* createBinaryNode(Token operator, ASTNode * left, ASTNode* right);
 ASTNode* createUnaryNode(Token operator, ASTNode * operand);
 ASTNode* createVariableNode(Token name, uint8_t index);
 ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer);
-ASTNode* createPrintNode(ASTNode* expr);  // Ensure this is declared
+ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount);
 ASTNode* createAssignmentNode(Token name, ASTNode* value);
 ASTNode* createIfNode(ASTNode* condition, ASTNode* thenBranch, ASTNode* elifConditions, ASTNode* elifBranches, ASTNode* elseBranch);
 ASTNode* createBlockNode(ASTNode* statements);

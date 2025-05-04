@@ -1,0 +1,34 @@
+// Test string interpolation in print function
+
+// Test with integer value
+print("The value of 10 * 5 is: {}", 10 * 5)
+
+// Test with floating point value
+print("Pi is approximately {}", 3.14159)
+
+// Test with variable
+let name = "Orus"
+print("Hello, {}!", name)
+
+// Test with multiple placeholders
+let a = 10
+let b = 20
+print("The sum of {} and {} is {}", a, b, a + b)
+
+// Test with boolean value
+print("Is 10 greater than 5? {}", 10 > 5)
+
+// Test with expression
+print("The result of 5 * (3 + 2) is {}", 5 * (3 + 2))
+
+// Test with mixed types
+let age = 25
+print("{} is {} years old", name, age)
+
+// Test with no placeholders
+print("This is a plain string with no interpolation")
+
+// Test with missing argument
+print("Value: {}")
+
+

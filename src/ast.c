@@ -75,13 +75,15 @@ ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer) {
     return node;
 }
 
-ASTNode* createPrintNode(ASTNode* expr) {
+ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount) {
     ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
     node->type = AST_PRINT;
     node->left = NULL;
     node->right = NULL;
     node->next = NULL;
-    node->data.print.expr = expr;
+    node->data.print.format = format;
+    node->data.print.arguments = arguments;
+    node->data.print.argCount = argCount;
     node->valueType = NULL;
     return node;
 }
@@ -221,8 +223,10 @@ void freeASTNode(ASTNode* node) {
     if (node->right) freeASTNode(node->right);
     if (node->type == AST_LET && node->data.let.initializer)
         freeASTNode(node->data.let.initializer);
-    if (node->type == AST_PRINT && node->data.print.expr)
-        freeASTNode(node->data.print.expr);
+    if (node->type == AST_PRINT) {
+        if (node->data.print.format) freeASTNode(node->data.print.format);
+        if (node->data.print.arguments) freeASTNode(node->data.print.arguments);
+    }
     // Assignment nodes store their value in the left child, which is already freed above
     if (node->type == AST_IF) {
         if (node->data.ifStmt.condition) freeASTNode(node->data.ifStmt.condition);

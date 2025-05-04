@@ -1,38 +1,26 @@
 // Test complex expressions with mixed operations and precedence
-fn test_complex_expressions() -> i32 {
-    print("Complex Expressions Test:")
-    
-    // Test operator precedence
-    let expr1 = 2 + 3 * 4
-    print("2 + 3 * 4 =")
-    print(expr1)
-    
-    // Test parentheses
-    let expr2 = (2 + 3) * 4
-    print("(2 + 3) * 4 =")
-    print(expr2)
-    
-    // Test mixed operators
-    let expr3 = 10 - 2 * 3 + 4 / 2
-    print("10 - 2 * 3 + 4 / 2 =")
-    print(expr3)
-    
-    // Complex with variables
-    let a = 5
-    let b = 3
-    let c = 2
-    let expr4 = a * b + a / c - b % c
-    print("5 * 3 + 5 / 2 - 3 % 2 =")
-    print(expr4)
-    
-    // Mixed types
-    let i = 10
-    let f = 2.5
-    let expr5 = i * f + i / f
-    print("10 * 2.5 + 10 / 2.5 =")
-    print(expr5)
-    
-    return 0
-}
+print("Complex Expressions Test:")
 
-test_complex_expressions()
+// Test operator precedence
+print("2 + 3 * 4 =")
+print(2 + 3 * 4)
+
+// Test parentheses
+print("(2 + 3) * 4 =")
+print((2 + 3) * 4)
+
+// Test mixed operators
+print("10 - 2 * 3 + 4 / 2 =")
+print(10 - 2 * 3 + 4 / 2)
+
+// Complex with mixed values
+print("5 * 3 + 5 / 2 - 3 % 2 =")
+print(5 * 3 + 5 / 2 - 3 % 2)
+
+// Mixed types
+print("10 * 2.5 =")
+print(10 * 2.5)
+
+
+
+

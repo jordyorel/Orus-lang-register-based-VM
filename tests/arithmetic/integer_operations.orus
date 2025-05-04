@@ -1,30 +1,28 @@
 // Test basic integer arithmetic operations
-fn test_i32_operations() -> i32 {
-    let a: i32 = 10
-    let b: i32 = 3
-    
-    let sum = a + b
-    let diff = a - b
-    let product = a * b
-    let quotient = a / b
-    let remainder = a % b
-    let negation = -a
-    
-    print("i32 Operations:")
-    print("10 + 3 =")
-    print(sum)
-    print("10 - 3 =")
-    print(diff)
-    print("10 * 3 =")
-    print(product)
-    print("10 / 3 =")
-    print(quotient)
-    print("10 % 3 =")
-    print(remainder)
-    print("-10 =")
-    print(negation)
-    
-    return 0
-}
+// Explicit operations instead of variable assignments
+print("i32 Operations:")
 
-test_i32_operations()
+// Addition
+print("10 + 3 =")
+print(10 + 3)
+
+// Subtraction
+print("10 - 3 =")
+print(10 - 3)
+
+// Multiplication
+print("10 * 3 =")
+print(10 * 3)
+
+// Division
+print("10 / 3 =")
+print(10 / 3)
+
+// Modulo
+print("10 % 3 =")
+print(10 % 3)
+
+// Negation
+print("-10 =")
+print(-10)
+

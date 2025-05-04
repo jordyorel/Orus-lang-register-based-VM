@@ -443,48 +443,92 @@ static void statement(Parser* parser, ASTNode** ast) {
         advance(parser);
     }
 
-    // Check for EOF
     if (check(parser, TOKEN_EOF)) {
         *ast = NULL;
         return;
     }
 
-    // Initialize ast to NULL in case of error
-    *ast = NULL;
+    *ast = NULL;  // Safe default
 
     if (match(parser, TOKEN_PRINT)) {
         consume(parser, TOKEN_LEFT_PAREN, "Expect '(' after 'print'.");
-        ASTNode* expr;
-        expression(parser, &expr);
-        consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after print value.");
+
+        // Parse format string
+        ASTNode* formatExpr;
+        expression(parser, &formatExpr);
+
+        bool validFormat = formatExpr != NULL &&
+                           formatExpr->type == AST_LITERAL &&
+                           formatExpr->data.literal.type == VAL_STRING;
+
+        if (!validFormat) {
+            error(parser,
+                  "First argument to print must be a string literal for "
+                  "interpolation.");
+            if (formatExpr) freeASTNode(formatExpr);
+            return;
+        }
+
+        // Parse comma-separated arguments
+        ASTNode* arguments = NULL;
+        ASTNode* lastArg = NULL;
+        int argCount = 0;
+
+        while (match(parser, TOKEN_COMMA)) {
+            ASTNode* arg;
+            expression(parser, &arg);
+
+            if (arg == NULL) {
+                error(parser, "Expected expression as argument.");
+                freeASTNode(formatExpr);
+                freeASTNode(arguments);
+                return;
+            }
+
+            arg->next = NULL;  // 🔒 important!
+
+            if (arguments == NULL) {
+                arguments = arg;
+            } else {
+                lastArg->next = arg;
+            }
+            lastArg = arg;
+            argCount++;
+        }
+
+        consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after print arguments.");
         consumeStatementEnd(parser);
-        *ast = createPrintNode(expr);
+
+        *ast = createPrintNode(formatExpr, arguments, argCount);
+
     } else if (match(parser, TOKEN_IF)) {
         ifStatement(parser, ast);
-        // No need to consume statement end here as blocks handle their own termination
+
     } else if (match(parser, TOKEN_WHILE)) {
         whileStatement(parser, ast);
-        // No need to consume statement end here as blocks handle their own termination
+
     } else if (match(parser, TOKEN_FOR)) {
         forStatement(parser, ast);
-        // No need to consume statement end here as blocks handle their own termination
+
     } else if (match(parser, TOKEN_FN)) {
         functionDeclaration(parser, ast);
-        // No need to consume statement end here as blocks handle their own termination
+
     } else if (match(parser, TOKEN_RETURN)) {
         returnStatement(parser, ast);
-        // No need to consume statement end here as returnStatement handles it
+
     } else if (match(parser, TOKEN_BREAK)) {
         consumeStatementEnd(parser);
         *ast = createBreakNode();
+
     } else if (match(parser, TOKEN_CONTINUE)) {
         consumeStatementEnd(parser);
         *ast = createContinueNode();
+
     } else if (match(parser, TOKEN_LEFT_BRACE)) {
         // Rewind to the left brace so block() can consume it
         parser->current = parser->previous;
         block(parser, ast);
-        // No need to consume statement end here as blocks handle their own termination
+
     } else if (match(parser, TOKEN_LET)) {
         consume(parser, TOKEN_IDENTIFIER, "Expect variable name.");
         Token name = parser->previous;
@@ -498,34 +542,32 @@ static void statement(Parser* parser, ASTNode** ast) {
         consume(parser, TOKEN_EQUAL, "Expect '=' after variable name.");
         ASTNode* initializer;
         expression(parser, &initializer);
-
         consumeStatementEnd(parser);
+
         *ast = createLetNode(name, type, initializer);
+
     } else if (check(parser, TOKEN_IDENTIFIER)) {
-        // This could be a variable assignment or a standalone expression
         Token name = parser->current;
         advance(parser);
 
         if (match(parser, TOKEN_EQUAL)) {
-            // Variable assignment: identifier = expression
             ASTNode* value;
             expression(parser, &value);
             consumeStatementEnd(parser);
             *ast = createAssignmentNode(name, value);
         } else {
-            // This is a standalone expression starting with an identifier
-            // Rewind the parser to the identifier
             parser->current = name;
             ASTNode* expr;
             expression(parser, &expr);
             consumeStatementEnd(parser);
-            *ast = expr;  // Don't wrap in print, allow function calls as statements
+            *ast = expr;
         }
+
     } else {
         ASTNode* expr;
         expression(parser, &expr);
         consumeStatementEnd(parser);
-        *ast = expr;  // Don't wrap in print, allow function calls as statements
+        *ast = expr;
     }
 }
 
@@ -564,6 +606,7 @@ void initParser(Parser* parser, Scanner* scanner) {
 }
 
 bool parse(const char* source, ASTNode** ast) {
+    // fprintf(stderr, ">>> ENTERED PARSE FUNCTION <<<\n");
     Scanner scanner;
     init_scanner(source);
     Parser parser;
