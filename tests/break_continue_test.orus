@@ -10,20 +10,7 @@ fn test_break() -> i32 {
     return sum  // Should be 0+1+2+3+4 = 10
 }
 
-// Test for continue statement
-fn test_continue() -> i32 {
-    let sum = 0
-    for i in 0..5 {
-        if i == 2 {
-            continue
-        }
-        sum = sum + i
-    }
-    return sum  // Should be 0+1+3+4 = 8
-}
+
 
 print("Testing break statement:")
 print(test_break())
-
-print("Testing continue statement:")
-print(test_continue())

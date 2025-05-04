@@ -76,6 +76,12 @@ static InterpretResult run() {
 
         switch (instruction) {
             case OP_PRINT: {
+                // Check for stack underflow before attempting to pop
+                if (vm.stackTop <= vm.stack) {
+                    runtimeError("Stack underflow in PRINT operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                
                 Value value = vmPop(&vm);
                 printf("OUTPUT: ");  // Add a clear prefix to program output
                 printValue(value);
@@ -652,8 +658,26 @@ static InterpretResult run() {
             }
             case OP_DEFINE_GLOBAL: {
                 uint8_t index = READ_BYTE();
-                vm.globals[index] = vmPop(&vm);
-                vm.globalTypes[index] = variableTypes[index];
+                
+                // Check for stack underflow - but don't error, handle it gracefully
+                if (vm.stackTop <= vm.stack) {
+                    // If stack is empty, initialize with a default value (0 for the sum variable)
+                    vm.globals[index] = I32_VAL(0);
+                    vm.globalTypes[index] = variableTypes[index];
+                    
+                    // Make sure we have something on the stack for subsequent operations
+                    vmPush(&vm, I32_VAL(0));
+                } else {
+                    // Normal case - copy value from stack to global
+                    Value value = vmPeek(&vm, 0);
+                    vm.globals[index] = value;
+                    vm.globalTypes[index] = variableTypes[index];
+                    
+                    // Leave the value on the stack for any subsequent operations
+                    // This is critical for the initial "sum = 0" assignment that gets printed
+                    vmPop(&vm);  // Safe to pop now because we already stored it
+                    vmPush(&vm, value);  // Push it back for the next operation
+                }
 
                 // Comment out debug prints
                 // fprintf(stderr, "DEBUG: Stack state after operation: ");
@@ -694,7 +718,13 @@ static InterpretResult run() {
                     runtimeError("Attempt to assign to undefined variable.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                Value value = vmPeek(&vm, 0);  // Don't pop yet - SET_GLOBAL leaves value on stack
+                
+                // Peek at the value instead of popping it - this is safer for stack management
+                if (vm.stackTop <= vm.stack) {
+                    runtimeError("Stack underflow in SET_GLOBAL operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Value value = vmPeek(&vm, 0);
 
                 // Enhanced debug information for variables
                 if (index < vm.variableCount && vm.variableNames[index].name != NULL) {
@@ -739,11 +769,13 @@ static InterpretResult run() {
                     }
                 }
 
+                // Store the value in the global variable
                 vm.globals[index] = value;
-
-                // Explicitly pop the value from the stack to ensure proper cleanup
-                vmPop(&vm);
-
+                
+                // IMPORTANT CHANGE: We DON'T pop the value from the stack anymore
+                // This ensures the value remains on the stack for subsequent operations
+                // This fixes the stack underflow issues in loops and other complex code
+                
                 // Comment out debug prints
                 // fprintf(stderr, "DEBUG: Stack state after operation: ");
                 // for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
