@@ -8,17 +8,15 @@ print("Type Conversion Test:")
 
 // i32 to f64 conversion
 let conv1 = i32_val + f64_val
-print("i32 + f64 conversion (42 + 3.14):")
-print(conv1)
+print("i32 + f64 conversion (42 + 3.14): {}", conv1)
 
 // u32 to f64 conversion
 let conv2 = u32_val + f64_val
-print("u32 + f64 conversion (100 + 3.14):")
-print(conv2)
+print("u32 + f64 conversion (100 + 3.14): {} ", conv2)
 
 // Fix: Convert u32_val to i32 before division
 let u32_as_i32: i32 = 100  // Create a new i32 variable with the same value
 let div_result = i32_val / u32_as_i32
-print("Division operation (42 / 100):")
-print(div_result)
+print("Division operation (42 / 100): {} ", div_result)
+
 

@@ -5,34 +5,23 @@ let c: i32 = 10
 
 print("i32 Comparisons:")
 
-print("10 == 20 is")
-print(a == b)
+print("10 == 20 is: {}", a == b)
 
-print("10 == 10 is")
-print(a == c)
+print("10 == 10 is: {} ", a == c)
 
-print("10 != 20 is")
-print(a != b)
+print("10 != 20 is: {} ", a != b)
 
-print("10 < 20 is")
-print(a < b)
+print("10 < 20 is: {} ", a < b)
 
-print("10 <= 20 is")
-print(a <= b)
+print("10 <= 20 is: {} ", a <= b)
 
-print("10 <= 10 is")
-print(a <= c)
+print("10 <= 10 is: {} ", a <= c)
 
-print("10 > 20 is")
-print(a > b)
+print("10 > 20 is: {} ", a > b)
 
-print("10 >= 20 is")
-print(a >= b)
+print("10 >= 20 is: {}", a >= b)
 
-print("10 >= 10 is")
-print(a >= c)
-
-return true
+print("10 >= 10 is: {} ", a >= c)
 
 
 
