@@ -52,6 +52,16 @@ void printValue(Value value) {
         case VAL_STRING:
             printf("%s", AS_STRING(value).chars);
             break;
+        case VAL_ARRAY: {
+            printf("[");
+            Array arr = AS_ARRAY(value);
+            for (int i = 0; i < arr.length; i++) {
+                printValue(arr.elements[i]);
+                if (i < arr.length - 1) printf(", ");
+            }
+            printf("]");
+            break;
+        }
         default:
             printf("unknown");
             break;
@@ -70,6 +80,13 @@ bool valuesEqual(Value a, Value b) {
         case VAL_STRING:
             return a.as.string.length == b.as.string.length &&
                    memcmp(a.as.string.chars, b.as.string.chars, a.as.string.length) == 0;
+        case VAL_ARRAY: {
+            if (a.as.array.length != b.as.array.length) return false;
+            for (int i = 0; i < a.as.array.length; i++) {
+                if (!valuesEqual(a.as.array.elements[i], b.as.array.elements[i])) return false;
+            }
+            return true;
+        }
         default: return false;
     }
 }

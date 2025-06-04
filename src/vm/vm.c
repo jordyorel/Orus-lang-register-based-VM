@@ -452,6 +452,17 @@ static InterpretResult run() {
 
                 break;
             }
+            case OP_MAKE_ARRAY: {
+                uint8_t count = READ_BYTE();
+                Array arr;
+                arr.length = count;
+                arr.elements = (Value*)malloc(sizeof(Value) * count);
+                for (int i = count - 1; i >= 0; i--) {
+                    arr.elements[i] = vmPop(&vm);
+                }
+                vmPush(&vm, ARRAY_VAL(arr));
+                break;
+            }
             case OP_CALL: {
                 uint8_t globalIndex = READ_BYTE();
                 uint8_t argCount = READ_BYTE();

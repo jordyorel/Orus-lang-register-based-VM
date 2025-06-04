@@ -584,6 +584,28 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             break;
         }
 
+        case AST_ARRAY: {
+            ASTNode* elem = node->data.array.elements;
+            Type* elementType = NULL;
+            while (elem) {
+                typeCheckNode(compiler, elem);
+                if (compiler->hadError) return;
+                if (!elementType)
+                    elementType = elem->valueType;
+                else if (!typesEqual(elementType, elem->valueType)) {
+                    error(compiler, "Array elements must have the same type.");
+                    return;
+                }
+                elem = elem->next;
+            }
+            if (!elementType) {
+                error(compiler, "Cannot deduce array element type.");
+                return;
+            }
+            node->valueType = createArrayType(elementType);
+            break;
+        }
+
         case AST_RETURN: {
             // Type check the return value if present
             if (node->data.returnStmt.value != NULL) {
@@ -959,6 +981,20 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             if (compiler->hadError) return;
             writeOp(compiler, OP_SET_GLOBAL);
             writeOp(compiler, node->data.variable.index);
+            break;
+        }
+
+        case AST_ARRAY: {
+            int count = 0;
+            ASTNode* elem = node->data.array.elements;
+            while (elem) {
+                generateCode(compiler, elem);
+                if (compiler->hadError) return;
+                count++;
+                elem = elem->next;
+            }
+            writeOp(compiler, OP_MAKE_ARRAY);
+            writeOp(compiler, count);
             break;
         }
 

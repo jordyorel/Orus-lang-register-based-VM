@@ -197,6 +197,18 @@ ASTNode* createReturnNode(ASTNode* value) {
     return node;
 }
 
+ASTNode* createArrayNode(ASTNode* elements, int elementCount) {
+    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    node->type = AST_ARRAY;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.array.elements = elements;
+    node->data.array.elementCount = elementCount;
+    node->valueType = NULL;
+    return node;
+}
+
 ASTNode* createBreakNode() {
     ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
     node->type = AST_BREAK;
@@ -250,6 +262,9 @@ void freeASTNode(ASTNode* node) {
     if (node->type == AST_FUNCTION) {
         if (node->data.function.parameters) freeASTNode(node->data.function.parameters);
         if (node->data.function.body) freeASTNode(node->data.function.body);
+    }
+    if (node->type == AST_ARRAY) {
+        if (node->data.array.elements) freeASTNode(node->data.array.elements);
     }
     if (node->type == AST_CALL) {
         if (node->data.call.arguments) freeASTNode(node->data.call.arguments);
