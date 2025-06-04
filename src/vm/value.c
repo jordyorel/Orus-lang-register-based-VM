@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "memory.h"
-#include "value.h"
+#include "../../include/memory.h"
+#include "../../include/value.h"
 
 void initValueArray(ValueArray* array) {
     array->values = NULL;

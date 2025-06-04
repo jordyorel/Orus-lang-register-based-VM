@@ -1,12 +1,12 @@
-#include "compiler.h"
+#include "../../include/compiler.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "memory.h"
-#include "value.h"
-#include "vm.h"
-#include "debug.h"
+#include "../../include/memory.h"
+#include "../../include/value.h"
+#include "../../include/vm.h"
+#include "../../include/debug.h"
 
 extern VM vm;
 

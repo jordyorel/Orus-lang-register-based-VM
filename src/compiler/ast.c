@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "ast.h"
-#include "memory.h"
+#include "../../include/ast.h"
+#include "../../include/memory.h"
 
 ASTNode* createLiteralNode(Value value) {
     ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));

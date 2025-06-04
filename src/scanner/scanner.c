@@ -3,8 +3,8 @@
 #include <stdlib.h>
 
 
-#include "scanner.h"
-#include "common.h"
+#include "../../include/scanner.h"
+#include "../../include/common.h"
 
 
 Scanner scanner;

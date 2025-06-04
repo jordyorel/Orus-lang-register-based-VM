@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-#include "debug.h"
-#include "value.h"
+#include "../../include/debug.h"
+#include "../../include/value.h"
 
 // Forward declarations for all static functions
 static int constantInstruction(const char* name, Chunk* chunk, int offset);
