@@ -25,6 +25,14 @@ void initChunk(Chunk* chunk) {
 void freeChunk(Chunk* chunk) {
     FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
     FREE_ARRAY(LineInfo, chunk->line_info, chunk->line_capcity);
+    for (int i = 0; i < chunk->constants.count; i++) {
+        Value v = chunk->constants.values[i];
+        if (v.type == VAL_STRING) {
+            free(v.as.string.chars);
+            chunk->constants.values[i].as.string.chars = NULL;
+            chunk->constants.values[i].as.string.length = 0;
+        }
+    }
     freeValueArray(&chunk->constants);
     initChunk(chunk);
 }
