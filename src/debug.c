@@ -144,9 +144,6 @@ int disassembleInstruction(Chunk* chunk, int offset) {
         case OP_NIL:
             return simpleInstruction("OP_NIL", offset);
 
-        case OP_DEFINE_FUNCTION:
-            return byteInstruction("OP_DEFINE_FUNCTION", chunk, offset);
-
         case OP_CALL: {
             uint8_t functionIndex = chunk->code[offset + 1];
             uint8_t argCount = chunk->code[offset + 2];
