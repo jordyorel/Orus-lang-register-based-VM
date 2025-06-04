@@ -25,14 +25,25 @@ run_category_tests() {
             # Run the test and capture the output
             output=$($ORUS_EXECUTABLE "$test_file" 2>&1)
             exit_code=$?
-            
-            if [ $exit_code -eq 0 ]; then
-                echo -e "  ${GREEN}✓ PASS${NC}: $test_name"
+
+            # Determine expected behaviour for error tests
+            if [ "$category" = "errors" ]; then
+                if [ $exit_code -ne 0 ]; then
+                    echo -e "  ${GREEN}✓ PASS${NC}: $test_name"
+                else
+                    echo -e "  ${RED}✗ FAIL${NC}: $test_name"
+                    echo -e "  Error details:"
+                    echo -e "  $output" | sed 's/^/  /'
+                fi
             else
-                echo -e "  ${RED}✗ FAIL${NC}: $test_name"
-                # Show the error message
-                echo -e "  Error details:"
-                echo -e "  $output" | sed 's/^/  /'
+                if [ $exit_code -eq 0 ]; then
+                    echo -e "  ${GREEN}✓ PASS${NC}: $test_name"
+                else
+                    echo -e "  ${RED}✗ FAIL${NC}: $test_name"
+                    # Show the error message
+                    echo -e "  Error details:"
+                    echo -e "  $output" | sed 's/^/  /'
+                fi
             fi
         fi
     done
