@@ -36,12 +36,14 @@ void init_keyword_table() {
                               "fn",     "if",    "nil",  "or",    "print",
                               "return", "super", "this", "true",  "let",
                               "while",  "i32",   "u32",  "f64",   "bool", "in",
+                              "struct", "impl", 
                               NULL};
     TokenType types[] = {
         TOKEN_AND, TOKEN_BREAK, TOKEN_CLASS, TOKEN_CONTINUE, TOKEN_ELSE, TOKEN_ELIF, TOKEN_FALSE, TOKEN_FOR, TOKEN_FN,
         TOKEN_IF, TOKEN_NIL, TOKEN_OR, TOKEN_PRINT, TOKEN_RETURN, TOKEN_SUPER,
         TOKEN_THIS, TOKEN_TRUE, TOKEN_LET, TOKEN_WHILE, TOKEN_INT, TOKEN_U32,
         TOKEN_F64, TOKEN_BOOL, TOKEN_IN,
+        TOKEN_STRUCT, TOKEN_IMPL,
     };
 
     for (int i = 0; keywords[i] != NULL; i++) {

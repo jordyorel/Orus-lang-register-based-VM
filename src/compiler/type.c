@@ -2,9 +2,13 @@
 #include <stdlib.h>
 #include "../../include/type.h"
 #include "../../include/memory.h"
+#include "../../include/common.h"
+#include <string.h>
 
 // Define the array of primitive types
 Type* primitiveTypes[TYPE_COUNT] = {NULL};
+static Type* structTypes[UINT8_COUNT] = {NULL};
+static int structTypeCount = 0;
 static bool typeSystemInitialized = false;
 
 void initTypeSystem(void) {
@@ -52,6 +56,26 @@ Type* createFunctionType(Type* returnType, Type** paramTypes, int paramCount) {
     return type;
 }
 
+Type* createStructType(const char* name, FieldInfo* fields, int fieldCount) {
+    if (structTypeCount >= UINT8_COUNT) return NULL;
+    Type* type = (Type*)malloc(sizeof(Type));
+    type->kind = TYPE_STRUCT;
+    type->info.structure.name = name;
+    type->info.structure.fields = fields;
+    type->info.structure.fieldCount = fieldCount;
+    structTypes[structTypeCount++] = type;
+    return type;
+}
+
+Type* findStructType(const char* name) {
+    for (int i = 0; i < structTypeCount; i++) {
+        if (strcmp(structTypes[i]->info.structure.name, name) == 0) {
+            return structTypes[i];
+        }
+    }
+    return NULL;
+}
+
 void freeType(Type* type) {
     if (type == NULL) return;
     
@@ -65,6 +89,13 @@ void freeType(Type* type) {
                 freeType(type->info.function.paramTypes[i]);
             }
             free(type->info.function.paramTypes);
+            break;
+        case TYPE_STRUCT:
+            for (int i = 0; i < type->info.structure.fieldCount; i++) {
+                free((char*)type->info.structure.fields[i].name);
+                freeType(type->info.structure.fields[i].type);
+            }
+            free(type->info.structure.fields);
             break;
         default:
             break;
@@ -81,6 +112,13 @@ void freeTypeSystem(void) {
             primitiveTypes[i] = NULL;
         }
     }
+    for (int i = 0; i < structTypeCount; i++) {
+        if (structTypes[i] != NULL) {
+            freeType(structTypes[i]);
+            structTypes[i] = NULL;
+        }
+    }
+    structTypeCount = 0;
     typeSystemInitialized = false;
 }
 
@@ -118,7 +156,10 @@ bool typesEqual(Type* a, Type* b) {
             }
             return true;
         }
-            
+
+        case TYPE_STRUCT:
+            return strcmp(a->info.structure.name, b->info.structure.name) == 0;
+
         default:
             return false;
     }
@@ -134,6 +175,7 @@ const char* getTypeName(TypeKind kind) {
         case TYPE_NIL: return "nil";
         case TYPE_ARRAY: return "array";
         case TYPE_FUNCTION: return "function";
+        case TYPE_STRUCT: return "struct";
         default: return "unknown";
     }
 }
