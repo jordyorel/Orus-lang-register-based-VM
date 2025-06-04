@@ -884,13 +884,18 @@ static Type* parseType(Parser* parser) {
         char name[ident.length + 1];
         memcpy(name, ident.start, ident.length);
         name[ident.length] = '\0';
-        type = findStructType(name);
-        if (!type) {
-            error(parser, "Unknown type name.");
-            return NULL;
+
+        if (strcmp(name, "string") == 0) {
+            type = getPrimitiveType(TYPE_STRING);
+        } else {
+            type = findStructType(name);
+            if (!type) {
+                error(parser, "Unknown type name.");
+                return NULL;
+            }
         }
     } else {
-        error(parser, "Expected type name (int, u32, f64, bool, or struct).");
+        error(parser, "Expected type name (i32, u32, f64, bool, string or struct).");
         return NULL;
     }
 
