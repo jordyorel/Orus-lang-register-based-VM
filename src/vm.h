@@ -9,6 +9,11 @@
 #define STACK_MAX 256
 #define FRAMES_MAX 64
 
+typedef struct {
+    int start;          // Bytecode offset of the function body
+    uint8_t arity;      // Number of parameters
+} Function;
+
 typedef struct VarName {
     char* name;
     int length;
@@ -29,6 +34,9 @@ typedef struct {
     Type* globalTypes[UINT8_COUNT];
     VarName variableNames[UINT8_COUNT];
     uint16_t variableCount;
+
+    Function functions[UINT8_COUNT];
+    uint16_t functionCount;
 
     // Call frames for function calls
     CallFrame frames[FRAMES_MAX];

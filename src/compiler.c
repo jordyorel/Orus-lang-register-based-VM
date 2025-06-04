@@ -1197,11 +1197,17 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             compiler->chunk->code[jumpOverFunction + 2] =
                 (afterFunction - jumpOverFunction - 3) & 0xFF;
 
-            // Store function position in globals
-            vm.globals[node->data.function.index] = I32_VAL(functionStart);
-            // fprintf(stderr,
-            //         "DEBUG: Stored function position %d in global index %d\n",
-            //         functionStart, node->data.function.index);
+            // Create function entry and store its index in the global variable
+            if (vm.functionCount >= UINT8_COUNT) {
+                error(compiler, "Too many functions defined.");
+                return;
+            }
+            uint8_t funcIndex = vm.functionCount++;
+            vm.functions[funcIndex].start = functionStart;
+            vm.functions[funcIndex].arity = (uint8_t)paramCount;
+
+            // Store function index in globals for lookup at runtime
+            vm.globals[node->data.function.index] = I32_VAL(funcIndex);
 
             break;
         }

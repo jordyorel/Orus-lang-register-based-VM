@@ -20,12 +20,15 @@ void initVM() {
     initTypeSystem();
     resetStack();
     vm.variableCount = 0;
+    vm.functionCount = 0;
     vm.frameCount = 0;
     for (int i = 0; i < UINT8_COUNT; i++) {
         vm.variableNames[i].name = NULL;
         vm.variableNames[i].length = 0;
         vm.globals[i] = NIL_VAL;
         vm.globalTypes[i] = NULL;
+        vm.functions[i].start = 0;
+        vm.functions[i].arity = 0;
     }
 }
 
@@ -450,16 +453,26 @@ static InterpretResult run() {
                 break;
             }
             case OP_CALL: {
-                uint8_t functionIndex = READ_BYTE();
+                uint8_t globalIndex = READ_BYTE();
                 uint8_t argCount = READ_BYTE();
 
-                // Ensure we're calling a valid function
-                if (functionIndex >= vm.variableCount || !IS_I32(vm.globals[functionIndex])) {
+                // Global must contain a function index
+                if (globalIndex >= vm.variableCount || !IS_I32(vm.globals[globalIndex])) {
                     runtimeError("Attempt to call a non-function.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
-                int32_t functionPos = AS_I32(vm.globals[functionIndex]);
+                int32_t funcIndex = AS_I32(vm.globals[globalIndex]);
+                if (funcIndex < 0 || funcIndex >= vm.functionCount) {
+                    runtimeError("Invalid function index.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                Function* fn = &vm.functions[funcIndex];
+                if (argCount != fn->arity) {
+                    runtimeError("Function called with wrong number of arguments.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
 
                 // Check call stack limit
                 if (vm.frameCount >= FRAMES_MAX) {
@@ -478,7 +491,7 @@ static InterpretResult run() {
                 }
                 
                 frame->stackOffset = stackOffset;
-                frame->functionIndex = functionIndex;
+                frame->functionIndex = globalIndex;
 
                 // Initialize the stack if needed (this ensures we have enough space for local variables)
                 if (vm.stackTop == vm.stack) {
@@ -487,7 +500,7 @@ static InterpretResult run() {
                 }
 
                 // Jump to function body
-                vm.ip = vm.chunk->code + functionPos;
+                vm.ip = vm.chunk->code + fn->start;
 
                 break;
             }
