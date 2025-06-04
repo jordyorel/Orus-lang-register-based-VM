@@ -24,6 +24,7 @@ typedef struct {
     bool hadError;
     bool panicMode;
     Scanner* scanner;
+    int functionDepth; // Track nested function declarations
 } Parser;
 
 typedef ASTNode* (*ParseFn)(Parser*);
