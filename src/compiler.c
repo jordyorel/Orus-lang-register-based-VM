@@ -1203,9 +1203,6 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             //         "DEBUG: Stored function position %d in global index %d\n",
             //         functionStart, node->data.function.index);
 
-            writeOp(compiler, OP_DEFINE_FUNCTION);
-            writeOp(compiler, node->data.function.index);
-
             break;
         }
         case AST_CALL: {

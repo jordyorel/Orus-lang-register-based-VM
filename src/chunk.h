@@ -73,7 +73,6 @@ typedef enum {
     // Function opcodes
     OP_CALL,
     OP_RETURN,
-    OP_DEFINE_FUNCTION,
 
     OP_POP,
     OP_PRINT,

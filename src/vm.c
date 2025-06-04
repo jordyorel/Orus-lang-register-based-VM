@@ -449,11 +449,6 @@ static InterpretResult run() {
 
                 break;
             }
-            case OP_DEFINE_FUNCTION: {
-
-                break;
-            }
-
             case OP_CALL: {
                 uint8_t functionIndex = READ_BYTE();
                 uint8_t argCount = READ_BYTE();
