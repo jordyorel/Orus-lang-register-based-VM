@@ -93,7 +93,10 @@ void freeType(Type* type) {
         case TYPE_STRUCT:
             for (int i = 0; i < type->info.structure.fieldCount; i++) {
                 free((char*)type->info.structure.fields[i].name);
-                freeType(type->info.structure.fields[i].type);
+                /*
+                 * Field types may be shared (e.g., primitive types), so they
+                 * are not freed here to avoid double-free errors.
+                 */
             }
             free(type->info.structure.fields);
             break;

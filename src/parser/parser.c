@@ -497,6 +497,11 @@ static void structDeclaration(Parser* parser, ASTNode** ast) {
     Token nameTok = parser->previous;
     consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after struct name.");
 
+    // Allow newlines immediately after the opening brace
+    while (check(parser, TOKEN_NEWLINE)) {
+        advance(parser);
+    }
+
     FieldInfo* fields = NULL;
     int count = 0;
     int capacity = 0;
@@ -521,6 +526,11 @@ static void structDeclaration(Parser* parser, ASTNode** ast) {
 
         if (!check(parser, TOKEN_RIGHT_BRACE)) {
             consume(parser, TOKEN_COMMA, "Expect ',' between fields.");
+        }
+
+        // Consume any trailing newlines after the comma or field
+        while (check(parser, TOKEN_NEWLINE)) {
+            advance(parser);
         }
     }
 

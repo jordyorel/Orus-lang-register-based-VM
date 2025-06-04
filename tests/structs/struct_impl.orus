@@ -1,0 +1,14 @@
+// Test struct and impl support
+
+struct Point {
+    x: f64,
+    y: f64,
+}
+
+impl Point {
+    fn dummy() -> i32 {
+        return 0
+    }
+}
+
+print("Struct and impl parsed")
