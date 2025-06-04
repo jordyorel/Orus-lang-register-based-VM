@@ -1,2 +1,14 @@
 .vscode
 build/
+# macOS metadata
+.DS_Store
+
+# build artifacts
+orus
+
+# image assets
+*.png
+*.jpg
+*.jpeg
+*.gif
+
