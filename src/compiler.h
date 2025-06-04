@@ -17,6 +17,10 @@ typedef struct {
     int breakJumpCount;    // Number of break jumps
     int breakJumpCapacity; // Capacity of the breakJumps array
 
+    int* continueJumps;       // Array of positions where continue statements jump from
+    int continueJumpCount;    // Number of continue jumps
+    int continueJumpCapacity; // Capacity of the continueJumps array
+
     SymbolTable* symbols;
     Chunk* chunk;
     bool hadError;

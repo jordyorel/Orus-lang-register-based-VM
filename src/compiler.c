@@ -13,6 +13,8 @@ extern VM vm;
 static void generateCode(Compiler* compiler, ASTNode* node);
 static void addBreakJump(Compiler* compiler, int jumpPos);
 static void patchBreakJumps(Compiler* compiler);
+static void addContinueJump(Compiler* compiler, int jumpPos);
+static void patchContinueJumps(Compiler* compiler);
 static void emitForLoop(Compiler* compiler, ASTNode* node);
 void disassembleChunk(Chunk* chunk, const char* name);
 
@@ -1272,28 +1274,27 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 return;
             }
 
-            // In for loops, the continue should jump to the increment section
-            // In while loops, it should jump to the condition check (beginning of loop)
-            
-            // Don't pop in for loops, as this can cause stack underflow
-            // We can detect if we're in a for loop by checking if loopContinue != loopStart
-            bool isInForLoop = compiler->loopContinue != compiler->loopStart;
-            
-            if (!isInForLoop) {
-                // For while loops, we need to pop the condition value
-                writeOp(compiler, OP_POP);
+            bool isForLoop = compiler->loopContinue != compiler->loopStart;
+
+            if (compiler->loopContinue < 0 && isForLoop) {
+                // For-loop continue before increment section is emitted.
+                int jumpPos = compiler->chunk->count;
+                writeOp(compiler, OP_JUMP);
+                writeChunk(compiler->chunk, 0xFF, 0);
+                writeChunk(compiler->chunk, 0xFF, 0);
+                addContinueJump(compiler, jumpPos);
+            } else {
+                if (!isForLoop) {
+                    // While loops need to pop the condition value
+                    writeOp(compiler, OP_POP);
+                }
+
+                writeOp(compiler, OP_LOOP);
+                int offset = compiler->chunk->count - compiler->loopContinue + 2;
+                writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0);
+                writeChunk(compiler->chunk, offset & 0xFF, 0);
             }
-            
-            // Jump back to the appropriate location
-            writeOp(compiler, OP_LOOP);
-            
-            // Calculate the jump offset
-            int offset = compiler->chunk->count - compiler->loopContinue + 2;
-            
-            // Write the offset as two bytes (high byte, low byte)
-            writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0);
-            writeChunk(compiler->chunk, offset & 0xFF, 0);
-            
+
             break;
         }
 
@@ -1358,6 +1359,7 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     // Store the current position where we're about to emit the increment code
     // This is where continue statements will jump to
     compiler->loopContinue = compiler->chunk->count;
+    patchContinueJumps(compiler);
 
     // After the body, increment the iterator
     // Get the current iterator value
@@ -1470,6 +1472,30 @@ static void addBreakJump(Compiler* compiler, int jumpPos) {
     compiler->breakJumps[compiler->breakJumpCount++] = jumpPos;
 }
 
+// Add a continue jump to the array
+static void addContinueJump(Compiler* compiler, int jumpPos) {
+    if (compiler->continueJumpCount >= compiler->continueJumpCapacity) {
+        int oldCapacity = compiler->continueJumpCapacity;
+        compiler->continueJumpCapacity = oldCapacity == 0 ? 8 : oldCapacity * 2;
+        compiler->continueJumps =
+            realloc(compiler->continueJumps,
+                    sizeof(int) * compiler->continueJumpCapacity);
+    }
+    compiler->continueJumps[compiler->continueJumpCount++] = jumpPos;
+}
+
+// Patch all continue jumps to jump to the loopContinue position
+static void patchContinueJumps(Compiler* compiler) {
+    int continueDest = compiler->loopContinue;
+    for (int i = 0; i < compiler->continueJumpCount; i++) {
+        int jumpPos = compiler->continueJumps[i];
+        int offset = continueDest - jumpPos - 3;
+        compiler->chunk->code[jumpPos + 1] = (offset >> 8) & 0xFF;
+        compiler->chunk->code[jumpPos + 2] = offset & 0xFF;
+    }
+    compiler->continueJumpCount = 0;
+}
+
 // Patch all break jumps to jump to the current position
 static void patchBreakJumps(Compiler* compiler) {
     int breakDest = compiler->chunk->count;
@@ -1497,6 +1523,11 @@ void initCompiler(Compiler* compiler, Chunk* chunk) {
     compiler->breakJumpCount = 0;
     compiler->breakJumpCapacity = 0;
 
+    // Initialize continue jumps array
+    compiler->continueJumps = NULL;
+    compiler->continueJumpCount = 0;
+    compiler->continueJumpCapacity = 0;
+
     compiler->symbols = NULL;  // Initialize later if needed
     compiler->chunk = chunk;
     compiler->hadError = false;
@@ -1511,6 +1542,14 @@ static void freeCompiler(Compiler* compiler) {
         compiler->breakJumps = NULL;
         compiler->breakJumpCount = 0;
         compiler->breakJumpCapacity = 0;
+    }
+
+    // Free the continue jumps array
+    if (compiler->continueJumps != NULL) {
+        free(compiler->continueJumps);
+        compiler->continueJumps = NULL;
+        compiler->continueJumpCount = 0;
+        compiler->continueJumpCapacity = 0;
     }
 }
 
