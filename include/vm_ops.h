@@ -2,6 +2,8 @@
 #define VM_OPS_H
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "value.h"
 #include "vm.h"
 
@@ -108,6 +110,50 @@ static inline double convertToF64(VM* vm, Value value, InterpretResult* result) 
         *result = INTERPRET_RUNTIME_ERROR;
         return 0.0;
     }
+}
+
+static inline Value convertToString(Value value) {
+    char buffer[64];
+    int length = 0;
+    switch (value.type) {
+        case VAL_I32:
+            length = snprintf(buffer, sizeof(buffer), "%d", AS_I32(value));
+            break;
+        case VAL_U32:
+            length = snprintf(buffer, sizeof(buffer), "%u", AS_U32(value));
+            break;
+        case VAL_F64:
+            length = snprintf(buffer, sizeof(buffer), "%g", AS_F64(value));
+            break;
+        case VAL_BOOL:
+            length = snprintf(buffer, sizeof(buffer), "%s", AS_BOOL(value) ? "true" : "false");
+            break;
+        case VAL_NIL:
+            length = snprintf(buffer, sizeof(buffer), "nil");
+            break;
+        case VAL_STRING:
+            return value;
+        default:
+            length = snprintf(buffer, sizeof(buffer), "<obj>");
+            break;
+    }
+    char* heap = (char*)malloc(length + 1);
+    memcpy(heap, buffer, length + 1);
+    return STRING_VAL(heap, length);
+}
+
+static inline void concatOp(VM* vm) {
+    Value b = vmPop(vm);
+    Value a = vmPop(vm);
+    if (!IS_STRING(a)) a = convertToString(a);
+    if (!IS_STRING(b)) b = convertToString(b);
+
+    int len = AS_STRING(a).length + AS_STRING(b).length;
+    char* chars = (char*)malloc(len + 1);
+    memcpy(chars, AS_STRING(a).chars, AS_STRING(a).length);
+    memcpy(chars + AS_STRING(a).length, AS_STRING(b).chars, AS_STRING(b).length);
+    chars[len] = '\0';
+    vmPush(vm, STRING_VAL(chars, len));
 }
 
 // Binary operations for f64 with automatic type conversion

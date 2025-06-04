@@ -1,0 +1,47 @@
+// Composition pattern test
+struct Shape {
+    x: i32,
+    y: i32,
+    name: string
+}
+
+impl Shape {
+    fn new(x: i32, y: i32, name: string) -> Shape {
+        return Shape{x: x, y: y, name: name}
+    }
+
+    fn move_to(self, new_x: i32, new_y: i32) {
+        self.x = new_x
+        self.y = new_y
+    }
+
+    fn description(self) -> string {
+        return self.name + " at (" + self.x + ", " + self.y + ")"
+    }
+}
+
+struct Rectangle {
+    shape: Shape,
+    width: i32,
+    height: i32
+}
+
+impl Rectangle {
+    fn new(x: i32, y: i32, width: i32, height: i32) -> Rectangle {
+        let shape: Shape = Shape.new(x, y, "Rectangle")
+        return Rectangle{shape: shape, width: width, height: height}
+    }
+
+    fn area(self) -> i32 {
+        return self.width * self.height
+    }
+
+    fn description(self) -> string {
+        return self.shape.description() + " with width=" + self.width + ", height=" + self.height
+    }
+}
+
+let rect: Rectangle = Rectangle.new(1, 2, 3, 4)
+print(rect.description())
+rect.shape.move_to(5,6)
+print(rect.description())

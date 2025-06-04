@@ -57,6 +57,11 @@ typedef enum {
     // Type conversion opcodes
     OP_I32_TO_F64,
     OP_U32_TO_F64,
+    OP_I32_TO_STRING,
+    OP_U32_TO_STRING,
+    OP_F64_TO_STRING,
+    OP_BOOL_TO_STRING,
+    OP_CONCAT,
 
     // Logical operators
     OP_AND,
