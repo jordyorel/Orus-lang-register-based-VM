@@ -12,8 +12,14 @@ typedef enum {
     TYPE_NIL,
     TYPE_ARRAY,
     TYPE_FUNCTION,
+    TYPE_STRUCT,
     TYPE_COUNT
 } TypeKind;
+
+typedef struct FieldInfo {
+    const char* name;
+    struct Type* type;
+} FieldInfo;
 
 typedef struct Type {
     TypeKind kind;
@@ -26,12 +32,19 @@ typedef struct Type {
             struct Type** paramTypes;
             int paramCount;
         } function;
+        struct {
+            const char* name;
+            FieldInfo* fields;
+            int fieldCount;
+        } structure;
     } info;
 } Type;
 
 Type* createPrimitiveType(TypeKind kind);
 Type* createArrayType(Type* elementType);
 Type* createFunctionType(Type* returnType, Type** paramTypes, int paramCount);
+Type* createStructType(const char* name, FieldInfo* fields, int fieldCount);
+Type* findStructType(const char* name);
 void freeType(Type* type);
 bool typesEqual(Type* a, Type* b);
 const char* getTypeName(TypeKind kind);

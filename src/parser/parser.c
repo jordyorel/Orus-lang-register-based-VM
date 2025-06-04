@@ -21,6 +21,8 @@ static ASTNode* parseCall(Parser* parser, ASTNode* left);
 static ASTNode* parseBoolean(Parser* parser);
 static ASTNode* parseVariable(Parser* parser);
 static ASTNode* parseArray(Parser* parser);
+static void structDeclaration(Parser* parser, ASTNode** ast);
+static void implBlock(Parser* parser, ASTNode** ast);
 static Type* parseType(Parser* parser);
 static void expression(Parser* parser, ASTNode** ast);
 static void statement(Parser* parser, ASTNode** ast);
@@ -490,6 +492,74 @@ static void returnStatement(Parser* parser, ASTNode** ast) {
     *ast = createReturnNode(value);
 }
 
+static void structDeclaration(Parser* parser, ASTNode** ast) {
+    consume(parser, TOKEN_IDENTIFIER, "Expect struct name.");
+    Token nameTok = parser->previous;
+    consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after struct name.");
+
+    FieldInfo* fields = NULL;
+    int count = 0;
+    int capacity = 0;
+
+    while (!check(parser, TOKEN_RIGHT_BRACE) && !check(parser, TOKEN_EOF)) {
+        consume(parser, TOKEN_IDENTIFIER, "Expect field name.");
+        Token fieldNameTok = parser->previous;
+        consume(parser, TOKEN_COLON, "Expect ':' after field name.");
+        Type* fieldType = parseType(parser);
+        if (parser->hadError) return;
+
+        if (count == capacity) {
+            capacity = capacity < 4 ? 4 : capacity * 2;
+            fields = realloc(fields, sizeof(FieldInfo) * capacity);
+        }
+        char* fname = (char*)malloc(fieldNameTok.length + 1);
+        memcpy(fname, fieldNameTok.start, fieldNameTok.length);
+        fname[fieldNameTok.length] = '\0';
+        fields[count].name = fname;
+        fields[count].type = fieldType;
+        count++;
+
+        if (!check(parser, TOKEN_RIGHT_BRACE)) {
+            consume(parser, TOKEN_COMMA, "Expect ',' between fields.");
+        }
+    }
+
+    consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after struct fields.");
+    consumeStatementEnd(parser);
+
+    char* structName = (char*)malloc(nameTok.length + 1);
+    memcpy(structName, nameTok.start, nameTok.length);
+    structName[nameTok.length] = '\0';
+    createStructType(structName, fields, count);
+
+    *ast = NULL; // Structs produce no runtime code
+}
+
+static void implBlock(Parser* parser, ASTNode** ast) {
+    consume(parser, TOKEN_IDENTIFIER, "Expect type name after impl.");
+    // Ignore the result for now
+    consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after impl name.");
+    ASTNode* methods = NULL;
+    ASTNode* last = NULL;
+    while (!check(parser, TOKEN_RIGHT_BRACE) && !check(parser, TOKEN_EOF)) {
+        if (match(parser, TOKEN_FN)) {
+            ASTNode* fn;
+            functionDeclaration(parser, &fn);
+            if (methods == NULL) {
+                methods = fn;
+            } else {
+                last->next = fn;
+            }
+            last = fn;
+        } else {
+            advance(parser); // Skip unexpected tokens
+        }
+    }
+    consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after impl block.");
+    consumeStatementEnd(parser);
+    *ast = createBlockNode(methods);
+}
+
 static void statement(Parser* parser, ASTNode** ast) {
     // Skip any leading newlines
     while (check(parser, TOKEN_NEWLINE)) {
@@ -572,6 +642,12 @@ static void statement(Parser* parser, ASTNode** ast) {
 
     } else if (match(parser, TOKEN_FOR)) {
         forStatement(parser, ast);
+
+    } else if (match(parser, TOKEN_STRUCT)) {
+        structDeclaration(parser, ast);
+
+    } else if (match(parser, TOKEN_IMPL)) {
+        implBlock(parser, ast);
 
     } else if (match(parser, TOKEN_FN)) {
         functionDeclaration(parser, ast);
@@ -740,8 +816,19 @@ static Type* parseType(Parser* parser) {
         type = getPrimitiveType(TYPE_F64);
     } else if (match(parser, TOKEN_BOOL)) {
         type = getPrimitiveType(TYPE_BOOL);
+    } else if (check(parser, TOKEN_IDENTIFIER)) {
+        Token ident = parser->current;
+        advance(parser);
+        char name[ident.length + 1];
+        memcpy(name, ident.start, ident.length);
+        name[ident.length] = '\0';
+        type = findStructType(name);
+        if (!type) {
+            error(parser, "Unknown type name.");
+            return NULL;
+        }
     } else {
-        error(parser, "Expected type name (int, u32, f64, or bool).");
+        error(parser, "Expected type name (int, u32, f64, bool, or struct).");
         return NULL;
     }
 
