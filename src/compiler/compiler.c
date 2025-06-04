@@ -141,6 +141,19 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     break;
                 }
 
+                case TOKEN_LEFT_BRACKET: {
+                    if (leftType->kind != TYPE_ARRAY) {
+                        error(compiler, "Can only index arrays.");
+                        return;
+                    }
+                    if (rightType->kind != TYPE_I32 && rightType->kind != TYPE_U32) {
+                        error(compiler, "Array index must be an integer.");
+                        return;
+                    }
+                    node->valueType = leftType->info.array.elementType;
+                    break;
+                }
+
                 // Logical operators
                 case TOKEN_AND:
                 case TOKEN_OR: {
@@ -606,6 +619,34 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             break;
         }
 
+        case AST_ARRAY_SET: {
+            typeCheckNode(compiler, node->right);  // array expression
+            if (compiler->hadError) return;
+            typeCheckNode(compiler, node->data.arraySet.index);
+            if (compiler->hadError) return;
+            typeCheckNode(compiler, node->left);  // value
+            if (compiler->hadError) return;
+
+            Type* arrayType = node->right->valueType;
+            Type* indexType = node->data.arraySet.index->valueType;
+            Type* valueType = node->left->valueType;
+            if (!arrayType || arrayType->kind != TYPE_ARRAY) {
+                error(compiler, "Can only assign to array elements.");
+                return;
+            }
+            if (!indexType || (indexType->kind != TYPE_I32 && indexType->kind != TYPE_U32)) {
+                error(compiler, "Array index must be an integer.");
+                return;
+            }
+            Type* elementType = arrayType->info.array.elementType;
+            if (!typesEqual(elementType, valueType)) {
+                error(compiler, "Type mismatch in array assignment.");
+                return;
+            }
+            node->valueType = elementType;
+            break;
+        }
+
         case AST_RETURN: {
             // Type check the return value if present
             if (node->data.returnStmt.value != NULL) {
@@ -802,6 +843,10 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                     }
                     break;
 
+                case TOKEN_LEFT_BRACKET:
+                    writeOp(compiler, OP_ARRAY_GET);
+                    break;
+
                 // Comparison operators
                 case TOKEN_LESS:
                     switch (leftType->kind) {
@@ -981,6 +1026,17 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             if (compiler->hadError) return;
             writeOp(compiler, OP_SET_GLOBAL);
             writeOp(compiler, node->data.variable.index);
+            break;
+        }
+
+        case AST_ARRAY_SET: {
+            generateCode(compiler, node->right);  // array
+            if (compiler->hadError) return;
+            generateCode(compiler, node->data.arraySet.index);  // index
+            if (compiler->hadError) return;
+            generateCode(compiler, node->left);  // value
+            if (compiler->hadError) return;
+            writeOp(compiler, OP_ARRAY_SET);
             break;
         }
 

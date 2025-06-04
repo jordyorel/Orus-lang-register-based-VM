@@ -82,6 +82,8 @@ typedef enum {
     OP_SET_GLOBAL,
     OP_NIL,
     OP_MAKE_ARRAY,
+    OP_ARRAY_GET,
+    OP_ARRAY_SET,
 } opCode;
 
 typedef struct {

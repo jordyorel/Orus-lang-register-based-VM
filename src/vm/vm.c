@@ -463,6 +463,56 @@ static InterpretResult run() {
                 vmPush(&vm, ARRAY_VAL(arr));
                 break;
             }
+            case OP_ARRAY_GET: {
+                Value indexVal = vmPop(&vm);
+                Value arrayVal = vmPop(&vm);
+                if (!IS_ARRAY(arrayVal)) {
+                    runtimeError("Can only index arrays.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int idx;
+                if (IS_I32(indexVal)) {
+                    idx = AS_I32(indexVal);
+                } else if (IS_U32(indexVal)) {
+                    idx = (int)AS_U32(indexVal);
+                } else {
+                    runtimeError("Array index must be an integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Array arr = AS_ARRAY(arrayVal);
+                if (idx < 0 || idx >= arr.length) {
+                    runtimeError("Array index out of bounds.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                vmPush(&vm, arr.elements[idx]);
+                break;
+            }
+            case OP_ARRAY_SET: {
+                Value value = vmPop(&vm);
+                Value indexVal = vmPop(&vm);
+                Value arrayVal = vmPop(&vm);
+                if (!IS_ARRAY(arrayVal)) {
+                    runtimeError("Can only index arrays.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int idx;
+                if (IS_I32(indexVal)) {
+                    idx = AS_I32(indexVal);
+                } else if (IS_U32(indexVal)) {
+                    idx = (int)AS_U32(indexVal);
+                } else {
+                    runtimeError("Array index must be an integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Array arr = AS_ARRAY(arrayVal);
+                if (idx < 0 || idx >= arr.length) {
+                    runtimeError("Array index out of bounds.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                arr.elements[idx] = value;
+                vmPush(&vm, value);
+                break;
+            }
             case OP_CALL: {
                 uint8_t globalIndex = READ_BYTE();
                 uint8_t argCount = READ_BYTE();
