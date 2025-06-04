@@ -9,8 +9,9 @@
 #include "parser.h"
 #include "vm.h"
 
+extern VM vm;
+
 static void repl() {
-    VM vm;
     char line[1024];
     for (;;) {
         printf("> ");
