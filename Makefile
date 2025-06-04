@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS=-I./src -Wall -g
-SRC=$(wildcard src/*.c)
+CFLAGS=-I./include -Wall -g
+SRC=$(shell find src -name '*.c')
 OBJ=$(patsubst src/%.c, build/debug/clox/%.o, $(SRC))
 TARGET=orus
 RELEASE_TARGET=build/release/clox

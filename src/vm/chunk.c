@@ -2,8 +2,8 @@
 #include<stdlib.h>
 #include<stdio.h>
 
-#include "chunk.h"
-#include "memory.h"
+#include "../../include/chunk.h"
+#include "../../include/memory.h"
 
 // Initializes a Chunk structure to its default state.
 // Parameters:

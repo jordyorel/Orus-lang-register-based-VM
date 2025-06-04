@@ -1,15 +1,15 @@
-#include "vm.h"
+#include "../../include/vm.h"
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "common.h"
-#include "compiler.h"
-#include "debug.h"
-#include "memory.h"
-#include "parser.h"
-#include "vm_ops.h"
+#include "../../include/common.h"
+#include "../../include/compiler.h"
+#include "../../include/debug.h"
+#include "../../include/memory.h"
+#include "../../include/parser.h"
+#include "../../include/vm_ops.h"
 
 VM vm;
 

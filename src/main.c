@@ -2,12 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "chunk.h"
-#include "common.h"
-#include "compiler.h"
-#include "debug.h"
-#include "parser.h"
-#include "vm.h"
+#include "../include/chunk.h"
+#include "../include/common.h"
+#include "../include/compiler.h"
+#include "../include/debug.h"
+#include "../include/parser.h"
+#include "../include/vm.h"
 
 extern VM vm;
 

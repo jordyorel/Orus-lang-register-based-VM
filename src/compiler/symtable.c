@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
-#include "symtable.h"
-#include "memory.h"
+#include "../../include/symtable.h"
+#include "../../include/memory.h"
 
 #define INITIAL_CAPACITY 8
 

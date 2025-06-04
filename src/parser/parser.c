@@ -1,11 +1,11 @@
-#include "parser.h"
+#include "../../include/parser.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "common.h"
-#include "memory.h"
+#include "../../include/common.h"
+#include "../../include/memory.h"
 
 // Forward declaration for parse_precedence
 static ASTNode* parse_precedence(Parser* parser, Precedence precedence);

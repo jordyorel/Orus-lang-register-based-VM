@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "type.h"
-#include "memory.h"
+#include "../../include/type.h"
+#include "../../include/memory.h"
 
 // Define the array of primitive types
 Type* primitiveTypes[TYPE_COUNT] = {NULL};
