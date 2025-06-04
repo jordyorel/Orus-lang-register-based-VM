@@ -258,6 +258,11 @@ void freeASTNode(ASTNode* node) {
     if (node->type == AST_RETURN) {
         if (node->data.returnStmt.value) freeASTNode(node->data.returnStmt.value);
     }
+    if (node->type == AST_LITERAL && node->data.literal.type == VAL_STRING) {
+        free(node->data.literal.as.string.chars);
+        node->data.literal.as.string.chars = NULL;
+        node->data.literal.as.string.length = 0;
+    }
     if (node->next) freeASTNode(node->next);
     free(node);
 }

@@ -37,6 +37,10 @@ static void emitConstant(Compiler* compiler, Value value) {
     // Ensure constants are emitted with valid values
     // Allow VAL_STRING for now to fix compilation, may need VM changes later.
     if (IS_I32(value) || IS_U32(value) || IS_F64(value) || IS_BOOL(value) || IS_NIL(value) || IS_STRING(value)) {
+        if (IS_STRING(value)) {
+            char* copy = copyString(value.as.string.chars, value.as.string.length);
+            value.as.string.chars = copy;
+        }
         // fprintf(stderr, "DEBUG: Emitting valid constant: ");
         // printValue(value);
         // fprintf(stderr, "\n");
