@@ -392,6 +392,9 @@ static void functionDeclaration(Parser* parser, ASTNode** ast) {
     consume(parser, TOKEN_IDENTIFIER, "Expect function name.");
     Token name = parser->previous;
 
+    // Enter function scope
+    parser->functionDepth++;
+
     // Parse parameter list
     consume(parser, TOKEN_LEFT_PAREN, "Expect '(' after function name.");
 
@@ -438,11 +441,18 @@ static void functionDeclaration(Parser* parser, ASTNode** ast) {
     ASTNode* body;
     block(parser, &body);
 
+    // Exit function scope
+    parser->functionDepth--;
+
     *ast = createFunctionNode(name, parameters, returnType, body);
 }
 
 static void returnStatement(Parser* parser, ASTNode** ast) {
     ASTNode* value = NULL;
+
+    if (parser->functionDepth == 0) {
+        error(parser, "'return' outside of function.");
+    }
 
     // Check if there's a return value
     if (!check(parser, TOKEN_NEWLINE) && !check(parser, TOKEN_RIGHT_BRACE)) {
@@ -632,6 +642,7 @@ void initParser(Parser* parser, Scanner* scanner) {
     parser->hadError = false;
     parser->panicMode = false;
     parser->scanner = scanner;
+    parser->functionDepth = 0;
 }
 
 bool parse(const char* source, ASTNode** ast) {

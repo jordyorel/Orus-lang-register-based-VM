@@ -19,41 +19,9 @@ fn calculateSum(n: i32) -> i32 {
     return sum
 }
 
-// Functions that call other functions
-fn printSum(x: i32, y: i32) {
-    let result = add(x, y)
-    print("The sum of")
-    print(x)
-    print("and")
-    print(y)
-    print("is:")
-    print(result)
-}
-
 print("Basic Function Tests:")
 
-// Test function calls
-print("Calling add(5, 7):")
-let a = 5
-let b = 7
-let sum = add(a, b)
-print(sum)
+// Call the functions
+print(add(5, 7))
+print(calculateSum(5))
 
-print("Calling calculateSum(5):")
-let n = 5
-let total = calculateSum(n)
-print("Sum of numbers 1 to 5:")
-print(total)
-
-print("Calling printSum:")
-let x = 10
-let y = 20
-printSum(x, y)
-
-// Test return value used in expressions
-print("Using function return value in expression:")
-let p = 3
-let q = 4
-let result = add(p, q) * 2
-print("add(3, 4) * 2 =")
-print(result)
