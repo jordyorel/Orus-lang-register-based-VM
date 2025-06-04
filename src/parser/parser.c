@@ -20,6 +20,7 @@ static ASTNode* parseLogical(Parser* parser, ASTNode* left);  // New logical ope
 static ASTNode* parseCall(Parser* parser, ASTNode* left);
 static ASTNode* parseBoolean(Parser* parser);
 static ASTNode* parseVariable(Parser* parser);
+static ASTNode* parseArray(Parser* parser);
 static Type* parseType(Parser* parser);
 static void expression(Parser* parser, ASTNode** ast);
 static void statement(Parser* parser, ASTNode** ast);
@@ -241,6 +242,32 @@ static ASTNode* parseCall(Parser* parser, ASTNode* left) {
 static ASTNode* parseVariable(Parser* parser) {
     Token name = parser->previous;
     return createVariableNode(name, 0);  // Index will be resolved by Compiler
+}
+
+static ASTNode* parseArray(Parser* parser) {
+    ASTNode* elements = NULL;
+    ASTNode* last = NULL;
+    int count = 0;
+
+    if (!check(parser, TOKEN_RIGHT_BRACKET)) {
+        do {
+            ASTNode* value;
+            expression(parser, &value);
+            if (parser->hadError) return NULL;
+
+            if (elements == NULL) {
+                elements = value;
+            } else {
+                last->next = value;
+            }
+            last = value;
+            count++;
+        } while (match(parser, TOKEN_COMMA));
+    }
+
+    consume(parser, TOKEN_RIGHT_BRACKET, "Expect ']' after array elements.");
+
+    return createArrayNode(elements, count);
 }
 
 static ASTNode* parse_precedence(Parser* parser, Precedence precedence) {
@@ -609,6 +636,7 @@ static void statement(Parser* parser, ASTNode** ast) {
 
 ParseRule rules[] = {
     [TOKEN_LEFT_PAREN] = {parseGrouping, parseCall, PREC_CALL},
+    [TOKEN_LEFT_BRACKET] = {parseArray, NULL, PREC_NONE},
     [TOKEN_MINUS] = {parseUnary, parseBinary, PREC_TERM},
     [TOKEN_PLUS] = {NULL, parseBinary, PREC_TERM},
     [TOKEN_SLASH] = {NULL, parseBinary, PREC_FACTOR},
@@ -697,7 +725,14 @@ bool parse(const char* source, ASTNode** ast) {
 
 static Type* parseType(Parser* parser) {
     Type* type = NULL;
-    if (match(parser, TOKEN_INT)) {
+    if (match(parser, TOKEN_LEFT_BRACKET)) {
+        Type* elementType = parseType(parser);
+        if (parser->hadError) return NULL;
+        consume(parser, TOKEN_SEMICOLON, "Expect ';' in array type.");
+        consume(parser, TOKEN_NUMBER, "Expect array size.");
+        consume(parser, TOKEN_RIGHT_BRACKET, "Expect ']' after array type.");
+        type = createArrayType(elementType);
+    } else if (match(parser, TOKEN_INT)) {
         type = getPrimitiveType(TYPE_I32);
     } else if (match(parser, TOKEN_U32)) {
         type = getPrimitiveType(TYPE_U32);

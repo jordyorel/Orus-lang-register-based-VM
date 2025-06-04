@@ -11,6 +11,7 @@ typedef enum {
     VAL_BOOL,
     VAL_NIL,
     VAL_STRING,
+    VAL_ARRAY,
 } ValueType;
 
 typedef struct {
@@ -18,7 +19,14 @@ typedef struct {
     int length;
 } String;
 
+typedef struct Value Value; // Forward declaration
+
 typedef struct {
+    int length;
+    Value* elements;
+} Array;
+
+typedef struct Value {
     ValueType type;
     union {
         int32_t i32;
@@ -26,6 +34,7 @@ typedef struct {
         double f64;
         bool boolean;
         String string;
+        Array array;
     } as;
 } Value;
 
@@ -36,6 +45,7 @@ typedef struct {
 #define BOOL_VAL(value)  ((Value){VAL_BOOL, {.boolean = value}})
 #define NIL_VAL          ((Value){VAL_NIL, {.i32 = 0}})
 #define STRING_VAL(chars, len) ((Value){VAL_STRING, {.string = (String){chars, len}}})
+#define ARRAY_VAL(arr)   ((Value){VAL_ARRAY, {.array = arr}})
 
 // Value checking macros
 #define IS_I32(value)    ((value).type == VAL_I32)
@@ -44,6 +54,7 @@ typedef struct {
 #define IS_BOOL(value)   ((value).type == VAL_BOOL)
 #define IS_NIL(value)    ((value).type == VAL_NIL)
 #define IS_STRING(value) ((value).type == VAL_STRING)
+#define IS_ARRAY(value)  ((value).type == VAL_ARRAY)
 
 // Value extraction macros
 #define AS_I32(value)    ((value).as.i32)
@@ -51,6 +62,7 @@ typedef struct {
 #define AS_F64(value)    ((value).as.f64)
 #define AS_BOOL(value)   ((value).as.boolean)
 #define AS_STRING(value) ((value).as.string)
+#define AS_ARRAY(value)  ((value).as.array)
 
 // A dynamic array of Value elements.
 // Parameters:
