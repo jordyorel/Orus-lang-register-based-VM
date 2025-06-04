@@ -98,7 +98,7 @@ typedef struct {
 typedef struct {
     int count; // 4 bytes
     int capacity; // 4 bytes
-    uint8_t* code; // 8 bytes : instrution
+    uint8_t* code; // 8 bytes : instruction
     LineInfo* line_info;
     int line_count; // 8 bytes
     int line_capcity;
