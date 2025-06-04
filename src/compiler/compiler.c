@@ -84,7 +84,28 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
             TokenType operator= node->data.operation.operator.type;
             switch (operator) {
-                case TOKEN_PLUS:
+                case TOKEN_PLUS: {
+                    if (leftType->kind == TYPE_STRING || rightType->kind == TYPE_STRING) {
+                        node->valueType = getPrimitiveType(TYPE_STRING);
+                        node->data.operation.convertLeft = leftType->kind != TYPE_STRING;
+                        node->data.operation.convertRight = rightType->kind != TYPE_STRING;
+                    } else if (leftType->kind == TYPE_F64 || rightType->kind == TYPE_F64) {
+                        node->valueType = getPrimitiveType(TYPE_F64);
+
+                        node->data.operation.convertLeft =
+                            (leftType->kind == TYPE_I32 || leftType->kind == TYPE_U32);
+                        node->data.operation.convertRight =
+                            (rightType->kind == TYPE_I32 || rightType->kind == TYPE_U32);
+                    } else if (typesEqual(leftType, rightType)) {
+                        node->valueType = leftType;
+                        node->data.operation.convertLeft = false;
+                        node->data.operation.convertRight = false;
+                    } else {
+                        error(compiler, "Type mismatch in addition operation.");
+                        return;
+                    }
+                    break;
+                }
                 case TOKEN_MINUS:
                 case TOKEN_STAR:
                 case TOKEN_SLASH: {
@@ -723,6 +744,26 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             return;
                         }
                         break;
+                    case TYPE_STRING:
+                        switch (rightType->kind) {
+                            case TYPE_I32:
+                                writeOp(compiler, OP_I32_TO_STRING);
+                                break;
+                            case TYPE_U32:
+                                writeOp(compiler, OP_U32_TO_STRING);
+                                break;
+                            case TYPE_F64:
+                                writeOp(compiler, OP_F64_TO_STRING);
+                                break;
+                            case TYPE_BOOL:
+                                writeOp(compiler, OP_BOOL_TO_STRING);
+                                break;
+                            default:
+                                error(compiler,
+                                      "Unsupported right operand conversion for binary operation.");
+                                return;
+                        }
+                        break;
                     default:
                         error(compiler,
                               "Unsupported result type for binary operation.");
@@ -746,6 +787,26 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             return;
                         }
                         break;
+                    case TYPE_STRING:
+                        switch (leftType->kind) {
+                            case TYPE_I32:
+                                writeOp(compiler, OP_I32_TO_STRING);
+                                break;
+                            case TYPE_U32:
+                                writeOp(compiler, OP_U32_TO_STRING);
+                                break;
+                            case TYPE_F64:
+                                writeOp(compiler, OP_F64_TO_STRING);
+                                break;
+                            case TYPE_BOOL:
+                                writeOp(compiler, OP_BOOL_TO_STRING);
+                                break;
+                            default:
+                                error(compiler,
+                                      "Unsupported left operand conversion for binary operation.");
+                                return;
+                        }
+                        break;
                     default:
                         error(compiler,
                               "Unsupported result type for binary operation.");
@@ -759,6 +820,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             switch (operator) {
                 case TOKEN_PLUS:
                     switch (resultType) {
+                        case TYPE_STRING:
+                            writeOp(compiler, OP_CONCAT);
+                            break;
                         case TYPE_I32:
                             writeOp(compiler, OP_ADD_I32);
                             break;

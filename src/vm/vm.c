@@ -254,6 +254,46 @@ static InterpretResult run() {
                 vmPush(&vm, F64_VAL(floatValue));
                 break;
             }
+            case OP_I32_TO_STRING: {
+                if (!IS_I32(vmPeek(&vm, 0))) {
+                    runtimeError("Operand must be an integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Value v = vmPop(&vm);
+                vmPush(&vm, convertToString(v));
+                break;
+            }
+            case OP_U32_TO_STRING: {
+                if (!IS_U32(vmPeek(&vm, 0))) {
+                    runtimeError("Operand must be an unsigned integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Value v = vmPop(&vm);
+                vmPush(&vm, convertToString(v));
+                break;
+            }
+            case OP_F64_TO_STRING: {
+                if (!IS_F64(vmPeek(&vm, 0))) {
+                    runtimeError("Operand must be a floating point number.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Value v = vmPop(&vm);
+                vmPush(&vm, convertToString(v));
+                break;
+            }
+            case OP_BOOL_TO_STRING: {
+                if (!IS_BOOL(vmPeek(&vm, 0))) {
+                    runtimeError("Operand must be a boolean.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Value v = vmPop(&vm);
+                vmPush(&vm, convertToString(v));
+                break;
+            }
+            case OP_CONCAT: {
+                concatOp(&vm);
+                break;
+            }
             case OP_POP: {
                 vmPop(&vm);
                 break;
