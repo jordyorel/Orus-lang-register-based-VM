@@ -14,6 +14,7 @@ typedef enum {
     AST_ASSIGNMENT,
     AST_CALL,
     AST_ARRAY,
+    AST_ARRAY_SET,
     AST_LET,
     AST_PRINT,
     AST_IF,
@@ -116,6 +117,9 @@ typedef struct ASTNode {
         WhileData whileStmt;
         ForData forStmt;
         ArrayData array;
+        struct {
+            struct ASTNode* index;
+        } arraySet;
         FunctionData function;
         CallData call;
         ReturnData returnStmt;
@@ -138,6 +142,7 @@ ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType, A
 ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount);
 ASTNode* createReturnNode(ASTNode* value);
 ASTNode* createArrayNode(ASTNode* elements, int elementCount);
+ASTNode* createArraySetNode(ASTNode* array, ASTNode* index, ASTNode* value);
 ASTNode* createBreakNode();
 ASTNode* createContinueNode();
 

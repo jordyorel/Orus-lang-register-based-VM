@@ -18,6 +18,7 @@ static ASTNode* parseUnary(Parser* parser);
 static ASTNode* parseBinary(Parser* parser, ASTNode* left);
 static ASTNode* parseLogical(Parser* parser, ASTNode* left);  // New logical operator function
 static ASTNode* parseCall(Parser* parser, ASTNode* left);
+static ASTNode* parseIndex(Parser* parser, ASTNode* left);
 static ASTNode* parseBoolean(Parser* parser);
 static ASTNode* parseVariable(Parser* parser);
 static ASTNode* parseArray(Parser* parser);
@@ -239,6 +240,14 @@ static ASTNode* parseCall(Parser* parser, ASTNode* left) {
     free(left);
 
     return createCallNode(name, arguments, argCount);
+}
+
+static ASTNode* parseIndex(Parser* parser, ASTNode* left) {
+    Token bracket = parser->previous; // '[' token
+    ASTNode* indexExpr = NULL;
+    expression(parser, &indexExpr);
+    consume(parser, TOKEN_RIGHT_BRACKET, "Expect ']' after index expression.");
+    return createBinaryNode(bracket, left, indexExpr);
 }
 
 static ASTNode* parseVariable(Parser* parser) {
@@ -685,34 +694,44 @@ static void statement(Parser* parser, ASTNode** ast) {
 
         *ast = createLetNode(name, type, initializer);
 
-    } else if (check(parser, TOKEN_IDENTIFIER)) {
-        Token name = parser->current;
-        advance(parser);
+    } else {
+        ASTNode* expr;
+        expression(parser, &expr);
 
         if (match(parser, TOKEN_EQUAL)) {
             ASTNode* value;
             expression(parser, &value);
             consumeStatementEnd(parser);
-            *ast = createAssignmentNode(name, value);
+
+            if (expr->type == AST_VARIABLE) {
+                *ast = createAssignmentNode(expr->data.variable.name, value);
+                // The variable node itself is no longer needed
+                expr->left = expr->right = NULL;
+                free(expr);
+            } else if (expr->type == AST_BINARY &&
+                       expr->data.operation.operator.type == TOKEN_LEFT_BRACKET) {
+                ASTNode* arrayExpr = expr->left;
+                ASTNode* indexExpr = expr->right;
+                expr->left = expr->right = NULL;
+                free(expr);
+                *ast = createArraySetNode(arrayExpr, indexExpr, value);
+            } else {
+                error(parser, "Invalid assignment target.");
+                freeASTNode(expr);
+                freeASTNode(value);
+                *ast = NULL;
+                return;
+            }
         } else {
-            parser->current = name;
-            ASTNode* expr;
-            expression(parser, &expr);
             consumeStatementEnd(parser);
             *ast = expr;
         }
-
-    } else {
-        ASTNode* expr;
-        expression(parser, &expr);
-        consumeStatementEnd(parser);
-        *ast = expr;
     }
 }
 
 ParseRule rules[] = {
     [TOKEN_LEFT_PAREN] = {parseGrouping, parseCall, PREC_CALL},
-    [TOKEN_LEFT_BRACKET] = {parseArray, NULL, PREC_NONE},
+    [TOKEN_LEFT_BRACKET] = {parseArray, parseIndex, PREC_CALL},
     [TOKEN_MINUS] = {parseUnary, parseBinary, PREC_TERM},
     [TOKEN_PLUS] = {NULL, parseBinary, PREC_TERM},
     [TOKEN_SLASH] = {NULL, parseBinary, PREC_FACTOR},
