@@ -284,11 +284,13 @@ static InterpretResult run() {
                         vmPush(&vm, returnValue);
                     }
 
-                    // For debugging, print the return value
+                    // For debugging, print the return value when tracing is enabled
+                    #ifdef DEBUG_TRACE_EXECUTION
                     printf("OUTPUT: Function returned: ");
                     printValue(returnValue);
                     printf("\n");
                     fflush(stdout);
+                    #endif
                 } else {
                     // If we're not in a function call, just push the return value back
                     vmPush(&vm, returnValue);
