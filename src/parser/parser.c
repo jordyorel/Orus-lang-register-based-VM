@@ -19,6 +19,7 @@ static ASTNode* parseBinary(Parser* parser, ASTNode* left);
 static ASTNode* parseLogical(Parser* parser, ASTNode* left);  // New logical operator function
 static ASTNode* parseCall(Parser* parser, ASTNode* left);
 static ASTNode* parseIndex(Parser* parser, ASTNode* left);
+static ASTNode* parseDot(Parser* parser, ASTNode* left);
 static ASTNode* parseBoolean(Parser* parser);
 static ASTNode* parseVariable(Parser* parser);
 static ASTNode* parseArray(Parser* parser);
@@ -248,6 +249,39 @@ static ASTNode* parseIndex(Parser* parser, ASTNode* left) {
     expression(parser, &indexExpr);
     consume(parser, TOKEN_RIGHT_BRACKET, "Expect ']' after index expression.");
     return createBinaryNode(bracket, left, indexExpr);
+}
+
+static ASTNode* parseDot(Parser* parser, ASTNode* left) {
+    consume(parser, TOKEN_IDENTIFIER, "Expect property or method name after '.'.");
+    Token methodName = parser->previous;
+
+    if (!match(parser, TOKEN_LEFT_PAREN)) {
+        error(parser, "Only method calls are supported after '.'.");
+        return NULL;
+    }
+
+    ASTNode* arguments = left;
+    left->next = NULL;
+    ASTNode* lastArg = left;
+    int argCount = 1;
+
+    if (!check(parser, TOKEN_RIGHT_PAREN)) {
+        do {
+            ASTNode* arg;
+            expression(parser, &arg);
+            if (arguments == NULL) {
+                arguments = arg;
+            } else {
+                lastArg->next = arg;
+            }
+            lastArg = arg;
+            argCount++;
+        } while (match(parser, TOKEN_COMMA));
+    }
+
+    consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
+
+    return createCallNode(methodName, arguments, argCount);
 }
 
 static ASTNode* parseVariable(Parser* parser) {
@@ -511,6 +545,8 @@ static void structDeclaration(Parser* parser, ASTNode** ast) {
     int capacity = 0;
 
     while (!check(parser, TOKEN_RIGHT_BRACE) && !check(parser, TOKEN_EOF)) {
+        // Skip any newlines between fields
+        while (match(parser, TOKEN_NEWLINE)) {}
         consume(parser, TOKEN_IDENTIFIER, "Expect field name.");
         Token fieldNameTok = parser->previous;
         consume(parser, TOKEN_COLON, "Expect ':' after field name.");
@@ -528,7 +564,13 @@ static void structDeclaration(Parser* parser, ASTNode** ast) {
         fields[count].type = fieldType;
         count++;
 
-        if (!check(parser, TOKEN_RIGHT_BRACE)) {
+        if (match(parser, TOKEN_COMMA) || match(parser, TOKEN_NEWLINE)) {
+            // Skip additional newlines after separator
+            while (match(parser, TOKEN_NEWLINE)) {}
+            if (check(parser, TOKEN_RIGHT_BRACE)) {
+                break; // Allow trailing separator before closing brace
+            }
+        } else if (!check(parser, TOKEN_RIGHT_BRACE)) {
             consume(parser, TOKEN_COMMA, "Expect ',' between fields.");
         }
     }
@@ -732,6 +774,7 @@ static void statement(Parser* parser, ASTNode** ast) {
 ParseRule rules[] = {
     [TOKEN_LEFT_PAREN] = {parseGrouping, parseCall, PREC_CALL},
     [TOKEN_LEFT_BRACKET] = {parseArray, parseIndex, PREC_CALL},
+    [TOKEN_DOT] = {NULL, parseDot, PREC_CALL},
     [TOKEN_MINUS] = {parseUnary, parseBinary, PREC_TERM},
     [TOKEN_PLUS] = {NULL, parseBinary, PREC_TERM},
     [TOKEN_SLASH] = {NULL, parseBinary, PREC_FACTOR},
