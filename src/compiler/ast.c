@@ -173,7 +173,7 @@ ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType, A
     return node;
 }
 
-ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount) {
+ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount, Type* staticType) {
     ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
     node->type = AST_CALL;
     node->left = NULL;
@@ -184,6 +184,7 @@ ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount) {
     node->data.call.index = 0; // Will be resolved during compilation
     node->data.call.convertArgs = NULL; // Will be allocated during type checking
     node->data.call.argCount = argCount;
+    node->data.call.staticType = staticType;
     node->valueType = NULL;
     return node;
 }

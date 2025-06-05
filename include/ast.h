@@ -106,6 +106,7 @@ typedef struct {
     uint8_t index;            // Function index in the function table
     bool* convertArgs;         // Array of flags for argument conversion
     int argCount;             // Number of arguments
+    Type* staticType;         // Struct type if called as Struct.fn
 } CallData;
 
 typedef struct {
@@ -158,7 +159,7 @@ ASTNode* createBlockNode(ASTNode* statements);
 ASTNode* createWhileNode(ASTNode* condition, ASTNode* body);
 ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr, ASTNode* stepExpr, ASTNode* body);
 ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType, ASTNode* body);
-ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount);
+ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount, Type* staticType);
 ASTNode* createReturnNode(ASTNode* value);
 ASTNode* createArrayNode(ASTNode* elements, int elementCount);
 ASTNode* createArraySetNode(ASTNode* array, ASTNode* index, ASTNode* value);

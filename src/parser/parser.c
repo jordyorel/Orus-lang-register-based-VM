@@ -243,7 +243,7 @@ static ASTNode* parseCall(Parser* parser, ASTNode* left) {
     // Free the variable node as we're replacing it with a call node
     free(left);
 
-    return createCallNode(name, arguments, argCount);
+    return createCallNode(name, arguments, argCount, NULL);
 }
 
 static ASTNode* parseIndex(Parser* parser, ASTNode* left) {
@@ -260,8 +260,10 @@ static ASTNode* parseDot(Parser* parser, ASTNode* left) {
 
     if (match(parser, TOKEN_LEFT_PAREN)) {
         bool useReceiver = true;
+        Type* staticType = NULL;
         if (left->type == AST_VARIABLE) {
-            if (findStructTypeToken(left->data.variable.name)) {
+            staticType = findStructTypeToken(left->data.variable.name);
+            if (staticType) {
                 useReceiver = false;
             }
         }
@@ -294,7 +296,7 @@ static ASTNode* parseDot(Parser* parser, ASTNode* left) {
 
         consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
 
-        return createCallNode(name, arguments, argCount);
+        return createCallNode(name, arguments, argCount, staticType);
     }
 
     return createFieldAccessNode(left, name);
@@ -584,6 +586,8 @@ static void functionDeclaration(Parser* parser, ASTNode** ast) {
     if (match(parser, TOKEN_ARROW)) {
         returnType = parseType(parser);
         if (parser->hadError) return;
+    } else {
+        returnType = getPrimitiveType(TYPE_NIL);
     }
 
     if (hasSelf && parser->currentImplType != NULL) {

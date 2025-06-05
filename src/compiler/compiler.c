@@ -654,8 +654,26 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 arg = arg->next;
             }
 
-            // If not found, try mangled method name based on first argument
-            if (index == UINT8_MAX && node->data.call.arguments != NULL) {
+            // If call specifies a static struct type, try mangled name first
+            if (node->data.call.staticType != NULL) {
+                const char* structName = node->data.call.staticType->info.structure.name;
+                size_t structLen = strlen(structName);
+                size_t nameLen = node->data.call.name.length;
+                char* full = (char*)malloc(structLen + 1 + nameLen + 1);
+                memcpy(full, structName, structLen);
+                full[structLen] = '_';
+                memcpy(full + structLen + 1, node->data.call.name.start, nameLen);
+                full[structLen + 1 + nameLen] = '\0';
+                Symbol* sym = findSymbol(&compiler->symbols, full);
+                if (sym) {
+                    index = sym->index;
+                    node->data.call.name.start = full;
+                    node->data.call.name.length = structLen + 1 + nameLen;
+                } else if (index == UINT8_MAX) {
+                    free(full);
+                }
+            } else if (index == UINT8_MAX && node->data.call.arguments != NULL) {
+                // If not found, try mangled method name based on first argument (instance method)
                 ASTNode* recv = node->data.call.arguments;
                 Type* recvType = recv->valueType;
                 if (recvType && recvType->kind == TYPE_STRUCT) {
@@ -688,6 +706,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             // Get the function's return type
             Type* returnType = vm.globalTypes[index];
             if (!returnType) {
+                char nameBuff[node->data.call.name.length + 1];
+                memcpy(nameBuff, node->data.call.name.start, node->data.call.name.length);
+                nameBuff[node->data.call.name.length] = '\0';
+                fprintf(stderr, "Call to %s has no return type\n", nameBuff);
                 error(compiler, "Function has no return type.");
                 return;
             }
@@ -1555,6 +1577,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             for (int i = paramCount - 1; i >= 0; i--) {
                 writeOp(compiler, OP_SET_GLOBAL);
                 writeOp(compiler, paramList[i]->data.let.index);
+                // Pop argument after storing
+                writeOp(compiler, OP_POP);
             }
 
             // Emit body and return
@@ -1585,20 +1609,18 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             break;
         }
         case AST_CALL: {
-            // Generate code for each argument in reverse order
-            // (arguments are pushed onto the stack from right to left)
+            // Generate code for each argument in source order
             int argCount = 0;
             ASTNode* arg = node->data.call.arguments;
 
-            // First, count the arguments and build a list in reverse order
+            // Collect arguments to preserve evaluation order
             ASTNode* args[256]; // Assuming a reasonable maximum number of arguments
             while (arg != NULL) {
                 args[argCount++] = arg;
                 arg = arg->next;
             }
 
-            // Now generate code for each argument in reverse order
-            for (int i = argCount - 1; i >= 0; i--) {
+            for (int i = 0; i < argCount; i++) {
                 generateCode(compiler, args[i]);
                 if (compiler->hadError) return;
 

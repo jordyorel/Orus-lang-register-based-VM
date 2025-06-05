@@ -1,0 +1,110 @@
+// Test for structs with both static (non-self) and instance (self) methods
+
+struct Calculator {
+    current_value: i32,
+    memory: i32,
+    operations_count: i32
+}
+
+impl Calculator {
+    // Static (non-self) factory method
+    fn new(initial_value: i32) -> Calculator {
+        return Calculator{
+            current_value: initial_value,
+            memory: 0,
+            operations_count: 0
+        }
+    }
+    
+    // Static utility methods
+    fn add(a: i32, b: i32) -> i32 {
+        return a + b
+    }
+    
+    fn subtract(a: i32, b: i32) -> i32 {
+        return a - b
+    }
+    
+    fn multiply(a: i32, b: i32) -> i32 {
+        return a * b
+    }
+    
+    fn divide(a: i32, b: i32) -> i32 {
+        if b == 0 {
+            return 0
+        }
+        return a / b
+    }
+    
+    // Instance (self) methods
+    fn add_to_current(self, value: i32) -> i32 {
+        self.current_value = self.current_value + value
+        self.operations_count = self.operations_count + 1
+        return self.current_value
+    }
+    
+    fn subtract_from_current(self, value: i32) -> i32 {
+        self.current_value = self.current_value - value
+        self.operations_count = self.operations_count + 1
+        return self.current_value
+    }
+    
+    fn multiply_current(self, value: i32) -> i32 {
+        self.current_value = self.current_value * value
+        self.operations_count = self.operations_count + 1
+        return self.current_value
+    }
+    
+    fn divide_current(self, value: i32) -> i32 {
+        if value != 0 {
+            self.current_value = self.current_value / value
+            self.operations_count = self.operations_count + 1
+        }
+        return self.current_value
+    }
+    
+    fn store_in_memory(self) -> i32 {
+        self.memory = self.current_value
+        return self.memory
+    }
+    
+    fn recall_from_memory(self) -> i32 {
+        self.current_value = self.memory
+        return self.current_value
+    }
+    
+    fn clear(self) -> i32 {
+        self.current_value = 0
+        return self.current_value
+    }
+    
+    fn get_operations_count(self) -> i32 {
+        return self.operations_count
+    }
+}
+
+// Test static methods
+print("Static add: {}",  Calculator.add(5, 3))
+print("Static subtract: {}",  Calculator.subtract(10, 4))
+print("Static multiply: {}",  Calculator.multiply(6, 7))
+print("Static divide: {}",  Calculator.divide(20, 5))
+
+// Test instance methods with calculator object
+let calc: Calculator = Calculator.new(10)
+print("Initial value: {}", calc.current_value)
+
+calc.add_to_current(5)
+print("After adding 5: {}", calc.current_value)
+
+calc.store_in_memory()
+calc.multiply_current(2)
+print("After multiplying by 2: {}", calc.current_value)
+
+calc.subtract_from_current(7)
+print("After subtracting 7: {}", calc.current_value)
+
+print("Value in memory: {}", calc.memory)
+calc.recall_from_memory()
+print("After memory recall: {}", calc.current_value)
+
+print("Operations performed: {}", calc.get_operations_count())
