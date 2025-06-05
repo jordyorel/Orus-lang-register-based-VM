@@ -7,5 +7,5 @@ impl Math {
 }
 
 fn main() {
-print(add2(3))
+    print(add2(3))
 }

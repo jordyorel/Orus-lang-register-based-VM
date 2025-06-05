@@ -1,17 +1,17 @@
 // Test for loop control flow
 fn main() {
-let sum = 0
+    let sum = 0
 
-print("For Loop Test:")
+    print("For Loop Test:")
 
-for i in 1..5 {
-    print("Iteration:")
-    print(i)
-    sum = sum + i
-    print("Current sum:")
+    for i in 1..5 {
+        print("Iteration:")
+        print(i)
+        sum = sum + i
+        print("Current sum:")
+        print(sum)
+    }
+
+    print("Final sum:")
     print(sum)
-}
-
-print("Final sum:")
-print(sum)
 }

@@ -1,19 +1,19 @@
 // Test type mismatch error handling
 
 fn main() {
-let a: i32 = 10
-let b: bool = true
+    let a: i32 = 10
+    let b: bool = true
 
-print("Type Mismatch Test:")
-print("Attempting to add an integer and a boolean...")
+    print("Type Mismatch Test:")
+    print("Attempting to add an integer and a boolean...")
 
-// This should produce a compilation error
-let result = a + b
+    // This should produce a compilation error
+    let result = a + b
 
-print("Using compatible types instead:")
-let c: i32 = 20
-let result = a + c
-print(result)
+    print("Using compatible types instead:")
+    let c: i32 = 20
+    let result = a + c
+    print(result)
 }
 
 

@@ -88,25 +88,25 @@ print("Static add: {}",  Calculator.add(5, 3))
 print("Static subtract: {}",  Calculator.subtract(10, 4))
 print("Static multiply: {}",  Calculator.multiply(6, 7))
 fn main() {
-print("Static divide: {}",  Calculator.divide(20, 5))
+    print("Static divide: {}",  Calculator.divide(20, 5))
 
-// Test instance methods with calculator object
-let calc: Calculator = Calculator.new(10)
-print("Initial value: {}", calc.current_value)
+    // Test instance methods with calculator object
+    let calc: Calculator = Calculator.new(10)
+    print("Initial value: {}", calc.current_value)
 
-calc.add_to_current(5)
-print("After adding 5: {}", calc.current_value)
+    calc.add_to_current(5)
+    print("After adding 5: {}", calc.current_value)
 
-calc.store_in_memory()
-calc.multiply_current(2)
-print("After multiplying by 2: {}", calc.current_value)
+    calc.store_in_memory()
+    calc.multiply_current(2)
+    print("After multiplying by 2: {}", calc.current_value)
 
-calc.subtract_from_current(7)
-print("After subtracting 7: {}", calc.current_value)
+    calc.subtract_from_current(7)
+    print("After subtracting 7: {}", calc.current_value)
 
-print("Value in memory: {}", calc.memory)
-calc.recall_from_memory()
-print("After memory recall: {}", calc.current_value)
+    print("Value in memory: {}", calc.memory)
+    calc.recall_from_memory()
+    print("After memory recall: {}", calc.current_value)
 
-print("Operations performed: {}", calc.get_operations_count())
+    print("Operations performed: {}", calc.get_operations_count())
 }

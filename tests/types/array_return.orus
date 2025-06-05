@@ -4,6 +4,6 @@ fn make_numbers() -> [i32; 3] {
 }
 
 fn main() {
-let result = make_numbers()
-print(result)
+    let result = make_numbers()
+    print(result)
 }

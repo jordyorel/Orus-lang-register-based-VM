@@ -1,4 +1,4 @@
 fn main() {
-let flags: [bool; 3] = [true, false, true]
-print(flags)
+    let flags: [bool; 3] = [true, false, true]
+    print(flags)
 }

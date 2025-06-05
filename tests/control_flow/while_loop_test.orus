@@ -1,21 +1,21 @@
 // Test while loop control flow
 
 fn main() {
-let count = 0
-let sum = 0
+    let count = 0
+    let sum = 0
 
-print("While Loop Test:")
+    print("While Loop Test:")
 
-while count < 5 {
-    count = count + 1
-    sum = sum + count
-    print("Iteration:")
-    print(count)
-    print("Current sum:")
+    while count < 5 {
+        count = count + 1
+        sum = sum + count
+        print("Iteration:")
+        print(count)
+        print("Current sum:")
+        print(sum)
+    }
+
+    print("Final sum:")
     print(sum)
-}
-
-print("Final sum:")
-print(sum)
 }
 

@@ -23,44 +23,44 @@ fn isEven(num: i32) -> bool {
 }
 
 fn main() {
-print("Advanced Function Tests:")
+    print("Advanced Function Tests:")
 
-// Test recursive function
-print("Factorial of 5:")
-let n5 = 5
-let fact5 = factorial(n5)
-print(fact5)
+    // Test recursive function
+    print("Factorial of 5:")
+    let n5 = 5
+    let fact5 = factorial(n5)
+    print(fact5)
 
-// Test function with multiple return paths
-print("Maximum of 42 and 17:")
-let a1 = 42
-let b1 = 17
-let maxResult1 = max(a1, b1)
-print(maxResult1)
+    // Test function with multiple return paths
+    print("Maximum of 42 and 17:")
+    let a1 = 42
+    let b1 = 17
+    let maxResult1 = max(a1, b1)
+    print(maxResult1)
 
-print("Maximum of 13 and 37:")
-let a2 = 13
-let b2 = 37
-let maxResult2 = max(a2, b2)
-print(maxResult2)
+    print("Maximum of 13 and 37:")
+    let a2 = 13
+    let b2 = 37
+    let maxResult2 = max(a2, b2)
+    print(maxResult2)
 
-// Test boolean returning function
-print("Is 10 even?")
-let num1 = 10
-let even10 = isEven(num1)
-print(even10)
+    // Test boolean returning function
+    print("Is 10 even?")
+    let num1 = 10
+    let even10 = isEven(num1)
+    print(even10)
 
-print("Is 7 even?")
-let num2 = 7
-let even7 = isEven(num2)
-print(even7)
+    print("Is 7 even?")
+    let num2 = 7
+    let even7 = isEven(num2)
+    print(even7)
 
-// Test function composition
-print("Function composition - max(factorial(3), factorial(2)):")
-let n3 = 3
-let n2 = 2
-let fact3 = factorial(n3)
-let fact2 = factorial(n2)
-let composed = max(fact3, fact2)
-print(composed)
+    // Test function composition
+    print("Function composition - max(factorial(3), factorial(2)):")
+    let n3 = 3
+    let n2 = 2
+    let fact3 = factorial(n3)
+    let fact2 = factorial(n2)
+    let composed = max(fact3, fact2)
+    print(composed)
 }

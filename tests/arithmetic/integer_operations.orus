@@ -1,25 +1,26 @@
 // Test basic integer arithmetic operations
 // Explicit operations instead of variable assignments
 fn main() {
-print("i32 Operations:")
+    print("i32 Operations:")
 
-// Addition
-print("10 + 3 = {} ", 10 + 3)
+    // Addition
+    print("10 + 3 = {} ", 10 + 3)
 
-// Subtraction
-print("10 - 3 = {} ", 10 - 3)
+    // Subtraction
+    print("10 - 3 = {} ", 10 - 3)
 
 
-// Multiplication
-print("10 * 3 = {} ", 10 * 3)
+    // Multiplication
+    print("10 * 3 = {} ", 10 * 3)
 
-// Division
-print("10 / 3 = {} ", 10 / 3)
+    // Division
+    print("10 / 3 = {} ", 10 / 3)
 
-// Modulo
-print("10 % 3 = {} ", 10 % 3)
+    // Modulo
+    print("10 % 3 = {} ", 10 % 3)
+
+    // Negation
+    print("-10 = {} ", -10)
 }
 
-// Negation
-print("-10 = {} ", -10)
 

@@ -112,32 +112,32 @@ impl Queue {
 
 // Test the Stack implementation
 fn main() {
-let stack: Stack = Stack.new()
-print("Stack created, isEmpty: {}", stack.is_empty())
+    let stack: Stack = Stack.new()
+    print("Stack created, isEmpty: {}", stack.is_empty())
 
-stack.push(10)
-stack.push(20)
-stack.push(30)
-print("Stack size after pushes: {}", stack.size())
-print("Stack top element: {}", stack.peek())
+    stack.push(10)
+    stack.push(20)
+    stack.push(30)
+    print("Stack size after pushes: {}", stack.size())
+    print("Stack top element: {}", stack.peek())
 
-let popped: i32 = stack.pop()
-print("Popped from stack: {}", popped)
-print("Stack size after pop: {}", stack.size())
-print("New stack top: {}", stack.peek())
+    let popped: i32 = stack.pop()
+    print("Popped from stack: {}", popped)
+    print("Stack size after pop: {}", stack.size())
+    print("New stack top: {}", stack.peek())
 
-// Test the Queue implementation
-let queue: Queue = Queue.create()
-print("Queue created, isEmpty: {}", queue.is_empty())
+    // Test the Queue implementation
+    let queue: Queue = Queue.create()
+    print("Queue created, isEmpty: {}", queue.is_empty())
 
-queue.enqueue(10)
-queue.enqueue(20)
-queue.enqueue(30)
-print("Queue size after enqueues: {}", queue.size())
-print("Queue front element: {}", queue.peek())
+    queue.enqueue(10)
+    queue.enqueue(20)
+    queue.enqueue(30)
+    print("Queue size after enqueues: {}", queue.size())
+    print("Queue front element: {}", queue.peek())
 
-let dequeued: i32 = queue.dequeue()
-print("Dequeued from queue: {}", dequeued)
-print("Queue size after dequeue: {}", queue.size())
-print("New queue front: {}", queue.peek())
+    let dequeued: i32 = queue.dequeue()
+    print("Dequeued from queue: {}", dequeued)
+    print("Queue size after dequeue: {}", queue.size())
+    print("New queue front: {}", queue.peek())
 }

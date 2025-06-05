@@ -95,18 +95,18 @@ fn array_to_string(arr: [i32; 8]) -> string {
 }
 
 fn main() {
-// Test arrays to sort
-let unsorted1: [i32; 8] = [64, 34, 25, 12, 22, 11, 90, 5]
-let unsorted2: [i32; 8] = [5, 1, 4, 2, 8, 9, 3, 7]
+    // Test arrays to sort
+    let unsorted1: [i32; 8] = [64, 34, 25, 12, 22, 11, 90, 5]
+    let unsorted2: [i32; 8] = [5, 1, 4, 2, 8, 9, 3, 7]
 
-// Sort and print results
-print("Original array 1: {}", array_to_string(unsorted1))
-let bubble_sorted: [i32; 8] = bubble_sort(unsorted1)
-print("Bubble sorted: {}", array_to_string(bubble_sorted))
-print("Is bubble sorted: {}", is_sorted(bubble_sorted))
+    // Sort and print results
+    print("Original array 1: {}", array_to_string(unsorted1))
+    let bubble_sorted: [i32; 8] = bubble_sort(unsorted1)
+    print("Bubble sorted: {}", array_to_string(bubble_sorted))
+    print("Is bubble sorted: {}", is_sorted(bubble_sorted))
 
-print("Original array 2: {}", array_to_string(unsorted2))
-let selection_sorted: [i32; 8] = selection_sort(unsorted2)
-print("Selection sorted: {}", array_to_string(selection_sorted))
-print("Is selection sorted: {}", is_sorted(selection_sorted))
+    print("Original array 2: {}", array_to_string(unsorted2))
+    let selection_sorted: [i32; 8] = selection_sort(unsorted2)
+    print("Selection sorted: {}", array_to_string(selection_sorted))
+    print("Is selection sorted: {}", is_sorted(selection_sorted))
 }

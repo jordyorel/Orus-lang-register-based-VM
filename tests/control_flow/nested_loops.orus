@@ -1,39 +1,39 @@
 // Test nested loops with break using logical operators
 fn main() {
-let sum = 0
+    let sum = 0
 
-print("Nested Loops Test with Logical Operators:")
+    print("Nested Loops Test with Logical Operators:")
 
-// Outer loop
-for i in 0..3 {
-    print("Outer i =")
-    print(i)
-    
-    // Inner loop
-    for j in 0..3 {
-        print("  Inner j =")
-        print(j)
+    // Outer loop
+    for i in 0..3 {
+        print("Outer i =")
+        print(i)
         
-        // Skip combination using logical AND operator
-        if i == 1 and j == 1 {
-            print("  Skipping i=1, j=1")
-        } else {
-            // Break from inner loop using logical OR operator
-            if i == 2 or j == 2 {
-                print("  Breaking on i=2 or j=2")
-                break
-            }
+        // Inner loop
+        for j in 0..3 {
+            print("  Inner j =")
+            print(j)
             
-            sum = sum + (i * 10 + j)
-            print("  Sum +=")
-            print(i * 10 + j)
-            print("  Sum =")
-            print(sum)
+            // Skip combination using logical AND operator
+            if i == 1 and j == 1 {
+                print("  Skipping i=1, j=1")
+            } else {
+                // Break from inner loop using logical OR operator
+                if i == 2 or j == 2 {
+                    print("  Breaking on i=2 or j=2")
+                    break
+                }
+                
+                sum = sum + (i * 10 + j)
+                print("  Sum +=")
+                print(i * 10 + j)
+                print("  Sum =")
+                print(sum)
+            }
         }
     }
-}
 
-print("Final sum:")
-print(sum)
+    print("Final sum:")
+    print(sum)
 }
 

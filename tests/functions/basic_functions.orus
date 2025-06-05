@@ -22,7 +22,7 @@ fn calculateSum(n: i32) -> i32 {
 fn main() {
   print("Basic Function Tests:")
 
-// Call the functions
+  // Call the functions
   print(add(5, 7))
   print(calculateSum(5))
 }

@@ -2,30 +2,30 @@
 
 // Array of different types
 fn main() {
-let numbers: [i32; 5] = [10, 20, 30, 40, 50]
-let floats: [f64; 3] = [1.5, 2.5, 3.5]
-let mixed: [bool; 3] = [true, false, true]
+    let numbers: [i32; 5] = [10, 20, 30, 40, 50]
+    let floats: [f64; 3] = [1.5, 2.5, 3.5]
+    let mixed: [bool; 3] = [true, false, true]
 
-// Sum array elements
-let sum: i32 = 0
-for idx in 0..5 {
-    sum = sum + numbers[idx]
-}
-print("Sum of numbers: {}", sum)
-
-// Find maximum value
-let max: i32 = numbers[0]
-for j in 1..5 {
-    if numbers[j] > max {
-        max = numbers[j]
+    // Sum array elements
+    let sum: i32 = 0
+    for idx in 0..5 {
+        sum = sum + numbers[idx]
     }
-}
-print("Maximum value: {}", max)
+    print("Sum of numbers: {}", sum)
 
-// Create a new array from an existing one
-let doubled: [i32; 5] = [0, 0, 0, 0, 0]
-for k in 0..5 {
-    doubled[k] = numbers[k] * 2
-}
-print("Doubled array: {}", doubled)
+    // Find maximum value
+    let max: i32 = numbers[0]
+    for j in 1..5 {
+        if numbers[j] > max {
+            max = numbers[j]
+        }
+    }
+    print("Maximum value: {}", max)
+
+    // Create a new array from an existing one
+    let doubled: [i32; 5] = [0, 0, 0, 0, 0]
+    for k in 0..5 {
+        doubled[k] = numbers[k] * 2
+    }
+    print("Doubled array: {}", doubled)
 }

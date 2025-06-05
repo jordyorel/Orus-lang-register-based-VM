@@ -1,3 +1,3 @@
 fn main() {
-print(len("hello"))
+    print(len("hello"))
 }

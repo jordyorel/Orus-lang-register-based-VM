@@ -1,4 +1,4 @@
 fn main() {
-let matrix: [[i32; 2]; 2] = [[1, 2], [3, 4]]
-print(matrix)
+    let matrix: [[i32; 2]; 2] = [[1, 2], [3, 4]]
+    print(matrix)
 }
