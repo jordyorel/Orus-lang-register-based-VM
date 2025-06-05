@@ -56,6 +56,9 @@ typedef struct {
 
     Value lastError;
 
+    ObjString* loadedModules[UINT8_COUNT];
+    uint8_t moduleCount;
+
     // Garbage collector state
     Obj* objects;
     size_t bytesAllocated;

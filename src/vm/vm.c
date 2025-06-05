@@ -9,6 +9,7 @@
 #include "../../include/compiler.h"
 #include "../../include/debug.h"
 #include "../../include/memory.h"
+#include "../../include/file_utils.h"
 #include "../../include/parser.h"
 #include "../../include/vm_ops.h"
 
@@ -16,6 +17,8 @@ VM vm;
 
 static void resetStack() { vm.stackTop = vm.stack; }
 Type* variableTypes[UINT8_COUNT] = {NULL};
+
+static InterpretResult run();
 
 void initVM() {
     initTypeSystem();
@@ -28,6 +31,10 @@ void initVM() {
     vm.objects = NULL;
     vm.bytesAllocated = 0;
     vm.astRoot = NULL;
+    vm.moduleCount = 0;
+    for (int i = 0; i < UINT8_COUNT; i++) {
+        vm.loadedModules[i] = NULL;
+    }
     for (int i = 0; i < UINT8_COUNT; i++) {
         vm.variableNames[i].name = NULL;
         vm.variableNames[i].length = 0;
@@ -48,6 +55,7 @@ void freeVM() {
     freeObjects();
     vm.tryFrameCount = 0;
     vm.lastError = NIL_VAL;
+    vm.moduleCount = 0;
 }
 
 static void runtimeError(const char* format, ...) {
@@ -129,6 +137,47 @@ static void traceExecution() {
         printf("\n");
         disassembleInstruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
     #endif
+}
+
+static InterpretResult interpretModule(const char* path) {
+    char* source = readFile(path);
+    if (!source) {
+        runtimeError("Could not open module '%s'.", path);
+        return INTERPRET_RUNTIME_ERROR;
+    }
+    ASTNode* ast;
+    if (!parse(source, &ast)) {
+        free(source);
+        runtimeError("Parsing failed for module.");
+        return INTERPRET_COMPILE_ERROR;
+    }
+    Chunk chunk;
+    initChunk(&chunk);
+    Compiler compiler;
+    initCompiler(&compiler, &chunk);
+
+    Chunk* prevChunk = vm.chunk;
+    uint8_t* prevIp = vm.ip;
+
+    vm.astRoot = ast;
+    if (!compile(ast, &compiler)) {
+        vm.chunk = prevChunk;
+        vm.ip = prevIp;
+        freeChunk(&chunk);
+        free(source);
+        runtimeError("Compilation failed for module.");
+        return INTERPRET_COMPILE_ERROR;
+    }
+    vm.astRoot = NULL;
+    vm.chunk = &chunk;
+    vm.ip = chunk.code;
+    InterpretResult result = run();
+    vm.chunk = prevChunk;
+    vm.ip = prevIp;
+
+    freeChunk(&chunk);
+    free(source);
+    return result;
 }
 
 static InterpretResult run() {
@@ -495,6 +544,29 @@ static InterpretResult run() {
                 // Store the value in the global variable
                 vm.globals[index] = value;
 
+                break;
+            }
+            case OP_IMPORT: {
+                uint8_t constantIndex = READ_BYTE();
+                Value pathVal = vm.chunk->constants.values[constantIndex];
+                if (!IS_STRING(pathVal)) {
+                    runtimeError("Import path must be a string.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                ObjString* pathStr = AS_STRING(pathVal);
+                bool already = false;
+                for (int i = 0; i < vm.moduleCount; i++) {
+                    if (strcmp(vm.loadedModules[i]->chars, pathStr->chars) == 0) {
+                        already = true;
+                        break;
+                    }
+                }
+                if (!already) {
+                    InterpretResult modRes = interpretModule(pathStr->chars);
+                    if (modRes != INTERPRET_OK) return modRes;
+                    if (vm.moduleCount < UINT8_COUNT)
+                        vm.loadedModules[vm.moduleCount++] = pathStr;
+                }
                 break;
             }
             case OP_JUMP: {

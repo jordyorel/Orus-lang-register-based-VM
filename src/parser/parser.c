@@ -35,6 +35,7 @@ static void ifStatement(Parser* parser, ASTNode** ast);
 static void tryStatement(Parser* parser, ASTNode** ast);
 static void functionDeclaration(Parser* parser, ASTNode** ast);
 static void returnStatement(Parser* parser, ASTNode** ast);
+static void importStatement(Parser* parser, ASTNode** ast);
 static void block(Parser* parser, ASTNode** ast);
 static void consumeStatementEnd(Parser* parser);
 static void synchronize(Parser* parser);
@@ -642,6 +643,13 @@ static void returnStatement(Parser* parser, ASTNode** ast) {
     *ast = createReturnNode(value);
 }
 
+static void importStatement(Parser* parser, ASTNode** ast) {
+    consume(parser, TOKEN_STRING, "Expect module path string after 'import'.");
+    Token path = parser->previous;
+    consumeStatementEnd(parser);
+    *ast = createImportNode(path);
+}
+
 static void structDeclaration(Parser* parser, ASTNode** ast) {
     consume(parser, TOKEN_IDENTIFIER, "Expect struct name.");
     Token nameTok = parser->previous;
@@ -813,6 +821,9 @@ static void statement(Parser* parser, ASTNode** ast) {
 
     } else if (match(parser, TOKEN_RETURN)) {
         returnStatement(parser, ast);
+
+    } else if (match(parser, TOKEN_IMPORT)) {
+        importStatement(parser, ast);
 
     } else if (match(parser, TOKEN_BREAK)) {
         consumeStatementEnd(parser);
