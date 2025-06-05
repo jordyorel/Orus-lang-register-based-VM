@@ -25,6 +25,7 @@ typedef struct {
     bool panicMode;
     Scanner* scanner;
     int functionDepth; // Track nested function declarations
+    Type* currentImplType; // Track struct type for methods
 } Parser;
 
 typedef ASTNode* (*ParseFn)(Parser*);

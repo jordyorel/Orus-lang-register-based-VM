@@ -167,6 +167,8 @@ ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType, A
     node->data.function.returnType = returnType;
     node->data.function.body = body;
     node->data.function.index = 0; // Will be resolved during compilation
+    node->data.function.isMethod = false;
+    node->data.function.implType = NULL;
     node->valueType = NULL;
     return node;
 }
@@ -216,6 +218,43 @@ ASTNode* createArraySetNode(ASTNode* array, ASTNode* index, ASTNode* value) {
     node->right = array;
     node->next = NULL;
     node->data.arraySet.index = index;
+    node->valueType = NULL;
+    return node;
+}
+
+ASTNode* createStructLiteralNode(Token name, ASTNode* values, int fieldCount) {
+    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    node->type = AST_STRUCT_LITERAL;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.structLiteral.name = name;
+    node->data.structLiteral.values = values;
+    node->data.structLiteral.fieldCount = fieldCount;
+    node->valueType = NULL;
+    return node;
+}
+
+ASTNode* createFieldAccessNode(ASTNode* object, Token name) {
+    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    node->type = AST_FIELD;
+    node->left = object;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.field.fieldName = name;
+    node->data.field.index = -1;
+    node->valueType = NULL;
+    return node;
+}
+
+ASTNode* createFieldSetNode(ASTNode* object, Token name, ASTNode* value) {
+    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    node->type = AST_FIELD_SET;
+    node->left = value;
+    node->right = object;
+    node->next = NULL;
+    node->data.fieldSet.fieldName = name;
+    node->data.fieldSet.index = -1;
     node->valueType = NULL;
     return node;
 }
@@ -277,8 +316,15 @@ void freeASTNode(ASTNode* node) {
     if (node->type == AST_ARRAY) {
         if (node->data.array.elements) freeASTNode(node->data.array.elements);
     }
+    if (node->type == AST_STRUCT_LITERAL) {
+        if (node->data.structLiteral.values)
+            freeASTNode(node->data.structLiteral.values);
+    }
     if (node->type == AST_ARRAY_SET) {
         if (node->data.arraySet.index) freeASTNode(node->data.arraySet.index);
+    }
+    if (node->type == AST_FIELD || node->type == AST_FIELD_SET) {
+        // children already freed via left/right
     }
     if (node->type == AST_CALL) {
         if (node->data.call.arguments) freeASTNode(node->data.call.arguments);

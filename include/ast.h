@@ -15,6 +15,9 @@ typedef enum {
     AST_CALL,
     AST_ARRAY,
     AST_ARRAY_SET,
+    AST_STRUCT_LITERAL,
+    AST_FIELD,
+    AST_FIELD_SET,
     AST_LET,
     AST_PRINT,
     AST_IF,
@@ -77,11 +80,24 @@ typedef struct {
 } ArrayData;
 
 typedef struct {
+    Token name;                 // Struct name
+    struct ASTNode* values;     // Linked list of field value expressions
+    int fieldCount;
+} StructLiteralData;
+
+typedef struct {
+    Token fieldName;            // Accessed field name
+    int index;                  // Resolved index within the struct
+} FieldAccessData;
+
+typedef struct {
     Token name;                // Function name
     struct ASTNode* parameters; // Linked list of parameter nodes
     Type* returnType;          // Return type
     struct ASTNode* body;      // Function body
     uint8_t index;             // Function index in the function table
+    bool isMethod;             // True if function has implicit self
+    Type* implType;            // Struct type if method
 } FunctionData;
 
 typedef struct {
@@ -117,9 +133,12 @@ typedef struct ASTNode {
         WhileData whileStmt;
         ForData forStmt;
         ArrayData array;
+        StructLiteralData structLiteral;
+        FieldAccessData field;
         struct {
             struct ASTNode* index;
         } arraySet;
+        FieldAccessData fieldSet;
         FunctionData function;
         CallData call;
         ReturnData returnStmt;
@@ -143,6 +162,9 @@ ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount);
 ASTNode* createReturnNode(ASTNode* value);
 ASTNode* createArrayNode(ASTNode* elements, int elementCount);
 ASTNode* createArraySetNode(ASTNode* array, ASTNode* index, ASTNode* value);
+ASTNode* createStructLiteralNode(Token name, ASTNode* values, int fieldCount);
+ASTNode* createFieldAccessNode(ASTNode* object, Token name);
+ASTNode* createFieldSetNode(ASTNode* object, Token name, ASTNode* value);
 ASTNode* createBreakNode();
 ASTNode* createContinueNode();
 

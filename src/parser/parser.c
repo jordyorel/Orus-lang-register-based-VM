@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../../include/type.h"
 
 #include "../../include/common.h"
 #include "../../include/memory.h"
@@ -20,6 +21,8 @@ static ASTNode* parseLogical(Parser* parser, ASTNode* left);  // New logical ope
 static ASTNode* parseCall(Parser* parser, ASTNode* left);
 static ASTNode* parseIndex(Parser* parser, ASTNode* left);
 static ASTNode* parseDot(Parser* parser, ASTNode* left);
+static ASTNode* parseStructLiteral(Parser* parser, ASTNode* left);
+static Type* findStructTypeToken(Token token);
 static ASTNode* parseBoolean(Parser* parser);
 static ASTNode* parseVariable(Parser* parser);
 static ASTNode* parseArray(Parser* parser);
@@ -253,40 +256,61 @@ static ASTNode* parseIndex(Parser* parser, ASTNode* left) {
 
 static ASTNode* parseDot(Parser* parser, ASTNode* left) {
     consume(parser, TOKEN_IDENTIFIER, "Expect property or method name after '.'.");
-    Token methodName = parser->previous;
+    Token name = parser->previous;
 
-    if (!match(parser, TOKEN_LEFT_PAREN)) {
-        error(parser, "Only method calls are supported after '.'.");
-        return NULL;
-    }
-
-    ASTNode* arguments = left;
-    left->next = NULL;
-    ASTNode* lastArg = left;
-    int argCount = 1;
-
-    if (!check(parser, TOKEN_RIGHT_PAREN)) {
-        do {
-            ASTNode* arg;
-            expression(parser, &arg);
-            if (arguments == NULL) {
-                arguments = arg;
-            } else {
-                lastArg->next = arg;
+    if (match(parser, TOKEN_LEFT_PAREN)) {
+        bool useReceiver = true;
+        if (left->type == AST_VARIABLE) {
+            if (findStructTypeToken(left->data.variable.name)) {
+                useReceiver = false;
             }
-            lastArg = arg;
-            argCount++;
-        } while (match(parser, TOKEN_COMMA));
+        }
+
+        ASTNode* arguments = NULL;
+        ASTNode* lastArg = NULL;
+        int argCount = 0;
+        if (useReceiver) {
+            arguments = left;
+            left->next = NULL;
+            lastArg = left;
+            argCount = 1;
+        } else {
+            free(left);
+        }
+
+        if (!check(parser, TOKEN_RIGHT_PAREN)) {
+            do {
+                ASTNode* arg;
+                expression(parser, &arg);
+                if (arguments == NULL) {
+                    arguments = arg;
+                } else {
+                    lastArg->next = arg;
+                }
+                lastArg = arg;
+                argCount++;
+            } while (match(parser, TOKEN_COMMA));
+        }
+
+        consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
+
+        return createCallNode(name, arguments, argCount);
     }
 
-    consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
-
-    return createCallNode(methodName, arguments, argCount);
+    return createFieldAccessNode(left, name);
 }
 
 static ASTNode* parseVariable(Parser* parser) {
     Token name = parser->previous;
-    return createVariableNode(name, 0);  // Index will be resolved by Compiler
+    ASTNode* var = createVariableNode(name, 0);  // Index will be resolved by Compiler
+
+    if (check(parser, TOKEN_LEFT_BRACE)) {
+        if (findStructTypeToken(name)) {
+            advance(parser); // consume '{'
+            return parseStructLiteral(parser, var);
+        }
+    }
+    return var;
 }
 
 static ASTNode* parseArray(Parser* parser) {
@@ -313,6 +337,48 @@ static ASTNode* parseArray(Parser* parser) {
     consume(parser, TOKEN_RIGHT_BRACKET, "Expect ']' after array elements.");
 
     return createArrayNode(elements, count);
+}
+
+static Type* findStructTypeToken(Token token) {
+    char name[token.length + 1];
+    memcpy(name, token.start, token.length);
+    name[token.length] = '\0';
+    return findStructType(name);
+}
+
+static ASTNode* parseStructLiteral(Parser* parser, ASTNode* left) {
+    // 'left' is the struct name variable
+    Token structName = left->data.variable.name;
+    free(left);
+
+    ASTNode* values = NULL;
+    ASTNode* last = NULL;
+    int count = 0;
+
+    if (!check(parser, TOKEN_RIGHT_BRACE)) {
+        while (match(parser, TOKEN_NEWLINE)) {}
+        do {
+            while (match(parser, TOKEN_NEWLINE)) {}
+            consume(parser, TOKEN_IDENTIFIER, "Expect field name.");
+            consume(parser, TOKEN_COLON, "Expect ':' after field name.");
+            ASTNode* value = NULL;
+            expression(parser, &value);
+            if (parser->hadError) return NULL;
+            if (values == NULL)
+                values = value;
+            else
+                last->next = value;
+            last = value;
+            count++;
+            if (match(parser, TOKEN_COMMA) || match(parser, TOKEN_NEWLINE)) {
+                while (match(parser, TOKEN_NEWLINE)) {}
+            }
+        } while (!check(parser, TOKEN_RIGHT_BRACE));
+    }
+
+    consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after struct literal.");
+
+    return createStructLiteralNode(structName, values, count);
 }
 
 static ASTNode* parse_precedence(Parser* parser, Precedence precedence) {
@@ -464,6 +530,8 @@ static void functionDeclaration(Parser* parser, ASTNode** ast) {
     consume(parser, TOKEN_IDENTIFIER, "Expect function name.");
     Token name = parser->previous;
 
+    bool hasSelf = false;
+
     // Enter function scope
     parser->functionDepth++;
 
@@ -480,10 +548,21 @@ static void functionDeclaration(Parser* parser, ASTNode** ast) {
             consume(parser, TOKEN_IDENTIFIER, "Expect parameter name.");
             Token paramName = parser->previous;
 
-            // Parse parameter type
-            consume(parser, TOKEN_COLON, "Expect ':' after parameter name.");
-            Type* paramType = parseType(parser);
-            if (parser->hadError) return;
+            Type* paramType = NULL;
+            if (match(parser, TOKEN_COLON)) {
+                paramType = parseType(parser);
+                if (parser->hadError) return;
+            } else if (paramName.length == 4 &&
+                       strncmp(paramName.start, "self", 4) == 0 &&
+                       parser->currentImplType != NULL) {
+                paramType = parser->currentImplType;
+                if (parameters == NULL) {
+                    hasSelf = true;
+                }
+            } else {
+                error(parser, "Expect ':' after parameter name.");
+                return;
+            }
 
             // Create parameter node (using let node for now)
             ASTNode* param = createLetNode(paramName, paramType, NULL);
@@ -507,6 +586,19 @@ static void functionDeclaration(Parser* parser, ASTNode** ast) {
         if (parser->hadError) return;
     }
 
+    if (hasSelf && parser->currentImplType != NULL) {
+        const char* structName = parser->currentImplType->info.structure.name;
+        size_t structLen = strlen(structName);
+        size_t funcLen = name.length;
+        char* full = (char*)malloc(structLen + 1 + funcLen + 1);
+        memcpy(full, structName, structLen);
+        full[structLen] = '_';
+        memcpy(full + structLen + 1, name.start, funcLen);
+        full[structLen + 1 + funcLen] = '\0';
+        name.start = full;
+        name.length = structLen + 1 + funcLen;
+    }
+
     // Parse function body
     consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after function return type.");
     parser->current = parser->previous; // Rewind to the left brace so block() can consume it
@@ -516,7 +608,10 @@ static void functionDeclaration(Parser* parser, ASTNode** ast) {
     // Exit function scope
     parser->functionDepth--;
 
-    *ast = createFunctionNode(name, parameters, returnType, body);
+    ASTNode* fnNode = createFunctionNode(name, parameters, returnType, body);
+    fnNode->data.function.isMethod = hasSelf;
+    fnNode->data.function.implType = parser->currentImplType;
+    *ast = fnNode;
 }
 
 static void returnStatement(Parser* parser, ASTNode** ast) {
@@ -581,14 +676,18 @@ static void structDeclaration(Parser* parser, ASTNode** ast) {
     char* structName = (char*)malloc(nameTok.length + 1);
     memcpy(structName, nameTok.start, nameTok.length);
     structName[nameTok.length] = '\0';
-    createStructType(structName, fields, count);
+    Type* structType = createStructType(structName, fields, count);
 
-    *ast = NULL; // Structs produce no runtime code
+    // Create a dummy global variable for the struct name to allow method calls
+    *ast = createLetNode(nameTok, structType, NULL);
 }
 
 static void implBlock(Parser* parser, ASTNode** ast) {
     consume(parser, TOKEN_IDENTIFIER, "Expect type name after impl.");
-    // Ignore the result for now
+    Token structNameTok = parser->previous;
+    Type* prevType = parser->currentImplType;
+    parser->currentImplType = findStructTypeToken(structNameTok);
+
     consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after impl name.");
     ASTNode* methods = NULL;
     ASTNode* last = NULL;
@@ -608,6 +707,7 @@ static void implBlock(Parser* parser, ASTNode** ast) {
     }
     consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after impl block.");
     consumeStatementEnd(parser);
+    parser->currentImplType = prevType;
     *ast = createBlockNode(methods);
 }
 
@@ -757,6 +857,12 @@ static void statement(Parser* parser, ASTNode** ast) {
                 expr->left = expr->right = NULL;
                 free(expr);
                 *ast = createArraySetNode(arrayExpr, indexExpr, value);
+            } else if (expr->type == AST_FIELD) {
+                ASTNode* object = expr->left;
+                Token fieldName = expr->data.field.fieldName;
+                expr->left = NULL;
+                free(expr);
+                *ast = createFieldSetNode(object, fieldName, value);
             } else {
                 error(parser, "Invalid assignment target.");
                 freeASTNode(expr);
@@ -809,6 +915,7 @@ void initParser(Parser* parser, Scanner* scanner) {
     parser->panicMode = false;
     parser->scanner = scanner;
     parser->functionDepth = 0;
+    parser->currentImplType = NULL;
 }
 
 bool parse(const char* source, ASTNode** ast) {
