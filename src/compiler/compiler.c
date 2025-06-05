@@ -18,6 +18,13 @@ static void patchContinueJumps(Compiler* compiler);
 static void emitForLoop(Compiler* compiler, ASTNode* node);
 void disassembleChunk(Chunk* chunk, const char* name);
 
+static void beginScope(Compiler* compiler) { compiler->scopeDepth++; }
+
+static void endScope(Compiler* compiler) {
+    removeSymbolsFromScope(&compiler->symbols, compiler->scopeDepth);
+    if (compiler->scopeDepth > 0) compiler->scopeDepth--;
+}
+
 static void error(Compiler* compiler, const char* message) {
     if (compiler->panicMode) return;
     compiler->panicMode = true;
@@ -508,9 +515,14 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 return;
             }
 
+            beginScope(compiler);
             // Type check the body
             typeCheckNode(compiler, node->data.whileStmt.body);
-            if (compiler->hadError) return;
+            if (compiler->hadError) {
+                endScope(compiler);
+                return;
+            }
+            endScope(compiler);
 
             // While statements don't have a value type
             node->valueType = NULL;
@@ -552,13 +564,18 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 return;
             }
 
+            beginScope(compiler);
             // Define the iterator variable
             uint8_t index = defineVariable(compiler, node->data.forStmt.iteratorName, startType);
             node->data.forStmt.iteratorIndex = index;
 
             // Type check the body
             typeCheckNode(compiler, node->data.forStmt.body);
-            if (compiler->hadError) return;
+            if (compiler->hadError) {
+                endScope(compiler);
+                return;
+            }
+            endScope(compiler);
 
             // For statements don't have a value type
             node->valueType = NULL;
@@ -570,17 +587,25 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             uint8_t index = defineVariable(compiler, node->data.function.name, node->data.function.returnType);
             node->data.function.index = index;
 
+            beginScope(compiler);
             // Type check parameters
             ASTNode* param = node->data.function.parameters;
             while (param != NULL) {
                 typeCheckNode(compiler, param);
-                if (compiler->hadError) return;
+                if (compiler->hadError) {
+                    endScope(compiler);
+                    return;
+                }
                 param = param->next;
             }
 
             // Type check the function body
             typeCheckNode(compiler, node->data.function.body);
-            if (compiler->hadError) return;
+            if (compiler->hadError) {
+                endScope(compiler);
+                return;
+            }
+            endScope(compiler);
 
             // Function declarations don't have a value type
             node->valueType = NULL;
@@ -1279,9 +1304,14 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             // Set the continue position to the start of the loop
             compiler->loopContinue = compiler->loopStart;
 
+            beginScope(compiler);
             // Generate code for the body
             generateCode(compiler, node->data.whileStmt.body);
-            if (compiler->hadError) return;
+            if (compiler->hadError) {
+                endScope(compiler);
+                return;
+            }
+            endScope(compiler);
 
             // Emit a loop instruction to jump back to the condition
             writeOp(compiler, OP_LOOP);
@@ -1314,6 +1344,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             break;
         }
         case AST_FUNCTION: {
+            beginScope(compiler);
             // Count and collect parameters
             ASTNode* paramList[256];  // Max 256 params
             int paramCount = 0;
@@ -1365,6 +1396,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             // Store function index in globals for lookup at runtime
             vm.globals[node->data.function.index] = I32_VAL(funcIndex);
 
+            endScope(compiler);
             break;
         }
         case AST_CALL: {
@@ -1468,6 +1500,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 }
 
 static void emitForLoop(Compiler* compiler, ASTNode* node) {
+    beginScope(compiler);
     // Save the enclosing loop context
     int enclosingLoopStart = compiler->loopStart;
     int enclosingLoopEnd = compiler->loopEnd;
@@ -1573,6 +1606,8 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     // Patch all break jumps to jump to the current position
     patchBreakJumps(compiler);
 
+    endScope(compiler);
+
     // Restore the enclosing loop context
     compiler->loopStart = enclosingLoopStart;
     compiler->loopEnd = enclosingLoopEnd;
@@ -1585,13 +1620,15 @@ uint8_t defineVariable(Compiler* compiler, Token name, Type* type) {
 }
 
 uint8_t addLocal(Compiler* compiler, Token name, Type* type) {
-    for (uint8_t i = 0; i < vm.variableCount; i++) {
-        if (vm.variableNames[i].length == name.length &&
-            memcmp(vm.variableNames[i].name, name.start, name.length) == 0) {
-            error(compiler, "Variable already declared.");
-            return i;
-        }
+    char tempName[name.length + 1];
+    memcpy(tempName, name.start, name.length);
+    tempName[name.length] = '\0';
+    Symbol* existing = findSymbol(&compiler->symbols, tempName);
+    if (existing && existing->scope == compiler->scopeDepth) {
+        error(compiler, "Variable already declared.");
+        return UINT8_MAX;
     }
+
     if (vm.variableCount >= UINT8_COUNT) {
         error(compiler, "Too many variables.");
         return 0;
@@ -1608,16 +1645,18 @@ uint8_t addLocal(Compiler* compiler, Token name, Type* type) {
     variableTypes[index] = type;  // Should be getPrimitiveType result
     vm.globalTypes[index] = type;
     vm.globals[index] = NIL_VAL;
+
+    addSymbol(&compiler->symbols, name_copy, type, compiler->scopeDepth, index);
+
     return index;
 }
 
 uint8_t resolveVariable(Compiler* compiler, Token name) {
-    for (int i = 0; i < vm.variableCount; i++) {
-        if (vm.variableNames[i].length == name.length &&
-            memcmp(vm.variableNames[i].name, name.start, name.length) == 0) {
-            return (uint8_t)i;
-        }
-    }
+    char tempName[name.length + 1];
+    memcpy(tempName, name.start, name.length);
+    tempName[name.length] = '\0';
+    Symbol* sym = findSymbol(&compiler->symbols, tempName);
+    if (sym) return sym->index;
     return UINT8_MAX;  // Not found
 }
 
@@ -1691,7 +1730,8 @@ void initCompiler(Compiler* compiler, Chunk* chunk) {
     compiler->continueJumpCount = 0;
     compiler->continueJumpCapacity = 0;
 
-    compiler->symbols = NULL;  // Initialize later if needed
+    initSymbolTable(&compiler->symbols);
+    compiler->scopeDepth = 0;
     compiler->chunk = chunk;
     compiler->hadError = false;
     compiler->panicMode = false;
@@ -1714,6 +1754,8 @@ static void freeCompiler(Compiler* compiler) {
         compiler->continueJumpCount = 0;
         compiler->continueJumpCapacity = 0;
     }
+
+    freeSymbolTable(&compiler->symbols);
 }
 
 bool compile(ASTNode* ast, Compiler* compiler) {

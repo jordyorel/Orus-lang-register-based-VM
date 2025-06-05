@@ -21,7 +21,8 @@ typedef struct {
     int continueJumpCount;    // Number of continue jumps
     int continueJumpCapacity; // Capacity of the continueJumps array
 
-    SymbolTable* symbols;
+    SymbolTable symbols;
+    int scopeDepth;
     Chunk* chunk;
     bool hadError;
     bool panicMode;

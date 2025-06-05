@@ -831,9 +831,10 @@ bool parse(const char* source, ASTNode** ast) {
         ASTNode* stmt = NULL;
         statement(&parser, &stmt);
 
-        // If statement returned NULL (e.g., for EOF), break the loop
+        // Some declarations (like structs) don't generate runtime nodes.
+        // Simply skip adding them to the AST but continue parsing.
         if (stmt == NULL) {
-            break;
+            continue;
         }
 
         if (parser.hadError) {
