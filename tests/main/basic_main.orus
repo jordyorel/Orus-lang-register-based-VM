@@ -1,0 +1,4 @@
+// Verify that the interpreter calls main automatically
+fn main() {
+    print("Hello from main")
+}
