@@ -123,6 +123,11 @@ static bool appendValueString(Value value, char** buffer, int* length,
             if (!appendStringDynamic("]", buffer, length, capacity)) return false;
             return true;
         }
+        case VAL_ERROR: {
+            snprintf(tmp, sizeof(tmp), "Error(%d): %s", AS_ERROR(value)->type,
+                     AS_ERROR(value)->message->chars);
+            return appendStringDynamic(tmp, buffer, length, capacity);
+        }
         default:
             return appendStringDynamic("unknown", buffer, length, capacity);
     }
@@ -565,7 +570,7 @@ static InterpretResult run() {
                 if (!already) {
                     InterpretResult modRes = interpretModule(pathStr->chars);
                     if (modRes != INTERPRET_OK) return modRes;
-                    if (vm.moduleCount < UINT8_COUNT)
+                    if (vm.moduleCount < UINT8_MAX)
                         vm.loadedModules[vm.moduleCount++] = pathStr;
                 }
                 break;
@@ -913,6 +918,12 @@ static InterpretResult run() {
                                 valueLen = 0;
                                 break;
                             }
+                            case VAL_ERROR:
+                                valueLen = snprintf(valueStr, sizeof(valueStr),
+                                                    "Error(%d): %s",
+                                                    AS_ERROR(arg)->type,
+                                                    AS_ERROR(arg)->message->chars);
+                                break;
                         }
 
                         if (valueLen > 0) {
