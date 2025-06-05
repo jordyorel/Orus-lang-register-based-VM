@@ -34,8 +34,16 @@ Variables are introduced with `let` and can optionally specify a type:
 let count = 0
 let text: string = "hello"
 ```
-
 Assignment reuses the variable name on the left hand side.
+
+## Modules
+
+Files can be imported using the `import` statement. The file is executed once
+and subsequent imports do nothing.
+
+```orus
+import "path/to/module.orus"
+```
 
 ## Functions
 

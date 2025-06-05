@@ -282,6 +282,19 @@ ASTNode* createContinueNode() {
     return node;
 }
 
+ASTNode* createImportNode(Token path) {
+    ASTNode* node = allocateASTNode();
+    node->type = AST_IMPORT;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    const char* start = path.start + 1;
+    int length = path.length - 2;
+    node->data.importStmt.path = allocateString(start, length);
+    node->valueType = NULL;
+    return node;
+}
+
 ASTNode* createTryNode(ASTNode* tryBlock, Token errorName, ASTNode* catchBlock) {
     ASTNode* node = allocateASTNode();
     node->type = AST_TRY;

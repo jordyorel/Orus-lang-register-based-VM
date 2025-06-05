@@ -28,7 +28,8 @@ typedef enum {
     AST_TRY,
     AST_RETURN,
     AST_BREAK,
-    AST_CONTINUE
+    AST_CONTINUE,
+    AST_IMPORT
 } ASTNodeType;
 
 typedef struct {
@@ -79,6 +80,10 @@ typedef struct {
     struct ASTNode* elements;   // Linked list of element expressions
     int elementCount;
 } ArrayData;
+
+typedef struct {
+    ObjString* path;
+} ImportData;
 
 typedef struct {
     Token name;                 // Struct name
@@ -155,6 +160,7 @@ typedef struct ASTNode {
         CallData call;
         TryData tryStmt;
         ReturnData returnStmt;
+        ImportData importStmt;
     } data;
     Type* valueType;
 } ASTNode;
@@ -181,6 +187,7 @@ ASTNode* createFieldAccessNode(ASTNode* object, Token name);
 ASTNode* createFieldSetNode(ASTNode* object, Token name, ASTNode* value);
 ASTNode* createBreakNode();
 ASTNode* createContinueNode();
+ASTNode* createImportNode(Token path);
 
 void freeASTNode(ASTNode* node);
 
