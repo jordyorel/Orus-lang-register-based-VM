@@ -1,3 +1,4 @@
+fn main() {
 let arr: [i32; 1] = [1]
 push(arr, 2)
 push(arr, 3)
@@ -11,3 +12,4 @@ print(c)
 let d = pop(arr)
 print(d)
 print(len(arr))
+}

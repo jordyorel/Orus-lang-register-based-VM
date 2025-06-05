@@ -1,2 +1,5 @@
 let greeting = "Hello from module"
 print(greeting)
+
+fn main() {
+}

@@ -6,4 +6,6 @@ impl Math {
     }
 }
 
+fn main() {
 print(add2(3))
+}

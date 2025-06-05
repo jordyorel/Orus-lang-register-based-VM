@@ -41,7 +41,9 @@ impl Rectangle {
     }
 }
 
+fn main() {
 let rect: Rectangle = Rectangle.new(1, 2, 3, 4)
 print(rect.description())
 rect.shape.move_to(5,6)
 print(rect.description())
+}

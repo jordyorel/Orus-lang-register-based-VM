@@ -1,6 +1,7 @@
 // Test various array operations
 
 // Array of different types
+fn main() {
 let numbers: [i32; 5] = [10, 20, 30, 40, 50]
 let floats: [f64; 3] = [1.5, 2.5, 3.5]
 let mixed: [bool; 3] = [true, false, true]
@@ -27,3 +28,4 @@ for k in 0..5 {
     doubled[k] = numbers[k] * 2
 }
 print("Doubled array: {}", doubled)
+}

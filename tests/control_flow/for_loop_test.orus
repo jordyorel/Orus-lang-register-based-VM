@@ -1,4 +1,5 @@
 // Test for loop control flow
+fn main() {
 let sum = 0
 
 print("For Loop Test:")
@@ -13,3 +14,4 @@ for i in 1..5 {
 
 print("Final sum:")
 print(sum)
+}

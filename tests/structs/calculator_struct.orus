@@ -87,6 +87,7 @@ impl Calculator {
 print("Static add: {}",  Calculator.add(5, 3))
 print("Static subtract: {}",  Calculator.subtract(10, 4))
 print("Static multiply: {}",  Calculator.multiply(6, 7))
+fn main() {
 print("Static divide: {}",  Calculator.divide(20, 5))
 
 // Test instance methods with calculator object
@@ -108,3 +109,4 @@ calc.recall_from_memory()
 print("After memory recall: {}", calc.current_value)
 
 print("Operations performed: {}", calc.get_operations_count())
+}

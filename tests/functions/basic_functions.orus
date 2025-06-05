@@ -17,11 +17,13 @@ fn calculateSum(n: i32) -> i32 {
         sum = sum + i
     }
     return sum
-}
+  }
 
-print("Basic Function Tests:")
+fn main() {
+  print("Basic Function Tests:")
 
 // Call the functions
-print(add(5, 7))
-print(calculateSum(5))
+  print(add(5, 7))
+  print(calculateSum(5))
+}
 

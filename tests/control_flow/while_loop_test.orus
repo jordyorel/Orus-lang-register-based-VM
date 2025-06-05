@@ -1,5 +1,6 @@
 // Test while loop control flow
 
+fn main() {
 let count = 0
 let sum = 0
 
@@ -16,4 +17,5 @@ while count < 5 {
 
 print("Final sum:")
 print(sum)
+}
 

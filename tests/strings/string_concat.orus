@@ -1,2 +1,4 @@
+fn main() {
 print("Hello " + "World")
 print("Number: " + 42 + ", pi=" + 3.14)
+}

@@ -79,6 +79,7 @@ impl Class {
     }
 }
 
+fn main() {
 let alice: Student = Student.new("Alice", 101)
 alice.set_grade(0, 85)
 alice.set_grade(1, 90)
@@ -104,3 +105,4 @@ math_class.add_student(bob)
 print("Class name: {}", math_class.name)
 print("Number of students: {}", math_class.count)
 print("Class average: {}", math_class.class_average())
+}

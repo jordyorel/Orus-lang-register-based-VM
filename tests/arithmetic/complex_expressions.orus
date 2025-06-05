@@ -1,4 +1,5 @@
 // Test complex expressions with mixed operations and precedence
+fn main() {
 print("Complex Expressions Test:")
 
 // Test operator precedence
@@ -15,4 +16,5 @@ print("5 * 3 + 5 / 2 - 3 % 2 = {} ", 5 * 3 + 5 / 2 - 3 % 2)
 
 // Mixed types
 print("10 * 2.5 = {} ", 10 * 2.5)
+}
 

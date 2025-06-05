@@ -1,5 +1,6 @@
 // Test undefined variable error handling
 
+fn main() {
 let a: i32 = 10
 
 print("Undefined Variable Test:")
@@ -8,4 +9,5 @@ print(a)
 
 // The line below would cause a compilation error
 print(b)
+}
 

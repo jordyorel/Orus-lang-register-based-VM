@@ -1,3 +1,5 @@
 struct Foo {}
+fn main() {
 let f: Foo = Foo{}
 f.bar()
+}
