@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "../../include/memory.h"
 #include "../../include/value.h"
@@ -9,6 +10,13 @@
 #include "../../include/debug.h"
 
 extern VM vm;
+
+static Type* findStructTypeToken(Token token) {
+    char name[token.length + 1];
+    memcpy(name, token.start, token.length);
+    name[token.length] = '\0';
+    return findStructType(name);
+}
 
 static void generateCode(Compiler* compiler, ASTNode* node);
 static void addBreakJump(Compiler* compiler, int jumpPos);
@@ -584,7 +592,29 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
         case AST_FUNCTION: {
             // Define the function in the symbol table
-            uint8_t index = defineVariable(compiler, node->data.function.name, node->data.function.returnType);
+            char tempName[node->data.function.name.length + 1];
+            memcpy(tempName, node->data.function.name.start, node->data.function.name.length);
+            tempName[node->data.function.name.length] = '\0';
+            Symbol* existing = findSymbol(&compiler->symbols, tempName);
+            uint8_t index;
+            if (existing && existing->scope == compiler->scopeDepth && node->data.function.implType) {
+                const char* structName = node->data.function.implType->info.structure.name;
+                size_t structLen = strlen(structName);
+                size_t funcLen = node->data.function.name.length;
+                char* full = (char*)malloc(structLen + 1 + funcLen + 1);
+                memcpy(full, structName, structLen);
+                full[structLen] = '_';
+                memcpy(full + structLen + 1, node->data.function.name.start, funcLen);
+                full[structLen + 1 + funcLen] = '\0';
+
+                Token newTok = node->data.function.name;
+                newTok.start = full;
+                newTok.length = structLen + 1 + funcLen;
+                node->data.function.name = newTok;
+                index = defineVariable(compiler, newTok, node->data.function.returnType);
+            } else {
+                index = defineVariable(compiler, node->data.function.name, node->data.function.returnType);
+            }
             node->data.function.index = index;
 
             beginScope(compiler);
@@ -612,9 +642,47 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             break;
         }
 
-        case AST_CALL: {
-            // Resolve the function
+       case AST_CALL: {
+            // Attempt to resolve the function name
             uint8_t index = resolveVariable(compiler, node->data.call.name);
+
+            // Type check arguments first to know the type of the receiver
+            ASTNode* arg = node->data.call.arguments;
+            while (arg != NULL) {
+                typeCheckNode(compiler, arg);
+                if (compiler->hadError) return;
+                arg = arg->next;
+            }
+
+            // If not found, try mangled method name based on first argument
+            if (index == UINT8_MAX && node->data.call.arguments != NULL) {
+                ASTNode* recv = node->data.call.arguments;
+                Type* recvType = recv->valueType;
+                if (recvType && recvType->kind == TYPE_STRUCT) {
+                    const char* structName = recvType->info.structure.name;
+                    size_t structLen = strlen(structName);
+                    size_t nameLen = node->data.call.name.length;
+                    char* full = (char*)malloc(structLen + 1 + nameLen + 1);
+                    memcpy(full, structName, structLen);
+                    full[structLen] = '_';
+                    memcpy(full + structLen + 1, node->data.call.name.start, nameLen);
+                    full[structLen + 1 + nameLen] = '\0';
+                    Symbol* sym = findSymbol(&compiler->symbols, full);
+                    if (sym) {
+                        index = sym->index;
+                        node->data.call.name.start = full;
+                        node->data.call.name.length = structLen + 1 + nameLen;
+                    } else {
+                        free(full);
+                    }
+                }
+            }
+
+            if (index == UINT8_MAX) {
+                error(compiler, "Undefined function.");
+                return;
+            }
+
             node->data.call.index = index;
 
             // Get the function's return type
@@ -622,14 +690,6 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             if (!returnType) {
                 error(compiler, "Function has no return type.");
                 return;
-            }
-
-            // Type check arguments
-            ASTNode* arg = node->data.call.arguments;
-            while (arg != NULL) {
-                typeCheckNode(compiler, arg);
-                if (compiler->hadError) return;
-                arg = arg->next;
             }
 
             // Allocate the conversion flags array
@@ -662,6 +722,99 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 return;
             }
             node->valueType = createArrayType(elementType);
+            break;
+        }
+
+        case AST_STRUCT_LITERAL: {
+            Type* structType = findStructTypeToken(node->data.structLiteral.name);
+            if (!structType) {
+                error(compiler, "Unknown struct type.");
+                return;
+            }
+            if (structType->info.structure.fieldCount !=
+                node->data.structLiteral.fieldCount) {
+                error(compiler, "Struct literal field count mismatch.");
+                return;
+            }
+            ASTNode* value = node->data.structLiteral.values;
+            for (int i = 0; i < node->data.structLiteral.fieldCount; i++) {
+                if (!value) {
+                    error(compiler, "Missing struct field value.");
+                    return;
+                }
+                typeCheckNode(compiler, value);
+                if (compiler->hadError) return;
+                if (!typesEqual(structType->info.structure.fields[i].type,
+                                value->valueType)) {
+                    error(compiler, "Struct field type mismatch.");
+                    return;
+                }
+                value = value->next;
+            }
+            node->valueType = structType;
+            break;
+        }
+
+        case AST_FIELD: {
+            typeCheckNode(compiler, node->left);
+            if (compiler->hadError) return;
+            Type* structType = node->left->valueType;
+            if (!structType || structType->kind != TYPE_STRUCT) {
+                error(compiler, "Can only access fields on structs.");
+                return;
+            }
+            int index = -1;
+            for (int i = 0; i < structType->info.structure.fieldCount; i++) {
+                if (strncmp(structType->info.structure.fields[i].name,
+                            node->data.field.fieldName.start,
+                            node->data.field.fieldName.length) == 0 &&
+                    structType->info.structure.fields[i].name
+                        [node->data.field.fieldName.length] == '\0') {
+                    index = i;
+                    break;
+                }
+            }
+            if (index < 0) {
+                error(compiler, "Unknown field name.");
+                return;
+            }
+            node->data.field.index = index;
+            node->valueType = structType->info.structure.fields[index].type;
+            break;
+        }
+
+        case AST_FIELD_SET: {
+            typeCheckNode(compiler, node->right); // object
+            if (compiler->hadError) return;
+            Type* structType = node->right->valueType;
+            if (!structType || structType->kind != TYPE_STRUCT) {
+                error(compiler, "Can only set fields on structs.");
+                return;
+            }
+            int index = -1;
+            for (int i = 0; i < structType->info.structure.fieldCount; i++) {
+                if (strncmp(structType->info.structure.fields[i].name,
+                            node->data.fieldSet.fieldName.start,
+                            node->data.fieldSet.fieldName.length) == 0 &&
+                    structType->info.structure.fields[i].name
+                        [node->data.fieldSet.fieldName.length] == '\0') {
+                    index = i;
+                    break;
+                }
+            }
+            if (index < 0) {
+                error(compiler, "Unknown field name.");
+                return;
+            }
+            node->data.fieldSet.index = index;
+            typeCheckNode(compiler, node->left); // value
+            if (compiler->hadError) return;
+            if (!typesEqual(structType->info.structure.fields[index].type,
+                            node->left->valueType)) {
+                error(compiler, "Type mismatch in field assignment.");
+                return;
+            }
+            node->valueType = structType->info.structure.fields[index].type;
             break;
         }
 
@@ -1129,6 +1282,16 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             break;
         }
 
+        case AST_FIELD_SET: {
+            generateCode(compiler, node->right); // object
+            if (compiler->hadError) return;
+            emitConstant(compiler, I32_VAL(node->data.fieldSet.index));
+            generateCode(compiler, node->left); // value
+            if (compiler->hadError) return;
+            writeOp(compiler, OP_ARRAY_SET);
+            break;
+        }
+
         case AST_ARRAY: {
             int count = 0;
             ASTNode* elem = node->data.array.elements;
@@ -1140,6 +1303,28 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             }
             writeOp(compiler, OP_MAKE_ARRAY);
             writeOp(compiler, count);
+            break;
+        }
+
+        case AST_STRUCT_LITERAL: {
+            int count = 0;
+            ASTNode* val = node->data.structLiteral.values;
+            while (val) {
+                generateCode(compiler, val);
+                if (compiler->hadError) return;
+                count++;
+                val = val->next;
+            }
+            writeOp(compiler, OP_MAKE_ARRAY);
+            writeOp(compiler, count);
+            break;
+        }
+
+        case AST_FIELD: {
+            generateCode(compiler, node->left);
+            if (compiler->hadError) return;
+            emitConstant(compiler, I32_VAL(node->data.field.index));
+            writeOp(compiler, OP_ARRAY_GET);
             break;
         }
 
@@ -1625,7 +1810,8 @@ uint8_t addLocal(Compiler* compiler, Token name, Type* type) {
     tempName[name.length] = '\0';
     Symbol* existing = findSymbol(&compiler->symbols, tempName);
     if (existing && existing->scope == compiler->scopeDepth) {
-        error(compiler, "Variable already declared.");
+        fprintf(stderr, "Compiler Error: Variable '%s' already declared.\n", tempName);
+        compiler->hadError = true;
         return UINT8_MAX;
     }
 
