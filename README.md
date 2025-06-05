@@ -42,6 +42,9 @@ After building, run the interpreter in two ways:
 
 # Execute a script file
 ./orus path/to/script.orus
+
+# Display the current interpreter version
+./orus --version
 ```
 
 ## Running the test suite

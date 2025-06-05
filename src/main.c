@@ -8,6 +8,7 @@
 #include "../include/debug.h"
 #include "../include/parser.h"
 #include "../include/vm.h"
+#include "../include/version.h"
 
 extern VM vm;
 
@@ -135,6 +136,11 @@ static void runFile(const char* path) {
 }
 
 int main(int argc, const char* argv[]) {
+    if (argc == 2 && (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0)) {
+        printf("Orus %s\n", ORUS_VERSION);
+        return 0;
+    }
+
     initVM();
 
     if (argc == 1) {
