@@ -1,4 +1,5 @@
 // Test if-else control flow
+fn main() {
 let x = 10
 let y = 20
 let result = 0
@@ -26,4 +27,5 @@ if x > y {
 //let z = if x > y { 100 } else { 200 }
 //print("z =")
 //print(z)
+}
 

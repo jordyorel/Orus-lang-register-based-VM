@@ -1,4 +1,5 @@
 // Tests variable declarations with different types
+fn main() {
 let i32_var: i32 = 42
 let u32_var: u32 = 100
 let f64_var: f64 = 3.14
@@ -15,3 +16,4 @@ print(bool_var)
 print(inferred_i32)
 print(inferred_u32)
 print(inferred_f64)
+}

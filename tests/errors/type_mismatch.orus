@@ -1,5 +1,6 @@
 // Test type mismatch error handling
 
+fn main() {
 let a: i32 = 10
 let b: bool = true
 
@@ -13,5 +14,6 @@ print("Using compatible types instead:")
 let c: i32 = 20
 let result = a + c
 print(result)
+}
 
 

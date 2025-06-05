@@ -22,6 +22,7 @@ fn isEven(num: i32) -> bool {
     return num % 2 == 0
 }
 
+fn main() {
 print("Advanced Function Tests:")
 
 // Test recursive function
@@ -62,3 +63,4 @@ let fact3 = factorial(n3)
 let fact2 = factorial(n2)
 let composed = max(fact3, fact2)
 print(composed)
+}

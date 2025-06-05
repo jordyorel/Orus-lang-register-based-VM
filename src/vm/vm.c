@@ -169,7 +169,7 @@ static InterpretResult interpretModule(const char* path) {
     uint8_t* prevIp = vm.ip;
 
     vm.astRoot = ast;
-    if (!compile(ast, &compiler)) {
+    if (!compile(ast, &compiler, false)) {
         vm.chunk = prevChunk;
         vm.ip = prevIp;
         freeChunk(&chunk);
@@ -1119,7 +1119,7 @@ InterpretResult interpret(const char* source) {
 
     vm.astRoot = ast;
 
-    bool success = compile(ast, &compiler);
+    bool success = compile(ast, &compiler, false);
     vm.astRoot = NULL;
 
     if (!success) {

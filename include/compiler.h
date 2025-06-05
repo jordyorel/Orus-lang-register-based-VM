@@ -30,7 +30,7 @@ typedef struct {
 } Compiler;
 
 void initCompiler(Compiler* compiler, Chunk* chunk);
-bool compile(ASTNode* ast, Compiler* compiler);
+bool compile(ASTNode* ast, Compiler* compiler, bool requireMain);
 uint8_t resolveVariable(Compiler* compiler, Token name);       // Added
 uint8_t addLocal(Compiler* compiler, Token name, Type* type);  // Added
 uint8_t defineVariable(Compiler* compiler, Token name, Type* type);  // Added

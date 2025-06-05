@@ -1,5 +1,6 @@
 // Test continue statement in loops
 
+fn main() {
 let sum = 0
 
 print("Continue Test in While Loop:")
@@ -41,3 +42,4 @@ for j in 1..10 {
 
 print("Final sum of odd numbers:")
 print(sum)
+}

@@ -1,2 +1,4 @@
 struct Empty {}
+fn main() {
 print("Struct defined")
+}

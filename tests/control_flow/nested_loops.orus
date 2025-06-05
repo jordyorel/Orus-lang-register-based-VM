@@ -1,4 +1,5 @@
 // Test nested loops with break using logical operators
+fn main() {
 let sum = 0
 
 print("Nested Loops Test with Logical Operators:")
@@ -34,4 +35,5 @@ for i in 0..3 {
 
 print("Final sum:")
 print(sum)
+}
 

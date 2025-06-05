@@ -1,4 +1,5 @@
 // Test integer comparison operations
+fn main() {
 let a: i32 = 10
 let b: i32 = 20
 let c: i32 = 10
@@ -22,6 +23,7 @@ print("10 > 20 is: {} ", a > b)
 print("10 >= 20 is: {}", a >= b)
 
 print("10 >= 10 is: {} ", a >= c)
+}
 
 
 

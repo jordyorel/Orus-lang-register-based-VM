@@ -111,6 +111,7 @@ impl Queue {
 }
 
 // Test the Stack implementation
+fn main() {
 let stack: Stack = Stack.new()
 print("Stack created, isEmpty: {}", stack.is_empty())
 
@@ -139,3 +140,4 @@ let dequeued: i32 = queue.dequeue()
 print("Dequeued from queue: {}", dequeued)
 print("Queue size after dequeue: {}", queue.size())
 print("New queue front: {}", queue.peek())
+}

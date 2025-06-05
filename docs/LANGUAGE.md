@@ -78,8 +78,9 @@ fn main() {
 }
 ```
 
-The interpreter automatically looks for a `main` function and executes it if
-present, so any top‑level code should be placed inside `fn main()`.
+All programs must define a `main` function which serves as the entry point for
+execution. The interpreter will call this function automatically, so any
+top‑level code should be placed inside `fn main()`.
 
 ## Functions
 

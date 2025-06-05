@@ -1,5 +1,6 @@
 // Test floating point comparison operations
 
+fn main() {
 let a: f64 = 10.5
 let b: f64 = 20.7
 let c: f64 = 10.5
@@ -23,5 +24,6 @@ print("10.5 > 20.7 is: {} ", a > b)
 print("10.5 >= 20.7 is: {} ", a >= b)
 
 print("10.5 >= 10.5 is: {} ", a >= c)
+}
 
 

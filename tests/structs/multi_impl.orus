@@ -10,4 +10,6 @@ impl Math {
     }
 }
 
+fn main() {
 print(sum3(1, 2, 3))
+}
