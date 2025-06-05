@@ -9,6 +9,7 @@
 #include "../include/parser.h"
 #include "../include/file_utils.h"
 #include "../include/vm.h"
+#include "../include/error.h"
 #include "../include/version.h"
 
 extern VM vm;
@@ -71,7 +72,11 @@ static void repl() {
         if (result == INTERPRET_COMPILE_ERROR) {
             printf("Compile error.\n");
         } else if (result == INTERPRET_RUNTIME_ERROR) {
-            printf("Runtime error.\n");
+            printf("Runtime error: ");
+            if (IS_ERROR(vm.lastError)) {
+                printf("%s", AS_ERROR(vm.lastError)->message->chars);
+            }
+            printf("\n");
         } else if (!isPrintStmt && vm.stackTop > vm.stack) {
             // Print the result of the expression if there's a value on the stack
             // and it's not a print statement (which already outputs its value)
@@ -110,7 +115,12 @@ static void runFile(const char* path) {
     InterpretResult result = runChunk(&chunk);
     freeChunk(&chunk);  // Free chunk after execution
     free(source);
-    if (result == INTERPRET_RUNTIME_ERROR) exit(70);
+    if (result == INTERPRET_RUNTIME_ERROR) {
+        if (IS_ERROR(vm.lastError)) {
+            fprintf(stderr, "Runtime error: %s\n", AS_ERROR(vm.lastError)->message->chars);
+        }
+        exit(70);
+    }
 }
 
 int main(int argc, const char* argv[]) {

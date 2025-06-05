@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "value.h"
+#include "error.h"
 
 
 // This macro is used to grow the capacity of the dynamic array that stores the
@@ -64,6 +65,7 @@ ObjString* allocateString(const char* str, int length);
 // Allocate a new array object with the given length
 ObjArray* allocateArray(int length);
 ObjIntArray* allocateIntArray(int length);
+struct ObjError* allocateError(ErrorType type, const char* message);
 
 // Allocate AST and Type objects
 struct ASTNode* allocateASTNode();

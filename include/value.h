@@ -9,6 +9,7 @@ typedef struct Obj Obj;
 typedef struct ObjString ObjString;
 typedef struct ObjArray ObjArray;
 typedef struct ObjIntArray ObjIntArray;
+typedef struct ObjError ObjError;
 typedef struct Value Value;
 
 // Base object type for the garbage collector
@@ -18,6 +19,7 @@ typedef enum {
     OBJ_INT_ARRAY,
     OBJ_AST,
     OBJ_TYPE,
+    OBJ_ERROR,
 } ObjType;
 
 struct Obj {
@@ -34,6 +36,7 @@ typedef enum {
     VAL_NIL,
     VAL_STRING,
     VAL_ARRAY,
+    VAL_ERROR,
 } ValueType;
 
 typedef struct ObjString {
@@ -67,6 +70,7 @@ typedef struct Value {
         bool boolean;
         ObjString* string;
         ObjArray* array;
+        ObjError* error;
     } as;
 } Value;
 
@@ -78,6 +82,7 @@ typedef struct Value {
 #define NIL_VAL          ((Value){VAL_NIL, {.i32 = 0}})
 #define STRING_VAL(obj) ((Value){VAL_STRING, {.string = obj}})
 #define ARRAY_VAL(obj)   ((Value){VAL_ARRAY, {.array = obj}})
+#define ERROR_VAL(obj)   ((Value){VAL_ERROR, {.error = obj}})
 
 // Value checking macros
 #define IS_I32(value)    ((value).type == VAL_I32)
@@ -87,6 +92,7 @@ typedef struct Value {
 #define IS_NIL(value)    ((value).type == VAL_NIL)
 #define IS_STRING(value) ((value).type == VAL_STRING)
 #define IS_ARRAY(value)  ((value).type == VAL_ARRAY)
+#define IS_ERROR(value)  ((value).type == VAL_ERROR)
 
 // Value extraction macros
 #define AS_I32(value)    ((value).as.i32)
@@ -95,6 +101,7 @@ typedef struct Value {
 #define AS_BOOL(value)   ((value).as.boolean)
 #define AS_STRING(value) ((value).as.string)
 #define AS_ARRAY(value)  ((value).as.array)
+#define AS_ERROR(value)  ((value).as.error)
 
 // Generic dynamic array implementation used for storing Values.
 #include "generic_array.h"
