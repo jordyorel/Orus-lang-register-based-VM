@@ -94,6 +94,9 @@ typedef enum {
     OP_MAKE_ARRAY,
     OP_ARRAY_GET,
     OP_ARRAY_SET,
+    OP_ARRAY_PUSH,
+    OP_ARRAY_POP,
+    OP_LEN,
 } opCode;
 
 typedef struct {

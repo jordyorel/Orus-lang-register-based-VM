@@ -710,6 +710,41 @@ static InterpretResult run() {
                 vmPush(&vm, value);
                 break;
             }
+            case OP_ARRAY_PUSH: {
+                Value value = vmPop(&vm);
+                Value arrayVal = vmPop(&vm);
+                if (!IS_ARRAY(arrayVal)) {
+                    runtimeError("Can only push to arrays.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                ObjArray* arr = AS_ARRAY(arrayVal);
+                arrayPush(&vm, arr, value);
+                vmPush(&vm, value);
+                break;
+            }
+            case OP_ARRAY_POP: {
+                Value arrayVal = vmPop(&vm);
+                if (!IS_ARRAY(arrayVal)) {
+                    runtimeError("Can only pop from arrays.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                ObjArray* arr = AS_ARRAY(arrayVal);
+                Value v = arrayPop(arr);
+                vmPush(&vm, v);
+                break;
+            }
+            case OP_LEN: {
+                Value val = vmPop(&vm);
+                if (IS_ARRAY(val)) {
+                    vmPush(&vm, I32_VAL(AS_ARRAY(val)->length));
+                } else if (IS_STRING(val)) {
+                    vmPush(&vm, I32_VAL(AS_STRING(val)->length));
+                } else {
+                    runtimeError("len() expects array or string.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                break;
+            }
             case OP_CALL: {
                 uint8_t globalIndex = READ_BYTE();
                 uint8_t argCount = READ_BYTE();

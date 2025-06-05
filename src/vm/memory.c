@@ -51,8 +51,9 @@ ObjString* allocateString(const char* chars, int length) {
 ObjArray* allocateArray(int length) {
     ObjArray* array = (ObjArray*)allocateObject(sizeof(ObjArray), OBJ_ARRAY);
     array->length = length;
-    vm.bytesAllocated += sizeof(Value) * length;
-    array->elements = (Value*)malloc(sizeof(Value) * length);
+    array->capacity = length > 0 ? length : 8;
+    vm.bytesAllocated += sizeof(Value) * array->capacity;
+    array->elements = (Value*)malloc(sizeof(Value) * array->capacity);
     return array;
 }
 
@@ -248,8 +249,8 @@ static void freeObject(Obj* object) {
         }
         case OBJ_ARRAY: {
             ObjArray* array = (ObjArray*)object;
-            vm.bytesAllocated -= sizeof(ObjArray) + sizeof(Value) * array->length;
-            FREE_ARRAY(Value, array->elements, array->length);
+            vm.bytesAllocated -= sizeof(ObjArray) + sizeof(Value) * array->capacity;
+            FREE_ARRAY(Value, array->elements, array->capacity);
             free(array);
             break;
         }
