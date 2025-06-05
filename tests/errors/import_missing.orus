@@ -1,3 +1,4 @@
+import "tests/modules/not_there.orus"
+
 fn main() {
-    import "tests/modules/not_there.orus"
 }

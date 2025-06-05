@@ -83,11 +83,11 @@ impl Calculator {
     }
 }
 
-// Test static methods
-print("Static add: {}",  Calculator.add(5, 3))
-print("Static subtract: {}",  Calculator.subtract(10, 4))
-print("Static multiply: {}",  Calculator.multiply(6, 7))
 fn main() {
+    // Test static methods
+    print("Static add: {}",  Calculator.add(5, 3))
+    print("Static subtract: {}",  Calculator.subtract(10, 4))
+    print("Static multiply: {}",  Calculator.multiply(6, 7))
     print("Static divide: {}",  Calculator.divide(20, 5))
 
     // Test instance methods with calculator object

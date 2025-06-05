@@ -1,3 +1,6 @@
+import "tests/modules/hello_module.orus"
+
 fn main() {
-    import "tests/modules/hello_module.orus"
 }
+
+
