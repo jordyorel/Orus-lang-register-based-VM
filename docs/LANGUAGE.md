@@ -95,3 +95,17 @@ print("Hello, {}!", name)
 
 More examples are available in `tests/print/string_interpolation.orus`.
 
+## Error handling
+
+Orus scripts can catch runtime errors using `try`/`catch` blocks. Code inside
+`try` executes normally and if an error occurs control jumps to the matching
+`catch` block. The identifier after `catch` receives the error message.
+
+```orus
+try {
+    // code that might fail
+} catch err {
+    print("Error: {}", err)
+}
+```
+

@@ -899,6 +899,19 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             break;
         }
 
+        case AST_TRY: {
+            beginScope(compiler);
+            Type* strType = getPrimitiveType(TYPE_STRING);
+            uint8_t idx = addLocal(compiler, node->data.tryStmt.errorName, strType);
+            node->data.tryStmt.errorIndex = idx;
+            typeCheckNode(compiler, node->data.tryStmt.tryBlock);
+            if (compiler->hadError) { endScope(compiler); return; }
+            typeCheckNode(compiler, node->data.tryStmt.catchBlock);
+            endScope(compiler);
+            node->valueType = NULL;
+            break;
+        }
+
         default:
             error(compiler, "Unsupported AST node type in type checker.");
             break;
@@ -1702,6 +1715,39 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 writeChunk(compiler->chunk, offset & 0xFF, 0);
             }
 
+            break;
+        }
+
+        case AST_TRY: {
+            beginScope(compiler);
+            uint8_t index = node->data.tryStmt.errorIndex;
+            int setup = compiler->chunk->count;
+            writeOp(compiler, OP_SETUP_EXCEPT);
+            writeChunk(compiler->chunk, 0xFF, 0);
+            writeChunk(compiler->chunk, 0xFF, 0);
+            writeOp(compiler, index);
+
+            generateCode(compiler, node->data.tryStmt.tryBlock);
+            if (compiler->hadError) { endScope(compiler); return; }
+
+            writeOp(compiler, OP_POP_EXCEPT);
+            int jumpOver = compiler->chunk->count;
+            writeOp(compiler, OP_JUMP);
+            writeChunk(compiler->chunk, 0xFF, 0);
+            writeChunk(compiler->chunk, 0xFF, 0);
+
+            int handler = compiler->chunk->count;
+            compiler->chunk->code[setup + 1] = (handler - setup - 4) >> 8;
+            compiler->chunk->code[setup + 2] = (handler - setup - 4) & 0xFF;
+
+            generateCode(compiler, node->data.tryStmt.catchBlock);
+            if (compiler->hadError) { endScope(compiler); return; }
+
+            int end = compiler->chunk->count;
+            compiler->chunk->code[jumpOver + 1] = (end - jumpOver - 3) >> 8;
+            compiler->chunk->code[jumpOver + 2] = (end - jumpOver - 3) & 0xFF;
+
+            endScope(compiler);
             break;
         }
 
