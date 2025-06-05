@@ -96,20 +96,10 @@ typedef struct Value {
 #define AS_STRING(value) ((value).as.string)
 #define AS_ARRAY(value)  ((value).as.array)
 
-// A dynamic array of Value elements.
-// Parameters:
-//   capacity - The number of elements that the array can hold before it needs to grow.
-//   count - The number of elements currently in the array.
-//   values - A pointer to the first element in the array.
-typedef struct {
-    int capacity; // 4 bytes
-    int count; // 4 bytes
-    Value* values; // 8 bytes
-} ValueArray; // 16 bytes
+// Generic dynamic array implementation used for storing Values.
+#include "generic_array.h"
 
-void initValueArray(ValueArray* array);
-void writeValueArray(ValueArray* array, Value value);
-void freeValueArray(ValueArray* array);
+DEFINE_ARRAY_TYPE(Value, Value)
 void printValue(Value value);
 bool valuesEqual(Value a, Value b);
 
