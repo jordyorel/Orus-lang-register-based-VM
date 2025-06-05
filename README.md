@@ -1,12 +1,20 @@
 # Orus Language
 
-Orus is an experimental interpreted programming language implemented in C. It features a syntax inspired by modern scripting languages and supports:
+Orus is an experimental interpreted programming language implemented in C. It
+features a syntax inspired by modern scripting languages. Supported features
+include:
 
-- Static type annotations for integers (`i32`/`u32`), floating point numbers (`f64`), booleans and strings.
-- Control flow with `if`/`elif`/`else`, `for` and `while` loops as well as `break` and `continue`.
-- Functions declared with `fn` and optional return types.
-- Arithmetic and comparison operators.
-- A `print` function with simple string interpolation using `{}` placeholders.
+- Static type annotations for integers (`i32`/`u32`), floating point numbers
+  (`f64`), booleans and strings with local type inference using `let`.
+- Arrays with fixed lengths (including multidimensional arrays) and indexed
+  assignment.
+- User defined `struct` types and `impl` blocks for instance or static methods.
+- Control flow with `if`/`elif`/`else`, `for` ranges and `while` loops as well
+  as `break` and `continue`.
+- Functions with parameters, recursion and optional return types.
+- Arithmetic, comparison and logical (`and`/`or`) operators.
+- String concatenation with `+` and a `print` function supporting simple
+  interpolation using `{}` placeholders.
 
 The repository contains the source code for the interpreter and a collection of sample programs used as tests.
 
