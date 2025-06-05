@@ -11,10 +11,18 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Fix the path to the Orus executable
 ORUS_EXECUTABLE="$(cd "$SCRIPT_DIR/.." && pwd)/orus"
 
+# Overall counters
+passed=0
+failed=0
+
 # Function to run tests in a category
 run_category_tests() {
     local category=$1
     echo -e "${YELLOW}Running tests for category: ${category}${NC}"
+
+    # Initialize counter for this category
+    local category_pass=0
+    local category_fail=0
     
     # Find all .orus files in the category directory
     for test_file in "${SCRIPT_DIR}/${category}"/*.orus; do
@@ -30,23 +38,32 @@ run_category_tests() {
             if [ "$category" = "errors" ]; then
                 if [ $exit_code -ne 0 ]; then
                     echo -e "  ${GREEN}✓ PASS${NC}: $test_name"
+                    ((category_pass++))
+                    ((passed++))
                 else
                     echo -e "  ${RED}✗ FAIL${NC}: $test_name"
                     echo -e "  Error details:"
                     echo -e "  $output" | sed 's/^/  /'
+                    ((category_fail++))
+                    ((failed++))
                 fi
             else
                 if [ $exit_code -eq 0 ]; then
                     echo -e "  ${GREEN}✓ PASS${NC}: $test_name"
+                    ((category_pass++))
+                    ((passed++))
                 else
                     echo -e "  ${RED}✗ FAIL${NC}: $test_name"
                     # Show the error message
                     echo -e "  Error details:"
                     echo -e "  $output" | sed 's/^/  /'
+                    ((category_fail++))
+                    ((failed++))
                 fi
             fi
         fi
     done
+    echo -e "  ${YELLOW}Category summary:${NC} ${category_pass} passed, ${category_fail} failed"
     echo ""
 }
 
@@ -73,10 +90,16 @@ run_all_tests() {
     for category in "${sorted_categories[@]}"; do
         run_category_tests "$category"
     done
-    
+
+    echo -e "${YELLOW}Test summary:${NC} ${passed} passed, ${failed} failed"
+
     echo -e "${YELLOW}====================================${NC}"
     echo -e "${YELLOW}   All tests completed              ${NC}"
     echo -e "${YELLOW}====================================${NC}"
+
+    if [ $failed -ne 0 ]; then
+        return 1
+    fi
 }
 
 # Call the main function

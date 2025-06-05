@@ -1,0 +1,3 @@
+struct Foo {}
+let f: Foo = Foo{}
+f.bar()
