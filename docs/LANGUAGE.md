@@ -65,22 +65,23 @@ from the test suite prints a greeting:
 
 ```orus
 # hello_module.orus
-let greeting = "Hello from module"
-
 fn greet() {
+    let greeting = "Hello from module"
     print(greeting)
 }
 
 # main.orus
+import "tests/modules/hello_module.orus"
 fn main() {
-    import "tests/modules/hello_module.orus"
     greet()
 }
 ```
 
 All programs must define a `main` function which serves as the entry point for
 execution. The interpreter will call this function automatically, so any
-top‑level code should be placed inside `fn main()`.
+top‑level code should be placed inside `fn main()`. Declarations using `let`
+and calls to `print` are only allowed inside functions. `import` statements must
+appear at the top level of the file, outside of `main`.
 
 ## Functions
 
