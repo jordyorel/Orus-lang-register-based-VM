@@ -35,6 +35,11 @@ void printValue(Value value) {
             printf("]");
             break;
         }
+        case VAL_ERROR: {
+            printf("Error(%d): %s", AS_ERROR(value)->type,
+                   AS_ERROR(value)->message->chars);
+            break;
+        }
         default:
             printf("unknown");
             break;
@@ -60,6 +65,8 @@ bool valuesEqual(Value a, Value b) {
             }
             return true;
         }
+        case VAL_ERROR:
+            return a.as.error == b.as.error;
         default: return false;
     }
 }

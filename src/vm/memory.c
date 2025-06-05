@@ -65,6 +65,13 @@ ObjIntArray* allocateIntArray(int length) {
     return array;
 }
 
+ObjError* allocateError(ErrorType type, const char* message) {
+    ObjError* err = (ObjError*)allocateObject(sizeof(ObjError), OBJ_ERROR);
+    err->type = type;
+    err->message = allocateString(message, (int)strlen(message));
+    return err;
+}
+
 ASTNode* allocateASTNode() {
     return (ASTNode*)allocateObject(sizeof(ASTNode), OBJ_AST);
 }
@@ -81,6 +88,8 @@ void markValue(Value value) {
         markObject((Obj*)AS_STRING(value));
     } else if (IS_ARRAY(value)) {
         markObject((Obj*)AS_ARRAY(value));
+    } else if (IS_ERROR(value)) {
+        markObject((Obj*)AS_ERROR(value));
     }
 }
 
@@ -101,6 +110,11 @@ void markObject(Obj* object) {
         }
         case OBJ_INT_ARRAY: {
             // Int arrays do not reference other objects
+            break;
+        }
+        case OBJ_ERROR: {
+            ObjError* err = (ObjError*)object;
+            markObject((Obj*)err->message);
             break;
         }
         case OBJ_AST: {
@@ -259,6 +273,12 @@ static void freeObject(Obj* object) {
             vm.bytesAllocated -= sizeof(ObjIntArray) + sizeof(int) * array->length;
             free(array->elements);
             free(array);
+            break;
+        }
+        case OBJ_ERROR: {
+            ObjError* err = (ObjError*)object;
+            vm.bytesAllocated -= sizeof(ObjError);
+            free(err);
             break;
         }
         case OBJ_AST: {

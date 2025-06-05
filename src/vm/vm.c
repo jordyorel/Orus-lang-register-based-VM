@@ -9,6 +9,7 @@
 #include "../../include/compiler.h"
 #include "../../include/debug.h"
 #include "../../include/memory.h"
+#include "../../include/error.h"
 #include "../../include/file_utils.h"
 #include "../../include/parser.h"
 #include "../../include/vm_ops.h"
@@ -58,15 +59,15 @@ void freeVM() {
     vm.moduleCount = 0;
 }
 
-static void runtimeError(const char* format, ...) {
+static void runtimeError(ErrorType type, const char* format, ...) {
     char buffer[256];
     va_list args;
     va_start(args, format);
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
     fprintf(stderr, "%s\n", buffer);
-    ObjString* msg = allocateString(buffer, (int)strlen(buffer));
-    vm.lastError = STRING_VAL(msg);
+    ObjError* err = allocateError(type, buffer);
+    vm.lastError = ERROR_VAL(err);
 }
 
 static bool appendStringDynamic(const char* src, char** buffer,
@@ -76,7 +77,7 @@ static bool appendStringDynamic(const char* src, char** buffer,
         *capacity = (*length + srcLen) * 2;
         char* newBuf = (char*)realloc(*buffer, *capacity);
         if (!newBuf) {
-            runtimeError("Memory reallocation failed during string append.");
+            runtimeError(ERROR_RUNTIME, "Memory reallocation failed during string append.");
             return false;
         }
         *buffer = newBuf;
@@ -142,13 +143,13 @@ static void traceExecution() {
 static InterpretResult interpretModule(const char* path) {
     char* source = readFile(path);
     if (!source) {
-        runtimeError("Could not open module '%s'.", path);
+        runtimeError(ERROR_RUNTIME, "Could not open module '%s'.", path);
         return INTERPRET_RUNTIME_ERROR;
     }
     ASTNode* ast;
     if (!parse(source, &ast)) {
         free(source);
-        runtimeError("Parsing failed for module.");
+        runtimeError(ERROR_RUNTIME, "Parsing failed for module.");
         return INTERPRET_COMPILE_ERROR;
     }
     Chunk chunk;
@@ -165,7 +166,7 @@ static InterpretResult interpretModule(const char* path) {
         vm.ip = prevIp;
         freeChunk(&chunk);
         free(source);
-        runtimeError("Compilation failed for module.");
+        runtimeError(ERROR_RUNTIME, "Compilation failed for module.");
         return INTERPRET_COMPILE_ERROR;
     }
     vm.astRoot = NULL;
@@ -198,7 +199,7 @@ static InterpretResult run() {
         switch (instruction) {
             case OP_PRINT: {
                 if (vm.stackTop <= vm.stack) {
-                    runtimeError("Stack underflow in PRINT operation.");
+                    runtimeError(ERROR_RUNTIME, "Stack underflow in PRINT operation.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
@@ -255,7 +256,7 @@ static InterpretResult run() {
             case OP_LESS_I32: {
                 // Check for stack underflow
                 if (vm.stackTop - vm.stack < 2) {
-                    runtimeError("Stack underflow in LESS_I32 comparison. Need 2 values, have %ld.",
+                    runtimeError(ERROR_RUNTIME, "Stack underflow in LESS_I32 comparison. Need 2 values, have %ld.",
                                  vm.stackTop - vm.stack);
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -265,7 +266,7 @@ static InterpretResult run() {
 
                 // Ensure we have valid integers
                 if (!IS_I32(a) || !IS_I32(b)) {
-                    runtimeError("Operands must be integers.");
+                    runtimeError(ERROR_RUNTIME, "Operands must be integers.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
@@ -325,7 +326,7 @@ static InterpretResult run() {
                 break;
             case OP_NEGATE_I32: {
                 if (!IS_I32(vmPeek(&vm, 0))) {
-                    runtimeError("Operand must be an integer.");
+                    runtimeError(ERROR_RUNTIME, "Operand must be an integer.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 int32_t value = AS_I32(vmPop(&vm));
@@ -334,7 +335,7 @@ static InterpretResult run() {
             }
             case OP_NEGATE_U32: {
                 if (!IS_U32(vmPeek(&vm, 0))) {
-                    runtimeError("Operand must be an unsigned integer.");
+                    runtimeError(ERROR_RUNTIME, "Operand must be an unsigned integer.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 uint32_t value = AS_U32(vmPop(&vm));
@@ -343,7 +344,7 @@ static InterpretResult run() {
             }
             case OP_NEGATE_F64: {
                 if (!IS_F64(vmPeek(&vm, 0))) {
-                    runtimeError("Operand must be a floating point number.");
+                    runtimeError(ERROR_RUNTIME, "Operand must be a floating point number.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 double value = AS_F64(vmPop(&vm));
@@ -355,7 +356,7 @@ static InterpretResult run() {
                 InterpretResult convResult = INTERPRET_OK;
                 double floatValue = convertToF64(&vm, value, &convResult);
                 if (convResult != INTERPRET_OK) {
-                    runtimeError("Failed to convert value to float.");
+                    runtimeError(ERROR_RUNTIME, "Failed to convert value to float.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 vmPush(&vm, F64_VAL(floatValue));
@@ -366,7 +367,7 @@ static InterpretResult run() {
                 InterpretResult convResult = INTERPRET_OK;
                 double floatValue = convertToF64(&vm, value, &convResult);
                 if (convResult != INTERPRET_OK) {
-                    runtimeError("Failed to convert value to float.");
+                    runtimeError(ERROR_RUNTIME, "Failed to convert value to float.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 vmPush(&vm, F64_VAL(floatValue));
@@ -374,7 +375,7 @@ static InterpretResult run() {
             }
             case OP_I32_TO_STRING: {
                 if (!IS_I32(vmPeek(&vm, 0))) {
-                    runtimeError("Operand must be an integer.");
+                    runtimeError(ERROR_RUNTIME, "Operand must be an integer.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 Value v = vmPop(&vm);
@@ -383,7 +384,7 @@ static InterpretResult run() {
             }
             case OP_U32_TO_STRING: {
                 if (!IS_U32(vmPeek(&vm, 0))) {
-                    runtimeError("Operand must be an unsigned integer.");
+                    runtimeError(ERROR_RUNTIME, "Operand must be an unsigned integer.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 Value v = vmPop(&vm);
@@ -392,7 +393,7 @@ static InterpretResult run() {
             }
             case OP_F64_TO_STRING: {
                 if (!IS_F64(vmPeek(&vm, 0))) {
-                    runtimeError("Operand must be a floating point number.");
+                    runtimeError(ERROR_RUNTIME, "Operand must be a floating point number.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 Value v = vmPop(&vm);
@@ -401,7 +402,7 @@ static InterpretResult run() {
             }
             case OP_BOOL_TO_STRING: {
                 if (!IS_BOOL(vmPeek(&vm, 0))) {
-                    runtimeError("Operand must be a boolean.");
+                    runtimeError(ERROR_RUNTIME, "Operand must be a boolean.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 Value v = vmPop(&vm);
@@ -467,7 +468,7 @@ static InterpretResult run() {
 
                 // Check for stack underflow
                 if (vm.stackTop <= vm.stack) {
-                    runtimeError("Stack underflow in DEFINE_GLOBAL.");
+                    runtimeError(ERROR_RUNTIME, "Stack underflow in DEFINE_GLOBAL.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
@@ -481,7 +482,7 @@ static InterpretResult run() {
             case OP_GET_GLOBAL: {
                 uint8_t index = READ_BYTE();
                 if (vm.globalTypes[index] == NULL) {
-                    runtimeError("Attempt to access undefined variable.");
+                    runtimeError(ERROR_RUNTIME, "Attempt to access undefined variable.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 Value value = vm.globals[index];
@@ -492,13 +493,13 @@ static InterpretResult run() {
             case OP_SET_GLOBAL: {
                 uint8_t index = READ_BYTE();
                 if (index >= vm.variableCount || vm.globalTypes[index] == NULL) {
-                    runtimeError("Attempt to assign to undefined variable.");
+                    runtimeError(ERROR_RUNTIME, "Attempt to assign to undefined variable.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 
                 // Peek at the value instead of popping it - this is safer for stack management
                 if (vm.stackTop <= vm.stack) {
-                    runtimeError("Stack underflow in SET_GLOBAL operation.");
+                    runtimeError(ERROR_RUNTIME, "Stack underflow in SET_GLOBAL operation.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 Value value = vmPeek(&vm, 0);
@@ -550,7 +551,7 @@ static InterpretResult run() {
                 uint8_t constantIndex = READ_BYTE();
                 Value pathVal = vm.chunk->constants.values[constantIndex];
                 if (!IS_STRING(pathVal)) {
-                    runtimeError("Import path must be a string.");
+                    runtimeError(ERROR_RUNTIME, "Import path must be a string.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 ObjString* pathStr = AS_STRING(pathVal);
@@ -579,7 +580,7 @@ static InterpretResult run() {
                 uint16_t offset = READ_SHORT();
                 Value condition = vmPeek(&vm, 0);
                 if (!IS_BOOL(condition)) {
-                    runtimeError("Condition must be a boolean.");
+                    runtimeError(ERROR_RUNTIME, "Condition must be a boolean.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 if (!AS_BOOL(condition)) {
@@ -592,7 +593,7 @@ static InterpretResult run() {
                 uint16_t offset = READ_SHORT();
                 Value condition = vmPeek(&vm, 0);
                 if (!IS_BOOL(condition)) {
-                    runtimeError("Condition must be a boolean.");
+                    runtimeError(ERROR_RUNTIME, "Condition must be a boolean.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 if (AS_BOOL(condition)) {
@@ -620,20 +621,20 @@ static InterpretResult run() {
             case OP_BREAK: {
                 // Break is handled at compile time by emitting a jump
                 // This opcode should never be executed
-                runtimeError("Unexpected OP_BREAK.");
+                runtimeError(ERROR_RUNTIME, "Unexpected OP_BREAK.");
                 return INTERPRET_RUNTIME_ERROR;
             }
             case OP_CONTINUE: {
                 // Continue is handled at compile time by emitting a loop
                 // This opcode should never be executed
-                runtimeError("Unexpected OP_CONTINUE.");
+                runtimeError(ERROR_RUNTIME, "Unexpected OP_CONTINUE.");
                 return INTERPRET_RUNTIME_ERROR;
             }
             case OP_SETUP_EXCEPT: {
                 uint16_t offset = READ_SHORT();
                 uint8_t varIndex = READ_BYTE();
                 if (vm.tryFrameCount >= TRY_MAX) {
-                    runtimeError("Too many nested try blocks.");
+                    runtimeError(ERROR_RUNTIME, "Too many nested try blocks.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 vm.tryFrames[vm.tryFrameCount].handler = vm.ip + offset;
@@ -664,7 +665,7 @@ static InterpretResult run() {
                 Value indexVal = vmPop(&vm);
                 Value arrayVal = vmPop(&vm);
                 if (!IS_ARRAY(arrayVal)) {
-                    runtimeError("Can only index arrays.");
+                    runtimeError(ERROR_RUNTIME, "Can only index arrays.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 int idx;
@@ -673,12 +674,12 @@ static InterpretResult run() {
                 } else if (IS_U32(indexVal)) {
                     idx = (int)AS_U32(indexVal);
                 } else {
-                    runtimeError("Array index must be an integer.");
+                    runtimeError(ERROR_RUNTIME, "Array index must be an integer.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 ObjArray* arr = AS_ARRAY(arrayVal);
                 if (idx < 0 || idx >= arr->length) {
-                    runtimeError("Array index out of bounds.");
+                    runtimeError(ERROR_RUNTIME, "Array index out of bounds.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 vmPush(&vm, arr->elements[idx]);
@@ -689,7 +690,7 @@ static InterpretResult run() {
                 Value indexVal = vmPop(&vm);
                 Value arrayVal = vmPop(&vm);
                 if (!IS_ARRAY(arrayVal)) {
-                    runtimeError("Can only index arrays.");
+                    runtimeError(ERROR_RUNTIME, "Can only index arrays.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 int idx;
@@ -698,12 +699,12 @@ static InterpretResult run() {
                 } else if (IS_U32(indexVal)) {
                     idx = (int)AS_U32(indexVal);
                 } else {
-                    runtimeError("Array index must be an integer.");
+                    runtimeError(ERROR_RUNTIME, "Array index must be an integer.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 ObjArray* arr = AS_ARRAY(arrayVal);
                 if (idx < 0 || idx >= arr->length) {
-                    runtimeError("Array index out of bounds.");
+                    runtimeError(ERROR_RUNTIME, "Array index out of bounds.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 arr->elements[idx] = value;
@@ -714,7 +715,7 @@ static InterpretResult run() {
                 Value value = vmPop(&vm);
                 Value arrayVal = vmPop(&vm);
                 if (!IS_ARRAY(arrayVal)) {
-                    runtimeError("Can only push to arrays.");
+                    runtimeError(ERROR_RUNTIME, "Can only push to arrays.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 ObjArray* arr = AS_ARRAY(arrayVal);
@@ -725,7 +726,7 @@ static InterpretResult run() {
             case OP_ARRAY_POP: {
                 Value arrayVal = vmPop(&vm);
                 if (!IS_ARRAY(arrayVal)) {
-                    runtimeError("Can only pop from arrays.");
+                    runtimeError(ERROR_RUNTIME, "Can only pop from arrays.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 ObjArray* arr = AS_ARRAY(arrayVal);
@@ -740,7 +741,7 @@ static InterpretResult run() {
                 } else if (IS_STRING(val)) {
                     vmPush(&vm, I32_VAL(AS_STRING(val)->length));
                 } else {
-                    runtimeError("len() expects array or string.");
+                    runtimeError(ERROR_RUNTIME, "len() expects array or string.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 break;
@@ -751,25 +752,25 @@ static InterpretResult run() {
 
                 // Global must contain a function index
                 if (globalIndex >= vm.variableCount || !IS_I32(vm.globals[globalIndex])) {
-                    runtimeError("Attempt to call a non-function.");
+                    runtimeError(ERROR_RUNTIME, "Attempt to call a non-function.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
                 int32_t funcIndex = AS_I32(vm.globals[globalIndex]);
                 if (funcIndex < 0 || funcIndex >= vm.functionCount) {
-                    runtimeError("Invalid function index.");
+                    runtimeError(ERROR_RUNTIME, "Invalid function index.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
                 Function* fn = &vm.functions[funcIndex];
                 if (argCount != fn->arity) {
-                    runtimeError("Function called with wrong number of arguments.");
+                    runtimeError(ERROR_RUNTIME, "Function called with wrong number of arguments.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
                 // Check call stack limit
                 if (vm.frameCount >= FRAMES_MAX) {
-                    runtimeError("Stack overflow.");
+                    runtimeError(ERROR_RUNTIME, "Stack overflow.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
@@ -800,7 +801,7 @@ static InterpretResult run() {
             case OP_FORMAT_PRINT: {
                 // Ensure stack has at least format string and argument count
                 if (vm.stackTop - vm.stack < 2) {
-                    runtimeError(
+                    runtimeError(ERROR_RUNTIME, 
                         "FORMAT_PRINT expects format string and argument count "
                         "on stack.");
                     return INTERPRET_RUNTIME_ERROR;
@@ -811,11 +812,11 @@ static InterpretResult run() {
 
                 // Type checks
                 if (!IS_I32(countValue)) {
-                    runtimeError("Argument count must be an integer.");
+                    runtimeError(ERROR_RUNTIME, "Argument count must be an integer.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 if (!IS_STRING(formatValue)) {
-                    runtimeError("Format string must be a string.");
+                    runtimeError(ERROR_RUNTIME, "Format string must be a string.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
@@ -824,7 +825,7 @@ static InterpretResult run() {
 
                 // Check that we have enough arguments below the format string
                 if (vm.stackTop - vm.stack < 2 + argCount) {
-                    runtimeError(
+                    runtimeError(ERROR_RUNTIME, 
                         "Not enough arguments for string interpolation.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -833,7 +834,7 @@ static InterpretResult run() {
                 int resultCapacity = formatStr->length * 2;
                 char* resultBuffer = (char*)malloc(resultCapacity);
                 if (!resultBuffer) {
-                    runtimeError("Memory allocation failed for print buffer.");
+                    runtimeError(ERROR_RUNTIME, "Memory allocation failed for print buffer.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
@@ -846,7 +847,7 @@ static InterpretResult run() {
                         formatStr->chars[formatIndex] == '{' &&
                         formatStr->chars[formatIndex + 1] == '}') {
                         if (argIndex >= argCount) {
-                            runtimeError(
+                            runtimeError(ERROR_RUNTIME, 
                                 "Too few arguments for format string (needed "
                                 "more than %d).",
                                 argIndex);
@@ -890,7 +891,7 @@ static InterpretResult run() {
                                     resultBuffer = (char*)realloc(
                                         resultBuffer, resultCapacity);
                                     if (!resultBuffer) {
-                                        runtimeError(
+                                        runtimeError(ERROR_RUNTIME, 
                                             "Memory reallocation failed for "
                                             "string argument.");
                                         return INTERPRET_RUNTIME_ERROR;
@@ -920,7 +921,7 @@ static InterpretResult run() {
                                 resultBuffer = (char*)realloc(resultBuffer,
                                                               resultCapacity);
                                 if (!resultBuffer) {
-                                    runtimeError(
+                                    runtimeError(ERROR_RUNTIME, 
                                         "Memory reallocation failed for value "
                                         "conversion.");
                                     return INTERPRET_RUNTIME_ERROR;
@@ -940,7 +941,7 @@ static InterpretResult run() {
                             resultBuffer =
                                 (char*)realloc(resultBuffer, resultCapacity);
                             if (!resultBuffer) {
-                                runtimeError(
+                                runtimeError(ERROR_RUNTIME, 
                                     "Memory reallocation failed while copying "
                                     "character.");
                                 return INTERPRET_RUNTIME_ERROR;
@@ -952,7 +953,7 @@ static InterpretResult run() {
                 }
 
                 if (argIndex < argCount) {
-                    runtimeError(
+                    runtimeError(ERROR_RUNTIME, 
                         "Too many arguments for format string (used %d, given "
                         "%d).",
                         argIndex, argCount);
@@ -966,7 +967,7 @@ static InterpretResult run() {
                     resultCapacity = (resultLength + 1) * 2;
                     resultBuffer = (char*)realloc(resultBuffer, resultCapacity);
                     if (!resultBuffer) {
-                        runtimeError(
+                        runtimeError(ERROR_RUNTIME, 
                             "Memory reallocation failed during final "
                             "null-termination.");
                         return INTERPRET_RUNTIME_ERROR;
@@ -989,7 +990,7 @@ static InterpretResult run() {
             case OP_AND: {
                 // Check for stack underflow
                 if (vm.stackTop - vm.stack < 2) {
-                    runtimeError("Stack underflow in AND operation.");
+                    runtimeError(ERROR_RUNTIME, "Stack underflow in AND operation.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
@@ -999,7 +1000,7 @@ static InterpretResult run() {
 
                 // Ensure both values are booleans
                 if (!IS_BOOL(left) || !IS_BOOL(right)) {
-                    runtimeError("AND operation requires boolean operands.");
+                    runtimeError(ERROR_RUNTIME, "AND operation requires boolean operands.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
@@ -1018,7 +1019,7 @@ static InterpretResult run() {
             case OP_OR: {
                 // Check for stack underflow
                 if (vm.stackTop - vm.stack < 2) {
-                    runtimeError("Stack underflow in OR operation.");
+                    runtimeError(ERROR_RUNTIME, "Stack underflow in OR operation.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
@@ -1028,7 +1029,7 @@ static InterpretResult run() {
 
                 // Ensure both values are booleans
                 if (!IS_BOOL(left) || !IS_BOOL(right)) {
-                    runtimeError("OR operation requires boolean operands.");
+                    runtimeError(ERROR_RUNTIME, "OR operation requires boolean operands.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
@@ -1044,7 +1045,7 @@ static InterpretResult run() {
                 break;
             }
             default:
-                runtimeError("Unknown opcode: %d", instruction);
+                runtimeError(ERROR_RUNTIME, "Unknown opcode: %d", instruction);
                 return INTERPRET_RUNTIME_ERROR;
         }
         if (result != INTERPRET_OK) {
