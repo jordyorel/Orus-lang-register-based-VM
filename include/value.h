@@ -4,6 +4,24 @@
 #include "common.h"
 #include <string.h>
 
+// Forward declarations used for object references
+typedef struct Obj Obj;
+typedef struct ObjString ObjString;
+typedef struct ObjArray ObjArray;
+typedef struct Value Value;
+
+// Base object type for the garbage collector
+typedef enum {
+    OBJ_STRING,
+    OBJ_ARRAY,
+} ObjType;
+
+struct Obj {
+    ObjType type;
+    bool marked;
+    Obj* next;
+};
+
 typedef enum {
     VAL_I32,
     VAL_U32,
@@ -14,17 +32,20 @@ typedef enum {
     VAL_ARRAY,
 } ValueType;
 
-typedef struct {
-    char* chars;
+typedef struct ObjString {
+    Obj obj;
     int length;
-} String;
+    char* chars;
+} ObjString;
 
-typedef struct Value Value; // Forward declaration
-
-typedef struct {
+typedef struct ObjArray {
+    Obj obj;
     int length;
     Value* elements;
-} Array;
+} ObjArray;
+
+typedef ObjString String;
+typedef ObjArray Array;
 
 typedef struct Value {
     ValueType type;
@@ -33,8 +54,8 @@ typedef struct Value {
         uint32_t u32;
         double f64;
         bool boolean;
-        String string;
-        Array array;
+        ObjString* string;
+        ObjArray* array;
     } as;
 } Value;
 
@@ -44,8 +65,8 @@ typedef struct Value {
 #define F64_VAL(value)   ((Value){VAL_F64, {.f64 = value}})
 #define BOOL_VAL(value)  ((Value){VAL_BOOL, {.boolean = value}})
 #define NIL_VAL          ((Value){VAL_NIL, {.i32 = 0}})
-#define STRING_VAL(chars, len) ((Value){VAL_STRING, {.string = (String){chars, len}}})
-#define ARRAY_VAL(arr)   ((Value){VAL_ARRAY, {.array = arr}})
+#define STRING_VAL(obj) ((Value){VAL_STRING, {.string = obj}})
+#define ARRAY_VAL(obj)   ((Value){VAL_ARRAY, {.array = obj}})
 
 // Value checking macros
 #define IS_I32(value)    ((value).type == VAL_I32)

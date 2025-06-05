@@ -41,6 +41,10 @@ typedef struct {
     // Call frames for function calls
     CallFrame frames[FRAMES_MAX];
     int frameCount;
+
+    // Garbage collector state
+    Obj* objects;
+    size_t bytesAllocated;
 } VM;
 
 typedef enum {
