@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "../../include/common.h"
 #include "../../include/compiler.h"
@@ -51,6 +52,64 @@ static void runtimeError(const char* format, ...) {
     vfprintf(stderr, format, args);
     va_end(args);
     fputs("\n", stderr);
+}
+
+static bool appendStringDynamic(const char* src, char** buffer,
+                                int* length, int* capacity) {
+    int srcLen = (int)strlen(src);
+    if (*length + srcLen >= *capacity) {
+        *capacity = (*length + srcLen) * 2;
+        char* newBuf = (char*)realloc(*buffer, *capacity);
+        if (!newBuf) {
+            runtimeError("Memory reallocation failed during string append.");
+            return false;
+        }
+        *buffer = newBuf;
+    }
+    memcpy(*buffer + *length, src, srcLen);
+    *length += srcLen;
+    return true;
+}
+
+static bool appendValueString(Value value, char** buffer, int* length,
+                              int* capacity) {
+    char tmp[100];
+    switch (value.type) {
+        case VAL_I32:
+            snprintf(tmp, sizeof(tmp), "%d", AS_I32(value));
+            return appendStringDynamic(tmp, buffer, length, capacity);
+        case VAL_U32:
+            snprintf(tmp, sizeof(tmp), "%u", AS_U32(value));
+            return appendStringDynamic(tmp, buffer, length, capacity);
+        case VAL_F64:
+            snprintf(tmp, sizeof(tmp), "%g", AS_F64(value));
+            return appendStringDynamic(tmp, buffer, length, capacity);
+        case VAL_BOOL:
+            return appendStringDynamic(AS_BOOL(value) ? "true" : "false",
+                                       buffer, length, capacity);
+        case VAL_NIL:
+            return appendStringDynamic("nil", buffer, length, capacity);
+        case VAL_STRING:
+            return appendStringDynamic(AS_STRING(value)->chars, buffer, length,
+                                       capacity);
+        case VAL_ARRAY: {
+            if (!appendStringDynamic("[", buffer, length, capacity)) return false;
+            ObjArray* arr = AS_ARRAY(value);
+            for (int i = 0; i < arr->length; i++) {
+                if (!appendValueString(arr->elements[i], buffer, length,
+                                      capacity))
+                    return false;
+                if (i < arr->length - 1) {
+                    if (!appendStringDynamic(", ", buffer, length, capacity))
+                        return false;
+                }
+            }
+            if (!appendStringDynamic("]", buffer, length, capacity)) return false;
+            return true;
+        }
+        default:
+            return appendStringDynamic("unknown", buffer, length, capacity);
+    }
 }
 
 static void traceExecution() {
@@ -709,6 +768,16 @@ static InterpretResult run() {
                                 memcpy(resultBuffer + resultLength,
                                        AS_STRING(arg)->chars, valueLen);
                                 resultLength += valueLen;
+                                valueLen = 0;
+                                break;
+                            }
+                            case VAL_ARRAY: {
+                                if (!appendValueString(arg, &resultBuffer,
+                                                      &resultLength,
+                                                      &resultCapacity)) {
+                                    free(resultBuffer);
+                                    return INTERPRET_RUNTIME_ERROR;
+                                }
                                 valueLen = 0;
                                 break;
                             }
