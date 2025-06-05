@@ -2112,10 +2112,11 @@ bool compile(ASTNode* ast, Compiler* compiler) {
 
     writeOp(compiler, OP_RETURN);
     
-    // Only show code disassembly when debugging is enabled
-    #ifdef DEBUG_TRACE_EXECUTION
-    disassembleChunk(compiler->chunk, "code");
-    #endif
+    if (vm.trace) {
+#ifdef DEBUG_TRACE_EXECUTION
+        disassembleChunk(compiler->chunk, "code");
+#endif
+    }
     
     freeCompiler(compiler);
     return !compiler->hadError;

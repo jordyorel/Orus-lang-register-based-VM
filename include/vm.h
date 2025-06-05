@@ -5,6 +5,7 @@
 #include "scanner.h"
 #include "type.h"
 #include "value.h"
+#include <stdbool.h>
 
 #define STACK_MAX 256
 #define FRAMES_MAX 64
@@ -62,6 +63,7 @@ typedef struct {
     // Garbage collector state
     Obj* objects;
     size_t bytesAllocated;
+    bool trace;
 } VM;
 
 typedef enum {

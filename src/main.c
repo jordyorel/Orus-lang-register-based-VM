@@ -124,20 +124,30 @@ static void runFile(const char* path) {
 }
 
 int main(int argc, const char* argv[]) {
-    if (argc == 2 && (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0)) {
-        printf("Orus %s\n", ORUS_VERSION);
-        return 0;
+    bool traceFlag = false;
+    const char* path = NULL;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "-v") == 0) {
+            printf("Orus %s\n", ORUS_VERSION);
+            return 0;
+        } else if (strcmp(argv[i], "--trace") == 0) {
+            traceFlag = true;
+        } else if (!path) {
+            path = argv[i];
+        } else {
+            fprintf(stderr, "Usage: orus [--trace] [path]\n");
+            return 64;
+        }
     }
 
     initVM();
+    if (traceFlag) vm.trace = true;
 
-    if (argc == 1) {
+    if (!path) {
         repl();
-    } else if (argc == 2) {
-        runFile(argv[1]);
     } else {
-        fprintf(stderr, "Usage: orus [path]\n");
-        exit(64);
+        runFile(path);
     }
 
     freeVM();
