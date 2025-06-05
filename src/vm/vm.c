@@ -33,6 +33,8 @@ void initVM() {
     vm.bytesAllocated = 0;
     vm.astRoot = NULL;
     vm.moduleCount = 0;
+    const char* envTrace = getenv("ORUS_TRACE");
+    vm.trace = envTrace && envTrace[0] != '\0';
     for (int i = 0; i < UINT8_COUNT; i++) {
         vm.loadedModules[i] = NULL;
     }
@@ -134,15 +136,16 @@ static bool appendValueString(Value value, char** buffer, int* length,
 }
 
 static void traceExecution() {
-    #ifdef DEBUG_TRACE_EXECUTION
-        for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-            printf("[ ");
-            printValue(*slot);
-            printf(" ]");
-        }
-        printf("\n");
-        disassembleInstruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
-    #endif
+#ifdef DEBUG_TRACE_EXECUTION
+    if (!vm.trace) return;
+    for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
+        printf("[ ");
+        printValue(*slot);
+        printf(" ]");
+    }
+    printf("\n");
+    disassembleInstruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
+#endif
 }
 
 static InterpretResult interpretModule(const char* path) {
@@ -198,7 +201,7 @@ static InterpretResult run() {
     InterpretResult result = INTERPRET_OK;
 
     for (;;) {
-        traceExecution();
+        if (vm.trace) traceExecution();
         uint8_t instruction = READ_BYTE();
 
         switch (instruction) {
@@ -451,13 +454,14 @@ static InterpretResult run() {
                         vmPush(&vm, returnValue);
                     }
 
-                    // For debugging, print the return value when tracing is enabled
-                    #ifdef DEBUG_TRACE_EXECUTION
-                    printf("OUTPUT: Function returned: ");
-                    printValue(returnValue);
-                    printf("\n");
-                    fflush(stdout);
-                    #endif
+                    if (vm.trace) {
+#ifdef DEBUG_TRACE_EXECUTION
+                        printf("OUTPUT: Function returned: ");
+                        printValue(returnValue);
+                        printf("\n");
+                        fflush(stdout);
+#endif
+                    }
                 } else {
                     // If we're not in a function call, just push the return value back
                     vmPush(&vm, returnValue);
@@ -1083,9 +1087,11 @@ InterpretResult runChunk(Chunk* chunk) {
     vm.chunk = chunk;
     vm.ip = chunk->code;
 
-    #ifdef DEBUG_TRACE_EXECUTION
+    if (vm.trace) {
+#ifdef DEBUG_TRACE_EXECUTION
         disassembleChunk(chunk, "chunk to execute");
-    #endif
+#endif
+    }
 
     InterpretResult result = run();
     vm.chunk = NULL;
