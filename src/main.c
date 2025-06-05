@@ -12,23 +12,43 @@
 extern VM vm;
 
 static void repl() {
+    char buffer[4096]; // Larger buffer for multiline input
     char line[1024];
     for (;;) {
         printf("> ");
         fflush(stdout);
 
+        // Handle EOF (Ctrl+D) or errors in input
         if (!fgets(line, sizeof(line), stdin)) {
             printf("\n");
             break;
         }
 
-        // Process the input
+        // Skip empty lines or lines with just whitespace
+        bool isEmpty = true;
+        for (int i = 0; line[i] != '\0' && i < sizeof(line); i++) {
+            if (line[i] != ' ' && line[i] != '\t' && line[i] != '\n' && line[i] != '\r') {
+                isEmpty = false;
+                break;
+            }
+        }
+        if (isEmpty) continue;
+        
+        // Copy line to buffer for processing
+        strcpy(buffer, line);
 
+        // Process the input
         ASTNode* ast;
-        if (!parse(line, &ast)) {
+        if (!parse(buffer, &ast)) {
             printf("Parsing failed.\n");
             fflush(stdout);
             continue;
+        }
+
+        // Check if this is a print statement or other statement that doesn't need result echoing
+        bool isPrintStmt = false;
+        if (ast && ast->type == AST_PRINT) {
+            isPrintStmt = true;
         }
 
         Chunk chunk;
@@ -48,6 +68,11 @@ static void repl() {
             printf("Compile error.\n");
         } else if (result == INTERPRET_RUNTIME_ERROR) {
             printf("Runtime error.\n");
+        } else if (!isPrintStmt && vm.stackTop > vm.stack) {
+            // Print the result of the expression if there's a value on the stack
+            // and it's not a print statement (which already outputs its value)
+            printValue(*(vm.stackTop - 1));  // Print the top value on the stack
+            printf("\n");
         }
 
         freeASTNode(ast);
