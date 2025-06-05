@@ -1,0 +1,94 @@
+struct Recursive {}
+
+impl Recursive {
+    // Factorial implementation using recursion
+    fn factorial(n: i32) -> i32 {
+        if n <= 1 {
+            return 1
+        }
+        return n * factorial(n - 1)
+    }
+    
+    // Fibonacci implementation using recursion
+    fn fibonacci(n: i32) -> i32 {
+        if n <= 0 {
+            return 0
+        }
+        if n == 1 {
+            return 1
+        }
+        return fibonacci(n - 1) + fibonacci(n - 2)
+    }
+    
+    // Fibonacci implementation using iteration (more efficient)
+    fn fibonacci_iter(n: i32) -> i32 {
+        if n <= 0 {
+            return 0
+        }
+        if n == 1 {
+            return 1
+        }
+        
+        let a: i32 = 0
+        let b: i32 = 1
+        let c: i32 = 0
+        let i: i32 = 2
+        
+        while i <= n {
+            c = a + b
+            a = b
+            b = c
+            i = i + 1
+        }
+        
+        return b
+    }
+    
+    // Greatest Common Divisor using Euclidean algorithm
+    fn gcd(a: i32, b: i32) -> i32 {
+        if b == 0 {
+            return a
+        }
+        return gcd(b, a % b)
+    }
+}
+
+fn main() {
+    // Test factorial function
+    print("Factorial examples:")
+    print("5! = {}", Recursive.factorial(5))  // 120
+    print("7! = {}", Recursive.factorial(7))  // 5040
+    
+    // Test fibonacci functions
+    print("\nFibonacci sequence (recursive):")
+    let i: i32 = 0
+    let result1: string = "["
+    while i <= 10 {
+        result1 = result1 + Recursive.fibonacci(i)
+        if i < 10 {
+            result1 = result1 + ", "
+        }
+        i = i + 1
+    }
+    result1 = result1 + "]"
+    print("{}", result1)
+    
+    print("\nFibonacci sequence (iterative):")
+    i = 0
+    let result2: string = "["
+    while i <= 15 {
+        result2 = result2 + Recursive.fibonacci_iter(i)
+        if i < 15 {
+            result2 = result2 + ", "
+        }
+        i = i + 1
+    }
+    result2 = result2 + "]"
+    print("{}", result2)
+    
+    // Test GCD
+    print("\nGreatest Common Divisor examples:")
+    print("GCD of 48 and 18: {}", Recursive.gcd(48, 18))  // 6
+    print("GCD of 42 and 56: {}", Recursive.gcd(42, 56))  // 14
+    print("GCD of 31 and 17: {}", Recursive.gcd(31, 17))  // 1
+}

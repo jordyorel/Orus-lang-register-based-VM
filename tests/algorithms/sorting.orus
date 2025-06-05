@@ -80,19 +80,20 @@ impl Sorter {
         }
         return true
     }
+    
+    fn array_to_string(arr: [i32; 8]) -> string {
+        let result: string = "["
+        for i in 0..8 {
+            result = result + arr[i]
+            if i < 7 {
+                result = result + ", "
+            }
+        }
+        result = result + "]"
+        return result
+    }
 }
 
-fn array_to_string(arr: [i32; 8]) -> string {
-    let result: string = "["
-    for i in 0..8 {
-        result = result + arr[i]
-        if i < 7 {
-            result = result + ", "
-        }
-    }
-    result = result + "]"
-    return result
-}
 
 fn main() {
     // Test arrays to sort
