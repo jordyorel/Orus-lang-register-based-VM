@@ -81,16 +81,16 @@ archive.
 
 ```sh
 # Create a new project in the current directory
-python tools/oruspm.py init my_project
+python3 tools/oruspm.py init my_project
 
 # Compile the interpreter
-python tools/oruspm.py build
+python3 tools/oruspm.py build
 
 # Build and run the entrypoint
-python tools/oruspm.py run
+python3 tools/oruspm.py run
 
 # Create `dist/<name>-<version>.tar.gz`
-python tools/oruspm.py pack
+python3 tools/oruspm.py pack
 ```
 
 ## Repository layout
