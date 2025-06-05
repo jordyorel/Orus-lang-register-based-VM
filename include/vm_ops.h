@@ -446,4 +446,20 @@ static inline void compareOpAny(VM* vm, char op, InterpretResult* result) {
     vmPush(vm, BOOL_VAL(value));
 }
 
+// ---- Dynamic array helpers ----
+static inline void arrayPush(VM* vm, ObjArray* array, Value value) {
+    if (array->length >= array->capacity) {
+        int oldCap = array->capacity;
+        array->capacity = GROW_CAPACITY(oldCap);
+        array->elements = GROW_ARRAY(Value, array->elements, oldCap, array->capacity);
+        vm->bytesAllocated += sizeof(Value) * (array->capacity - oldCap);
+    }
+    array->elements[array->length++] = value;
+}
+
+static inline Value arrayPop(ObjArray* array) {
+    if (array->length == 0) return NIL_VAL;
+    return array->elements[--array->length];
+}
+
 #endif // VM_OPS_H

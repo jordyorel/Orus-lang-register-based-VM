@@ -45,6 +45,7 @@ typedef struct ObjString {
 typedef struct ObjArray {
     Obj obj;
     int length;
+    int capacity;
     Value* elements;
 } ObjArray;
 

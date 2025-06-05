@@ -19,6 +19,11 @@ static Type* findStructTypeToken(Token token) {
     return findStructType(name);
 }
 
+static bool tokenEquals(Token token, const char* str) {
+    size_t len = strlen(str);
+    return token.length == (int)len && strncmp(token.start, str, len) == 0;
+}
+
 static void generateCode(Compiler* compiler, ASTNode* node);
 static void addBreakJump(Compiler* compiler, int jumpPos);
 static void patchBreakJumps(Compiler* compiler);
@@ -656,6 +661,60 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
        case AST_CALL: {
             // Attempt to resolve the function name
+            // Built-in functions
+            if (tokenEquals(node->data.call.name, "len")) {
+                if (node->data.call.argCount != 1) {
+                    error(compiler, "len() takes exactly one argument.");
+                    return;
+                }
+                ASTNode* arg = node->data.call.arguments;
+                typeCheckNode(compiler, arg);
+                if (compiler->hadError) return;
+                if (!arg->valueType ||
+                    (arg->valueType->kind != TYPE_ARRAY &&
+                     arg->valueType->kind != TYPE_STRING)) {
+                    error(compiler, "len() expects array or string.");
+                    return;
+                }
+                node->valueType = getPrimitiveType(TYPE_I32);
+                break;
+            } else if (tokenEquals(node->data.call.name, "push")) {
+                if (node->data.call.argCount != 2) {
+                    error(compiler, "push() takes array and value.");
+                    return;
+                }
+                ASTNode* arr = node->data.call.arguments;
+                ASTNode* val = arr->next;
+                typeCheckNode(compiler, arr);
+                typeCheckNode(compiler, val);
+                if (compiler->hadError) return;
+                if (!arr->valueType || arr->valueType->kind != TYPE_ARRAY) {
+                    error(compiler, "push() first argument must be array.");
+                    return;
+                }
+                Type* elemType = arr->valueType->info.array.elementType;
+                if (!typesEqual(elemType, val->valueType)) {
+                    error(compiler, "push() value type mismatch.");
+                    return;
+                }
+                node->valueType = arr->valueType;
+                break;
+            } else if (tokenEquals(node->data.call.name, "pop")) {
+                if (node->data.call.argCount != 1) {
+                    error(compiler, "pop() takes array argument.");
+                    return;
+                }
+                ASTNode* arr = node->data.call.arguments;
+                typeCheckNode(compiler, arr);
+                if (compiler->hadError) return;
+                if (!arr->valueType || arr->valueType->kind != TYPE_ARRAY) {
+                    error(compiler, "pop() expects array.");
+                    return;
+                }
+                node->valueType = arr->valueType->info.array.elementType;
+                break;
+            }
+
             uint8_t index = resolveVariable(compiler, node->data.call.name);
 
             // Type check arguments first to know the type of the receiver
@@ -1639,12 +1698,27 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             break;
         }
         case AST_CALL: {
+            // Built-in implementations
+            if (tokenEquals(node->data.call.name, "len")) {
+                generateCode(compiler, node->data.call.arguments);
+                writeOp(compiler, OP_LEN);
+                break;
+            } else if (tokenEquals(node->data.call.name, "push")) {
+                generateCode(compiler, node->data.call.arguments);            // array
+                generateCode(compiler, node->data.call.arguments->next);      // value
+                writeOp(compiler, OP_ARRAY_PUSH);
+                break;
+            } else if (tokenEquals(node->data.call.name, "pop")) {
+                generateCode(compiler, node->data.call.arguments);            // array
+                writeOp(compiler, OP_ARRAY_POP);
+                break;
+            }
+
             // Generate code for each argument in source order
             int argCount = 0;
             ASTNode* arg = node->data.call.arguments;
 
-            // Collect arguments to preserve evaluation order
-            ASTNode* args[256]; // Assuming a reasonable maximum number of arguments
+            ASTNode* args[256];
             while (arg != NULL) {
                 args[argCount++] = arg;
                 arg = arg->next;
@@ -1654,18 +1728,14 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 generateCode(compiler, args[i]);
                 if (compiler->hadError) return;
 
-                // Apply type conversion if needed
                 if (node->data.call.convertArgs[i]) {
-                    // Add conversion code here based on the parameter type
-                    // For now, we'll assume no conversions are needed
+                    /* conversions not implemented */
                 }
             }
 
-            // Call the function
-            // printf("DEBUG: Generating call to function at index %d with %d arguments\n", node->data.call.index, argCount);
             writeOp(compiler, OP_CALL);
             writeOp(compiler, node->data.call.index);
-            writeOp(compiler, argCount); // Number of arguments
+            writeOp(compiler, argCount);
 
             break;
         }

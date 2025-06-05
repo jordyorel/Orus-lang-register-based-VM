@@ -150,6 +150,12 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_ARRAY_GET", offset);
         case OP_ARRAY_SET:
             return simpleInstruction("OP_ARRAY_SET", offset);
+        case OP_ARRAY_PUSH:
+            return simpleInstruction("OP_ARRAY_PUSH", offset);
+        case OP_ARRAY_POP:
+            return simpleInstruction("OP_ARRAY_POP", offset);
+        case OP_LEN:
+            return simpleInstruction("OP_LEN", offset);
 
         case OP_CALL: {
             uint8_t functionIndex = chunk->code[offset + 1];
