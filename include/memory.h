@@ -2,6 +2,7 @@
 #define clox_memory_h
 
 #include "common.h"
+#include "value.h"
 
 
 // This macro is used to grow the capacity of the dynamic array that stores the
@@ -56,6 +57,18 @@
 // Allocates memory for a new object of a given type. It takes the type of the
 void* reallocate(void* pointer, size_t oldSize, size_t newSize);
 
+
+// Allocate a new string object copying the given characters
+ObjString* allocateString(const char* str, int length);
+
+// Allocate a new array object with the given length
+ObjArray* allocateArray(int length);
+
+// GC interface (no-op for now)
+void collectGarbage();
+void freeObjects();
+
+// Utility to copy a raw C string onto the heap
 char* copyString(const char* str, int length);
 
 #endif

@@ -110,11 +110,8 @@ static ASTNode* parseString(Parser* parser) {
 
     const char* start = parser->previous.start + 1;  // Skip opening quote
     int length = parser->previous.length - 2;        // Exclude both quotes
-    char* string = (char*)malloc(length + 1);
-    memcpy(string, start, length);
-    string[length] = '\0';
-    Value value =
-        STRING_VAL(string, length);  // Use both arguments: chars and len
+    ObjString* string = allocateString(start, length);
+    Value value = STRING_VAL(string);
     ASTNode* node = createLiteralNode(value);
     node->valueType =
         createPrimitiveType(TYPE_STRING);  // Assuming TYPE_STRING exists

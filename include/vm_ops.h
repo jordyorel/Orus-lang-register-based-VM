@@ -6,6 +6,7 @@
 #include <string.h>
 #include "value.h"
 #include "vm.h"
+#include "memory.h"
 
 // Helper functions for stack operations
 static inline Value vmPeek(VM* vm, int distance) {
@@ -137,9 +138,8 @@ static inline Value convertToString(Value value) {
             length = snprintf(buffer, sizeof(buffer), "<obj>");
             break;
     }
-    char* heap = (char*)malloc(length + 1);
-    memcpy(heap, buffer, length + 1);
-    return STRING_VAL(heap, length);
+    ObjString* obj = allocateString(buffer, length);
+    return STRING_VAL(obj);
 }
 
 static inline void concatOp(VM* vm) {
@@ -148,12 +148,14 @@ static inline void concatOp(VM* vm) {
     if (!IS_STRING(a)) a = convertToString(a);
     if (!IS_STRING(b)) b = convertToString(b);
 
-    int len = AS_STRING(a).length + AS_STRING(b).length;
+    int len = AS_STRING(a)->length + AS_STRING(b)->length;
     char* chars = (char*)malloc(len + 1);
-    memcpy(chars, AS_STRING(a).chars, AS_STRING(a).length);
-    memcpy(chars + AS_STRING(a).length, AS_STRING(b).chars, AS_STRING(b).length);
+    memcpy(chars, AS_STRING(a)->chars, AS_STRING(a)->length);
+    memcpy(chars + AS_STRING(a)->length, AS_STRING(b)->chars, AS_STRING(b)->length);
     chars[len] = '\0';
-    vmPush(vm, STRING_VAL(chars, len));
+    ObjString* result = allocateString(chars, len);
+    free(chars);
+    vmPush(vm, STRING_VAL(result));
 }
 
 // Binary operations for f64 with automatic type conversion
@@ -393,13 +395,13 @@ static inline void compareOpAny(VM* vm, char op, InterpretResult* result) {
             value = true;  // Two nil values are always equal
         } else if (IS_STRING(a) && IS_STRING(b)) {
             // For strings, compare the actual string contents instead of pointer equality
-            String strA = AS_STRING(a);
-            String strB = AS_STRING(b);
+            ObjString* strA = AS_STRING(a);
+            ObjString* strB = AS_STRING(b);
             
             // First check if lengths match
-            if (strA.length == strB.length) {
+            if (strA->length == strB->length) {
                 // Then compare the actual characters
-                value = (memcmp(strA.chars, strB.chars, strA.length) == 0);
+                value = (memcmp(strA->chars, strB->chars, strA->length) == 0);
             } else {
                 value = false; // Different lengths means different strings
             }
@@ -420,13 +422,13 @@ static inline void compareOpAny(VM* vm, char op, InterpretResult* result) {
             value = false;  // Two nil values are always equal, so not equal is false
         } else if (IS_STRING(a) && IS_STRING(b)) {
             // For strings, compare the actual string contents instead of pointer equality
-            String strA = AS_STRING(a);
-            String strB = AS_STRING(b);
+            ObjString* strA = AS_STRING(a);
+            ObjString* strB = AS_STRING(b);
             
             // First check if lengths match
-            if (strA.length == strB.length) {
+            if (strA->length == strB->length) {
                 // Then compare the actual characters - if they're equal, result is false
-                value = (memcmp(strA.chars, strB.chars, strA.length) != 0);
+                value = (memcmp(strA->chars, strB->chars, strA->length) != 0);
             } else {
                 value = true; // Different lengths means different strings
             }

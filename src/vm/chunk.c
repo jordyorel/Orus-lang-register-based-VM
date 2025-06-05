@@ -28,18 +28,9 @@ void freeChunk(Chunk* chunk) {
     for (int i = 0; i < chunk->constants.count; i++) {
         Value v = chunk->constants.values[i];
         if (v.type == VAL_STRING) {
-            free(v.as.string.chars);
-            chunk->constants.values[i].as.string.chars = NULL;
-            chunk->constants.values[i].as.string.length = 0;
+            chunk->constants.values[i].as.string = NULL;
         } else if (v.type == VAL_ARRAY) {
-            for (int j = 0; j < v.as.array.length; j++) {
-                if (v.as.array.elements[j].type == VAL_STRING) {
-                    free(v.as.array.elements[j].as.string.chars);
-                }
-            }
-            FREE_ARRAY(Value, v.as.array.elements, v.as.array.length);
-            chunk->constants.values[i].as.array.elements = NULL;
-            chunk->constants.values[i].as.array.length = 0;
+            chunk->constants.values[i].as.array = NULL;
         }
     }
     freeValueArray(&chunk->constants);

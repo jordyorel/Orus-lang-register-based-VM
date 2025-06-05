@@ -50,14 +50,14 @@ void printValue(Value value) {
             printf("nil");
             break;
         case VAL_STRING:
-            printf("%s", AS_STRING(value).chars);
+            printf("%s", AS_STRING(value)->chars);
             break;
         case VAL_ARRAY: {
             printf("[");
-            Array arr = AS_ARRAY(value);
-            for (int i = 0; i < arr.length; i++) {
-                printValue(arr.elements[i]);
-                if (i < arr.length - 1) printf(", ");
+            ObjArray* arr = AS_ARRAY(value);
+            for (int i = 0; i < arr->length; i++) {
+                printValue(arr->elements[i]);
+                if (i < arr->length - 1) printf(", ");
             }
             printf("]");
             break;
@@ -78,12 +78,12 @@ bool valuesEqual(Value a, Value b) {
         case VAL_BOOL: return a.as.boolean == b.as.boolean;
         case VAL_NIL: return true;
         case VAL_STRING:
-            return a.as.string.length == b.as.string.length &&
-                   memcmp(a.as.string.chars, b.as.string.chars, a.as.string.length) == 0;
+            return a.as.string->length == b.as.string->length &&
+                   memcmp(a.as.string->chars, b.as.string->chars, a.as.string->length) == 0;
         case VAL_ARRAY: {
-            if (a.as.array.length != b.as.array.length) return false;
-            for (int i = 0; i < a.as.array.length; i++) {
-                if (!valuesEqual(a.as.array.elements[i], b.as.array.elements[i])) return false;
+            if (a.as.array->length != b.as.array->length) return false;
+            for (int i = 0; i < a.as.array->length; i++) {
+                if (!valuesEqual(a.as.array->elements[i], b.as.array->elements[i])) return false;
             }
             return true;
         }

@@ -22,6 +22,8 @@ void initVM() {
     vm.variableCount = 0;
     vm.functionCount = 0;
     vm.frameCount = 0;
+    vm.objects = NULL;
+    vm.bytesAllocated = 0;
     for (int i = 0; i < UINT8_COUNT; i++) {
         vm.variableNames[i].name = NULL;
         vm.variableNames[i].length = 0;
@@ -40,6 +42,7 @@ void freeVM() {
         }
         vm.globalTypes[i] = NULL;  // No freeing here
     }
+    freeObjects();
 }
 
 static void runtimeError(const char* format, ...) {
@@ -494,11 +497,9 @@ static InterpretResult run() {
             }
             case OP_MAKE_ARRAY: {
                 uint8_t count = READ_BYTE();
-                Array arr;
-                arr.length = count;
-                arr.elements = (Value*)malloc(sizeof(Value) * count);
+                ObjArray* arr = allocateArray(count);
                 for (int i = count - 1; i >= 0; i--) {
-                    arr.elements[i] = vmPop(&vm);
+                    arr->elements[i] = vmPop(&vm);
                 }
                 vmPush(&vm, ARRAY_VAL(arr));
                 break;
@@ -519,12 +520,12 @@ static InterpretResult run() {
                     runtimeError("Array index must be an integer.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                Array arr = AS_ARRAY(arrayVal);
-                if (idx < 0 || idx >= arr.length) {
+                ObjArray* arr = AS_ARRAY(arrayVal);
+                if (idx < 0 || idx >= arr->length) {
                     runtimeError("Array index out of bounds.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                vmPush(&vm, arr.elements[idx]);
+                vmPush(&vm, arr->elements[idx]);
                 break;
             }
             case OP_ARRAY_SET: {
@@ -544,12 +545,12 @@ static InterpretResult run() {
                     runtimeError("Array index must be an integer.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                Array arr = AS_ARRAY(arrayVal);
-                if (idx < 0 || idx >= arr.length) {
+                ObjArray* arr = AS_ARRAY(arrayVal);
+                if (idx < 0 || idx >= arr->length) {
                     runtimeError("Array index out of bounds.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                arr.elements[idx] = value;
+                arr->elements[idx] = value;
                 vmPush(&vm, value);
                 break;
             }
@@ -628,7 +629,7 @@ static InterpretResult run() {
                 }
 
                 int argCount = AS_I32(countValue);
-                String formatStr = AS_STRING(formatValue);
+                ObjString* formatStr = AS_STRING(formatValue);
 
                 // Check that we have enough arguments below the format string
                 if (vm.stackTop - vm.stack < 2 + argCount) {
@@ -638,7 +639,7 @@ static InterpretResult run() {
                 }
 
                 // Allocate buffer
-                int resultCapacity = formatStr.length * 2;
+                int resultCapacity = formatStr->length * 2;
                 char* resultBuffer = (char*)malloc(resultCapacity);
                 if (!resultBuffer) {
                     runtimeError("Memory allocation failed for print buffer.");
@@ -649,10 +650,10 @@ static InterpretResult run() {
                 int formatIndex = 0;
                 int argIndex = 0;
 
-                while (formatIndex < formatStr.length) {
-                    if (formatIndex + 1 < formatStr.length &&
-                        formatStr.chars[formatIndex] == '{' &&
-                        formatStr.chars[formatIndex + 1] == '}') {
+                while (formatIndex < formatStr->length) {
+                    if (formatIndex + 1 < formatStr->length &&
+                        formatStr->chars[formatIndex] == '{' &&
+                        formatStr->chars[formatIndex + 1] == '}') {
                         if (argIndex >= argCount) {
                             runtimeError(
                                 "Too few arguments for format string (needed "
@@ -691,7 +692,7 @@ static InterpretResult run() {
                                     snprintf(valueStr, sizeof(valueStr), "nil");
                                 break;
                             case VAL_STRING: {
-                                valueLen = AS_STRING(arg).length;
+                                valueLen = AS_STRING(arg)->length;
                                 if (resultLength + valueLen >= resultCapacity) {
                                     resultCapacity =
                                         (resultLength + valueLen) * 2;
@@ -705,7 +706,7 @@ static InterpretResult run() {
                                     }
                                 }
                                 memcpy(resultBuffer + resultLength,
-                                       AS_STRING(arg).chars, valueLen);
+                                       AS_STRING(arg)->chars, valueLen);
                                 resultLength += valueLen;
                                 valueLen = 0;
                                 break;
@@ -745,7 +746,7 @@ static InterpretResult run() {
                             }
                         }
                         resultBuffer[resultLength++] =
-                            formatStr.chars[formatIndex++];
+                            formatStr->chars[formatIndex++];
                     }
                 }
 
