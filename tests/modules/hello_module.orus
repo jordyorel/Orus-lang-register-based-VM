@@ -1,5 +1,9 @@
-let greeting = "Hello from module"
-print(greeting)
+fn greet() {
+    let greeting = "Hello from module"
+    print(greeting)
+}
 
 fn main() {
 }
+
+

@@ -741,6 +741,9 @@ static void statement(Parser* parser, ASTNode** ast) {
     *ast = NULL;  // Safe default
 
     if (match(parser, TOKEN_PRINT)) {
+        if (parser->functionDepth == 0) {
+            error(parser, "'print' outside of function.");
+        }
         consume(parser, TOKEN_LEFT_PAREN, "Expect '(' after 'print'.");
 
         // Parse format string or direct expression
@@ -823,6 +826,9 @@ static void statement(Parser* parser, ASTNode** ast) {
         returnStatement(parser, ast);
 
     } else if (match(parser, TOKEN_IMPORT)) {
+        if (parser->functionDepth > 0) {
+            error(parser, "'import' must be at top level.");
+        }
         importStatement(parser, ast);
 
     } else if (match(parser, TOKEN_BREAK)) {
@@ -839,6 +845,9 @@ static void statement(Parser* parser, ASTNode** ast) {
         block(parser, ast);
 
     } else if (match(parser, TOKEN_LET)) {
+        if (parser->functionDepth == 0) {
+            error(parser, "'let' declarations must be inside a function.");
+        }
         consume(parser, TOKEN_IDENTIFIER, "Expect variable name.");
         Token name = parser->previous;
         Type* type = NULL;
