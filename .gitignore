@@ -5,6 +5,7 @@ build/
 
 # build artifacts
 orus
+dist/
 
 # image assets
 *.png

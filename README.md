@@ -58,6 +58,27 @@ bash tests/run_all_tests.sh
 
 Each subdirectory of `tests/` represents a category and contains example programs. The script executes every `.orus` file and reports success or failure.
 
+## Development tools
+
+A basic package manager is provided to help build and distribute Orus
+projects. The `tools/oruspm.py` script can initialise a new project,
+compile the interpreter, run the entry file and create a distributable
+archive.
+
+```sh
+# Create a new project in the current directory
+python tools/oruspm.py init my_project
+
+# Compile the interpreter
+python tools/oruspm.py build
+
+# Build and run the entrypoint
+python tools/oruspm.py run
+
+# Create `dist/<name>-<version>.tar.gz`
+python tools/oruspm.py pack
+```
+
 ## Repository layout
 
 - `src/` – C source for the interpreter.
@@ -65,5 +86,6 @@ Each subdirectory of `tests/` represents a category and contains example program
 - `Makefile` – Build rules producing the `orus` executable.
 - `docs/LANGUAGE.md` – Overview of the language syntax.
 - `docs/GENERICS.md` – Notes on the macro-based generic array helper.
+- `tools/` – Utility scripts including the `oruspm.py` package manager.
 
 Enjoy experimenting with Orus!
