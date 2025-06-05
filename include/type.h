@@ -2,6 +2,7 @@
 #define clox_type_h
 
 #include <stdbool.h>
+#include "value.h"
 
 typedef enum {
     TYPE_I32,
@@ -17,11 +18,12 @@ typedef enum {
 } TypeKind;
 
 typedef struct FieldInfo {
-    const char* name;
+    ObjString* name;
     struct Type* type;
 } FieldInfo;
 
 typedef struct Type {
+    Obj obj;
     TypeKind kind;
     union {
         struct {
@@ -33,7 +35,7 @@ typedef struct Type {
             int paramCount;
         } function;
         struct {
-            const char* name;
+            ObjString* name;
             FieldInfo* fields;
             int fieldCount;
         } structure;
@@ -43,7 +45,7 @@ typedef struct Type {
 Type* createPrimitiveType(TypeKind kind);
 Type* createArrayType(Type* elementType);
 Type* createFunctionType(Type* returnType, Type** paramTypes, int paramCount);
-Type* createStructType(const char* name, FieldInfo* fields, int fieldCount);
+Type* createStructType(ObjString* name, FieldInfo* fields, int fieldCount);
 Type* findStructType(const char* name);
 void freeType(Type* type);
 bool typesEqual(Type* a, Type* b);
@@ -51,6 +53,7 @@ const char* getTypeName(TypeKind kind);
 void initTypeSystem(void);
 void freeTypeSystem(void);  // Add this
 Type* getPrimitiveType(TypeKind kind);
+void markTypeRoots();
 
 extern Type* primitiveTypes[TYPE_COUNT];
 

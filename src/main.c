@@ -35,13 +35,15 @@ static void repl() {
         initChunk(&chunk);
         Compiler compiler;
         initCompiler(&compiler, &chunk);
+        vm.astRoot = ast;
         if (!compile(ast, &compiler)) {
             printf("Compilation failed.\n");
-            freeASTNode(ast);
+            vm.astRoot = NULL;
             freeChunk(&chunk);
             fflush(stdout);
             continue;
         }
+        vm.astRoot = NULL;
 
         InterpretResult result = runChunk(&chunk);
         if (result == INTERPRET_COMPILE_ERROR) {
@@ -50,7 +52,6 @@ static void repl() {
             printf("Runtime error.\n");
         }
 
-        freeASTNode(ast);
         freeChunk(&chunk);
         vm.stackTop = vm.stack;  // Reset stack after execution
         fflush(stdout);
@@ -93,15 +94,16 @@ static void runFile(const char* path) {
     initChunk(&chunk);
     Compiler compiler;
     initCompiler(&compiler, &chunk);
+    vm.astRoot = ast;
     if (!compile(ast, &compiler)) {
         fprintf(stderr, "Compilation failed for \"%s\".\n", path);
-        freeASTNode(ast);
+        vm.astRoot = NULL;
         freeChunk(&chunk);
         free(source);
         exit(65);
     }
+    vm.astRoot = NULL;
     InterpretResult result = runChunk(&chunk);
-    freeASTNode(ast);   // Free AST after execution
     freeChunk(&chunk);  // Free chunk after execution
     free(source);
     if (result == INTERPRET_RUNTIME_ERROR) exit(70);

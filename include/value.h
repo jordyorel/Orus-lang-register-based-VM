@@ -8,12 +8,16 @@
 typedef struct Obj Obj;
 typedef struct ObjString ObjString;
 typedef struct ObjArray ObjArray;
+typedef struct ObjIntArray ObjIntArray;
 typedef struct Value Value;
 
 // Base object type for the garbage collector
 typedef enum {
     OBJ_STRING,
     OBJ_ARRAY,
+    OBJ_INT_ARRAY,
+    OBJ_AST,
+    OBJ_TYPE,
 } ObjType;
 
 struct Obj {
@@ -43,6 +47,12 @@ typedef struct ObjArray {
     int length;
     Value* elements;
 } ObjArray;
+
+typedef struct ObjIntArray {
+    Obj obj;
+    int length;
+    int* elements;
+} ObjIntArray;
 
 typedef ObjString String;
 typedef ObjArray Array;

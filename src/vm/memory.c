@@ -3,6 +3,8 @@
 
 #include "../../include/memory.h"
 #include "../../include/vm.h"
+#include "../../include/ast.h"
+#include "../../include/type.h"
 
 #define GC_HEAP_GROW_FACTOR 2
 
@@ -54,10 +56,26 @@ ObjArray* allocateArray(int length) {
     return array;
 }
 
-static void markObject(Obj* object);
+ObjIntArray* allocateIntArray(int length) {
+    ObjIntArray* array = (ObjIntArray*)allocateObject(sizeof(ObjIntArray), OBJ_INT_ARRAY);
+    array->length = length;
+    vm.bytesAllocated += sizeof(int) * length;
+    array->elements = (int*)malloc(sizeof(int) * length);
+    return array;
+}
+
+ASTNode* allocateASTNode() {
+    return (ASTNode*)allocateObject(sizeof(ASTNode), OBJ_AST);
+}
+
+Type* allocateType() {
+    return (Type*)allocateObject(sizeof(Type), OBJ_TYPE);
+}
+
+void markObject(Obj* object);
 static void freeObject(Obj* object);
 
-static void markValue(Value value) {
+void markValue(Value value) {
     if (IS_STRING(value)) {
         markObject((Obj*)AS_STRING(value));
     } else if (IS_ARRAY(value)) {
@@ -65,7 +83,7 @@ static void markValue(Value value) {
     }
 }
 
-static void markObject(Obj* object) {
+void markObject(Obj* object) {
     if (object == NULL || object->marked) return;
     object->marked = true;
 
@@ -80,6 +98,104 @@ static void markObject(Obj* object) {
             }
             break;
         }
+        case OBJ_INT_ARRAY: {
+            // Int arrays do not reference other objects
+            break;
+        }
+        case OBJ_AST: {
+            ASTNode* node = (ASTNode*)object;
+            if (node->left) markObject((Obj*)node->left);
+            if (node->right) markObject((Obj*)node->right);
+            if (node->next) markObject((Obj*)node->next);
+
+            switch (node->type) {
+                case AST_LITERAL:
+                    markValue(node->data.literal);
+                    break;
+                case AST_LET:
+                    if (node->data.let.initializer) markObject((Obj*)node->data.let.initializer);
+                    if (node->data.let.type) markObject((Obj*)node->data.let.type);
+                    break;
+                case AST_PRINT:
+                    if (node->data.print.format) markObject((Obj*)node->data.print.format);
+                    if (node->data.print.arguments) markObject((Obj*)node->data.print.arguments);
+                    break;
+                case AST_IF:
+                    if (node->data.ifStmt.condition) markObject((Obj*)node->data.ifStmt.condition);
+                    if (node->data.ifStmt.thenBranch) markObject((Obj*)node->data.ifStmt.thenBranch);
+                    if (node->data.ifStmt.elifConditions) markObject((Obj*)node->data.ifStmt.elifConditions);
+                    if (node->data.ifStmt.elifBranches) markObject((Obj*)node->data.ifStmt.elifBranches);
+                    if (node->data.ifStmt.elseBranch) markObject((Obj*)node->data.ifStmt.elseBranch);
+                    break;
+                case AST_BLOCK:
+                    if (node->data.block.statements) markObject((Obj*)node->data.block.statements);
+                    break;
+                case AST_WHILE:
+                    if (node->data.whileStmt.condition) markObject((Obj*)node->data.whileStmt.condition);
+                    if (node->data.whileStmt.body) markObject((Obj*)node->data.whileStmt.body);
+                    break;
+                case AST_FOR:
+                    if (node->data.forStmt.startExpr) markObject((Obj*)node->data.forStmt.startExpr);
+                    if (node->data.forStmt.endExpr) markObject((Obj*)node->data.forStmt.endExpr);
+                    if (node->data.forStmt.stepExpr) markObject((Obj*)node->data.forStmt.stepExpr);
+                    if (node->data.forStmt.body) markObject((Obj*)node->data.forStmt.body);
+                    break;
+                case AST_FUNCTION:
+                    if (node->data.function.parameters) markObject((Obj*)node->data.function.parameters);
+                    if (node->data.function.body) markObject((Obj*)node->data.function.body);
+                    if (node->data.function.returnType) markObject((Obj*)node->data.function.returnType);
+                    if (node->data.function.implType) markObject((Obj*)node->data.function.implType);
+                    if (node->data.function.mangledName) markObject((Obj*)node->data.function.mangledName);
+                    break;
+                case AST_CALL:
+                    if (node->data.call.arguments) markObject((Obj*)node->data.call.arguments);
+                    if (node->data.call.staticType) markObject((Obj*)node->data.call.staticType);
+                    if (node->data.call.mangledName) markObject((Obj*)node->data.call.mangledName);
+                    break;
+                case AST_RETURN:
+                    if (node->data.returnStmt.value) markObject((Obj*)node->data.returnStmt.value);
+                    break;
+                case AST_ARRAY:
+                    if (node->data.array.elements) markObject((Obj*)node->data.array.elements);
+                    break;
+                case AST_ARRAY_SET:
+                    if (node->data.arraySet.index) markObject((Obj*)node->data.arraySet.index);
+                    break;
+                case AST_STRUCT_LITERAL:
+                    if (node->data.structLiteral.values) markObject((Obj*)node->data.structLiteral.values);
+                    break;
+                default:
+                    break;
+            }
+            if (node->valueType) markObject((Obj*)node->valueType);
+            break;
+        }
+        case OBJ_TYPE: {
+            Type* type = (Type*)object;
+            switch (type->kind) {
+                case TYPE_ARRAY:
+                    if (type->info.array.elementType)
+                        markObject((Obj*)type->info.array.elementType);
+                    break;
+                case TYPE_FUNCTION:
+                    if (type->info.function.returnType)
+                        markObject((Obj*)type->info.function.returnType);
+                    for (int i = 0; i < type->info.function.paramCount; i++) {
+                        markObject((Obj*)type->info.function.paramTypes[i]);
+                    }
+                    break;
+                case TYPE_STRUCT:
+                    markObject((Obj*)type->info.structure.name);
+                    for (int i = 0; i < type->info.structure.fieldCount; i++) {
+                        markObject((Obj*)type->info.structure.fields[i].name);
+                        markObject((Obj*)type->info.structure.fields[i].type);
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
     }
 }
 
@@ -90,7 +206,22 @@ void collectGarbage() {
     }
     for (int i = 0; i < vm.variableCount; i++) {
         markValue(vm.globals[i]);
+        if (vm.variableNames[i].name != NULL) {
+            markObject((Obj*)vm.variableNames[i].name);
+        }
+        if (variableTypes[i] != NULL) {
+            markObject((Obj*)variableTypes[i]);
+        }
     }
+    if (vm.chunk != NULL) {
+        for (int i = 0; i < vm.chunk->constants.count; i++) {
+            markValue(vm.chunk->constants.values[i]);
+        }
+    }
+    if (vm.astRoot != NULL) {
+        markObject((Obj*)vm.astRoot);
+    }
+    markTypeRoots();
 
     // Sweep
     Obj** object = &vm.objects;
@@ -120,6 +251,36 @@ static void freeObject(Obj* object) {
             vm.bytesAllocated -= sizeof(ObjArray) + sizeof(Value) * array->length;
             FREE_ARRAY(Value, array->elements, array->length);
             free(array);
+            break;
+        }
+        case OBJ_INT_ARRAY: {
+            ObjIntArray* array = (ObjIntArray*)object;
+            vm.bytesAllocated -= sizeof(ObjIntArray) + sizeof(int) * array->length;
+            free(array->elements);
+            free(array);
+            break;
+        }
+        case OBJ_AST: {
+            ASTNode* node = (ASTNode*)object;
+            if (node->type == AST_CALL && node->data.call.convertArgs) {
+                free(node->data.call.convertArgs);
+            }
+            free(node);
+            break;
+        }
+        case OBJ_TYPE: {
+            Type* type = (Type*)object;
+            switch (type->kind) {
+                case TYPE_FUNCTION:
+                    free(type->info.function.paramTypes);
+                    break;
+                case TYPE_STRUCT:
+                    free(type->info.structure.fields);
+                    break;
+                default:
+                    break;
+            }
+            free(type);
             break;
         }
     }

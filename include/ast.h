@@ -98,6 +98,7 @@ typedef struct {
     uint8_t index;             // Function index in the function table
     bool isMethod;             // True if function has implicit self
     Type* implType;            // Struct type if method
+    ObjString* mangledName;    // GC-managed mangled name
 } FunctionData;
 
 typedef struct {
@@ -107,6 +108,7 @@ typedef struct {
     bool* convertArgs;         // Array of flags for argument conversion
     int argCount;             // Number of arguments
     Type* staticType;         // Struct type if called as Struct.fn
+    ObjString* mangledName;    // GC-managed mangled name if method call
 } CallData;
 
 typedef struct {
@@ -114,6 +116,7 @@ typedef struct {
 } ReturnData;
 
 typedef struct ASTNode {
+    Obj obj;
     ASTNodeType type;
     struct ASTNode* left;
     struct ASTNode* right;

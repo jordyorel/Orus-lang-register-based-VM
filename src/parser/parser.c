@@ -237,8 +237,7 @@ static ASTNode* parseCall(Parser* parser, ASTNode* left) {
 
     consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
 
-    // Free the variable node as we're replacing it with a call node
-    free(left);
+
 
     return createCallNode(name, arguments, argCount, NULL);
 }
@@ -274,7 +273,6 @@ static ASTNode* parseDot(Parser* parser, ASTNode* left) {
             lastArg = left;
             argCount = 1;
         } else {
-            free(left);
         }
 
         if (!check(parser, TOKEN_RIGHT_PAREN)) {
@@ -348,7 +346,7 @@ static Type* findStructTypeToken(Token token) {
 static ASTNode* parseStructLiteral(Parser* parser, ASTNode* left) {
     // 'left' is the struct name variable
     Token structName = left->data.variable.name;
-    free(left);
+
 
     ASTNode* values = NULL;
     ASTNode* last = NULL;
@@ -407,13 +405,11 @@ static ASTNode* parse_precedence(Parser* parser, Precedence precedence) {
             get_rule(parser->previous.type)->infix;
         if (infixRule == NULL) {
             error(parser, "Invalid infix operator.");
-            freeASTNode(left);
             return NULL;
         }
 
         ASTNode* newLeft = infixRule(parser, left);
         if (newLeft == NULL) {
-            freeASTNode(left);
             return NULL;
         }
         left = newLeft;
@@ -588,7 +584,7 @@ static void functionDeclaration(Parser* parser, ASTNode** ast) {
     }
 
     if (hasSelf && parser->currentImplType != NULL) {
-        const char* structName = parser->currentImplType->info.structure.name;
+        const char* structName = parser->currentImplType->info.structure.name->chars;
         size_t structLen = strlen(structName);
         size_t funcLen = name.length;
         char* full = (char*)malloc(structLen + 1 + funcLen + 1);
@@ -653,9 +649,7 @@ static void structDeclaration(Parser* parser, ASTNode** ast) {
             capacity = capacity < 4 ? 4 : capacity * 2;
             fields = realloc(fields, sizeof(FieldInfo) * capacity);
         }
-        char* fname = (char*)malloc(fieldNameTok.length + 1);
-        memcpy(fname, fieldNameTok.start, fieldNameTok.length);
-        fname[fieldNameTok.length] = '\0';
+        ObjString* fname = allocateString(fieldNameTok.start, fieldNameTok.length);
         fields[count].name = fname;
         fields[count].type = fieldType;
         count++;
@@ -674,9 +668,7 @@ static void structDeclaration(Parser* parser, ASTNode** ast) {
     consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after struct fields.");
     consumeStatementEnd(parser);
 
-    char* structName = (char*)malloc(nameTok.length + 1);
-    memcpy(structName, nameTok.start, nameTok.length);
-    structName[nameTok.length] = '\0';
+    ObjString* structName = allocateString(nameTok.start, nameTok.length);
     Type* structType = createStructType(structName, fields, count);
 
     // Create a dummy global variable for the struct name to allow method calls
@@ -743,7 +735,6 @@ static void statement(Parser* parser, ASTNode** ast) {
                 error(parser,
                   "First argument to print must evaluate to a string for "
                   "interpolation.");
-                if (formatExpr) freeASTNode(formatExpr);
                 return;
             }
 
@@ -758,8 +749,6 @@ static void statement(Parser* parser, ASTNode** ast) {
 
                 if (arg == NULL) {
                     error(parser, "Expected expression as argument.");
-                    freeASTNode(formatExpr);
-                    freeASTNode(arguments);
                     return;
                 }
 
@@ -850,24 +839,19 @@ static void statement(Parser* parser, ASTNode** ast) {
                 *ast = createAssignmentNode(expr->data.variable.name, value);
                 // The variable node itself is no longer needed
                 expr->left = expr->right = NULL;
-                free(expr);
             } else if (expr->type == AST_BINARY &&
                        expr->data.operation.operator.type == TOKEN_LEFT_BRACKET) {
                 ASTNode* arrayExpr = expr->left;
                 ASTNode* indexExpr = expr->right;
                 expr->left = expr->right = NULL;
-                free(expr);
                 *ast = createArraySetNode(arrayExpr, indexExpr, value);
             } else if (expr->type == AST_FIELD) {
                 ASTNode* object = expr->left;
                 Token fieldName = expr->data.field.fieldName;
                 expr->left = NULL;
-                free(expr);
                 *ast = createFieldSetNode(object, fieldName, value);
             } else {
                 error(parser, "Invalid assignment target.");
-                freeASTNode(expr);
-                freeASTNode(value);
                 *ast = NULL;
                 return;
             }
@@ -947,12 +931,10 @@ bool parse(const char* source, ASTNode** ast) {
 
         if (parser.hadError) {
             if (*ast) {
-                freeASTNode(*ast);
-                *ast = NULL; // Set to NULL after freeing
+                *ast = NULL;
             }
             if (stmt) {
-                freeASTNode(stmt);
-                stmt = NULL; // Set to NULL after freeing
+                stmt = NULL;
             }
             synchronize(&parser);
             if (parser.hadError) {

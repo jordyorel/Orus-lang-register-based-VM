@@ -5,6 +5,7 @@
 #include "chunk.h"
 #include "symtable.h"
 #include "type.h"
+#include "value.h"
 
 typedef struct {
     int loopStart;         // Start position of the current loop
@@ -13,13 +14,13 @@ typedef struct {
     int loopDepth;         // Nesting level of loops
 
     // Arrays to store break and continue jumps for patching
-    int* breakJumps;       // Array of positions where break statements jump from
-    int breakJumpCount;    // Number of break jumps
-    int breakJumpCapacity; // Capacity of the breakJumps array
+    ObjIntArray* breakJumps;       // GC-managed array of break jump positions
+    int breakJumpCount;            // Number of break jumps
+    int breakJumpCapacity;         // Capacity of the breakJumps array
 
-    int* continueJumps;       // Array of positions where continue statements jump from
-    int continueJumpCount;    // Number of continue jumps
-    int continueJumpCapacity; // Capacity of the continueJumps array
+    ObjIntArray* continueJumps;    // GC-managed array of continue jump positions
+    int continueJumpCount;         // Number of continue jumps
+    int continueJumpCapacity;      // Capacity of the continueJumps array
 
     SymbolTable symbols;
     int scopeDepth;
