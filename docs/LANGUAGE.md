@@ -72,9 +72,14 @@ fn greet() {
 }
 
 # main.orus
-import "tests/modules/hello_module.orus"
-greet()
+fn main() {
+    import "tests/modules/hello_module.orus"
+    greet()
+}
 ```
+
+The interpreter automatically looks for a `main` function and executes it if
+present, so any top‑level code should be placed inside `fn main()`.
 
 ## Functions
 

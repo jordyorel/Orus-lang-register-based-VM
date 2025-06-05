@@ -2110,6 +2110,20 @@ bool compile(ASTNode* ast, Compiler* compiler) {
         current = current->next;
     }
 
+    // Automatically invoke `main` if it exists
+    Token mainTok;
+    mainTok.type = TOKEN_IDENTIFIER;
+    mainTok.start = "main";
+    mainTok.length = 4;
+    mainTok.line = 0;
+    uint8_t mainIndex = resolveVariable(compiler, mainTok);
+    if (mainIndex != UINT8_MAX) {
+        writeOp(compiler, OP_CALL);
+        writeOp(compiler, mainIndex);
+        writeOp(compiler, 0); // no arguments
+        writeOp(compiler, OP_POP); // discard return value
+    }
+
     writeOp(compiler, OP_RETURN);
     
     if (vm.trace) {

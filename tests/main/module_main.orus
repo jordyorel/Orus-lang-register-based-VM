@@ -1,0 +1,5 @@
+// Test calling functions from main and importing modules
+fn main() {
+    import "tests/modules/hello_module.orus"
+    print("Main ran")
+}
