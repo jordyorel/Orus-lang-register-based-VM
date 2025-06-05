@@ -5,7 +5,7 @@
 #include "../../include/memory.h"
 
 ASTNode* createLiteralNode(Value value) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_LITERAL;
     node->left = NULL;
     node->right = NULL;
@@ -22,7 +22,7 @@ ASTNode* createLiteralNode(Value value) {
 }
 
 ASTNode* createBinaryNode(Token operator, ASTNode* left, ASTNode* right) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_BINARY;
     node->left = left;
     node->right = right;
@@ -36,7 +36,7 @@ ASTNode* createBinaryNode(Token operator, ASTNode* left, ASTNode* right) {
 }
 
 ASTNode* createUnaryNode(Token operator, ASTNode * operand) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_UNARY;
     node->left = operand;
     node->right = NULL;
@@ -50,7 +50,7 @@ ASTNode* createUnaryNode(Token operator, ASTNode * operand) {
 }
 
 ASTNode* createVariableNode(Token name, uint8_t index) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_VARIABLE;
     node->left = NULL;
     node->right = NULL;
@@ -62,7 +62,7 @@ ASTNode* createVariableNode(Token name, uint8_t index) {
 }
 
 ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_LET;
     node->left = NULL;
     node->right = NULL;
@@ -76,7 +76,7 @@ ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer) {
 }
 
 ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_PRINT;
     node->left = NULL;
     node->right = NULL;
@@ -89,7 +89,7 @@ ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount) {
 }
 
 ASTNode* createIfNode(ASTNode* condition, ASTNode* thenBranch, ASTNode* elifConditions, ASTNode* elifBranches, ASTNode* elseBranch) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_IF;
     node->left = NULL;
     node->right = NULL;
@@ -104,7 +104,7 @@ ASTNode* createIfNode(ASTNode* condition, ASTNode* thenBranch, ASTNode* elifCond
 }
 
 ASTNode* createBlockNode(ASTNode* statements) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_BLOCK;
     node->left = NULL;
     node->right = NULL;
@@ -115,7 +115,7 @@ ASTNode* createBlockNode(ASTNode* statements) {
 }
 
 ASTNode* createAssignmentNode(Token name, ASTNode* value) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_ASSIGNMENT;
     node->left = NULL;
     node->right = NULL;
@@ -129,7 +129,7 @@ ASTNode* createAssignmentNode(Token name, ASTNode* value) {
 }
 
 ASTNode* createWhileNode(ASTNode* condition, ASTNode* body) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_WHILE;
     node->left = NULL;
     node->right = NULL;
@@ -141,7 +141,7 @@ ASTNode* createWhileNode(ASTNode* condition, ASTNode* body) {
 }
 
 ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr, ASTNode* stepExpr, ASTNode* body) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_FOR;
     node->left = NULL;
     node->right = NULL;
@@ -157,7 +157,7 @@ ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr,
 }
 
 ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType, ASTNode* body) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_FUNCTION;
     node->left = NULL;
     node->right = NULL;
@@ -169,12 +169,13 @@ ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType, A
     node->data.function.index = 0; // Will be resolved during compilation
     node->data.function.isMethod = false;
     node->data.function.implType = NULL;
+    node->data.function.mangledName = NULL;
     node->valueType = NULL;
     return node;
 }
 
 ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount, Type* staticType) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_CALL;
     node->left = NULL;
     node->right = NULL;
@@ -185,12 +186,13 @@ ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount, Type* stat
     node->data.call.convertArgs = NULL; // Will be allocated during type checking
     node->data.call.argCount = argCount;
     node->data.call.staticType = staticType;
+    node->data.call.mangledName = NULL;
     node->valueType = NULL;
     return node;
 }
 
 ASTNode* createReturnNode(ASTNode* value) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_RETURN;
     node->left = NULL;
     node->right = NULL;
@@ -201,7 +203,7 @@ ASTNode* createReturnNode(ASTNode* value) {
 }
 
 ASTNode* createArrayNode(ASTNode* elements, int elementCount) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_ARRAY;
     node->left = NULL;
     node->right = NULL;
@@ -213,7 +215,7 @@ ASTNode* createArrayNode(ASTNode* elements, int elementCount) {
 }
 
 ASTNode* createArraySetNode(ASTNode* array, ASTNode* index, ASTNode* value) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_ARRAY_SET;
     node->left = value;
     node->right = array;
@@ -224,7 +226,7 @@ ASTNode* createArraySetNode(ASTNode* array, ASTNode* index, ASTNode* value) {
 }
 
 ASTNode* createStructLiteralNode(Token name, ASTNode* values, int fieldCount) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_STRUCT_LITERAL;
     node->left = NULL;
     node->right = NULL;
@@ -237,7 +239,7 @@ ASTNode* createStructLiteralNode(Token name, ASTNode* values, int fieldCount) {
 }
 
 ASTNode* createFieldAccessNode(ASTNode* object, Token name) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_FIELD;
     node->left = object;
     node->right = NULL;
@@ -249,7 +251,7 @@ ASTNode* createFieldAccessNode(ASTNode* object, Token name) {
 }
 
 ASTNode* createFieldSetNode(ASTNode* object, Token name, ASTNode* value) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_FIELD_SET;
     node->left = value;
     node->right = object;
@@ -261,7 +263,7 @@ ASTNode* createFieldSetNode(ASTNode* object, Token name, ASTNode* value) {
 }
 
 ASTNode* createBreakNode() {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_BREAK;
     node->left = NULL;
     node->right = NULL;
@@ -271,7 +273,7 @@ ASTNode* createBreakNode() {
 }
 
 ASTNode* createContinueNode() {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    ASTNode* node = allocateASTNode();
     node->type = AST_CONTINUE;
     node->left = NULL;
     node->right = NULL;
@@ -281,61 +283,7 @@ ASTNode* createContinueNode() {
 }
 
 void freeASTNode(ASTNode* node) {
-    if (node == NULL) return;
-    if (node->left) freeASTNode(node->left);
-    if (node->right) freeASTNode(node->right);
-    if (node->type == AST_LET && node->data.let.initializer)
-        freeASTNode(node->data.let.initializer);
-    if (node->type == AST_PRINT) {
-        if (node->data.print.format) freeASTNode(node->data.print.format);
-        if (node->data.print.arguments) freeASTNode(node->data.print.arguments);
-    }
-    // Assignment nodes store their value in the left child, which is already freed above
-    if (node->type == AST_IF) {
-        if (node->data.ifStmt.condition) freeASTNode(node->data.ifStmt.condition);
-        if (node->data.ifStmt.thenBranch) freeASTNode(node->data.ifStmt.thenBranch);
-        if (node->data.ifStmt.elifConditions) freeASTNode(node->data.ifStmt.elifConditions);
-        if (node->data.ifStmt.elifBranches) freeASTNode(node->data.ifStmt.elifBranches);
-        if (node->data.ifStmt.elseBranch) freeASTNode(node->data.ifStmt.elseBranch);
-    }
-    if (node->type == AST_BLOCK && node->data.block.statements)
-        freeASTNode(node->data.block.statements);
-    if (node->type == AST_WHILE) {
-        if (node->data.whileStmt.condition) freeASTNode(node->data.whileStmt.condition);
-        if (node->data.whileStmt.body) freeASTNode(node->data.whileStmt.body);
-    }
-    if (node->type == AST_FOR) {
-        if (node->data.forStmt.startExpr) freeASTNode(node->data.forStmt.startExpr);
-        if (node->data.forStmt.endExpr) freeASTNode(node->data.forStmt.endExpr);
-        if (node->data.forStmt.stepExpr) freeASTNode(node->data.forStmt.stepExpr);
-        if (node->data.forStmt.body) freeASTNode(node->data.forStmt.body);
-    }
-    if (node->type == AST_FUNCTION) {
-        if (node->data.function.parameters) freeASTNode(node->data.function.parameters);
-        if (node->data.function.body) freeASTNode(node->data.function.body);
-    }
-    if (node->type == AST_ARRAY) {
-        if (node->data.array.elements) freeASTNode(node->data.array.elements);
-    }
-    if (node->type == AST_STRUCT_LITERAL) {
-        if (node->data.structLiteral.values)
-            freeASTNode(node->data.structLiteral.values);
-    }
-    if (node->type == AST_ARRAY_SET) {
-        if (node->data.arraySet.index) freeASTNode(node->data.arraySet.index);
-    }
-    if (node->type == AST_FIELD || node->type == AST_FIELD_SET) {
-        // children already freed via left/right
-    }
-    if (node->type == AST_CALL) {
-        if (node->data.call.arguments) freeASTNode(node->data.call.arguments);
-        if (node->data.call.convertArgs) free(node->data.call.convertArgs);
-    }
-    if (node->type == AST_RETURN) {
-        if (node->data.returnStmt.value) freeASTNode(node->data.returnStmt.value);
-    }
-    if (node->next) freeASTNode(node->next);
-    free(node);
+    (void)node; // GC-managed
 }
 
 // void freeASTNode(ASTNode* node) {

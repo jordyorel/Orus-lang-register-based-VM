@@ -15,7 +15,7 @@ typedef struct {
 } Function;
 
 typedef struct VarName {
-    char* name;
+    ObjString* name;
     int length;
 } VarName;
 
@@ -34,6 +34,8 @@ typedef struct {
     Type* globalTypes[UINT8_COUNT];
     VarName variableNames[UINT8_COUNT];
     uint16_t variableCount;
+
+    struct ASTNode* astRoot;
 
     Function functions[UINT8_COUNT];
     uint16_t functionCount;

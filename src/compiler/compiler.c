@@ -599,19 +599,23 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             Symbol* existing = findSymbol(&compiler->symbols, tempName);
             uint8_t index;
             if (existing && existing->scope == compiler->scopeDepth && node->data.function.implType) {
-                const char* structName = node->data.function.implType->info.structure.name;
+                const char* structName = node->data.function.implType->info.structure.name->chars;
                 size_t structLen = strlen(structName);
                 size_t funcLen = node->data.function.name.length;
-                char* full = (char*)malloc(structLen + 1 + funcLen + 1);
-                memcpy(full, structName, structLen);
-                full[structLen] = '_';
-                memcpy(full + structLen + 1, node->data.function.name.start, funcLen);
-                full[structLen + 1 + funcLen] = '\0';
+                char* temp = (char*)malloc(structLen + 1 + funcLen + 1);
+                memcpy(temp, structName, structLen);
+                temp[structLen] = '_';
+                memcpy(temp + structLen + 1, node->data.function.name.start, funcLen);
+                temp[structLen + 1 + funcLen] = '\0';
+
+                ObjString* fullStr = allocateString(temp, structLen + 1 + funcLen);
+                free(temp);
 
                 Token newTok = node->data.function.name;
-                newTok.start = full;
+                newTok.start = fullStr->chars;
                 newTok.length = structLen + 1 + funcLen;
                 node->data.function.name = newTok;
+                node->data.function.mangledName = fullStr;
                 index = defineVariable(compiler, newTok, node->data.function.returnType);
             } else {
                 index = defineVariable(compiler, node->data.function.name, node->data.function.returnType);
@@ -657,43 +661,45 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
             // If call specifies a static struct type, try mangled name first
             if (node->data.call.staticType != NULL) {
-                const char* structName = node->data.call.staticType->info.structure.name;
+                const char* structName = node->data.call.staticType->info.structure.name->chars;
                 size_t structLen = strlen(structName);
                 size_t nameLen = node->data.call.name.length;
-                char* full = (char*)malloc(structLen + 1 + nameLen + 1);
-                memcpy(full, structName, structLen);
-                full[structLen] = '_';
-                memcpy(full + structLen + 1, node->data.call.name.start, nameLen);
-                full[structLen + 1 + nameLen] = '\0';
-                Symbol* sym = findSymbol(&compiler->symbols, full);
+                char* temp = (char*)malloc(structLen + 1 + nameLen + 1);
+                memcpy(temp, structName, structLen);
+                temp[structLen] = '_';
+                memcpy(temp + structLen + 1, node->data.call.name.start, nameLen);
+                temp[structLen + 1 + nameLen] = '\0';
+                Symbol* sym = findSymbol(&compiler->symbols, temp);
                 if (sym) {
                     index = sym->index;
-                    node->data.call.name.start = full;
+                    ObjString* fullStr = allocateString(temp, structLen + 1 + nameLen);
+                    node->data.call.name.start = fullStr->chars;
                     node->data.call.name.length = structLen + 1 + nameLen;
-                } else if (index == UINT8_MAX) {
-                    free(full);
+                    node->data.call.mangledName = fullStr;
                 }
+                free(temp);
             } else if (index == UINT8_MAX && node->data.call.arguments != NULL) {
                 // If not found, try mangled method name based on first argument (instance method)
                 ASTNode* recv = node->data.call.arguments;
                 Type* recvType = recv->valueType;
                 if (recvType && recvType->kind == TYPE_STRUCT) {
-                    const char* structName = recvType->info.structure.name;
+                    const char* structName = recvType->info.structure.name->chars;
                     size_t structLen = strlen(structName);
                     size_t nameLen = node->data.call.name.length;
-                    char* full = (char*)malloc(structLen + 1 + nameLen + 1);
-                    memcpy(full, structName, structLen);
-                    full[structLen] = '_';
-                    memcpy(full + structLen + 1, node->data.call.name.start, nameLen);
-                    full[structLen + 1 + nameLen] = '\0';
-                    Symbol* sym = findSymbol(&compiler->symbols, full);
+                    char* temp = (char*)malloc(structLen + 1 + nameLen + 1);
+                    memcpy(temp, structName, structLen);
+                    temp[structLen] = '_';
+                    memcpy(temp + structLen + 1, node->data.call.name.start, nameLen);
+                    temp[structLen + 1 + nameLen] = '\0';
+                    Symbol* sym = findSymbol(&compiler->symbols, temp);
                     if (sym) {
                         index = sym->index;
-                        node->data.call.name.start = full;
+                        ObjString* fullStr = allocateString(temp, structLen + 1 + nameLen);
+                        node->data.call.name.start = fullStr->chars;
                         node->data.call.name.length = structLen + 1 + nameLen;
-                    } else {
-                        free(full);
+                        node->data.call.mangledName = fullStr;
                     }
+                    free(temp);
                 }
             }
 
@@ -788,10 +794,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             }
             int index = -1;
             for (int i = 0; i < structType->info.structure.fieldCount; i++) {
-                if (strncmp(structType->info.structure.fields[i].name,
+                if (strncmp(structType->info.structure.fields[i].name->chars,
                             node->data.field.fieldName.start,
                             node->data.field.fieldName.length) == 0 &&
-                    structType->info.structure.fields[i].name
+                    structType->info.structure.fields[i].name->chars
                         [node->data.field.fieldName.length] == '\0') {
                     index = i;
                     break;
@@ -816,10 +822,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             }
             int index = -1;
             for (int i = 0; i < structType->info.structure.fieldCount; i++) {
-                if (strncmp(structType->info.structure.fields[i].name,
+                if (strncmp(structType->info.structure.fields[i].name->chars,
                             node->data.fieldSet.fieldName.start,
                             node->data.fieldSet.fieldName.length) == 0 &&
-                    structType->info.structure.fields[i].name
+                    structType->info.structure.fields[i].name->chars
                         [node->data.fieldSet.fieldName.length] == '\0') {
                     index = i;
                     break;
@@ -1386,6 +1392,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             // Generate code for elif branches if any
             ASTNode* elifCondition = node->data.ifStmt.elifConditions;
             ASTNode* elifBranch = node->data.ifStmt.elifBranches;
+            ObjIntArray* elifJumpsObj = NULL;
             int* elifJumps = NULL;
             int elifCount = 0;
 
@@ -1398,7 +1405,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
             // Allocate memory for elif jumps
             if (elifCount > 0) {
-                elifJumps = (int*)malloc(sizeof(int) * elifCount);
+                elifJumpsObj = allocateIntArray(elifCount);
+                elifJumps = elifJumpsObj->elements;
             }
 
             // Generate code for each elif branch
@@ -1407,7 +1415,6 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 // Generate code for the elif condition
                 generateCode(compiler, elifCondition);
                 if (compiler->hadError) {
-                    if (elifJumps) free(elifJumps);
                     return;
                 }
 
@@ -1424,7 +1431,6 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 // Generate code for the elif branch
                 generateCode(compiler, elifBranch);
                 if (compiler->hadError) {
-                    if (elifJumps) free(elifJumps);
                     return;
                 }
 
@@ -1450,7 +1456,6 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             if (node->data.ifStmt.elseBranch) {
                 generateCode(compiler, node->data.ifStmt.elseBranch);
                 if (compiler->hadError) {
-                    if (elifJumps) free(elifJumps);
                     return;
                 }
             }
@@ -1467,8 +1472,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 compiler->chunk->code[elifJump + 2] = (end - elifJump - 3) & 0xFF;
             }
 
-            // Free the elif jumps array
-            if (elifJumps) free(elifJumps);
+            (void)elifJumpsObj; // GC-managed
 
             break;
         }
@@ -1843,19 +1847,19 @@ uint8_t addLocal(Compiler* compiler, Token name, Type* type) {
         return 0;
     }
     uint8_t index = vm.variableCount++;
-    char* name_copy = copyString(name.start, name.length);
-    if (name_copy == NULL) {
+    ObjString* nameObj = allocateString(name.start, name.length);
+    if (nameObj == NULL) {
         error(compiler, "Memory allocation failed for variable name.");
         return 0;
     }
-    vm.variableNames[index].name = name_copy;
+    vm.variableNames[index].name = nameObj;
 
     vm.variableNames[index].length = name.length;
     variableTypes[index] = type;  // Should be getPrimitiveType result
     vm.globalTypes[index] = type;
     vm.globals[index] = NIL_VAL;
 
-    addSymbol(&compiler->symbols, name_copy, type, compiler->scopeDepth, index);
+    addSymbol(&compiler->symbols, nameObj->chars, type, compiler->scopeDepth, index);
 
     return index;
 }
@@ -1871,35 +1875,41 @@ uint8_t resolveVariable(Compiler* compiler, Token name) {
 
 // Add a break jump to the array
 static void addBreakJump(Compiler* compiler, int jumpPos) {
-    // Grow the array if needed
-    if (compiler->breakJumpCount >= compiler->breakJumpCapacity) {
+    if (compiler->breakJumps == NULL) {
+        compiler->breakJumpCapacity = 8;
+        compiler->breakJumps = allocateIntArray(compiler->breakJumpCapacity);
+    } else if (compiler->breakJumpCount >= compiler->breakJumpCapacity) {
         int oldCapacity = compiler->breakJumpCapacity;
-        compiler->breakJumpCapacity = oldCapacity == 0 ? 8 : oldCapacity * 2;
-        compiler->breakJumps = realloc(compiler->breakJumps,
-                                     sizeof(int) * compiler->breakJumpCapacity);
+        compiler->breakJumpCapacity = oldCapacity * 2;
+        compiler->breakJumps->elements =
+            realloc(compiler->breakJumps->elements,
+                    sizeof(int) * compiler->breakJumpCapacity);
+        compiler->breakJumps->length = compiler->breakJumpCapacity;
     }
-
-    // Add the jump position to the array
-    compiler->breakJumps[compiler->breakJumpCount++] = jumpPos;
+    compiler->breakJumps->elements[compiler->breakJumpCount++] = jumpPos;
 }
 
 // Add a continue jump to the array
 static void addContinueJump(Compiler* compiler, int jumpPos) {
-    if (compiler->continueJumpCount >= compiler->continueJumpCapacity) {
+    if (compiler->continueJumps == NULL) {
+        compiler->continueJumpCapacity = 8;
+        compiler->continueJumps = allocateIntArray(compiler->continueJumpCapacity);
+    } else if (compiler->continueJumpCount >= compiler->continueJumpCapacity) {
         int oldCapacity = compiler->continueJumpCapacity;
-        compiler->continueJumpCapacity = oldCapacity == 0 ? 8 : oldCapacity * 2;
-        compiler->continueJumps =
-            realloc(compiler->continueJumps,
+        compiler->continueJumpCapacity = oldCapacity * 2;
+        compiler->continueJumps->elements =
+            realloc(compiler->continueJumps->elements,
                     sizeof(int) * compiler->continueJumpCapacity);
+        compiler->continueJumps->length = compiler->continueJumpCapacity;
     }
-    compiler->continueJumps[compiler->continueJumpCount++] = jumpPos;
+    compiler->continueJumps->elements[compiler->continueJumpCount++] = jumpPos;
 }
 
 // Patch all continue jumps to jump to the loopContinue position
 static void patchContinueJumps(Compiler* compiler) {
     int continueDest = compiler->loopContinue;
     for (int i = 0; i < compiler->continueJumpCount; i++) {
-        int jumpPos = compiler->continueJumps[i];
+        int jumpPos = compiler->continueJumps->elements[i];
         int offset = continueDest - jumpPos - 3;
         compiler->chunk->code[jumpPos + 1] = (offset >> 8) & 0xFF;
         compiler->chunk->code[jumpPos + 2] = offset & 0xFF;
@@ -1913,7 +1923,7 @@ static void patchBreakJumps(Compiler* compiler) {
 
     // Patch all break jumps to jump to the current position
     for (int i = 0; i < compiler->breakJumpCount; i++) {
-        int jumpPos = compiler->breakJumps[i];
+        int jumpPos = compiler->breakJumps->elements[i];
         int offset = breakDest - jumpPos - 3;
         compiler->chunk->code[jumpPos + 1] = (offset >> 8) & 0xFF;
         compiler->chunk->code[jumpPos + 2] = offset & 0xFF;
@@ -1948,21 +1958,14 @@ void initCompiler(Compiler* compiler, Chunk* chunk) {
 
 // Free resources used by the compiler
 static void freeCompiler(Compiler* compiler) {
-    // Free the break jumps array
-    if (compiler->breakJumps != NULL) {
-        free(compiler->breakJumps);
-        compiler->breakJumps = NULL;
-        compiler->breakJumpCount = 0;
-        compiler->breakJumpCapacity = 0;
-    }
+    // Allow GC to reclaim jump arrays
+    compiler->breakJumps = NULL;
+    compiler->breakJumpCount = 0;
+    compiler->breakJumpCapacity = 0;
 
-    // Free the continue jumps array
-    if (compiler->continueJumps != NULL) {
-        free(compiler->continueJumps);
-        compiler->continueJumps = NULL;
-        compiler->continueJumpCount = 0;
-        compiler->continueJumpCapacity = 0;
-    }
+    compiler->continueJumps = NULL;
+    compiler->continueJumpCount = 0;
+    compiler->continueJumpCapacity = 0;
 
     freeSymbolTable(&compiler->symbols);
 }

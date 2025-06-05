@@ -63,8 +63,17 @@ ObjString* allocateString(const char* str, int length);
 
 // Allocate a new array object with the given length
 ObjArray* allocateArray(int length);
+ObjIntArray* allocateIntArray(int length);
 
-// GC interface (no-op for now)
+// Allocate AST and Type objects
+struct ASTNode* allocateASTNode();
+struct Type* allocateType();
+
+// Mark helpers for GC
+void markObject(Obj* object);
+void markValue(Value value);
+
+// Garbage collector interface
 void collectGarbage();
 void freeObjects();
 

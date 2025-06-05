@@ -35,20 +35,20 @@ Type* getPrimitiveType(TypeKind kind) {
 }
 
 Type* createPrimitiveType(TypeKind kind) {
-    Type* type = (Type*)malloc(sizeof(Type));
+    Type* type = allocateType();
     type->kind = kind;
     return type;
 }
 
 Type* createArrayType(Type* elementType) {
-    Type* type = (Type*)malloc(sizeof(Type));
+    Type* type = allocateType();
     type->kind = TYPE_ARRAY;
     type->info.array.elementType = elementType;
     return type;
 }
 
 Type* createFunctionType(Type* returnType, Type** paramTypes, int paramCount) {
-    Type* type = (Type*)malloc(sizeof(Type));
+    Type* type = allocateType();
     type->kind = TYPE_FUNCTION;
     type->info.function.returnType = returnType;
     type->info.function.paramTypes = paramTypes;
@@ -56,9 +56,9 @@ Type* createFunctionType(Type* returnType, Type** paramTypes, int paramCount) {
     return type;
 }
 
-Type* createStructType(const char* name, FieldInfo* fields, int fieldCount) {
+Type* createStructType(ObjString* name, FieldInfo* fields, int fieldCount) {
     if (structTypeCount >= UINT8_COUNT) return NULL;
-    Type* type = (Type*)malloc(sizeof(Type));
+    Type* type = allocateType();
     type->kind = TYPE_STRUCT;
     type->info.structure.name = name;
     type->info.structure.fields = fields;
@@ -69,7 +69,7 @@ Type* createStructType(const char* name, FieldInfo* fields, int fieldCount) {
 
 Type* findStructType(const char* name) {
     for (int i = 0; i < structTypeCount; i++) {
-        if (strcmp(structTypes[i]->info.structure.name, name) == 0) {
+        if (strcmp(structTypes[i]->info.structure.name->chars, name) == 0) {
             return structTypes[i];
         }
     }
@@ -77,46 +77,16 @@ Type* findStructType(const char* name) {
 }
 
 void freeType(Type* type) {
-    if (type == NULL) return;
-    
-    switch (type->kind) {
-        case TYPE_ARRAY:
-            freeType(type->info.array.elementType);
-            break;
-        case TYPE_FUNCTION:
-            freeType(type->info.function.returnType);
-            for (int i = 0; i < type->info.function.paramCount; i++) {
-                freeType(type->info.function.paramTypes[i]);
-            }
-            free(type->info.function.paramTypes);
-            break;
-        case TYPE_STRUCT:
-            for (int i = 0; i < type->info.structure.fieldCount; i++) {
-                free((char*)type->info.structure.fields[i].name);
-                /* Field types are shared; do not free to avoid double free */
-            }
-            free(type->info.structure.fields);
-            break;
-        default:
-            break;
-    }
-    
-    free(type);
+    (void)type; // GC-managed
 }
 
 void freeTypeSystem(void) {
     if (!typeSystemInitialized) return;
     for (int i = 0; i < TYPE_COUNT; i++) {
-        if (primitiveTypes[i] != NULL) {
-            freeType(primitiveTypes[i]);
-            primitiveTypes[i] = NULL;
-        }
+        primitiveTypes[i] = NULL;
     }
     for (int i = 0; i < structTypeCount; i++) {
-        if (structTypes[i] != NULL) {
-            freeType(structTypes[i]);
-            structTypes[i] = NULL;
-        }
+        structTypes[i] = NULL;
     }
     structTypeCount = 0;
     typeSystemInitialized = false;
@@ -158,7 +128,8 @@ bool typesEqual(Type* a, Type* b) {
         }
 
         case TYPE_STRUCT:
-            return strcmp(a->info.structure.name, b->info.structure.name) == 0;
+            return strcmp(a->info.structure.name->chars,
+                          b->info.structure.name->chars) == 0;
 
         default:
             return false;
@@ -177,5 +148,14 @@ const char* getTypeName(TypeKind kind) {
         case TYPE_FUNCTION: return "function";
         case TYPE_STRUCT: return "struct";
         default: return "unknown";
+    }
+}
+
+void markTypeRoots() {
+    for (int i = 0; i < TYPE_COUNT; i++) {
+        if (primitiveTypes[i]) markObject((Obj*)primitiveTypes[i]);
+    }
+    for (int i = 0; i < structTypeCount; i++) {
+        if (structTypes[i]) markObject((Obj*)structTypes[i]);
     }
 }

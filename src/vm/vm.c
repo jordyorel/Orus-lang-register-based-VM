@@ -24,6 +24,7 @@ void initVM() {
     vm.frameCount = 0;
     vm.objects = NULL;
     vm.bytesAllocated = 0;
+    vm.astRoot = NULL;
     for (int i = 0; i < UINT8_COUNT; i++) {
         vm.variableNames[i].name = NULL;
         vm.variableNames[i].length = 0;
@@ -35,13 +36,12 @@ void initVM() {
 }
 
 void freeVM() {
+    
     for (int i = 0; i < vm.variableCount; i++) {
-        if (vm.variableNames[i].name != NULL) {
-            free(vm.variableNames[i].name);
-            vm.variableNames[i].name = NULL;
-        }
+        vm.variableNames[i].name = NULL;
         vm.globalTypes[i] = NULL;  // No freeing here
     }
+    vm.astRoot = NULL;
     freeObjects();
 }
 
@@ -391,7 +391,8 @@ static InterpretResult run() {
                 // Enhanced debug information for variables
                 if (index < vm.variableCount && vm.variableNames[index].name != NULL) {
                     char varName[256] = {0};
-                    strncpy(varName, vm.variableNames[index].name, vm.variableNames[index].length);
+                    strncpy(varName, vm.variableNames[index].name->chars,
+                            vm.variableNames[index].length);
                     varName[vm.variableNames[index].length] = '\0';
                     
                     // Special tracking for the loop test
@@ -864,7 +865,9 @@ InterpretResult runChunk(Chunk* chunk) {
         disassembleChunk(chunk, "chunk to execute");
     #endif
 
-    return run();
+    InterpretResult result = run();
+    vm.chunk = NULL;
+    return result;
 }
 
 void push(Value value) {
@@ -886,8 +889,10 @@ InterpretResult interpret(const char* source) {
     Compiler compiler;
     initCompiler(&compiler, &chunk);
 
+    vm.astRoot = ast;
+
     bool success = compile(ast, &compiler);
-    freeASTNode(ast);  // Free AST only once after compilation
+    vm.astRoot = NULL;
 
     if (!success) {
         freeChunk(&chunk);
