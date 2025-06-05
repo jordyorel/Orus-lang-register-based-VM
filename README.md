@@ -16,7 +16,7 @@ include:
 - String concatenation with `+` and a `print` function supporting simple
   interpolation using `{}` placeholders.
 
-The repository contains the source code for the interpreter and a collection of sample programs used as tests.
+The repository contains the source code for the interpreter and a collection of sample programs used as tests. For a quick tour of the language syntax see [`docs/LANGUAGE.md`](docs/LANGUAGE.md).
 
 ## Building
 
@@ -59,5 +59,6 @@ Each subdirectory of `tests/` represents a category and contains example program
 - `src/` – C source for the interpreter.
 - `tests/` – Example programs and regression tests.
 - `Makefile` – Build rules producing the `orus` executable.
+- `docs/LANGUAGE.md` – Overview of the language syntax.
 
 Enjoy experimenting with Orus!
