@@ -8,6 +8,7 @@
 
 #define STACK_MAX 256
 #define FRAMES_MAX 64
+#define TRY_MAX 64
 
 typedef struct {
     int start;          // Bytecode offset of the function body
@@ -24,6 +25,12 @@ typedef struct {
     int stackOffset;         // Where this frame's stack starts
     uint8_t functionIndex;   // Index of the function being called
 } CallFrame;
+
+typedef struct {
+    uint8_t* handler;
+    uint8_t varIndex;
+    int stackDepth;
+} TryFrame;
 
 typedef struct {
     Chunk* chunk;
@@ -43,6 +50,11 @@ typedef struct {
     // Call frames for function calls
     CallFrame frames[FRAMES_MAX];
     int frameCount;
+
+    TryFrame tryFrames[TRY_MAX];
+    int tryFrameCount;
+
+    Value lastError;
 
     // Garbage collector state
     Obj* objects;

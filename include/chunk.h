@@ -75,6 +75,10 @@ typedef enum {
     OP_BREAK,        // Break out of a loop
     OP_CONTINUE,     // Continue to the next iteration of a loop
 
+    // Exception handling
+    OP_SETUP_EXCEPT,
+    OP_POP_EXCEPT,
+
     // Function opcodes
     OP_CALL,
     OP_RETURN,

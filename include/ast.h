@@ -25,6 +25,7 @@ typedef enum {
     AST_WHILE,
     AST_FOR,
     AST_FUNCTION,
+    AST_TRY,
     AST_RETURN,
     AST_BREAK,
     AST_CONTINUE
@@ -115,6 +116,13 @@ typedef struct {
     struct ASTNode* value;    // Return value expression
 } ReturnData;
 
+typedef struct {
+    struct ASTNode* tryBlock;
+    Token errorName;
+    struct ASTNode* catchBlock;
+    uint8_t errorIndex;
+} TryData;
+
 typedef struct ASTNode {
     Obj obj;
     ASTNodeType type;
@@ -145,6 +153,7 @@ typedef struct ASTNode {
         FieldAccessData fieldSet;
         FunctionData function;
         CallData call;
+        TryData tryStmt;
         ReturnData returnStmt;
     } data;
     Type* valueType;
@@ -163,6 +172,7 @@ ASTNode* createWhileNode(ASTNode* condition, ASTNode* body);
 ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr, ASTNode* stepExpr, ASTNode* body);
 ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType, ASTNode* body);
 ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount, Type* staticType);
+ASTNode* createTryNode(ASTNode* tryBlock, Token errorName, ASTNode* catchBlock);
 ASTNode* createReturnNode(ASTNode* value);
 ASTNode* createArrayNode(ASTNode* elements, int elementCount);
 ASTNode* createArraySetNode(ASTNode* array, ASTNode* index, ASTNode* value);

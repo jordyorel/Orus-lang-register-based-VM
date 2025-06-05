@@ -282,6 +282,20 @@ ASTNode* createContinueNode() {
     return node;
 }
 
+ASTNode* createTryNode(ASTNode* tryBlock, Token errorName, ASTNode* catchBlock) {
+    ASTNode* node = allocateASTNode();
+    node->type = AST_TRY;
+    node->left = tryBlock;
+    node->right = catchBlock;
+    node->next = NULL;
+    node->data.tryStmt.tryBlock = tryBlock;
+    node->data.tryStmt.errorName = errorName;
+    node->data.tryStmt.catchBlock = catchBlock;
+    node->data.tryStmt.errorIndex = 0;
+    node->valueType = NULL;
+    return node;
+}
+
 void freeASTNode(ASTNode* node) {
     (void)node; // GC-managed
 }

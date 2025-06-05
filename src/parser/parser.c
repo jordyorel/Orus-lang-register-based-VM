@@ -32,6 +32,7 @@ static Type* parseType(Parser* parser);
 static void expression(Parser* parser, ASTNode** ast);
 static void statement(Parser* parser, ASTNode** ast);
 static void ifStatement(Parser* parser, ASTNode** ast);
+static void tryStatement(Parser* parser, ASTNode** ast);
 static void functionDeclaration(Parser* parser, ASTNode** ast);
 static void returnStatement(Parser* parser, ASTNode** ast);
 static void block(Parser* parser, ASTNode** ast);
@@ -520,6 +521,20 @@ static void forStatement(Parser* parser, ASTNode** ast) {
     *ast = createForNode(iteratorName, startExpr, endExpr, stepExpr, body);
 }
 
+static void tryStatement(Parser* parser, ASTNode** ast) {
+    ASTNode* tryBlock;
+    block(parser, &tryBlock);
+
+    consume(parser, TOKEN_CATCH, "Expect 'catch' after try block.");
+    consume(parser, TOKEN_IDENTIFIER, "Expect identifier after 'catch'.");
+    Token errName = parser->previous;
+
+    ASTNode* catchBlock;
+    block(parser, &catchBlock);
+
+    *ast = createTryNode(tryBlock, errName, catchBlock);
+}
+
 static void functionDeclaration(Parser* parser, ASTNode** ast) {
     // Parse function name
     consume(parser, TOKEN_IDENTIFIER, "Expect function name.");
@@ -783,6 +798,9 @@ static void statement(Parser* parser, ASTNode** ast) {
 
     } else if (match(parser, TOKEN_FOR)) {
         forStatement(parser, ast);
+
+    } else if (match(parser, TOKEN_TRY)) {
+        tryStatement(parser, ast);
 
     } else if (match(parser, TOKEN_STRUCT)) {
         structDeclaration(parser, ast);

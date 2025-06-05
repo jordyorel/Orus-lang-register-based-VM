@@ -23,6 +23,8 @@ void initVM() {
     vm.variableCount = 0;
     vm.functionCount = 0;
     vm.frameCount = 0;
+    vm.tryFrameCount = 0;
+    vm.lastError = NIL_VAL;
     vm.objects = NULL;
     vm.bytesAllocated = 0;
     vm.astRoot = NULL;
@@ -44,14 +46,19 @@ void freeVM() {
     }
     vm.astRoot = NULL;
     freeObjects();
+    vm.tryFrameCount = 0;
+    vm.lastError = NIL_VAL;
 }
 
 static void runtimeError(const char* format, ...) {
+    char buffer[256];
     va_list args;
     va_start(args, format);
-    vfprintf(stderr, format, args);
+    vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
-    fputs("\n", stderr);
+    fprintf(stderr, "%s\n", buffer);
+    ObjString* msg = allocateString(buffer, (int)strlen(buffer));
+    vm.lastError = STRING_VAL(msg);
 }
 
 static bool appendStringDynamic(const char* src, char** buffer,
@@ -550,6 +557,23 @@ static InterpretResult run() {
                 runtimeError("Unexpected OP_CONTINUE.");
                 return INTERPRET_RUNTIME_ERROR;
             }
+            case OP_SETUP_EXCEPT: {
+                uint16_t offset = READ_SHORT();
+                uint8_t varIndex = READ_BYTE();
+                if (vm.tryFrameCount >= TRY_MAX) {
+                    runtimeError("Too many nested try blocks.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                vm.tryFrames[vm.tryFrameCount].handler = vm.ip + offset;
+                vm.tryFrames[vm.tryFrameCount].varIndex = varIndex;
+                vm.tryFrames[vm.tryFrameCount].stackDepth = (int)(vm.stackTop - vm.stack);
+                vm.tryFrameCount++;
+                break;
+            }
+            case OP_POP_EXCEPT: {
+                if (vm.tryFrameCount > 0) vm.tryFrameCount--;
+                break;
+            }
             case OP_NIL: {
                 vmPush(&vm, NIL_VAL);
 
@@ -916,7 +940,17 @@ static InterpretResult run() {
                 runtimeError("Unknown opcode: %d", instruction);
                 return INTERPRET_RUNTIME_ERROR;
         }
-        if (result != INTERPRET_OK) return result;
+        if (result != INTERPRET_OK) {
+            if (result == INTERPRET_RUNTIME_ERROR && vm.tryFrameCount > 0) {
+                TryFrame frame = vm.tryFrames[--vm.tryFrameCount];
+                vm.stackTop = vm.stack + frame.stackDepth;
+                vm.globals[frame.varIndex] = vm.lastError;
+                vm.ip = frame.handler;
+                result = INTERPRET_OK;
+                continue;
+            }
+            return result;
+        }
     }
 
     #undef READ_BYTE
