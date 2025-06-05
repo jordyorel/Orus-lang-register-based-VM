@@ -678,41 +678,33 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 node->valueType = getPrimitiveType(TYPE_I32);
                 break;
-            } else if (tokenEquals(node->data.call.name, "push")) {
-                if (node->data.call.argCount != 2) {
-                    error(compiler, "push() takes array and value.");
-                    return;
-                }
+            } else if (tokenEquals(node->data.call.name, "push") &&
+                       node->data.call.argCount == 2) {
                 ASTNode* arr = node->data.call.arguments;
                 ASTNode* val = arr->next;
                 typeCheckNode(compiler, arr);
                 typeCheckNode(compiler, val);
                 if (compiler->hadError) return;
-                if (!arr->valueType || arr->valueType->kind != TYPE_ARRAY) {
-                    error(compiler, "push() first argument must be array.");
-                    return;
+                if (arr->valueType && arr->valueType->kind == TYPE_ARRAY) {
+                    Type* elemType = arr->valueType->info.array.elementType;
+                    if (!typesEqual(elemType, val->valueType)) {
+                        error(compiler, "push() value type mismatch.");
+                        return;
+                    }
+                    node->valueType = arr->valueType;
+                    break;
                 }
-                Type* elemType = arr->valueType->info.array.elementType;
-                if (!typesEqual(elemType, val->valueType)) {
-                    error(compiler, "push() value type mismatch.");
-                    return;
-                }
-                node->valueType = arr->valueType;
-                break;
-            } else if (tokenEquals(node->data.call.name, "pop")) {
-                if (node->data.call.argCount != 1) {
-                    error(compiler, "pop() takes array argument.");
-                    return;
-                }
+                // Not an array: likely a method call, fall through
+            } else if (tokenEquals(node->data.call.name, "pop") &&
+                       node->data.call.argCount == 1) {
                 ASTNode* arr = node->data.call.arguments;
                 typeCheckNode(compiler, arr);
                 if (compiler->hadError) return;
-                if (!arr->valueType || arr->valueType->kind != TYPE_ARRAY) {
-                    error(compiler, "pop() expects array.");
-                    return;
+                if (arr->valueType && arr->valueType->kind == TYPE_ARRAY) {
+                    node->valueType = arr->valueType->info.array.elementType;
+                    break;
                 }
-                node->valueType = arr->valueType->info.array.elementType;
-                break;
+                // Not an array: treat as normal call
             }
 
             uint8_t index = resolveVariable(compiler, node->data.call.name);

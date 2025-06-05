@@ -15,8 +15,9 @@ include:
 - Arithmetic, comparison and logical (`and`/`or`) operators.
 - String concatenation with `+` and a `print` function supporting simple
   interpolation using `{}` placeholders.
+- Generic dynamic array macros for parameterizing data structures by type.
 
-The repository contains the source code for the interpreter and a collection of sample programs used as tests. For a quick tour of the language syntax see [`docs/LANGUAGE.md`](docs/LANGUAGE.md).
+The repository contains the source code for the interpreter and a collection of sample programs used as tests. For a quick tour of the language syntax see [`docs/LANGUAGE.md`](docs/LANGUAGE.md). Additional notes on the generic array helper are available in [`docs/GENERICS.md`](docs/GENERICS.md).
 
 ## Building
 
@@ -63,5 +64,6 @@ Each subdirectory of `tests/` represents a category and contains example program
 - `tests/` – Example programs and regression tests.
 - `Makefile` – Build rules producing the `orus` executable.
 - `docs/LANGUAGE.md` – Overview of the language syntax.
+- `docs/GENERICS.md` – Notes on the macro-based generic array helper.
 
 Enjoy experimenting with Orus!
