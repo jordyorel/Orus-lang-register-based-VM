@@ -9,6 +9,7 @@ typedef struct {
     Type* type;
     bool isDefined;
     int scope;
+    uint8_t index;
 } Symbol;
 
 typedef struct {
@@ -19,7 +20,8 @@ typedef struct {
 
 void initSymbolTable(SymbolTable* table);
 void freeSymbolTable(SymbolTable* table);
-bool addSymbol(SymbolTable* table, const char* name, Type* type, int scope);
+bool addSymbol(SymbolTable* table, const char* name, Type* type, int scope, uint8_t index);
 Symbol* findSymbol(SymbolTable* table, const char* name);
+void removeSymbolsFromScope(SymbolTable* table, int scope);
 
 #endif

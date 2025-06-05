@@ -12,9 +12,7 @@ void initSymbolTable(SymbolTable* table) {
 }
 
 void freeSymbolTable(SymbolTable* table) {
-    for (int i = 0; i < table->count; i++) {
-        freeType(table->symbols[i].type);
-    }
+    // Types are managed elsewhere; do not free them here
     free(table->symbols);
     table->symbols = NULL;
     table->count = 0;
@@ -29,7 +27,7 @@ static void growCapacity(SymbolTable* table) {
     table->capacity = newCapacity;
 }
 
-bool addSymbol(SymbolTable* table, const char* name, Type* type, int scope) {
+bool addSymbol(SymbolTable* table, const char* name, Type* type, int scope, uint8_t index) {
     // Check if symbol already exists in current scope
     for (int i = 0; i < table->count; i++) {
         if (table->symbols[i].scope == scope && 
@@ -46,6 +44,7 @@ bool addSymbol(SymbolTable* table, const char* name, Type* type, int scope) {
     table->symbols[table->count].type = type;
     table->symbols[table->count].isDefined = true;
     table->symbols[table->count].scope = scope;
+    table->symbols[table->count].index = index;
     table->count++;
     
     return true;
@@ -59,4 +58,13 @@ Symbol* findSymbol(SymbolTable* table, const char* name) {
         }
     }
     return NULL;
+}
+
+void removeSymbolsFromScope(SymbolTable* table, int scope) {
+    int i = table->count - 1;
+    while (i >= 0) {
+        if (table->symbols[i].scope < scope) break;
+        table->count--;
+        i--;
+    }
 }
