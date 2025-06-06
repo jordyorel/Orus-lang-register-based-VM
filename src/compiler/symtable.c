@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "../../include/symtable.h"
 #include "../../include/memory.h"
 
@@ -27,10 +28,9 @@ static void growCapacity(SymbolTable* table) {
     table->capacity = newCapacity;
 }
 
-bool addSymbol(SymbolTable* table, const char* name, Type* type, int scope, uint8_t index) {
-    // Check if symbol already exists in current scope
+bool addSymbol(SymbolTable* table, const char* name, Token token, Type* type, int scope, uint8_t index) {
     for (int i = 0; i < table->count; i++) {
-        if (table->symbols[i].scope == scope && 
+        if (table->symbols[i].scope == scope && table->symbols[i].active &&
             strcmp(table->symbols[i].name, name) == 0) {
             return false;  // Symbol already defined in this scope
         }
@@ -45,13 +45,24 @@ bool addSymbol(SymbolTable* table, const char* name, Type* type, int scope, uint
     table->symbols[table->count].isDefined = true;
     table->symbols[table->count].scope = scope;
     table->symbols[table->count].index = index;
+    table->symbols[table->count].active = true;
+    table->symbols[table->count].token = token;
     table->count++;
     
     return true;
 }
 
 Symbol* findSymbol(SymbolTable* table, const char* name) {
-    // Search from most recent scope to oldest
+    for (int i = table->count - 1; i >= 0; i--) {
+        if (!table->symbols[i].active) continue;
+        if (strcmp(table->symbols[i].name, name) == 0) {
+            return &table->symbols[i];
+        }
+    }
+    return NULL;
+}
+
+Symbol* findAnySymbol(SymbolTable* table, const char* name) {
     for (int i = table->count - 1; i >= 0; i--) {
         if (strcmp(table->symbols[i].name, name) == 0) {
             return &table->symbols[i];
@@ -61,10 +72,8 @@ Symbol* findSymbol(SymbolTable* table, const char* name) {
 }
 
 void removeSymbolsFromScope(SymbolTable* table, int scope) {
-    int i = table->count - 1;
-    while (i >= 0) {
+    for (int i = table->count - 1; i >= 0; i--) {
         if (table->symbols[i].scope < scope) break;
-        table->count--;
-        i--;
+        table->symbols[i].active = false;
     }
 }

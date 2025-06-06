@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "type.h"
+#include "scanner.h"
 
 typedef struct {
     const char* name;
@@ -10,6 +11,8 @@ typedef struct {
     bool isDefined;
     int scope;
     uint8_t index;
+    bool active;
+    Token token;
 } Symbol;
 
 typedef struct {
@@ -20,8 +23,9 @@ typedef struct {
 
 void initSymbolTable(SymbolTable* table);
 void freeSymbolTable(SymbolTable* table);
-bool addSymbol(SymbolTable* table, const char* name, Type* type, int scope, uint8_t index);
+bool addSymbol(SymbolTable* table, const char* name, Token token, Type* type, int scope, uint8_t index);
 Symbol* findSymbol(SymbolTable* table, const char* name);
+Symbol* findAnySymbol(SymbolTable* table, const char* name);
 void removeSymbolsFromScope(SymbolTable* table, int scope);
 
 #endif
