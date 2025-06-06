@@ -1,0 +1,9 @@
+// Test empty and quoted strings
+fn main() {
+    let empty: string = ""
+    print(empty)
+    let quotes: string = "double and single quotes"
+    print(quotes)
+    let concat = "a" + "b" + "c" + "d" + "e"
+    print(concat)
+}

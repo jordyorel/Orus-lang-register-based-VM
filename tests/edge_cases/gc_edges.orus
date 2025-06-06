@@ -1,0 +1,9 @@
+// Stress garbage collector with many temporary arrays
+fn main() {
+    for i in 0..50 {
+        let arr: [i32; 5] = [1,2,3,4,5]
+        push(arr, i)
+        let _ = pop(arr)
+    }
+    print("done")
+}

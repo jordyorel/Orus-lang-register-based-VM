@@ -1,0 +1,13 @@
+// Nested try/catch blocks
+fn main() {
+    try {
+        try {
+            let a = 10 / 0
+            print(a)
+        } catch inner {
+            print("inner error: {}", inner)
+        }
+    } catch outer {
+        print("outer error: {}", outer)
+    }
+}
