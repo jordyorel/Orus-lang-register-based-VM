@@ -755,6 +755,30 @@ static InterpretResult run() {
                 }
                 break;
             }
+            case OP_SUBSTRING: {
+                Value lenVal = vmPop(&vm);
+                Value startVal = vmPop(&vm);
+                Value strVal = vmPop(&vm);
+
+                if (!IS_STRING(strVal) || !IS_I32(startVal) || !IS_I32(lenVal)) {
+                    runtimeError(ERROR_RUNTIME,
+                                 "substring() expects (string, i32, i32).");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                ObjString* str = AS_STRING(strVal);
+                int start = AS_I32(startVal);
+                int length = AS_I32(lenVal);
+
+                if (start < 0) start = 0;
+                if (start > str->length) start = str->length;
+                if (length < 0) length = 0;
+                if (start + length > str->length) length = str->length - start;
+
+                ObjString* result = allocateString(str->chars + start, length);
+                vmPush(&vm, STRING_VAL(result));
+                break;
+            }
             case OP_CALL: {
                 uint8_t globalIndex = READ_BYTE();
                 uint8_t argCount = READ_BYTE();

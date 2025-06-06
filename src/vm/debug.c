@@ -156,6 +156,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_ARRAY_POP", offset);
         case OP_LEN:
             return simpleInstruction("OP_LEN", offset);
+        case OP_SUBSTRING:
+            return simpleInstruction("OP_SUBSTRING", offset);
 
         case OP_CALL: {
             uint8_t functionIndex = chunk->code[offset + 1];

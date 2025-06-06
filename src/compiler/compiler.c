@@ -678,6 +678,32 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 node->valueType = getPrimitiveType(TYPE_I32);
                 break;
+            } else if (tokenEquals(node->data.call.name, "substring")) {
+                if (node->data.call.argCount != 3) {
+                    error(compiler, "substring() takes exactly three arguments.");
+                    return;
+                }
+                ASTNode* strArg = node->data.call.arguments;
+                ASTNode* startArg = strArg->next;
+                ASTNode* lenArg = startArg->next;
+                typeCheckNode(compiler, strArg);
+                typeCheckNode(compiler, startArg);
+                typeCheckNode(compiler, lenArg);
+                if (compiler->hadError) return;
+                if (!strArg->valueType || strArg->valueType->kind != TYPE_STRING) {
+                    error(compiler, "substring() first argument must be a string.");
+                    return;
+                }
+                if (!startArg->valueType || startArg->valueType->kind != TYPE_I32) {
+                    error(compiler, "substring() second argument must be i32.");
+                    return;
+                }
+                if (!lenArg->valueType || lenArg->valueType->kind != TYPE_I32) {
+                    error(compiler, "substring() third argument must be i32.");
+                    return;
+                }
+                node->valueType = getPrimitiveType(TYPE_STRING);
+                break;
             } else if (tokenEquals(node->data.call.name, "push") &&
                        node->data.call.argCount == 2) {
                 ASTNode* arr = node->data.call.arguments;
@@ -1690,6 +1716,12 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             if (tokenEquals(node->data.call.name, "len")) {
                 generateCode(compiler, node->data.call.arguments);
                 writeOp(compiler, OP_LEN);
+                break;
+            } else if (tokenEquals(node->data.call.name, "substring")) {
+                generateCode(compiler, node->data.call.arguments);            // string
+                generateCode(compiler, node->data.call.arguments->next);      // start
+                generateCode(compiler, node->data.call.arguments->next->next); // length
+                writeOp(compiler, OP_SUBSTRING);
                 break;
             } else if (tokenEquals(node->data.call.name, "push")) {
                 generateCode(compiler, node->data.call.arguments);            // array
