@@ -97,6 +97,7 @@ typedef enum {
     OP_ARRAY_PUSH,
     OP_ARRAY_POP,
     OP_LEN,
+    OP_SUBSTRING,
 } opCode;
 
 typedef struct {
