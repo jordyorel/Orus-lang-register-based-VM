@@ -49,6 +49,7 @@ typedef struct {
 typedef struct {
     const char* start;
     const char* current;
+    const char* source;  // Pointer to the beginning of the entire source
     int line;
 } Scanner;
 
@@ -59,6 +60,10 @@ typedef struct {
 
 void init_scanner(const char* source);
 Token scan_token();
+
+// Expose the global scanner instance so other modules (like the parser)
+// can access the raw source when producing error messages.
+extern Scanner scanner;
 
 
 #endif

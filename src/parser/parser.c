@@ -40,6 +40,30 @@ static void block(Parser* parser, ASTNode** ast);
 static void consumeStatementEnd(Parser* parser);
 static void synchronize(Parser* parser);
 
+static void printErrorContext(Token* token) {
+    // Determine the start of the line containing the token
+    const char* lineStart = token->start;
+    while (lineStart > scanner.source && lineStart[-1] != '\n') {
+        lineStart--;
+    }
+
+    // Determine the end of the line
+    const char* lineEnd = token->start;
+    while (*lineEnd != '\n' && *lineEnd != '\0') {
+        lineEnd++;
+    }
+
+    int lineLength = (int)(lineEnd - lineStart);
+    fprintf(stderr, "%.*s\n", lineLength, lineStart);
+
+    // Print caret under the offending token
+    int column = (int)(token->start - lineStart);
+    for (int i = 0; i < column; i++) fputc(' ', stderr);
+    int caretLen = token->length > 0 ? token->length : 1;
+    for (int i = 0; i < caretLen; i++) fputc('^', stderr);
+    fputc('\n', stderr);
+}
+
 static void errorAt(Parser* parser, Token* token, const char* message) {
     if (parser->panicMode) return;
     parser->panicMode = true;
@@ -49,6 +73,7 @@ static void errorAt(Parser* parser, Token* token, const char* message) {
     else if (token->type != TOKEN_ERROR)
         fprintf(stderr, " at '%.*s'", token->length, token->start);
     fprintf(stderr, ": %s\n", message);
+    printErrorContext(token);
     parser->hadError = true;
 }
 
