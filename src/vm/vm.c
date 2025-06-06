@@ -195,7 +195,7 @@ static InterpretResult run() {
     #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
     
     // Define and reset loop safety counter at the start of each VM run
-    static int absolute_loop_count = 0;
+    static int absolute_loop_count = 0; // Tracks iterations across OP_LOOP
     absolute_loop_count = 0;
 
     InterpretResult result = INTERPRET_OK;
@@ -617,10 +617,11 @@ static InterpretResult run() {
                 // Use the global loop counter defined at the start of run()
                 absolute_loop_count++;
                 
-                // If the loop has iterated more than 1000 times, it's likely an infinite loop
-                if (absolute_loop_count > 200) {
-                    fprintf(stderr, "ERROR: Loop iteration limit exceeded (200). "
-                           "Forced termination to prevent infinite loop.\n");
+                // If the loop has iterated too many times, it's likely an infinite loop
+                if (absolute_loop_count > LOOP_ITERATION_LIMIT) {
+                    fprintf(stderr, "ERROR: Loop iteration limit exceeded (%d). "
+                           "Forced termination to prevent infinite loop.\n",
+                           LOOP_ITERATION_LIMIT);
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 vm.ip -= offset;

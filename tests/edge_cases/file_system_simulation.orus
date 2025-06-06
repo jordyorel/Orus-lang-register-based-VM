@@ -1,0 +1,25 @@
+// Simulate simple file system using structs and arrays
+struct File { name: string }
+struct Directory {
+    files: [File; 2],
+    count: i32
+}
+
+impl Directory {
+    fn new() -> Directory {
+        let f1: File = File{name: "a.txt"}
+        let f2: File = File{name: "b.txt"}
+        return Directory{files: [f1, f2], count: 2}
+    }
+
+    fn list(self) {
+        for i in 0..self.count {
+            print(self.files[i].name)
+        }
+    }
+}
+
+fn main() {
+    let dir: Directory = Directory.new()
+    dir.list()
+}

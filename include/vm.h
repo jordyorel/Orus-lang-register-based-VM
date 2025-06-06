@@ -7,8 +7,9 @@
 #include "value.h"
 #include <stdbool.h>
 
-#define STACK_MAX 256
-#define FRAMES_MAX 64
+#define STACK_MAX 2048
+#define FRAMES_MAX 256
+#define LOOP_ITERATION_LIMIT 10000
 #define TRY_MAX 64
 
 typedef struct {

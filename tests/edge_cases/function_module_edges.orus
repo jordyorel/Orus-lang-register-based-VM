@@ -1,0 +1,10 @@
+import "tests/edge_cases/module_a.orus"
+import "tests/edge_cases/module_b.orus"
+
+fn local_fn(a: i32, b: i32) -> i32 {
+    return a + b
+}
+
+fn main() {
+    print(local_fn(1, 2))
+}

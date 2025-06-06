@@ -1,0 +1,24 @@
+// Exercise various language features together
+struct Pair { a: i32, b: i32 }
+
+impl Pair {
+    fn sum(self) -> i32 {
+        return self.a + self.b
+    }
+}
+
+fn compute(n: i32) -> i32 {
+    let total: i32 = 0
+    for i in 0..n {
+        total = total + i
+    }
+    return total
+}
+
+fn main() {
+    let p: Pair = Pair{a: 2, b: 3}
+    print(p.sum())
+    print(compute(5))
+    let arr: [i32; 2] = [7,8]
+    print(arr[1])
+}

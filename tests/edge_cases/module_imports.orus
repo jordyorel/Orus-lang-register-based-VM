@@ -1,0 +1,6 @@
+import "tests/edge_cases/module_a.orus"
+import "tests/edge_cases/module_b.orus"
+
+fn main() {
+    // Modules are imported for side effects only
+}

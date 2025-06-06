@@ -1,0 +1,8 @@
+// Mixed type arithmetic and string conversions
+fn main() {
+    let i: i32 = 5
+    let f: f64 = 2.5
+    print(i + f)
+    let text: string = "number:" + i
+    print(text)
+}

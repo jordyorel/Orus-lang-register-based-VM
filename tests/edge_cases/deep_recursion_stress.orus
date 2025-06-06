@@ -1,4 +1,4 @@
-// Deep recursion to approach stack limits
+// Recursion depth stress test nearing call stack limits
 fn recurse(n: i32) {
     if n <= 0 {
         return
@@ -7,6 +7,6 @@ fn recurse(n: i32) {
 }
 
 fn main() {
-    recurse(20)
+    recurse(70)
     print("done")
 }
