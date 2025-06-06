@@ -79,6 +79,7 @@ InterpretResult interpret(const char* source);
 InterpretResult runChunk(Chunk* chunk);  // Execute a pre-compiled chunk
 void push(Value value);
 Value pop();
+void vmPrintStackTrace(void);
 
 extern Type* variableTypes[UINT8_COUNT];
 

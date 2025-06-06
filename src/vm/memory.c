@@ -65,10 +65,11 @@ ObjIntArray* allocateIntArray(int length) {
     return array;
 }
 
-ObjError* allocateError(ErrorType type, const char* message) {
+ObjError* allocateError(ErrorType type, const char* message, SrcLocation location) {
     ObjError* err = (ObjError*)allocateObject(sizeof(ObjError), OBJ_ERROR);
     err->type = type;
     err->message = allocateString(message, (int)strlen(message));
+    err->location = location;
     return err;
 }
 
