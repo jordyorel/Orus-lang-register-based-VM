@@ -60,6 +60,7 @@ void init_keyword_table() {
 void init_scanner(const char* source) {
     scanner.start = source;
     scanner.current = source;
+    scanner.source = source; // store the beginning of the entire source
     scanner.line = 1;
     init_keyword_table();
 }
