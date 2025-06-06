@@ -120,6 +120,11 @@ void emitUndefinedVarError(Compiler* compiler,
     diagnostic.primarySpan.length = useToken->length;
     diagnostic.primarySpan.filePath = compiler->filePath;
 
+    // Buffer for the help text and notes
+    char helpBuffer[256];
+    char* note = NULL;
+    
+    // Secondary span for definition location if available
     if (defToken) {
         diagnostic.secondarySpanCount = 1;
         diagnostic.secondarySpans = malloc(sizeof(SourceSpan));
@@ -129,6 +134,28 @@ void emitUndefinedVarError(Compiler* compiler,
         diagnostic.secondarySpans[0].column = (int)(defToken->start - lineStart) + 1;
         diagnostic.secondarySpans[0].length = defToken->length;
         diagnostic.secondarySpans[0].filePath = compiler->filePath;
+        
+        // Provide context-specific help based on the variable's location
+        // Get an estimate of scope relationship by checking line numbers
+        // This is approximate since we don't store scope depth in tokens directly
+        if (defToken->line < useToken->line) {
+            // Variable defined before use, likely an inner scope issue
+            snprintf(helpBuffer, sizeof(helpBuffer),
+                "variable `%s` was defined on line %d but is no longer in scope", 
+                name, defToken->line);
+            note = "consider moving the variable declaration to an outer scope if you need to use it here";
+        } else {
+            // Variable defined after use, likely a declaration order issue
+            snprintf(helpBuffer, sizeof(helpBuffer),
+                "variable `%s` is defined on line %d but used before its declaration", 
+                name, defToken->line);
+            note = "in Orus, variables must be declared before they are used";
+        }
+    } else {
+        // No definition found, the variable doesn't exist at all
+        snprintf(helpBuffer, sizeof(helpBuffer),
+             "could not find a declaration of `%s` in this scope or any parent scope", name);
+        note = "check for typos or declare the variable before using it";
     }
 
     char msgBuffer[128];
@@ -136,18 +163,16 @@ void emitUndefinedVarError(Compiler* compiler,
              "cannot find variable `%s` in this scope", name);
     diagnostic.text.message = msgBuffer;
 
-    char helpBuffer[128];
-    snprintf(helpBuffer, sizeof(helpBuffer),
-             "variable `%s` is defined in an inner scope and is not accessible here", name);
-    diagnostic.text.help = helpBuffer;
-
-    char* note = "variables defined in inner scopes are not accessible in outer scopes";
+    diagnostic.text.help = strdup(helpBuffer);
+    
     diagnostic.text.notes = &note;
     diagnostic.text.noteCount = 1;
 
     emitDiagnostic(&diagnostic);
 
+    // Clean up allocated memory
     if (diagnostic.secondarySpans) free(diagnostic.secondarySpans);
+    if (diagnostic.text.help) free(diagnostic.text.help);
     compiler->hadError = true;
 }
 
@@ -175,13 +200,53 @@ void emitTypeMismatchError(Compiler* compiler,
              "expected type `%s`, found `%s`", expectedType, actualType);
     diagnostic.text.message = msgBuffer;
 
-    char helpBuffer[128];
-    snprintf(helpBuffer, sizeof(helpBuffer),
-             "try using a compatible type or adding an explicit conversion");
-    diagnostic.text.help = helpBuffer;
+    char helpBuffer[256];
+    char* note = NULL;
+    
+    // Provide specific help based on the mismatched types
+    if (strstr(expectedType, "i32") && strstr(actualType, "f64")) {
+        snprintf(helpBuffer, sizeof(helpBuffer),
+                "try using `as i32` to convert the float to an integer");
+        note = "floating-point to integer conversions may lose precision";
+    } 
+    else if (strstr(expectedType, "f64") && (strstr(actualType, "i32") || strstr(actualType, "u32"))) {
+        snprintf(helpBuffer, sizeof(helpBuffer),
+                "try using `as f64` to convert the integer to a float");
+    }
+    else if (strstr(expectedType, "bool")) {
+        snprintf(helpBuffer, sizeof(helpBuffer),
+                "Orus requires explicit boolean conditions - try a comparison like `!= 0` or `== true`");
+    }
+    else if (strstr(actualType, "bool")) {
+        snprintf(helpBuffer, sizeof(helpBuffer),
+                "booleans cannot be implicitly converted - use an if statement or conditional instead");
+    }
+    else if (strstr(expectedType, "array") || strstr(actualType, "array")) {
+        snprintf(helpBuffer, sizeof(helpBuffer),
+                "arrays must have matching element types and dimensions");
+        note = "consider creating a new array with the correct type";
+    }
+    else if (strstr(expectedType, "string") || strstr(actualType, "string")) {
+        snprintf(helpBuffer, sizeof(helpBuffer),
+                "strings cannot be implicitly converted to or from other types");
+        note = "use string interpolation for formatting values as strings";
+    }
+    else {
+        snprintf(helpBuffer, sizeof(helpBuffer),
+                "try using a compatible type or adding an explicit conversion with `as %s`", 
+                expectedType);
+    }
+
+    diagnostic.text.help = strdup(helpBuffer);
+    
+    if (note) {
+        diagnostic.text.notes = &note;
+        diagnostic.text.noteCount = 1;
+    }
 
     emitDiagnostic(&diagnostic);
-
+    
+    if (diagnostic.text.help) free(diagnostic.text.help);
     compiler->hadError = true;
 }
 
@@ -206,11 +271,29 @@ void emitRedeclarationError(Compiler* compiler, Token* token, const char* name) 
              "variable `%s` already declared in this scope", name);
     diagnostic.text.message = msgBuffer;
 
-    char* help = "rename the variable or remove the previous declaration";
-    diagnostic.text.help = help;
+    // Generate a suggested alternative name
+    char suggestedName[128];
+    if (strlen(name) < 120) {
+        // Create a suggestion by adding a number or 'new' prefix
+        snprintf(suggestedName, sizeof(suggestedName), "%s2", name);
+        
+        char helpBuffer[256];
+        snprintf(helpBuffer, sizeof(helpBuffer),
+                "consider using a different name like `%s` or shadowing it in a new scope block",
+                suggestedName);
+        diagnostic.text.help = strdup(helpBuffer);
+        
+        char* note = "in Orus, each variable must have a unique name within its scope";
+        diagnostic.text.notes = &note;
+        diagnostic.text.noteCount = 1;
+    } else {
+        // Fall back to general advice for unusually long names
+        diagnostic.text.help = strdup("rename the variable or remove the previous declaration");
+    }
 
     emitDiagnostic(&diagnostic);
-
+    
+    if (diagnostic.text.help) free(diagnostic.text.help);
     compiler->hadError = true;
 }
 
