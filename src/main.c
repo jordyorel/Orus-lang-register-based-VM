@@ -63,7 +63,7 @@ static void repl() {
         Chunk chunk;
         initChunk(&chunk);
         Compiler compiler;
-        initCompiler(&compiler, &chunk);
+        initCompiler(&compiler, &chunk, "<repl>", buffer);
         vm.astRoot = ast;
         if (!compile(ast, &compiler, false)) {
             printf("Compilation failed.\n");
@@ -112,7 +112,7 @@ static void runFile(const char* path) {
     Chunk chunk;
     initChunk(&chunk);
     Compiler compiler;
-    initCompiler(&compiler, &chunk);
+    initCompiler(&compiler, &chunk, path, source);
     vm.astRoot = ast;
     if (!compile(ast, &compiler, true)) {
         fprintf(stderr, "Compilation failed for \"%s\".\n", path);

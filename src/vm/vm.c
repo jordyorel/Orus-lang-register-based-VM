@@ -179,7 +179,7 @@ static InterpretResult interpretModule(const char* path) {
     Chunk chunk;
     initChunk(&chunk);
     Compiler compiler;
-    initCompiler(&compiler, &chunk);
+    initCompiler(&compiler, &chunk, "<module>", source);
 
     Chunk* prevChunk = vm.chunk;
     uint8_t* prevIp = vm.ip;
@@ -1161,7 +1161,7 @@ InterpretResult interpret(const char* source) {
     Chunk chunk;
     initChunk(&chunk);
     Compiler compiler;
-    initCompiler(&compiler, &chunk);
+    initCompiler(&compiler, &chunk, "<exec>", source);
 
     vm.astRoot = ast;
 
