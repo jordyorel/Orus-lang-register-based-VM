@@ -939,6 +939,7 @@ ParseRule rules[] = {
     [TOKEN_STRING] = {parseString, NULL, PREC_NONE},
     [TOKEN_TRUE] = {parseBoolean, NULL, PREC_NONE},
     [TOKEN_FALSE] = {parseBoolean, NULL, PREC_NONE},
+    [TOKEN_NOT] = {parseUnary, NULL, PREC_UNARY},
     // Logical operators
     [TOKEN_AND] = {NULL, parseLogical, PREC_AND},
     [TOKEN_OR] = {NULL, parseLogical, PREC_OR},

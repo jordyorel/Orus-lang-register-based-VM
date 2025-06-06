@@ -131,6 +131,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_AND", offset);
         case OP_OR:
             return simpleInstruction("OP_OR", offset);
+        case OP_NOT:
+            return simpleInstruction("OP_NOT", offset);
             
         case OP_POP:
             return simpleInstruction("OP_POP", offset);

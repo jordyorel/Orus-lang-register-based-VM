@@ -33,14 +33,14 @@ void init_keyword_table() {
     }
 
     const char* keywords[] = {"and", "break", "continue", "else", "elif", "false", "for",
-                              "fn",     "if",    "nil",  "or",    "print",
+                              "fn",     "if",    "nil",  "or", "not", "print",
                               "return", "true",  "let",
                               "while",  "try",   "catch", "i32",   "u32",  "f64",   "bool", "in",
                               "struct", "impl", "import",
                               NULL};
     TokenType types[] = {
         TOKEN_AND, TOKEN_BREAK, TOKEN_CONTINUE, TOKEN_ELSE, TOKEN_ELIF, TOKEN_FALSE, TOKEN_FOR, TOKEN_FN,
-        TOKEN_IF, TOKEN_NIL, TOKEN_OR, TOKEN_PRINT, TOKEN_RETURN,
+        TOKEN_IF, TOKEN_NIL, TOKEN_OR, TOKEN_NOT, TOKEN_PRINT, TOKEN_RETURN,
         TOKEN_TRUE, TOKEN_LET, TOKEN_WHILE, TOKEN_TRY, TOKEN_CATCH,
         TOKEN_INT, TOKEN_U32, TOKEN_F64, TOKEN_BOOL, TOKEN_IN,
         TOKEN_STRUCT, TOKEN_IMPL, TOKEN_IMPORT,
@@ -336,8 +336,10 @@ Token scan_token() {
         case '%': return make_token(TOKEN_MODULO);
         case '*': return make_token(TOKEN_STAR);
         case '!':
-            return make_token(
-                match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
+            if (match('=')) {
+                return make_token(TOKEN_BANG_EQUAL);
+            }
+            return error_token("Unexpected character.");
         case '=':
             return make_token(
                 match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);

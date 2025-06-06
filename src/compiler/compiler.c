@@ -263,6 +263,14 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     node->valueType = operandType;
                     break;
 
+                case TOKEN_NOT:
+                    if (operandType->kind != TYPE_BOOL) {
+                        error(compiler, "Unary not operand must be a boolean.");
+                        return;
+                    }
+                    node->valueType = getPrimitiveType(TYPE_BOOL);
+                    break;
+
                 default:
                     error(compiler, "Unsupported unary operator.");
                     return;
@@ -1333,6 +1341,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                                   "Negation not supported for this type.");
                             return;
                     }
+                    break;
+                case TOKEN_NOT:
+                    writeOp(compiler, OP_NOT);
                     break;
                 default:
                     error(compiler, "Unsupported unary operator.");

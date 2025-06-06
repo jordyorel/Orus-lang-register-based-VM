@@ -66,6 +66,7 @@ typedef enum {
     // Logical operators
     OP_AND,
     OP_OR,
+    OP_NOT,
 
     // Control flow opcodes
     OP_JUMP,
