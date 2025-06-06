@@ -2187,7 +2187,8 @@ static void patchBreakJumps(Compiler* compiler) {
     compiler->breakJumpCount = 0;
 }
 
-void initCompiler(Compiler* compiler, Chunk* chunk) {
+void initCompiler(Compiler* compiler, Chunk* chunk,
+                  const char* filePath, const char* sourceCode) {
     compiler->loopStart = -1;
     compiler->loopEnd = -1;
     compiler->loopContinue = -1;
@@ -2208,6 +2209,31 @@ void initCompiler(Compiler* compiler, Chunk* chunk) {
     compiler->chunk = chunk;
     compiler->hadError = false;
     compiler->panicMode = false;
+
+    compiler->filePath = filePath;
+    compiler->sourceCode = sourceCode;
+
+    // Count lines in sourceCode and record start pointers for each line
+    if (sourceCode) {
+        int lines = 1;
+        const char* p = sourceCode;
+        while (*p) {
+            if (*p == '\n') lines++;
+            p++;
+        }
+        compiler->lineCount = lines;
+        compiler->lineStarts = malloc(sizeof(const char*) * lines);
+        compiler->lineStarts[0] = sourceCode;
+        p = sourceCode;
+        int line = 1;
+        while (*p && line < lines) {
+            if (*p == '\n') compiler->lineStarts[line++] = p + 1;
+            p++;
+        }
+    } else {
+        compiler->lineStarts = NULL;
+        compiler->lineCount = 0;
+    }
 }
 
 // Free resources used by the compiler
@@ -2222,6 +2248,11 @@ static void freeCompiler(Compiler* compiler) {
     compiler->continueJumpCapacity = 0;
 
     freeSymbolTable(&compiler->symbols);
+
+    if (compiler->lineStarts) {
+        free((void*)compiler->lineStarts);
+        compiler->lineStarts = NULL;
+    }
 }
 
 bool compile(ASTNode* ast, Compiler* compiler, bool requireMain) {
