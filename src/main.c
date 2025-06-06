@@ -12,6 +12,12 @@
 #include "../include/error.h"
 #include "../include/version.h"
 
+static void printError(ObjError* err) {
+    fprintf(stderr, "%s:%d:%d: %s\n", err->location.file, err->location.line,
+            err->location.column, err->message->chars);
+    vmPrintStackTrace();
+}
+
 extern VM vm;
 
 static void repl() {
@@ -72,11 +78,11 @@ static void repl() {
         if (result == INTERPRET_COMPILE_ERROR) {
             printf("Compile error.\n");
         } else if (result == INTERPRET_RUNTIME_ERROR) {
-            printf("Runtime error: ");
             if (IS_ERROR(vm.lastError)) {
-                printf("%s", AS_ERROR(vm.lastError)->message->chars);
+                printError(AS_ERROR(vm.lastError));
+            } else {
+                printf("Runtime error.\n");
             }
-            printf("\n");
         } else if (!isPrintStmt && vm.stackTop > vm.stack) {
             // Print the result of the expression if there's a value on the stack
             // and it's not a print statement (which already outputs its value)
@@ -121,7 +127,7 @@ static void runFile(const char* path) {
     free(source);
     if (result == INTERPRET_RUNTIME_ERROR) {
         if (IS_ERROR(vm.lastError)) {
-            fprintf(stderr, "Runtime error: %s\n", AS_ERROR(vm.lastError)->message->chars);
+            printError(AS_ERROR(vm.lastError));
         }
         exit(70);
     }

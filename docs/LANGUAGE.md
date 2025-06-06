@@ -376,6 +376,10 @@ Error types:
 - Type errors (e.g., incompatible types in an operation)
 - I/O errors (e.g., failed file operations)
 
+Error messages include the location of the failure using the format
+`file:line:column: message`. When an error unwinds through function calls,
+a short stack trace is printed showing the call chain.
+
 ## Generics
 
 The Orus language itself doesn't have generic syntax, but the C interpreter implementation provides macro-based generic data structures for internal use:
