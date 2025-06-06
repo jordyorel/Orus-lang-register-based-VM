@@ -1,51 +1,73 @@
 struct StringAlgorithms {}
 
 impl StringAlgorithms {
-    // Check if a string is a palindrome - simplified version
+    // Check if a string is a palindrome
     fn is_palindrome(s: string) -> bool {
-        if s == "radar" {
-            return true
+        let left: i32 = 0
+        let right: i32 = len(s) - 1
+
+        while left < right {
+            if substring(s, left, 1) != substring(s, right, 1) {
+                return false
+            }
+            left = left + 1
+            right = right - 1
         }
-        if s == "hello" {
-            return false
-        }
-        return false
+
+        return true
     }
     
-    // Count occurrences of a character in a string - simplified
+    // Count occurrences of a character in a string
     fn count_char(s: string, c: string) -> i32 {
-        if s == "programming is fun and challenging" {
-            if c == "a" {
-                return 3
+        let count: i32 = 0
+        let i: i32 = 0
+        let n: i32 = len(s)
+
+        while i < n {
+            if substring(s, i, 1) == c {
+                count = count + 1
             }
-            if c == "n" {
-                return 3
-            }
-            if c == "z" {
-                return 0
-            }
+            i = i + 1
         }
-        return 0
+
+        return count
     }
     
     // Simple substring check - returns found (1) or not found (0)
     fn has_substring(text: string, pattern: string) -> i32 {
-        // Simplified - just returns 1 for "fun", 0 for "code"
-        if pattern == "fun" {
+        let text_len: i32 = len(text)
+        let pat_len: i32 = len(pattern)
+
+        if pat_len == 0 {
             return 1
         }
+
+        if pat_len > text_len {
+            return 0
+        }
+
+        let i: i32 = 0
+        while i <= text_len - pat_len {
+            if substring(text, i, pat_len) == pattern {
+                return 1
+            }
+            i = i + 1
+        }
+
         return 0
     }
     
-    // Reverse a string - simplified
+    // Reverse a string
     fn reverse_string(s: string) -> string {
-        if s == "hello" {
-            return "olleh"
+        let result: string = ""
+        let i: i32 = len(s) - 1
+
+        while i >= 0 {
+            result = result + substring(s, i, 1)
+            i = i - 1
         }
-        if s == "Orus Lang" {
-            return "gnaL surO"
-        }
-        return s
+
+        return result
     }
     
     // Convert string to uppercase - simplified version
