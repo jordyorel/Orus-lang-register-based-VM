@@ -1001,8 +1001,46 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
         case AST_BINARY: {
 
-            // Generate code for operands
+            // Generate code for the left operand
             generateCode(compiler, node->left);
+            if (compiler->hadError) return;
+
+            // Convert left operand to result type before generating the right
+            if (node->data.operation.convertLeft) {
+                Type* leftType = node->left->valueType;
+                TypeKind resultType = node->valueType->kind;
+
+                switch (resultType) {
+                    case TYPE_F64:
+                        if (leftType->kind == TYPE_I32)
+                            writeOp(compiler, OP_I32_TO_F64);
+                        else if (leftType->kind == TYPE_U32)
+                            writeOp(compiler, OP_U32_TO_F64);
+                        else {
+                            error(compiler,
+                                  "Unsupported left operand conversion for binary operation.");
+                            return;
+                        }
+                        break;
+                    case TYPE_STRING:
+                        switch (leftType->kind) {
+                            case TYPE_I32: writeOp(compiler, OP_I32_TO_STRING); break;
+                            case TYPE_U32: writeOp(compiler, OP_U32_TO_STRING); break;
+                            case TYPE_F64: writeOp(compiler, OP_F64_TO_STRING); break;
+                            case TYPE_BOOL: writeOp(compiler, OP_BOOL_TO_STRING); break;
+                            default:
+                                error(compiler,
+                                      "Unsupported left operand conversion for binary operation.");
+                                return;
+                        }
+                        break;
+                    default:
+                        error(compiler, "Unsupported result type for binary operation.");
+                        return;
+                }
+            }
+
+            // Generate code for the right operand
             generateCode(compiler, node->right);
             if (compiler->hadError) return;
 
@@ -1054,48 +1092,6 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 }
             }
 
-            // Convert left operand to result type if needed
-            if (node->data.operation.convertLeft) {
-
-                switch (resultType) {
-                    case TYPE_F64:
-                        if (leftType->kind == TYPE_I32)
-                            writeOp(compiler, OP_I32_TO_F64);
-                        else if (leftType->kind == TYPE_U32)
-                            writeOp(compiler, OP_U32_TO_F64);
-                        else {
-                            error(compiler,
-                                  "Unsupported left operand conversion for "
-                                  "binary operation.");
-                            return;
-                        }
-                        break;
-                    case TYPE_STRING:
-                        switch (leftType->kind) {
-                            case TYPE_I32:
-                                writeOp(compiler, OP_I32_TO_STRING);
-                                break;
-                            case TYPE_U32:
-                                writeOp(compiler, OP_U32_TO_STRING);
-                                break;
-                            case TYPE_F64:
-                                writeOp(compiler, OP_F64_TO_STRING);
-                                break;
-                            case TYPE_BOOL:
-                                writeOp(compiler, OP_BOOL_TO_STRING);
-                                break;
-                            default:
-                                error(compiler,
-                                      "Unsupported left operand conversion for binary operation.");
-                                return;
-                        }
-                        break;
-                    default:
-                        error(compiler,
-                              "Unsupported result type for binary operation.");
-                        return;
-                }
-            }
 
             // Emit the operator instruction
             TokenType operator= node->data.operation.operator.type;

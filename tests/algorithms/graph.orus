@@ -23,7 +23,7 @@ impl Graph {
     
     // Add an edge between vertices u and v
     fn add_edge(self, u: i32, v: i32) -> bool {
-        if u < 0 || u >= self.vertices || v < 0 || v >= self.vertices {
+        if u < 0 or u >= self.vertices or v < 0 or v >= self.vertices {
             return false  // Invalid vertex
         }
         
@@ -58,7 +58,7 @@ impl Graph {
     
     // Breadth-First Search traversal
     fn bfs(self, start: i32) -> string {
-        if start < 0 || start >= self.vertices {
+        if start < 0 or start >= self.vertices {
             return "Invalid starting vertex"
         }
         
@@ -135,7 +135,7 @@ impl Graph {
     }
     
     fn dfs(self, start: i32) -> string {
-        if start < 0 || start >= self.vertices {
+        if start < 0 or start >= self.vertices {
             return "Invalid starting vertex"
         }
         
