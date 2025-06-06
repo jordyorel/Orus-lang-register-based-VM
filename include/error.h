@@ -4,6 +4,8 @@
 #include "common.h"
 #include "value.h"
 #include "location.h"
+#include "compiler.h"
+#include "scanner.h"
 
 typedef enum {
     ERROR_RUNTIME,
@@ -59,5 +61,18 @@ typedef struct ObjError {
 } ObjError;
 
 ObjError* allocateError(ErrorType type, const char* message, SrcLocation location);
+
+// Diagnostic emission helpers used by the compiler
+void emitUndefinedVarError(Compiler* compiler,
+                           Token* useToken,
+                           Token* defToken,
+                           const char* name);
+void emitTypeMismatchError(Compiler* compiler,
+                           Token* token,
+                           const char* expectedType,
+                           const char* actualType);
+void emitRedeclarationError(Compiler* compiler,
+                            Token* token,
+                            const char* name);
 
 #endif // ORUS_ERROR_H

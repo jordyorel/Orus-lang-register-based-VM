@@ -185,3 +185,32 @@ void emitTypeMismatchError(Compiler* compiler,
     compiler->hadError = true;
 }
 
+// Emit an error when a variable is redeclared in the same scope.
+void emitRedeclarationError(Compiler* compiler, Token* token, const char* name) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+
+    Diagnostic diagnostic;
+    memset(&diagnostic, 0, sizeof(Diagnostic));
+
+    diagnostic.code = ERROR_SCOPE_ERROR;
+    diagnostic.primarySpan.line = token->line;
+    const char* lineStart = token->start;
+    while (lineStart > compiler->sourceCode && lineStart[-1] != '\n') lineStart--;
+    diagnostic.primarySpan.column = (int)(token->start - lineStart) + 1;
+    diagnostic.primarySpan.length = token->length;
+    diagnostic.primarySpan.filePath = compiler->filePath;
+
+    char msgBuffer[128];
+    snprintf(msgBuffer, sizeof(msgBuffer),
+             "variable `%s` already declared in this scope", name);
+    diagnostic.text.message = msgBuffer;
+
+    char* help = "rename the variable or remove the previous declaration";
+    diagnostic.text.help = help;
+
+    emitDiagnostic(&diagnostic);
+
+    compiler->hadError = true;
+}
+
