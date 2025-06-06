@@ -1,6 +1,7 @@
 #include "../../include/compiler.h"
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -43,6 +44,18 @@ static void error(Compiler* compiler, const char* message) {
     if (compiler->panicMode) return;
     compiler->panicMode = true;
     fprintf(stderr, "Compiler Error: %s\n", message);
+    compiler->hadError = true;
+}
+
+static void errorFmt(Compiler* compiler, const char* format, ...) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+    char buffer[256];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+    fprintf(stderr, "Compiler Error: %s\n", buffer);
     compiler->hadError = true;
 }
 
@@ -281,7 +294,11 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         case AST_VARIABLE: {
             uint8_t index = resolveVariable(compiler, node->data.variable.name);
             if (index == UINT8_MAX) {
-                error(compiler, "Undefined variable.");
+                char tempName[node->data.variable.name.length + 1];
+                memcpy(tempName, node->data.variable.name.start,
+                       node->data.variable.name.length);
+                tempName[node->data.variable.name.length] = '\0';
+                errorFmt(compiler, "Undefined variable '%s'.", tempName);
                 return;
             }
             node->data.variable.index = index;
@@ -408,7 +425,12 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             // Resolve the variable being assigned to
             uint8_t index = resolveVariable(compiler, node->data.variable.name);
             if (index == UINT8_MAX) {
-                error(compiler, "Cannot assign to undefined variable.");
+                char tempName[node->data.variable.name.length + 1];
+                memcpy(tempName, node->data.variable.name.start,
+                       node->data.variable.name.length);
+                tempName[node->data.variable.name.length] = '\0';
+                errorFmt(compiler, "Cannot assign to undefined variable '%s'.",
+                        tempName);
                 return;
             }
             node->data.variable.index = index;
