@@ -60,6 +60,7 @@ typedef struct {
 
 typedef struct {
     struct ASTNode* statements;  // Linked list of statements
+    bool scoped;                 // Whether this block introduces a new scope
 } BlockData;
 
 typedef struct {
@@ -173,7 +174,7 @@ ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer);
 ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount);
 ASTNode* createAssignmentNode(Token name, ASTNode* value);
 ASTNode* createIfNode(ASTNode* condition, ASTNode* thenBranch, ASTNode* elifConditions, ASTNode* elifBranches, ASTNode* elseBranch);
-ASTNode* createBlockNode(ASTNode* statements);
+ASTNode* createBlockNode(ASTNode* statements, bool scoped);
 ASTNode* createWhileNode(ASTNode* condition, ASTNode* body);
 ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr, ASTNode* stepExpr, ASTNode* body);
 ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType, ASTNode* body);

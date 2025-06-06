@@ -103,13 +103,14 @@ ASTNode* createIfNode(ASTNode* condition, ASTNode* thenBranch, ASTNode* elifCond
     return node;
 }
 
-ASTNode* createBlockNode(ASTNode* statements) {
+ASTNode* createBlockNode(ASTNode* statements, bool scoped) {
     ASTNode* node = allocateASTNode();
     node->type = AST_BLOCK;
     node->left = NULL;
     node->right = NULL;
     node->next = NULL;
     node->data.block.statements = statements;
+    node->data.block.scoped = scoped;
     node->valueType = NULL;
     return node;
 }
