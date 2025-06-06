@@ -93,6 +93,10 @@ static void repl() {
 
 static void runFile(const char* path) {
     char* source = readFile(path);
+    if (source == NULL) {
+        // readFile already prints an error message when it fails
+        exit(65);
+    }
     ASTNode* ast;
     if (!parse(source, &ast)) {
         fprintf(stderr, "Parsing failed for \"%s\".\n", path);
