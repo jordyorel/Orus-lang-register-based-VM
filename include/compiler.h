@@ -27,9 +27,16 @@ typedef struct {
     Chunk* chunk;
     bool hadError;
     bool panicMode;
+
+    // File and source information used for diagnostics
+    const char* filePath;
+    const char* sourceCode;
+    const char** lineStarts;
+    int lineCount;
 } Compiler;
 
-void initCompiler(Compiler* compiler, Chunk* chunk);
+void initCompiler(Compiler* compiler, Chunk* chunk,
+                  const char* filePath, const char* sourceCode);
 bool compile(ASTNode* ast, Compiler* compiler, bool requireMain);
 uint8_t resolveVariable(Compiler* compiler, Token name);       // Added
 uint8_t addLocal(Compiler* compiler, Token name, Type* type);  // Added
