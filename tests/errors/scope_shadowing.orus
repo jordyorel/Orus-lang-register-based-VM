@@ -8,5 +8,3 @@ fn main() {
     print(x)
     print(x_inner)
 }
-
-// Should produce a compiler error for x_inner
