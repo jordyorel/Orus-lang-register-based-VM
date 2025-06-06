@@ -10,6 +10,7 @@
 #include "../../include/value.h"
 #include "../../include/vm.h"
 #include "../../include/debug.h"
+#include "../../include/scanner.h"
 
 extern VM vm;
 
@@ -56,6 +57,45 @@ static void errorFmt(Compiler* compiler, const char* format, ...) {
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
     fprintf(stderr, "Compiler Error: %s\n", buffer);
+    compiler->hadError = true;
+}
+
+static void printTokenContext(Token* token) {
+    const char* lineStart = token->start;
+    while (lineStart > scanner.source && lineStart[-1] != '\n') {
+        lineStart--;
+    }
+    const char* lineEnd = token->start;
+    while (*lineEnd != '\n' && *lineEnd != '\0') {
+        lineEnd++;
+    }
+    int lineLength = (int)(lineEnd - lineStart);
+    fprintf(stderr, "%.*s\n", lineLength, lineStart);
+    int column = (int)(token->start - lineStart);
+    for (int i = 0; i < column; i++) fputc(' ', stderr);
+    int caretLen = token->length > 0 ? token->length : 1;
+    for (int i = 0; i < caretLen; i++) fputc('^', stderr);
+    fputc('\n', stderr);
+}
+
+static void compilerErrorToken(Compiler* compiler, Token* token, const char* message) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+    fprintf(stderr, "[line %d] Error: %s\n", token->line, message);
+    printTokenContext(token);
+    compiler->hadError = true;
+}
+
+static void compilerErrorVariableScope(Compiler* compiler, Token* useToken, Token* defToken, const char* name) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+    fprintf(stderr, "error[E0425]: cannot find variable `%s` in this scope\n", name);
+    fprintf(stderr, " --> line %d\n", useToken->line);
+    printTokenContext(useToken);
+    fprintf(stderr, "Defined here:\n");
+    printTokenContext(defToken);
+    fprintf(stderr, "help: variable `%s` is defined in an inner scope and is not accessible here\n", name);
+    fprintf(stderr, "note: variables defined in inner scopes are not accessible in outer scopes\n");
     compiler->hadError = true;
 }
 
@@ -298,7 +338,12 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 memcpy(tempName, node->data.variable.name.start,
                        node->data.variable.name.length);
                 tempName[node->data.variable.name.length] = '\0';
-                errorFmt(compiler, "Undefined variable '%s'.", tempName);
+                Symbol* any = findAnySymbol(&compiler->symbols, tempName);
+                if (any && !any->active) {
+                    compilerErrorVariableScope(compiler, &node->data.variable.name, &any->token, tempName);
+                } else {
+                    compilerErrorToken(compiler, &node->data.variable.name, "Undefined variable.");
+                }
                 return;
             }
             node->data.variable.index = index;
@@ -2068,7 +2113,7 @@ uint8_t addLocal(Compiler* compiler, Token name, Type* type) {
     vm.globalTypes[index] = type;
     vm.globals[index] = NIL_VAL;
 
-    addSymbol(&compiler->symbols, nameObj->chars, type, compiler->scopeDepth, index);
+    addSymbol(&compiler->symbols, nameObj->chars, name, type, compiler->scopeDepth, index);
 
     return index;
 }
