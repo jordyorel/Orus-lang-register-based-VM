@@ -1081,7 +1081,21 @@ static InterpretResult run() {
                 vmPop(&vm);  // Pop right
                 vmPop(&vm);  // Pop left
                 vmPush(&vm, BOOL_VAL(result));
-                
+
+                break;
+            }
+            case OP_NOT: {
+                if (vm.stackTop - vm.stack < 1) {
+                    runtimeError(ERROR_RUNTIME, "Stack underflow in NOT operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                Value value = vmPop(&vm);
+                if (!IS_BOOL(value)) {
+                    runtimeError(ERROR_RUNTIME, "NOT operation requires boolean operand.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                vmPush(&vm, BOOL_VAL(!AS_BOOL(value)));
                 break;
             }
             default:

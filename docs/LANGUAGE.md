@@ -133,7 +133,7 @@ Orus provides these operators with standard precedence rules:
 ### Logical Operators
 - `and` – Logical AND
 - `or` – Logical OR
-- `!` – Logical NOT (unary)
+- `not` – Logical NOT (unary)
 
 ### Type Conversion
 
