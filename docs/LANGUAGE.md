@@ -1,176 +1,396 @@
-# Orus Language Overview
+# Orus Language Reference
 
-This document provides a short tour of the Orus programming language.
-Examples are taken from the programs located in the `tests/` directory.
+This document provides a comprehensive reference for the Orus programming language (version 0.1.0).
+All examples are taken from the programs located in the `tests/` directory.
 
-## Primitive types
+## Primitive Types
 
-Orus supports several built‑in value types:
+Orus supports the following built-in primitive types:
 
-- `i32` – signed 32‑bit integers.
-- `u32` – unsigned 32‑bit integers.
-- `f64` – 64‑bit floating point numbers.
-- `bool` – boolean values `true` or `false`.
-- `string` – UTF‑8 text.
-- `nil` – absence of a value, returned from functions without an explicit result.
+- `i32` – Signed 32-bit integers (range: -2,147,483,648 to 2,147,483,647)
+- `u32` – Unsigned 32-bit integers (range: 0 to 4,294,967,295)
+- `f64` – 64-bit IEEE 754 floating point numbers (double precision)
+- `bool` – Boolean values, represented as either `true` or `false`
+- `string` – UTF-8 encoded text strings
+- `nil` – Absence of a value, automatically returned from functions without an explicit return statement
 
-## Compound types
-
-Two compound type forms are provided:
-
-- **Arrays** – fixed length collections declared with `[T; N]`. Arrays can be
-  multidimensional and indexed with `arr[i]`.
-- **Structs** – records containing named fields. `impl` blocks may define
-  methods or static functions on a struct type.
-
-See `tests/datastructures/stack_queue.orus` for an example mixing arrays,
-structs and methods.
-
-### Dynamic arrays
-
-Arrays grow automatically when used with the built‑in `push`, `pop` and `len`
-helpers. The initial size declares the starting capacity but new elements may
-be appended beyond that limit.
-
+Examples:
 ```orus
-let numbers: [i32; 1] = [0]
-push(numbers, 10)
-push(numbers, 20)
-print(len(numbers))  // prints 2
-let last = pop(numbers)
-print(last)
+let signed_int: i32 = -42
+let unsigned_int: u32 = 100
+let float_num: f64 = 3.14159
+let boolean: bool = true
+let text: string = "Hello, Orus"
+```
+
+## Compound Types
+
+Orus provides two primary compound data types:
+
+### Arrays
+
+Arrays are fixed-length collections declared with the syntax `[ElementType; Size]`. Arrays are zero-indexed and can be accessed using square bracket notation.
+
+Declaration and initialization:
+```orus
+// Declare an array of 5 integers
+let numbers: [i32; 5] = [1, 2, 3, 4, 5]
+
+// Access array elements (zero-indexed)
+let first = numbers[0]  // 1
+let third = numbers[2]  // 3
+
+// Modify array elements
+numbers[1] = 20
+
+// Multidimensional arrays
+let matrix: [i32; 2][2] = [[1, 2], [3, 4]]
+let value = matrix[0][1]  // 2
+```
+
+### Dynamic Arrays
+
+While arrays have a fixed declared size, they can grow dynamically when used with these built-in functions:
+
+- `push(array, element)` – Appends an element to the end of an array, automatically expanding capacity
+- `pop(array)` – Removes and returns the last element of an array
+- `len(array)` – Returns the current length of an array
+
+Example:
+```orus
+let numbers: [i32; 1] = [0]  // Initial capacity of 1
+push(numbers, 10)            // Array grows to size 2
+push(numbers, 20)            // Array grows to size 3
+print(len(numbers))          // Prints 3
+let last = pop(numbers)      // last = 20, array size back to 2
+```
+
+### Structs
+
+Structs are user-defined record types with named fields. They are defined using the `struct` keyword.
+
+Definition and instantiation:
+```orus
+// Define a struct
+struct Point {
+    x: i32,
+    y: i32
+}
+
+// Instantiate a struct
+let p1 = Point{x: 10, y: 20}
+
+// Access struct fields
+let x_value = p1.x
 ```
 
 ## Variables
 
-Variables are introduced with `let` and can optionally specify a type:
+Variables are introduced with the `let` keyword and follow these rules:
 
+- All variables must be explicitly declared before use
+- Type annotations are optional when the type can be inferred
+- Variables can be reassigned with a compatible value
+- Variable scope is block-based
+- Variables cannot be declared outside functions
+- Variable names follow the common identifier rules (letters, digits, underscore; must start with letter/underscore)
+
+Examples:
 ```orus
-let count = 0
-let text: string = "hello"
-```
-Assignment reuses the variable name on the left hand side.
+let count = 0                 // Type inference (i32)
+let text: string = "hello"    // Explicit type annotation
+let flag = true               // Type inference (bool)
 
-## Modules
+// Reassignment 
+count = 10                    // Simple reassignment
 
-Files can be imported using the `import` statement. The file is executed once
-and subsequent imports do nothing.
-
-```orus
-import "path/to/module.orus"
-```
-
-The imported file can introduce new variables or functions. A simple module
-from the test suite prints a greeting:
-
-```orus
-# hello_module.orus
-fn greet() {
-    let greeting = "Hello from module"
-    print(greeting)
+// Block scope
+{
+    let local = 5             // Only visible in this block
 }
+// local is not accessible here
+```
 
-# main.orus
-import "tests/modules/hello_module.orus"
+## Operators
+
+Orus provides these operators with standard precedence rules:
+
+### Arithmetic Operators
+- `+` – Addition (numbers) or concatenation (strings)
+- `-` – Subtraction
+- `*` – Multiplication
+- `/` – Division (integer division for i32/u32, floating point division for f64)
+- `%` – Modulo (remainder after division)
+
+### Comparison Operators
+- `==` – Equal to
+- `!=` – Not equal to
+- `<` – Less than
+- `>` – Greater than
+- `<=` – Less than or equal to
+- `>=` – Greater than or equal to
+
+### Logical Operators
+- `and` – Logical AND
+- `or` – Logical OR
+- `!` – Logical NOT (unary)
+
+### Type Conversion
+
+Type conversion must be performed explicitly, as Orus does not perform implicit type conversions between numeric types.
+
+## Modules and Imports
+
+Orus organizes code in files that serve as modules. The module system follows these rules:
+
+- Files can be imported using the `import` statement with a string literal path
+- Import statements must appear at the top level of a file, not inside functions
+- Each file is executed only once during the program's lifetime, regardless of how many times it's imported
+- Modules can contain function definitions, struct definitions, and `impl` blocks
+
+Example:
+```orus
+import "path/to/module.orus"  // Must appear at top level
+
 fn main() {
-    greet()
+    // Call functions from the imported module
+    module_function()
 }
 ```
 
-All programs must define a `main` function which serves as the entry point for
-execution. The interpreter will call this function automatically, so any
-top‑level code should be placed inside `fn main()`. Declarations using `let`
-and calls to `print` are only allowed inside functions. `import` statements must
-appear at the top level of the file, outside of `main`.
+### Program Entry Point
+
+All Orus programs must define a `main` function, which serves as the entry point:
+
+```orus
+fn main() {
+    // Program execution starts here
+    print("Hello, world!")
+}
+```
+
+Requirements:
+- The `main` function must be defined (directly or via imports)
+- Top-level code outside functions is not allowed except for imports and struct/impl definitions
+- `let` declarations and statements must be inside functions
 
 ## Functions
 
-Functions use the `fn` keyword with an optional return type after `->`:
+Functions are defined with the `fn` keyword and follow these rules:
 
+- Parameter types must be explicitly declared
+- Return type is specified with the `->` syntax
+- If a return type is declared, all code paths must return a value of that type
+- Functions without a return type declaration implicitly return `nil`
+- Parameters are passed by value
+
+Examples:
 ```orus
+// Function with parameters and return value
 fn add(a: i32, b: i32) -> i32 {
     return a + b
 }
+
+// Function with multiple return paths
+fn max(a: i32, b: i32) -> i32 {
+    if a > b {
+        return a
+    }
+    return b
+}
+
+// Function with no explicit return (returns nil)
+fn greet(name: string) {
+    print("Hello, {}!", name)
+}
+
+// Recursive function
+fn factorial(n: i32) -> i32 {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
 ```
 
-Return statements may be omitted if `nil` is returned. Examples can be found
-in `tests/functions/basic_functions.orus` and
-`tests/functions/advanced_functions.orus`.
+## Control Flow
 
-## Control flow
+Orus provides the following control flow constructs:
 
-Orus provides common flow control constructs:
+### Conditionals
 
-- `if`/`elif`/`else` conditional blocks.
-- `for` ranges (`for i in 0..10 { ... }`).
-- `while` loops.
-- `break` and `continue` statements.
+```orus
+// Simple if
+if condition {
+    // code executed if condition is true
+}
 
-All of these are demonstrated under `tests/control_flow/`.
+// If-else
+if condition {
+    // code executed if condition is true
+} else {
+    // code executed if condition is false
+}
+
+// If-elif-else chain
+if condition1 {
+    // code for condition1
+} elif condition2 {
+    // code for condition2
+} elif condition3 {
+    // code for condition3
+} else {
+    // default case
+}
+```
+
+### Loops
+
+```orus
+// For loop with range
+for i in 0..10 {       // Range is inclusive of start, exclusive of end (0 to 9)
+    print(i)
+}
+
+// While loop
+while condition {
+    // code executed as long as condition is true
+}
+```
+
+### Loop Control
+
+```orus
+// Break statement (exits the loop)
+while true {
+    if condition {
+        break           // Exits the loop immediately
+    }
+}
+
+// Continue statement (skips to next iteration)
+for i in 0..10 {
+    if i % 2 == 0 {
+        continue        // Skip even numbers, continue with next iteration
+    }
+    print(i)            // Only prints odd numbers
+}
+```
 
 ## Methods with `impl`
 
-Methods are defined inside `impl` blocks attached to a `struct` type. Instance
-methods receive `self` as the first parameter:
+Methods are defined inside `impl` blocks attached to a struct type:
 
 ```orus
-struct Stack {
-    data: [i32; 10],
-    top: i32
+struct Rectangle {
+    width: i32,
+    height: i32
 }
 
-impl Stack {
-    fn push(self, value: i32) -> bool {
-        /* ... */
+impl Rectangle {
+    // Instance method (requires an instance of Rectangle)
+    fn area(self) -> i32 {
+        return self.width * self.height
+    }
+    
+    // Static method (creates and returns a new Rectangle)
+    fn new(w: i32, h: i32) -> Rectangle {
+        return Rectangle{
+            width: w,
+            height: h
+        }
     }
 }
 ```
 
-See `tests/datastructures/stack_queue.orus` for full implementations of a stack
-and queue using methods.
-
-## Printing values
-
-Use the built‑in `print` function to write output. Strings may include `{}`
-placeholders which are replaced by the remaining arguments:
-
+Usage:
 ```orus
-let name = "Orus"
-print("Hello, {}!", name)
-```
-
-More examples are available in `tests/print/string_interpolation.orus`.
-
-## Error handling
-
-Orus scripts can catch runtime errors using `try`/`catch` blocks. Code inside
-`try` executes normally and if an error occurs control jumps to the matching
-`catch` block. The identifier after `catch` receives the error message.
-
-```orus
-try {
-    // code that might fail
-} catch err {
-    print("Error: {}", err)
+fn main() {
+    // Call static method
+    let rect = Rectangle.new(5, 10)
+    
+    // Call instance method
+    let a = rect.area()  // Returns 50
 }
 ```
 
-## Generics
+Key points:
+- Instance methods receive `self` as their first parameter
+- Static methods are called with the struct name followed by a dot
+- Instance methods are called on instances of the struct
+- Multiple `impl` blocks can be defined for the same struct
 
-Although the language itself does not currently provide generic syntax,
-the interpreter exposes a C macro that generates type‑specific dynamic
-array helpers. Defining `DEFINE_ARRAY_TYPE(int, Int)` will create an
-`IntArray` struct with `initIntArray`, `writeIntArray` and
-`freeIntArray` functions.
+## Printing and String Formatting
 
-```c
-DEFINE_ARRAY_TYPE(int, Int);
+Orus provides a built-in `print` function for console output:
 
-IntArray nums;
-initIntArray(&nums);
-writeIntArray(&nums, 42);
-freeIntArray(&nums);
+```orus
+// Simple printing
+print("Hello, world!")
+
+// String interpolation with placeholders
+let name = "Alice"
+let age = 30
+print("{} is {} years old", name, age)  // Alice is 30 years old
+
+// Print expressions
+print("The result is: {}", 10 * 5 + 2)
 ```
 
-See `docs/GENERICS.md` for more details.
+String interpolation features:
+- Each `{}` placeholder is replaced with the corresponding argument
+- Arguments are converted to strings automatically
+- The number of placeholders should match the number of additional arguments
+
+## String Operations
+
+Orus supports the following string operations:
+
+```orus
+// String concatenation with +
+let greeting = "Hello, " + "world!"
+
+// String length
+let length = len("Hello")  // 5
+
+// Substring extraction: substring(str, start, end)
+let part = substring("Hello, world!", 0, 5)  // "Hello"
+```
+
+## Error Handling
+
+Orus provides exception-like error handling with `try`/`catch` blocks:
+
+```orus
+try {
+    // Code that might cause an error
+    let result = 10 / 0  // Division by zero error
+} catch err {
+    // Error handling code
+    print("Error occurred: {}", err)
+}
+```
+
+Error types:
+- Runtime errors (e.g., division by zero)
+- Type errors (e.g., incompatible types in an operation)
+- I/O errors (e.g., failed file operations)
+
+## Generics
+
+The Orus language itself doesn't have generic syntax, but the C interpreter implementation provides macro-based generic data structures for internal use:
+
+```c
+// C macro to define type-specific array operations
+DEFINE_ARRAY_TYPE(int, Int);
+
+IntArray array;
+initIntArray(&array);
+writeIntArray(&array, 42);
+freeIntArray(&array);
+```
+
+This feature is primarily for internal interpreter development, not for Orus language users.
+
+For more details on this implementation approach, see `docs/GENERICS.md`.
 
