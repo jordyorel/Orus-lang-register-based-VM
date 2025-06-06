@@ -518,13 +518,23 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_BLOCK: {
+            if (node->data.block.scoped) {
+                beginScope(compiler);
+            }
 
             // Type check each statement in the block
             ASTNode* stmt = node->data.block.statements;
             while (stmt) {
                 typeCheckNode(compiler, stmt);
-                if (compiler->hadError) return;
+                if (compiler->hadError) {
+                    if (node->data.block.scoped) endScope(compiler);
+                    return;
+                }
                 stmt = stmt->next;
+            }
+
+            if (node->data.block.scoped) {
+                endScope(compiler);
             }
 
             // Blocks don't have a value type
@@ -1587,12 +1597,22 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_BLOCK: {
+            if (node->data.block.scoped) {
+                beginScope(compiler);
+            }
+
             // Generate code for each statement in the block
             ASTNode* stmt = node->data.block.statements;
             while (stmt) {
                 generateCode(compiler, stmt);
-                if (compiler->hadError) return;
+                if (compiler->hadError) {
+                    if (node->data.block.scoped) endScope(compiler);
+                    return;
+                }
                 stmt = stmt->next;
+            }
+            if (node->data.block.scoped) {
+                endScope(compiler);
             }
             break;
         }

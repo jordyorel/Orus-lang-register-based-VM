@@ -749,7 +749,8 @@ static void implBlock(Parser* parser, ASTNode** ast) {
     consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after impl block.");
     consumeStatementEnd(parser);
     parser->currentImplType = prevType;
-    *ast = createBlockNode(methods);
+    // Methods defined in an impl block should remain in the outer scope
+    *ast = createBlockNode(methods, false);
 }
 
 static void statement(Parser* parser, ASTNode** ast) {
@@ -1160,7 +1161,7 @@ static void block(Parser* parser, ASTNode** ast) {
 
     consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after block.");
 
-    *ast = createBlockNode(statements);
+    *ast = createBlockNode(statements, true);
 }
 
 static void synchronize(Parser* parser) {
