@@ -6,4 +6,9 @@ fn main() {
         print(x_inner)
     }
     print(x)
+    print(x_inner)
+
 }
+
+
+// Not working because x_iiner is being printed
