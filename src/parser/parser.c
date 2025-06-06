@@ -137,11 +137,31 @@ static ASTNode* parseString(Parser* parser) {
 
     const char* start = parser->previous.start + 1;  // Skip opening quote
     int length = parser->previous.length - 2;        // Exclude both quotes
-    ObjString* string = allocateString(start, length);
+
+    char* buffer = (char*)malloc(length + 1);  // temporary buffer
+    int outLen = 0;
+    for (int i = 0; i < length; i++) {
+        char c = start[i];
+        if (c == '\\') {
+            i++;
+            if (i >= length) break;  // malformed but scanner should catch
+            char next = start[i];
+            switch (next) {
+                case 'n': buffer[outLen++] = '\n'; break;
+                case 't': buffer[outLen++] = '\t'; break;
+                case '\\': buffer[outLen++] = '\\'; break;
+                case '"': buffer[outLen++] = '"'; break;
+                default: buffer[outLen++] = next; break;
+            }
+        } else {
+            buffer[outLen++] = c;
+        }
+    }
+    ObjString* string = allocateString(buffer, outLen);
+    free(buffer);
     Value value = STRING_VAL(string);
     ASTNode* node = createLiteralNode(value);
-    node->valueType =
-        createPrimitiveType(TYPE_STRING);  // Assuming TYPE_STRING exists
+    node->valueType = createPrimitiveType(TYPE_STRING);
     return node;
 }
 

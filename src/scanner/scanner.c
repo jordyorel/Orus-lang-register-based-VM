@@ -273,7 +273,11 @@ static Token string() {
         if (peek() == '\\') {
             advance();
             switch (peek()) {
-                case 'n': advance();  // New line
+                case 'n':
+                case 't':
+                case '\\':
+                case '"':
+                    advance();
                     break;
                 default:
                     return error_token("Invalid escape sequence.");

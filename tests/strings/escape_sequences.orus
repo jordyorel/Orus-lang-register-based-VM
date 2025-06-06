@@ -1,0 +1,7 @@
+fn main() {
+    print("Hello\nWorld")
+    print("Column A\tColumn B")
+    print("A backslash: \\")
+    print("He said: \"Hello\"")
+}
+
