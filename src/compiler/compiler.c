@@ -1334,7 +1334,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             case TYPE_STRUCT:
                                 writeOp(compiler, OP_ARRAY_TO_STRING);
                                 break;
-                            default:
+                            default: {
                                 char msgBuffer[256];
                                 const char* rightTypeName = getTypeName(rightType->kind);
                                 snprintf(msgBuffer, sizeof(msgBuffer),
@@ -1342,6 +1342,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                                     rightTypeName, node->data.operation.operator.line);
                                 error(compiler, msgBuffer);
                                 return;
+                            }
                         }
                         break;
                     default: {
