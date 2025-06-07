@@ -350,7 +350,12 @@ static ASTNode* parseDot(Parser* parser, ASTNode* left) {
     return createFieldAccessNode(left, name);
 }
 
-static bool looksLikeStructGeneric() {
+// Look ahead to determine if a `<` after an identifier starts a generic
+// argument list or is simply the less-than operator. We scan forward until the
+// matching `>` and then inspect the token that follows. If it is a `{` (struct
+// literal) or `(` (generic function call) we treat the angle brackets as
+// generic arguments.
+static bool looksLikeGeneric() {
     Scanner backup = scanner;
     int depth = 1;
     while (depth > 0) {
@@ -364,7 +369,7 @@ static bool looksLikeStructGeneric() {
     }
     Token after = scan_token();
     scanner = backup;
-    return after.type == TOKEN_LEFT_BRACE;
+    return after.type == TOKEN_LEFT_BRACE || after.type == TOKEN_LEFT_PAREN;
 }
 
 static ASTNode* parseVariable(Parser* parser) {
@@ -372,7 +377,7 @@ static ASTNode* parseVariable(Parser* parser) {
     Type** genericArgs = NULL;
     int genericCount = 0;
 
-    if (check(parser, TOKEN_LESS) && looksLikeStructGeneric()) {
+    if (check(parser, TOKEN_LESS) && looksLikeGeneric()) {
         advance(parser); // consume '<'
         do {
             Type* argType = parseType(parser);
