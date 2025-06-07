@@ -1,0 +1,30 @@
+fn fibonacci_iter(n: i32) -> i32 {
+    if n <= 0 {
+        return 0
+    }
+    if n == 1 {
+        return 1
+    }
+
+    let a: i32 = 0
+    let b: i32 = 1
+    let c: i32 = 0
+    let i: i32 = 2
+
+    while i <= n {
+        c = a + b
+        a = b
+        b = c
+        i = i + 1
+    }
+
+    return b
+}
+
+fn main() {
+    let result: i32 = 0
+    for i in 0..500 {
+        result = fibonacci_iter(20)
+    }
+    print(result)
+}
