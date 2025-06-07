@@ -14,6 +14,7 @@ typedef enum {
     TYPE_ARRAY,
     TYPE_FUNCTION,
     TYPE_STRUCT,
+    TYPE_GENERIC,
     TYPE_COUNT
 } TypeKind;
 
@@ -38,14 +39,21 @@ typedef struct Type {
             ObjString* name;
             FieldInfo* fields;
             int fieldCount;
+            ObjString** genericParams;
+            int genericCount;
         } structure;
+        struct {
+            ObjString* name;
+        } generic;
     } info;
 } Type;
 
 Type* createPrimitiveType(TypeKind kind);
 Type* createArrayType(Type* elementType);
 Type* createFunctionType(Type* returnType, Type** paramTypes, int paramCount);
-Type* createStructType(ObjString* name, FieldInfo* fields, int fieldCount);
+Type* createStructType(ObjString* name, FieldInfo* fields, int fieldCount,
+                       ObjString** generics, int genericCount);
+Type* createGenericType(ObjString* name);
 Type* findStructType(const char* name);
 void freeType(Type* type);
 bool typesEqual(Type* a, Type* b);
@@ -54,6 +62,8 @@ void initTypeSystem(void);
 void freeTypeSystem(void);  // Add this
 Type* getPrimitiveType(TypeKind kind);
 void markTypeRoots();
+Type* substituteGenerics(Type* type, ObjString** names, Type** subs, int count);
+Type* instantiateStructType(Type* base, Type** args, int argCount);
 
 extern Type* primitiveTypes[TYPE_COUNT];
 

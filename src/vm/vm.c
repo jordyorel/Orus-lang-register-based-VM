@@ -20,6 +20,13 @@ VM vm;
 static void resetStack() { vm.stackTop = vm.stack; }
 Type* variableTypes[UINT8_COUNT] = {NULL};
 
+static Value native_len(int argCount, Value* args);
+static Value native_substring(int argCount, Value* args);
+static Value native_push(int argCount, Value* args);
+static Value native_pop(int argCount, Value* args);
+static Value native_type(int argCount, Value* args);
+static Value native_is_type(int argCount, Value* args);
+
 static InterpretResult run();
 
 void initVM() {
@@ -34,6 +41,7 @@ void initVM() {
     vm.bytesAllocated = 0;
     vm.astRoot = NULL;
     vm.moduleCount = 0;
+    vm.nativeFunctionCount = 0;
     const char* envTrace = getenv("ORUS_TRACE");
     vm.trace = envTrace && envTrace[0] != '\0';
     for (int i = 0; i < UINT8_COUNT; i++) {
@@ -46,14 +54,24 @@ void initVM() {
         vm.globalTypes[i] = NULL;
         vm.functions[i].start = 0;
         vm.functions[i].arity = 0;
+        vm.functionDecls[i] = NULL;
     }
+
+    // Register core native functions
+    defineNative("len", native_len, 1, getPrimitiveType(TYPE_I32));
+    defineNative("substring", native_substring, 3, getPrimitiveType(TYPE_STRING));
+    defineNative("push", native_push, 2, NULL);
+    defineNative("pop", native_pop, 1, NULL);
+    defineNative("type", native_type, 1, getPrimitiveType(TYPE_STRING));
+    defineNative("is_type", native_is_type, 2, getPrimitiveType(TYPE_BOOL));
 }
 
 void freeVM() {
     
-    for (int i = 0; i < vm.variableCount; i++) {
+    for (int i = 0; i < UINT8_COUNT; i++) {
         vm.variableNames[i].name = NULL;
         vm.globalTypes[i] = NULL;  // No freeing here
+        vm.functionDecls[i] = NULL;
     }
     vm.astRoot = NULL;
     freeObjects();
@@ -164,11 +182,137 @@ static void traceExecution() {
 #endif
 }
 
+void defineNative(const char* name, NativeFn function, int arity, Type* returnType) {
+    if (vm.nativeFunctionCount >= MAX_NATIVES) return;
+    ObjString* str = allocateString(name, (int)strlen(name));
+    NativeFunction nf = {str, function, arity, returnType};
+    vm.nativeFunctions[vm.nativeFunctionCount++] = nf;
+}
+
+int findNative(ObjString* name) {
+    for (int i = 0; i < vm.nativeFunctionCount; i++) {
+        if (vm.nativeFunctions[i].name->length == name->length &&
+            strncmp(vm.nativeFunctions[i].name->chars, name->chars, name->length) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static Value native_len(int argCount, Value* args) {
+    if (argCount != 1) {
+        RUNTIME_ERROR("len() takes exactly one argument.");
+        return NIL_VAL;
+    }
+    Value val = args[0];
+    if (IS_ARRAY(val)) {
+        return I32_VAL(AS_ARRAY(val)->length);
+    } else if (IS_STRING(val)) {
+        return I32_VAL(AS_STRING(val)->length);
+    }
+    RUNTIME_ERROR("len() expects array or string.");
+    return NIL_VAL;
+}
+
+static Value native_substring(int argCount, Value* args) {
+    if (argCount != 3) {
+        RUNTIME_ERROR("substring() takes exactly three arguments.");
+        return NIL_VAL;
+    }
+    if (!IS_STRING(args[0]) || !IS_I32(args[1]) || !IS_I32(args[2])) {
+        RUNTIME_ERROR("substring() expects (string, i32, i32).");
+        return NIL_VAL;
+    }
+    ObjString* str = AS_STRING(args[0]);
+    int start = AS_I32(args[1]);
+    int length = AS_I32(args[2]);
+    if (start < 0) start = 0;
+    if (start > str->length) start = str->length;
+    if (length < 0) length = 0;
+    if (start + length > str->length) length = str->length - start;
+    ObjString* result = allocateString(str->chars + start, length);
+    return STRING_VAL(result);
+}
+
+static Value native_push(int argCount, Value* args) {
+    if (argCount != 2) {
+        RUNTIME_ERROR("push() takes exactly two arguments.");
+        return NIL_VAL;
+    }
+    if (!IS_ARRAY(args[0])) {
+        RUNTIME_ERROR("First argument to push() must be array.");
+        return NIL_VAL;
+    }
+    ObjArray* arr = AS_ARRAY(args[0]);
+    arrayPush(&vm, arr, args[1]);
+    return args[0];
+}
+
+static Value native_pop(int argCount, Value* args) {
+    if (argCount != 1) {
+        RUNTIME_ERROR("pop() takes exactly one argument.");
+        return NIL_VAL;
+    }
+    if (!IS_ARRAY(args[0])) {
+        RUNTIME_ERROR("pop() expects array.");
+        return NIL_VAL;
+    }
+    ObjArray* arr = AS_ARRAY(args[0]);
+    return arrayPop(arr);
+}
+
+static const char* getValueTypeName(Value val) {
+    switch (val.type) {
+        case VAL_I32:   return "i32";
+        case VAL_U32:   return "u32";
+        case VAL_F64:   return "f64";
+        case VAL_BOOL:  return "bool";
+        case VAL_NIL:   return "nil";
+        case VAL_STRING:return "string";
+        case VAL_ARRAY: return "array";
+        case VAL_ERROR: return "error";
+        default:        return "unknown";
+    }
+}
+
+static Value native_type(int argCount, Value* args) {
+    if (argCount != 1) {
+        RUNTIME_ERROR("type() takes exactly one argument.");
+        return NIL_VAL;
+    }
+    const char* name = getValueTypeName(args[0]);
+    ObjString* result = allocateString(name, (int)strlen(name));
+    return STRING_VAL(result);
+}
+
+static Value native_is_type(int argCount, Value* args) {
+    if (argCount != 2) {
+        RUNTIME_ERROR("is_type() takes exactly two arguments.");
+        return NIL_VAL;
+    }
+    if (!IS_STRING(args[1])) {
+        RUNTIME_ERROR("Second argument to is_type() must be a string.");
+        return NIL_VAL;
+    }
+    const char* name = getValueTypeName(args[0]);
+    ObjString* query = AS_STRING(args[1]);
+    bool result = query->length == (int)strlen(name) &&
+                  strncmp(query->chars, name, query->length) == 0;
+    return BOOL_VAL(result);
+}
+
 static InterpretResult interpretModule(const char* path) {
     char* source = readFile(path);
     if (!source) {
-        RUNTIME_ERROR("Could not open module '%s'.", path);
-        return INTERPRET_RUNTIME_ERROR;
+        const char* stdPath = getenv("ORUS_STD_PATH");
+        if (!stdPath) stdPath = "std";
+        char full[256];
+        snprintf(full, sizeof(full), "%s/%s", stdPath, path);
+        source = readFile(full);
+        if (!source) {
+            RUNTIME_ERROR("Could not open module '%s'.", path);
+            return INTERPRET_RUNTIME_ERROR;
+        }
     }
     ASTNode* ast;
     if (!parse(source, &ast)) {
@@ -845,6 +989,26 @@ static InterpretResult run() {
                 // Jump to function body
                 vm.ip = vm.chunk->code + fn->start;
 
+                break;
+            }
+            case OP_CALL_NATIVE: {
+                uint8_t index = READ_BYTE();
+                uint8_t argCount = READ_BYTE();
+
+                if (index >= vm.nativeFunctionCount) {
+                    RUNTIME_ERROR("Invalid native function index.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                NativeFunction* nf = &vm.nativeFunctions[index];
+                if (nf->arity != -1 && argCount != nf->arity) {
+                    RUNTIME_ERROR("Native function called with wrong number of arguments.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                Value result = nf->function(argCount, vm.stackTop - argCount);
+                vm.stackTop -= argCount;
+                vmPush(&vm, result);
                 break;
             }
             case OP_FORMAT_PRINT: {

@@ -26,6 +26,9 @@ typedef struct {
     Scanner* scanner;
     int functionDepth; // Track nested function declarations
     Type* currentImplType; // Track struct type for methods
+    ObjString** genericParams;
+    int genericCount;
+    int genericCapacity;
 } Parser;
 
 typedef ASTNode* (*ParseFn)(Parser*);
