@@ -174,6 +174,11 @@ void markObject(Obj* object) {
                         markObject((Obj*)node->data.call.genericArgs[i]);
                     }
                     break;
+                case AST_VARIABLE:
+                    for (int i = 0; i < node->data.variable.genericArgCount; i++) {
+                        if (node->data.variable.genericArgs[i]) markObject((Obj*)node->data.variable.genericArgs[i]);
+                    }
+                    break;
                 case AST_RETURN:
                     if (node->data.returnStmt.value) markObject((Obj*)node->data.returnStmt.value);
                     break;
@@ -185,6 +190,9 @@ void markObject(Obj* object) {
                     break;
                 case AST_STRUCT_LITERAL:
                     if (node->data.structLiteral.values) markObject((Obj*)node->data.structLiteral.values);
+                    for (int i = 0; i < node->data.structLiteral.genericArgCount; i++) {
+                        if (node->data.structLiteral.genericArgs[i]) markObject((Obj*)node->data.structLiteral.genericArgs[i]);
+                    }
                     break;
                 default:
                     break;
@@ -305,6 +313,14 @@ static void freeObject(Obj* object) {
                 }
                 if (node->data.call.genericArgs) {
                     free(node->data.call.genericArgs);
+                }
+            } else if (node->type == AST_STRUCT_LITERAL) {
+                if (node->data.structLiteral.genericArgs) {
+                    free(node->data.structLiteral.genericArgs);
+                }
+            } else if (node->type == AST_VARIABLE) {
+                if (node->data.variable.genericArgs) {
+                    free(node->data.variable.genericArgs);
                 }
             }
             if (node->type == AST_FUNCTION && node->data.function.genericParams) {

@@ -35,6 +35,52 @@ static void patchContinueJumps(Compiler* compiler);
 static void emitForLoop(Compiler* compiler, ASTNode* node);
 void disassembleChunk(Chunk* chunk, const char* name);
 
+static void deduceGenerics(Type* expected, Type* actual,
+                           ObjString** names, Type** subs, int count) {
+    if (!expected || !actual) return;
+    if (expected->kind == TYPE_GENERIC) {
+        for (int i = 0; i < count; i++) {
+            if (names[i] && strcmp(expected->info.generic.name->chars,
+                                  names[i]->chars) == 0) {
+                if (!subs[i]) subs[i] = actual;
+                return;
+            }
+        }
+        return;
+    }
+    if (expected->kind != actual->kind) return;
+    switch (expected->kind) {
+        case TYPE_ARRAY:
+            deduceGenerics(expected->info.array.elementType,
+                           actual->info.array.elementType,
+                           names, subs, count);
+            break;
+        case TYPE_FUNCTION:
+            for (int i = 0; i < expected->info.function.paramCount &&
+                            i < actual->info.function.paramCount; i++) {
+                deduceGenerics(expected->info.function.paramTypes[i],
+                               actual->info.function.paramTypes[i],
+                               names, subs, count);
+            }
+            deduceGenerics(expected->info.function.returnType,
+                           actual->info.function.returnType,
+                           names, subs, count);
+            break;
+        case TYPE_STRUCT:
+            if (expected->info.structure.fieldCount ==
+                actual->info.structure.fieldCount) {
+                for (int i = 0; i < expected->info.structure.fieldCount; i++) {
+                    deduceGenerics(expected->info.structure.fields[i].type,
+                                   actual->info.structure.fields[i].type,
+                                   names, subs, count);
+                }
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 static void beginScope(Compiler* compiler) { compiler->scopeDepth++; }
 
 static void endScope(Compiler* compiler) {
@@ -373,8 +419,15 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                         }
                     }
                     if (!typesEqual(declType, initType)) {
-                        error(compiler, "Type mismatch in let declaration.");
-                        return;
+                        if (initType->kind == TYPE_ARRAY &&
+                            initType->info.array.elementType->kind == TYPE_NIL &&
+                            declType->kind == TYPE_ARRAY) {
+                            node->data.let.initializer->valueType = declType;
+                            initType = declType;
+                        } else {
+                            error(compiler, "Type mismatch in let declaration.");
+                            return;
+                        }
                     }
                 }
                 node->valueType = declType;
@@ -495,8 +548,15 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             }
 
             if (!typesEqual(varType, valueType)) {
-                error(compiler, "Type mismatch in assignment.");
-                return;
+                if (valueType->kind == TYPE_ARRAY &&
+                    valueType->info.array.elementType->kind == TYPE_NIL &&
+                    varType->kind == TYPE_ARRAY) {
+                    node->left->valueType = varType;
+                    valueType = varType;
+                } else {
+                    error(compiler, "Type mismatch in assignment.");
+                    return;
+                }
             }
 
             // The assignment expression has the same type as the variable
@@ -817,6 +877,13 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 if (compiler->hadError) return;
                 if (arr->valueType && arr->valueType->kind == TYPE_ARRAY) {
                     Type* elemType = arr->valueType->info.array.elementType;
+                    if (elemType->kind == TYPE_NIL) {
+                        arr->valueType = createArrayType(val->valueType);
+                        elemType = val->valueType;
+                        if (arr->type == AST_VARIABLE) {
+                            variableTypes[arr->data.variable.index] = arr->valueType;
+                        }
+                    }
                     if (!typesEqual(elemType, val->valueType)) {
                         error(compiler, "push() value type mismatch.");
                         return;
@@ -934,14 +1001,11 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
             for (int i = 0; i < funcType->info.function.paramCount; i++) {
                 Type* expected = funcType->info.function.paramTypes[i];
-                if (expected->kind == TYPE_GENERIC && gcount > 0) {
-                    for (int j = 0; j < gcount; j++) {
-                        if (strcmp(expected->info.generic.name->chars, gnames[j]->chars) == 0) {
-                            if (!gsubs[j]) gsubs[j] = argNodes[i]->valueType;
-                            expected = gsubs[j];
-                        }
-                    }
-                } else if (gcount > 0) {
+                if (gcount > 0 && i < acount) {
+                    deduceGenerics(expected, argNodes[i]->valueType,
+                                   gnames, gsubs, gcount);
+                }
+                if (gcount > 0) {
                     expected = substituteGenerics(expected, gnames, gsubs, gcount);
                 }
                 if (i >= acount || !typesEqual(expected, argNodes[i]->valueType)) {
@@ -973,10 +1037,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 elem = elem->next;
             }
             if (!elementType) {
-                error(compiler, "Cannot deduce array element type.");
-                return;
+                node->valueType = createArrayType(getPrimitiveType(TYPE_NIL));
+            } else {
+                node->valueType = createArrayType(elementType);
             }
-            node->valueType = createArrayType(elementType);
             break;
         }
 
@@ -985,6 +1049,11 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             if (!structType) {
                 error(compiler, "Unknown struct type.");
                 return;
+            }
+            if (node->data.structLiteral.genericArgCount > 0) {
+                structType = instantiateStructType(structType,
+                                                  node->data.structLiteral.genericArgs,
+                                                  node->data.structLiteral.genericArgCount);
             }
             if (structType->info.structure.fieldCount !=
                 node->data.structLiteral.fieldCount) {
@@ -999,6 +1068,12 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 typeCheckNode(compiler, value);
                 if (compiler->hadError) return;
+                if (value->type == AST_ARRAY && value->valueType &&
+                    value->valueType->kind == TYPE_ARRAY &&
+                    value->valueType->info.array.elementType->kind == TYPE_NIL &&
+                    structType->info.structure.fields[i].type->kind == TYPE_ARRAY) {
+                    value->valueType = structType->info.structure.fields[i].type;
+                }
                 if (!typesEqual(structType->info.structure.fields[i].type,
                                 value->valueType)) {
                     error(compiler, "Struct field type mismatch.");

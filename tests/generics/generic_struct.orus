@@ -10,21 +10,21 @@ struct Box<T> {
 fn main() {
     // Integer box
     let intBox = Box<i32>{item: 42}
-    print "Int box contains: " + intBox.item
+    print("Int box contains: " + intBox.item)
     
     // Float box
     let floatBox = Box<f64>{item: 3.14}
-    print "Float box contains: " + floatBox.item
+    print("Float box contains: " + floatBox.item)
     
     // String box
     let stringBox = Box<string>{item: "Hello, generics!"}
-    print "String box contains: " + stringBox.item
+    print("String box contains: " + stringBox.item)
     
     // Test reassigning values
     intBox.item = 100
-    print "Updated int box: " + intBox.item
+    print("Updated int box: " + intBox.item)
     
     // Test nested generic structures
     let nestedBox = Box<Box<i32>>{item: intBox}
-    print "Nested box contains: " + nestedBox.item.item
+    print("Nested box contains: " + nestedBox.item.item)
 }

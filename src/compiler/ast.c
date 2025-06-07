@@ -57,6 +57,8 @@ ASTNode* createVariableNode(Token name, uint8_t index) {
     node->next = NULL;
     node->data.variable.name = name;
     node->data.variable.index = index;
+    node->data.variable.genericArgs = NULL;
+    node->data.variable.genericArgCount = 0;
     node->valueType = NULL;
     return node;
 }
@@ -233,7 +235,8 @@ ASTNode* createArraySetNode(ASTNode* array, ASTNode* index, ASTNode* value) {
     return node;
 }
 
-ASTNode* createStructLiteralNode(Token name, ASTNode* values, int fieldCount) {
+ASTNode* createStructLiteralNode(Token name, ASTNode* values, int fieldCount,
+                                 Type** genericArgs, int genericArgCount) {
     ASTNode* node = allocateASTNode();
     node->type = AST_STRUCT_LITERAL;
     node->left = NULL;
@@ -242,6 +245,8 @@ ASTNode* createStructLiteralNode(Token name, ASTNode* values, int fieldCount) {
     node->data.structLiteral.name = name;
     node->data.structLiteral.values = values;
     node->data.structLiteral.fieldCount = fieldCount;
+    node->data.structLiteral.genericArgs = genericArgs;
+    node->data.structLiteral.genericArgCount = genericArgCount;
     node->valueType = NULL;
     return node;
 }
