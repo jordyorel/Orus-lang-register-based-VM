@@ -1,0 +1,7 @@
+fn main() {
+    let sum: i32 = 0
+    for i in 0..1000 {
+        sum = sum + i
+    }
+    print(sum)
+}
