@@ -72,6 +72,17 @@ shell utilities behave like they do on Unix systems.
 
 Each subdirectory of `tests/` represents a category and contains example programs. The script executes every `.orus` file and reports success or failure.
 
+## Benchmarking
+
+Simple micro benchmarks live in the `benchmarks/` directory. After building the
+interpreter run:
+
+```sh
+bash benchmarks/run_benchmarks.sh
+```
+
+The script executes each benchmark program and prints the time spent running it.
+
 ## Development tools
 
 A basic package manager is provided to help build and distribute Orus
