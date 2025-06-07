@@ -40,6 +40,8 @@ void initVM() {
     vm.objects = NULL;
     vm.bytesAllocated = 0;
     vm.astRoot = NULL;
+    vm.filePath = NULL;
+    vm.currentLine = 0;
     vm.moduleCount = 0;
     vm.nativeFunctionCount = 0;
     const char* envTrace = getenv("ORUS_TRACE");
@@ -78,6 +80,8 @@ void freeVM() {
     vm.tryFrameCount = 0;
     vm.lastError = NIL_VAL;
     vm.moduleCount = 0;
+    vm.filePath = NULL;
+    vm.currentLine = 0;
 }
 
 static void printStackTrace() {
@@ -98,6 +102,13 @@ static void runtimeError(ErrorType type, SrcLocation location,
     va_start(args, format);
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
+
+    // If no explicit location provided, use the current executing line
+    if (location.file == NULL && vm.filePath) {
+        location.file = vm.filePath;
+        location.line = vm.currentLine;
+        location.column = 0;
+    }
 
     ObjError* err = allocateError(type, buffer, location);
     vm.lastError = ERROR_VAL(err);
@@ -362,6 +373,7 @@ static InterpretResult run() {
 
     for (;;) {
         if (vm.trace) traceExecution();
+        vm.currentLine = get_line(vm.chunk, (int)(vm.ip - vm.chunk->code));
         uint8_t instruction = READ_BYTE();
 
         switch (instruction) {

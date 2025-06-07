@@ -27,6 +27,7 @@ extern VM vm;
 static void repl() {
     char buffer[4096]; // Larger buffer for multiline input
     char line[1024];
+    vm.filePath = "<repl>";
     for (;;) {
         printf("> ");
         fflush(stdout);
@@ -117,6 +118,7 @@ static void runFile(const char* path) {
     initChunk(&chunk);
     Compiler compiler;
     initCompiler(&compiler, &chunk, path, source);
+    vm.filePath = path;
     vm.astRoot = ast;
     if (!compile(ast, &compiler, true)) {
         fprintf(stderr, "Compilation failed for \"%s\".\n", path);
@@ -129,6 +131,7 @@ static void runFile(const char* path) {
     InterpretResult result = runChunk(&chunk);
     freeChunk(&chunk);  // Free chunk after execution
     free(source);
+    vm.filePath = NULL;
     if (result == INTERPRET_RUNTIME_ERROR) {
         if (IS_ERROR(vm.lastError)) {
             printError(AS_ERROR(vm.lastError));
