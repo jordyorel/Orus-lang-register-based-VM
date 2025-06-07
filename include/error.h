@@ -84,5 +84,7 @@ void emitStructFieldTypeMismatchError(Compiler* compiler, Token* token, const ch
 void emitFieldAccessNonStructError(Compiler* compiler, Token* token, const char* actualType);
 void emitIsTypeSecondArgError(Compiler* compiler, Token* token, const char* actualType);
 void emitLenInvalidTypeError(Compiler* compiler, Token* token, const char* actualType);
+void emitBuiltinArgCountError(Compiler* compiler, Token* token,
+                              const char* name, int expected, int actual);
 
 #endif // ORUS_ERROR_H

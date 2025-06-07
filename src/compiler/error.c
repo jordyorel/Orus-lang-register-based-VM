@@ -478,3 +478,39 @@ void emitLenInvalidTypeError(Compiler* compiler, Token* token, const char* actua
     compiler->hadError = true;
 }
 
+void emitBuiltinArgCountError(Compiler* compiler, Token* token,
+                              const char* name, int expected, int actual) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+
+    Diagnostic diagnostic;
+    memset(&diagnostic, 0, sizeof(Diagnostic));
+    diagnostic.code = ERROR_FUNCTION_CALL;
+    diagnostic.primarySpan.line = token->line;
+    const char* lineStart = token->start;
+    while (lineStart > compiler->sourceCode && lineStart[-1] != '\n') lineStart--;
+    diagnostic.primarySpan.column = (int)(token->start - lineStart) + 1;
+    diagnostic.primarySpan.length = token->length;
+    diagnostic.primarySpan.filePath = compiler->filePath;
+
+    char msgBuffer[128];
+    snprintf(msgBuffer, sizeof(msgBuffer),
+             "%s() expects %d argument%s but %d %s supplied",
+             name, expected, expected == 1 ? "" : "s",
+             actual, actual == 1 ? "was" : "were");
+    diagnostic.text.message = msgBuffer;
+
+    char helpBuffer[128];
+    snprintf(helpBuffer, sizeof(helpBuffer),
+             "provide %d argument%s to %s()",
+             expected, expected == 1 ? "" : "s", name);
+    diagnostic.text.help = strdup(helpBuffer);
+
+    diagnostic.text.notes = NULL;
+    diagnostic.text.noteCount = 0;
+
+    emitDiagnostic(&diagnostic);
+    if (diagnostic.text.help) free(diagnostic.text.help);
+    compiler->hadError = true;
+}
+

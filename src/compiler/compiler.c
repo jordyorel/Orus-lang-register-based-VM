@@ -761,7 +761,8 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             // Built-in functions
             if (tokenEquals(node->data.call.name, "len")) {
                 if (node->data.call.argCount != 1) {
-                    error(compiler, "len() takes exactly one argument.");
+                    emitBuiltinArgCountError(compiler, &node->data.call.name,
+                                            "len", 1, node->data.call.argCount);
                     return;
                 }
                 ASTNode* arg = node->data.call.arguments;
@@ -778,7 +779,8 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 break;
             } else if (tokenEquals(node->data.call.name, "substring")) {
                 if (node->data.call.argCount != 3) {
-                    error(compiler, "substring() takes exactly three arguments.");
+                    emitBuiltinArgCountError(compiler, &node->data.call.name,
+                                            "substring", 3, node->data.call.argCount);
                     return;
                 }
                 ASTNode* strArg = node->data.call.arguments;
@@ -804,7 +806,8 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 break;
             } else if (tokenEquals(node->data.call.name, "type_of")) {
                 if (node->data.call.argCount != 1) {
-                    error(compiler, "type_of() takes exactly one argument.");
+                    emitBuiltinArgCountError(compiler, &node->data.call.name,
+                                            "type_of", 1, node->data.call.argCount);
                     return;
                 }
                 ASTNode* valArg = node->data.call.arguments;
@@ -814,7 +817,8 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 break;
             } else if (tokenEquals(node->data.call.name, "is_type")) {
                 if (node->data.call.argCount != 2) {
-                    error(compiler, "is_type() takes exactly two arguments.");
+                    emitBuiltinArgCountError(compiler, &node->data.call.name,
+                                            "is_type", 2, node->data.call.argCount);
                     return;
                 }
                 ASTNode* valArg = node->data.call.arguments;
@@ -829,8 +833,13 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 node->valueType = getPrimitiveType(TYPE_BOOL);
                 break;
-            } else if (tokenEquals(node->data.call.name, "push") &&
-                       node->data.call.argCount == 2) {
+            } else if (tokenEquals(node->data.call.name, "push")) {
+                if (node->data.call.argCount != 2) {
+                    emitBuiltinArgCountError(compiler, &node->data.call.name,
+                                            "push", 2, node->data.call.argCount);
+                    return;
+                }
+                // argCount == 2
                 ASTNode* arr = node->data.call.arguments;
                 ASTNode* val = arr->next;
                 typeCheckNode(compiler, arr);
@@ -853,8 +862,13 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     break;
                 }
                 // Not an array: likely a method call, fall through
-            } else if (tokenEquals(node->data.call.name, "pop") &&
-                       node->data.call.argCount == 1) {
+            } else if (tokenEquals(node->data.call.name, "pop")) {
+                if (node->data.call.argCount != 1) {
+                    emitBuiltinArgCountError(compiler, &node->data.call.name,
+                                            "pop", 1, node->data.call.argCount);
+                    return;
+                }
+                // argCount == 1
                 ASTNode* arr = node->data.call.arguments;
                 typeCheckNode(compiler, arr);
                 if (compiler->hadError) return;
