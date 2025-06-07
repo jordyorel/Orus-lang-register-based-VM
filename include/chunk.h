@@ -61,6 +61,7 @@ typedef enum {
     OP_U32_TO_STRING,
     OP_F64_TO_STRING,
     OP_BOOL_TO_STRING,
+    OP_ARRAY_TO_STRING,
     OP_CONCAT,
 
     // Logical operators
@@ -100,6 +101,7 @@ typedef enum {
     OP_ARRAY_POP,
     OP_LEN,
     OP_SUBSTRING,
+    OP_SLICE,
 } opCode;
 
 typedef struct {

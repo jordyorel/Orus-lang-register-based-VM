@@ -179,8 +179,8 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 case TOKEN_PLUS: {
                     if (leftType->kind == TYPE_STRING || rightType->kind == TYPE_STRING) {
                         node->valueType = getPrimitiveType(TYPE_STRING);
-                        node->data.operation.convertLeft = leftType->kind != TYPE_STRING;
-                        node->data.operation.convertRight = rightType->kind != TYPE_STRING;
+                        node->data.operation.convertLeft = leftType->kind != TYPE_STRING && leftType->kind != TYPE_NIL;
+                        node->data.operation.convertRight = rightType->kind != TYPE_STRING && rightType->kind != TYPE_NIL;
                     } else if (leftType->kind == TYPE_F64 || rightType->kind == TYPE_F64) {
                         node->valueType = getPrimitiveType(TYPE_F64);
 
@@ -1192,6 +1192,30 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             break;
         }
 
+        case AST_SLICE: {
+            typeCheckNode(compiler, node->left); // array
+            typeCheckNode(compiler, node->data.slice.start);
+            typeCheckNode(compiler, node->data.slice.end);
+            if (compiler->hadError) return;
+            Type* arrayType = node->left->valueType;
+            Type* startType = node->data.slice.start->valueType;
+            Type* endType = node->data.slice.end->valueType;
+            if (!arrayType || arrayType->kind != TYPE_ARRAY) {
+                error(compiler, "Can only slice arrays.");
+                return;
+            }
+            if (!startType || (startType->kind != TYPE_I32 && startType->kind != TYPE_U32)) {
+                error(compiler, "Slice start index must be an integer.");
+                return;
+            }
+            if (!endType || (endType->kind != TYPE_I32 && endType->kind != TYPE_U32)) {
+                error(compiler, "Slice end index must be an integer.");
+                return;
+            }
+            node->valueType = node->left->valueType;
+            break;
+        }
+
         case AST_RETURN: {
             // Type check the return value if present
             if (node->data.returnStmt.value != NULL) {
@@ -1287,6 +1311,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             case TYPE_U32: writeOp(compiler, OP_U32_TO_STRING); break;
                             case TYPE_F64: writeOp(compiler, OP_F64_TO_STRING); break;
                             case TYPE_BOOL: writeOp(compiler, OP_BOOL_TO_STRING); break;
+                            case TYPE_ARRAY: writeOp(compiler, OP_ARRAY_TO_STRING); break;
+                            case TYPE_STRUCT: writeOp(compiler, OP_ARRAY_TO_STRING); break;
                             default:
                                 error(compiler,
                                       "Unsupported left operand conversion for binary operation.");
@@ -1337,6 +1363,12 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                                 break;
                             case TYPE_BOOL:
                                 writeOp(compiler, OP_BOOL_TO_STRING);
+                                break;
+                            case TYPE_ARRAY:
+                                writeOp(compiler, OP_ARRAY_TO_STRING);
+                                break;
+                            case TYPE_STRUCT:
+                                writeOp(compiler, OP_ARRAY_TO_STRING);
                                 break;
                             default:
                                 error(compiler,
@@ -1655,6 +1687,17 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             generateCode(compiler, node->left);  // value
             if (compiler->hadError) return;
             writeOp(compiler, OP_ARRAY_SET);
+            break;
+        }
+
+        case AST_SLICE: {
+            generateCode(compiler, node->left);
+            if (compiler->hadError) return;
+            generateCode(compiler, node->data.slice.start);
+            if (compiler->hadError) return;
+            generateCode(compiler, node->data.slice.end);
+            if (compiler->hadError) return;
+            writeOp(compiler, OP_SLICE);
             break;
         }
 

@@ -15,6 +15,7 @@ typedef enum {
     AST_CALL,
     AST_ARRAY,
     AST_ARRAY_SET,
+    AST_SLICE,
     AST_STRUCT_LITERAL,
     AST_FIELD,
     AST_FIELD_SET,
@@ -165,6 +166,10 @@ typedef struct ASTNode {
         struct {
             struct ASTNode* index;
         } arraySet;
+        struct {
+            struct ASTNode* start;
+            struct ASTNode* end;
+        } slice;
         FieldAccessData fieldSet;
         FunctionData function;
         CallData call;
@@ -195,6 +200,7 @@ ASTNode* createTryNode(ASTNode* tryBlock, Token errorName, ASTNode* catchBlock);
 ASTNode* createReturnNode(ASTNode* value);
 ASTNode* createArrayNode(ASTNode* elements, int elementCount);
 ASTNode* createArraySetNode(ASTNode* array, ASTNode* index, ASTNode* value);
+ASTNode* createSliceNode(ASTNode* array, ASTNode* start, ASTNode* end);
 ASTNode* createStructLiteralNode(Token name, ASTNode* values, int fieldCount,
                                  Type** genericArgs, int genericArgCount);
 ASTNode* createFieldAccessNode(ASTNode* object, Token name);
