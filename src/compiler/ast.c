@@ -78,7 +78,7 @@ ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer) {
     return node;
 }
 
-ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount) {
+ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount, int line) {
     ASTNode* node = allocateASTNode();
     node->type = AST_PRINT;
     node->left = NULL;
@@ -88,6 +88,7 @@ ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount) {
     node->data.print.arguments = arguments;
     node->data.print.argCount = argCount;
     node->valueType = NULL;
+    node->line = line;
     return node;
 }
 

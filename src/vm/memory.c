@@ -74,7 +74,9 @@ ObjError* allocateError(ErrorType type, const char* message, SrcLocation locatio
 }
 
 ASTNode* allocateASTNode() {
-    return (ASTNode*)allocateObject(sizeof(ASTNode), OBJ_AST);
+    ASTNode* node = (ASTNode*)allocateObject(sizeof(ASTNode), OBJ_AST);
+    memset(node, 0, sizeof(ASTNode));
+    return node;
 }
 
 Type* allocateType() {

@@ -112,11 +112,11 @@ static void errorFmt(Compiler* compiler, const char* format, ...) {
 
 
 static void writeOp(Compiler* compiler, uint8_t op) {
-    writeChunk(compiler->chunk, op, 0);  // Line number could be stored in AST
+    writeChunk(compiler->chunk, op, compiler->currentLine);
 }
 
 static void writeByte(Compiler* compiler, uint8_t byte) {
-    writeChunk(compiler->chunk, byte, 0); // Replace 0 with the appropriate line number if available
+    writeChunk(compiler->chunk, byte, compiler->currentLine);
 }
 
 static int makeConstant(Compiler* compiler, ObjString* string) {
@@ -137,7 +137,7 @@ static void emitConstant(Compiler* compiler, Value value) {
         // fprintf(stderr, "DEBUG: Emitting valid constant: ");
         // printValue(value);
         // fprintf(stderr, "\n");
-        writeConstant(compiler->chunk, value, 0);
+        writeConstant(compiler->chunk, value, compiler->currentLine);
     } else {
         // fprintf(stderr, "ERROR: Invalid constant type\n");
         // Debug log to trace invalid constants
@@ -1244,6 +1244,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
     if (!node || compiler->hadError) {
         return;
     }
+
+    // Record the line number of the node to annotate emitted bytecode
+    compiler->currentLine = node->line;
 
     switch (node->type) {
         case AST_LITERAL: {
@@ -2464,6 +2467,7 @@ void initCompiler(Compiler* compiler, Chunk* chunk,
 
     compiler->filePath = filePath;
     compiler->sourceCode = sourceCode;
+    compiler->currentLine = 0;
 
     // Count lines in sourceCode and record start pointers for each line
     if (sourceCode) {

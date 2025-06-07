@@ -164,6 +164,7 @@ static ASTNode* parseString(Parser* parser) {
     Value value = STRING_VAL(string);
     ASTNode* node = createLiteralNode(value);
     node->valueType = createPrimitiveType(TYPE_STRING);
+    node->line = parser->previous.line;
     return node;
 }
 
@@ -214,8 +215,9 @@ static ASTNode* parseNumber(Parser* parser) {
             node->valueType = createPrimitiveType(TYPE_F64);
         }
     }
-    
+
     free(numStr);
+    node->line = parser->previous.line;
     return node;
 }
 
@@ -228,7 +230,9 @@ static ASTNode* parseGrouping(Parser* parser) {
 static ASTNode* parseUnary(Parser* parser) {
     Token operator= parser->previous;
     ASTNode* operand = parse_precedence(parser, PREC_UNARY);
-    return createUnaryNode(operator, operand);
+    ASTNode* node = createUnaryNode(operator, operand);
+    node->line = operator.line;
+    return node;
 }
 
 static ASTNode* parseBinary(Parser* parser, ASTNode* left) {
@@ -236,7 +240,9 @@ static ASTNode* parseBinary(Parser* parser, ASTNode* left) {
     ParseRule* rule = get_rule(operator.type);
     ASTNode* right =
         parse_precedence(parser, (Precedence)(rule->precedence + 1));
-    return createBinaryNode(operator, left, right);
+    ASTNode* node = createBinaryNode(operator, left, right);
+    node->line = operator.line;
+    return node;
 }
 
 static ASTNode* parseLogical(Parser* parser, ASTNode* left) {
@@ -249,9 +255,11 @@ static ASTNode* parseLogical(Parser* parser, ASTNode* left) {
     // Parse the right operand with higher precedence to ensure proper nesting
     ASTNode* right = parse_precedence(parser, (Precedence)(rule->precedence + 1));
     
-    // Create binary node - we're using the existing binary node structure 
+    // Create binary node - we're using the existing binary node structure
     // since logical operations can be represented by binary operations
-    return createBinaryNode(operator, left, right);
+    ASTNode* node = createBinaryNode(operator, left, right);
+    node->line = operator.line;
+    return node;
 }
 
 static ASTNode* parseCall(Parser* parser, ASTNode* left) {
@@ -293,7 +301,9 @@ static ASTNode* parseCall(Parser* parser, ASTNode* left) {
 
 
 
-    return createCallNode(name, arguments, argCount, NULL, genArgs, genCount);
+    ASTNode* node = createCallNode(name, arguments, argCount, NULL, genArgs, genCount);
+    node->line = name.line;
+    return node;
 }
 
 static ASTNode* parseIndex(Parser* parser, ASTNode* left) {
@@ -304,10 +314,14 @@ static ASTNode* parseIndex(Parser* parser, ASTNode* left) {
         ASTNode* endExpr = NULL;
         expression(parser, &endExpr);
         consume(parser, TOKEN_RIGHT_BRACKET, "Expect ']' after slice expression.");
-        return createSliceNode(left, startExpr, endExpr);
+        ASTNode* node = createSliceNode(left, startExpr, endExpr);
+        node->line = bracket.line;
+        return node;
     }
     consume(parser, TOKEN_RIGHT_BRACKET, "Expect ']' after index expression.");
-    return createBinaryNode(bracket, left, startExpr);
+    ASTNode* node = createBinaryNode(bracket, left, startExpr);
+    node->line = bracket.line;
+    return node;
 }
 
 static ASTNode* parseDot(Parser* parser, ASTNode* left) {
@@ -351,10 +365,14 @@ static ASTNode* parseDot(Parser* parser, ASTNode* left) {
 
         consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
 
-        return createCallNode(name, arguments, argCount, staticType, NULL, 0);
+        ASTNode* node = createCallNode(name, arguments, argCount, staticType, NULL, 0);
+        node->line = name.line;
+        return node;
     }
 
-    return createFieldAccessNode(left, name);
+    ASTNode* node = createFieldAccessNode(left, name);
+    node->line = name.line;
+    return node;
 }
 
 // Look ahead to determine if a `<` after an identifier starts a generic
@@ -396,6 +414,7 @@ static ASTNode* parseVariable(Parser* parser) {
     }
 
     ASTNode* var = createVariableNode(name, 0);  // Index resolved later
+    var->line = name.line;
 
     if (check(parser, TOKEN_LEFT_BRACE)) {
         if (findStructTypeToken(name)) {
@@ -413,6 +432,7 @@ static ASTNode* parseNil(Parser* parser) {
     (void)parser;
     ASTNode* node = createLiteralNode(NIL_VAL);
     node->valueType = getPrimitiveType(TYPE_NIL);
+    node->line = parser->previous.line;
     return node;
 }
 
@@ -438,8 +458,9 @@ static ASTNode* parseArray(Parser* parser) {
     }
 
     consume(parser, TOKEN_RIGHT_BRACKET, "Expect ']' after array elements.");
-
-    return createArrayNode(elements, count);
+    ASTNode* node = createArrayNode(elements, count);
+    node->line = parser->previous.line;
+    return node;
 }
 
 static Type* findStructTypeToken(Token token) {
@@ -479,8 +500,9 @@ static ASTNode* parseStructLiteral(Parser* parser, Token structName,
     }
 
     consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after struct literal.");
-
-    return createStructLiteralNode(structName, values, count, genericArgs, genericArgCount);
+    ASTNode* node = createStructLiteralNode(structName, values, count, genericArgs, genericArgCount);
+    node->line = structName.line;
+    return node;
 }
 
 static ASTNode* parse_precedence(Parser* parser, Precedence precedence) {
@@ -574,6 +596,7 @@ static void consumeStatementEnd(Parser* parser) {
 
 static void whileStatement(Parser* parser, ASTNode** ast) {
     // Parse a while statement
+    int line = parser->previous.line;
 
     // Parse the condition
     ASTNode* condition;
@@ -584,10 +607,12 @@ static void whileStatement(Parser* parser, ASTNode** ast) {
     block(parser, &body);
 
     *ast = createWhileNode(condition, body);
+    (*ast)->line = line;
 }
 
 static void forStatement(Parser* parser, ASTNode** ast) {
     // Parse a for statement
+    int line = parser->previous.line;
 
     // Parse the iterator variable
     consume(parser, TOKEN_IDENTIFIER, "Expect iterator variable name.");
@@ -623,9 +648,11 @@ static void forStatement(Parser* parser, ASTNode** ast) {
     block(parser, &body);
 
     *ast = createForNode(iteratorName, startExpr, endExpr, stepExpr, body);
+    (*ast)->line = line;
 }
 
 static void tryStatement(Parser* parser, ASTNode** ast) {
+    int line = parser->previous.line;
     ASTNode* tryBlock;
     block(parser, &tryBlock);
 
@@ -637,6 +664,7 @@ static void tryStatement(Parser* parser, ASTNode** ast) {
     block(parser, &catchBlock);
 
     *ast = createTryNode(tryBlock, errName, catchBlock);
+    (*ast)->line = line;
 }
 
 static void functionDeclaration(Parser* parser, ASTNode** ast) {
@@ -700,6 +728,7 @@ static void functionDeclaration(Parser* parser, ASTNode** ast) {
 
             // Create parameter node (using let node for now)
             ASTNode* param = createLetNode(paramName, paramType, NULL);
+            param->line = paramName.line;
 
             // Add to parameter list
             if (parameters == NULL) {
@@ -747,6 +776,7 @@ static void functionDeclaration(Parser* parser, ASTNode** ast) {
 
     ASTNode* fnNode = createFunctionNode(name, parameters, returnType, body,
                                          generics, genericCount);
+    fnNode->line = name.line;
     fnNode->data.function.isMethod = hasSelf;
     fnNode->data.function.implType = parser->currentImplType;
     *ast = fnNode;
@@ -766,6 +796,7 @@ static void returnStatement(Parser* parser, ASTNode** ast) {
 
     consumeStatementEnd(parser);
     *ast = createReturnNode(value);
+    (*ast)->line = parser->previous.line;
 }
 
 static void importStatement(Parser* parser, ASTNode** ast) {
@@ -773,6 +804,7 @@ static void importStatement(Parser* parser, ASTNode** ast) {
     Token path = parser->previous;
     consumeStatementEnd(parser);
     *ast = createImportNode(path);
+    (*ast)->line = path.line;
 }
 
 static void structDeclaration(Parser* parser, ASTNode** ast) {
@@ -844,9 +876,11 @@ static void structDeclaration(Parser* parser, ASTNode** ast) {
 
     // Create a dummy global variable for the struct name to allow method calls
     *ast = createLetNode(nameTok, structType, NULL);
+    (*ast)->line = nameTok.line;
 }
 
 static void implBlock(Parser* parser, ASTNode** ast) {
+    int line = parser->previous.line;
     consume(parser, TOKEN_IDENTIFIER, "Expect type name after impl.");
     Token structNameTok = parser->previous;
     Type* prevType = parser->currentImplType;
@@ -895,6 +929,7 @@ static void implBlock(Parser* parser, ASTNode** ast) {
     parser->genericCount = prevGenericCount;
     // Methods defined in an impl block should remain in the outer scope
     *ast = createBlockNode(methods, false);
+    (*ast)->line = line;
 }
 
 static void statement(Parser* parser, ASTNode** ast) {
@@ -962,14 +997,14 @@ static void statement(Parser* parser, ASTNode** ast) {
             consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after print arguments.");
             consumeStatementEnd(parser);
 
-            *ast = createPrintNode(formatExpr, arguments, argCount);
+            *ast = createPrintNode(formatExpr, arguments, argCount, parser->previous.line);
         } else {
             // This is a simple print without interpolation
             consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after print argument.");
             consumeStatementEnd(parser);
             
             // Create a print node with no additional arguments
-            *ast = createPrintNode(formatExpr, NULL, 0);
+            *ast = createPrintNode(formatExpr, NULL, 0, parser->previous.line);
         }
     } else if (match(parser, TOKEN_IF)) {
         ifStatement(parser, ast);
@@ -1004,10 +1039,12 @@ static void statement(Parser* parser, ASTNode** ast) {
     } else if (match(parser, TOKEN_BREAK)) {
         consumeStatementEnd(parser);
         *ast = createBreakNode();
+        (*ast)->line = parser->previous.line;
 
     } else if (match(parser, TOKEN_CONTINUE)) {
         consumeStatementEnd(parser);
         *ast = createContinueNode();
+        (*ast)->line = parser->previous.line;
 
     } else if (match(parser, TOKEN_LEFT_BRACE)) {
         // Rewind to the left brace so block() can consume it
@@ -1033,6 +1070,7 @@ static void statement(Parser* parser, ASTNode** ast) {
         consumeStatementEnd(parser);
 
         *ast = createLetNode(name, type, initializer);
+        (*ast)->line = name.line;
 
     } else {
         ASTNode* expr;
@@ -1045,6 +1083,7 @@ static void statement(Parser* parser, ASTNode** ast) {
 
             if (expr->type == AST_VARIABLE) {
                 *ast = createAssignmentNode(expr->data.variable.name, value);
+                (*ast)->line = parser->previous.line;
                 // The variable node itself is no longer needed
                 expr->left = expr->right = NULL;
             } else if (expr->type == AST_BINARY &&
@@ -1053,11 +1092,13 @@ static void statement(Parser* parser, ASTNode** ast) {
                 ASTNode* indexExpr = expr->right;
                 expr->left = expr->right = NULL;
                 *ast = createArraySetNode(arrayExpr, indexExpr, value);
+                (*ast)->line = parser->previous.line;
             } else if (expr->type == AST_FIELD) {
                 ASTNode* object = expr->left;
                 Token fieldName = expr->data.field.fieldName;
                 expr->left = NULL;
                 *ast = createFieldSetNode(object, fieldName, value);
+                (*ast)->line = parser->previous.line;
             } else {
                 error(parser, "Invalid assignment target.");
                 *ast = NULL;
@@ -1255,6 +1296,7 @@ static ASTNode* parseBoolean(Parser* parser) {
     bool value = parser->previous.type == TOKEN_TRUE;
     ASTNode* node = createLiteralNode(BOOL_VAL(value));
     node->valueType = getPrimitiveType(TYPE_BOOL);
+    node->line = parser->previous.line;
     return node;
 }
 
@@ -1310,6 +1352,7 @@ static void ifStatement(Parser* parser, ASTNode** ast) {
     }
 
     *ast = createIfNode(condition, thenBranch, elifConditions, elifBranches, elseBranch);
+    (*ast)->line = parser->previous.line;
 }
 
 static void block(Parser* parser, ASTNode** ast) {
@@ -1350,6 +1393,7 @@ static void block(Parser* parser, ASTNode** ast) {
     consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after block.");
 
     *ast = createBlockNode(statements, true);
+    (*ast)->line = parser->previous.line;
 }
 
 static void synchronize(Parser* parser) {

@@ -56,6 +56,10 @@ typedef struct {
 
     struct ASTNode* astRoot;
 
+    // Path of the file currently being executed. Used for runtime diagnostics.
+    const char* filePath;
+    int currentLine;
+
     Function functions[UINT8_COUNT];
     uint16_t functionCount;
     struct ASTNode* functionDecls[UINT8_COUNT];

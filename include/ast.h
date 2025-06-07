@@ -178,6 +178,7 @@ typedef struct ASTNode {
         ImportData importStmt;
     } data;
     Type* valueType;
+    int line; // Source line number for diagnostics
 } ASTNode;
 
 ASTNode* createLiteralNode(Value value);
@@ -185,7 +186,7 @@ ASTNode* createBinaryNode(Token operator, ASTNode * left, ASTNode* right);
 ASTNode* createUnaryNode(Token operator, ASTNode * operand);
 ASTNode* createVariableNode(Token name, uint8_t index);
 ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer);
-ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount);
+ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount, int line);
 ASTNode* createAssignmentNode(Token name, ASTNode* value);
 ASTNode* createIfNode(ASTNode* condition, ASTNode* thenBranch, ASTNode* elifConditions, ASTNode* elifBranches, ASTNode* elseBranch);
 ASTNode* createBlockNode(ASTNode* statements, bool scoped);

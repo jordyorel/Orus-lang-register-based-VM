@@ -33,6 +33,9 @@ typedef struct {
     const char* sourceCode;
     const char** lineStarts;
     int lineCount;
+
+    // Line number of the AST node currently being compiled
+    int currentLine;
 } Compiler;
 
 void initCompiler(Compiler* compiler, Chunk* chunk,
