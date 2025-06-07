@@ -13,8 +13,12 @@
 #include "../include/version.h"
 
 static void printError(ObjError* err) {
-    fprintf(stderr, "%s:%d:%d: %s\n", err->location.file, err->location.line,
-            err->location.column, err->message->chars);
+    if (err->location.file) {
+        fprintf(stderr, "%s:%d:%d: %s\n", err->location.file, err->location.line,
+                err->location.column, err->message->chars);
+    } else {
+        fprintf(stderr, "%s\n", err->message->chars);
+    }
     vmPrintStackTrace();
 }
 
