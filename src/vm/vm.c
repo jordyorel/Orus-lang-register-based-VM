@@ -91,20 +91,20 @@ static void printStackTrace() {
 
 void vmPrintStackTrace(void) { printStackTrace(); }
 
-static void runtimeError(ErrorType type, SrcLocation location, const char* format, ...) {
+static void runtimeError(ErrorType type, SrcLocation location,
+                         const char* format, ...) {
     char buffer[256];
     va_list args;
     va_start(args, format);
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
-    fprintf(stderr, "%s:%d:%d: %s\n", location.file, location.line, location.column, buffer);
-    printStackTrace();
+
     ObjError* err = allocateError(type, buffer, location);
     vm.lastError = ERROR_VAL(err);
 }
 
 #define RUNTIME_ERROR(fmt, ...) \
-    runtimeError(ERROR_RUNTIME, (SrcLocation){__FILE__, __LINE__, 0}, fmt, ##__VA_ARGS__)
+    runtimeError(ERROR_RUNTIME, (SrcLocation){NULL, 0, 0}, fmt, ##__VA_ARGS__)
 
 static bool appendStringDynamic(const char* src, char** buffer,
                                 int* length, int* capacity) {
