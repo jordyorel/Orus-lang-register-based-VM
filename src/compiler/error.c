@@ -297,3 +297,121 @@ void emitRedeclarationError(Compiler* compiler, Token* token, const char* name) 
     compiler->hadError = true;
 }
 
+// Emit a generic type error with a custom message, help, and note.
+void emitGenericTypeError(Compiler* compiler,
+                         Token* token,
+                         const char* message,
+                         const char* help,
+                         const char* note) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+
+    Diagnostic diagnostic;
+    memset(&diagnostic, 0, sizeof(Diagnostic));
+
+    diagnostic.code = ERROR_TYPE_MISMATCH; // Use type mismatch or define a new code if needed
+    diagnostic.primarySpan.line = token->line;
+    const char* lineStart = token->start;
+    while (lineStart > compiler->sourceCode && lineStart[-1] != '\n') lineStart--;
+    diagnostic.primarySpan.column = (int)(token->start - lineStart) + 1;
+    diagnostic.primarySpan.length = token->length;
+    diagnostic.primarySpan.filePath = compiler->filePath;
+
+    diagnostic.text.message = message;
+    diagnostic.text.help = help ? strdup(help) : NULL;
+    if (note) {
+        diagnostic.text.notes = (char**)&note;
+        diagnostic.text.noteCount = 1;
+    } else {
+        diagnostic.text.notes = NULL;
+        diagnostic.text.noteCount = 0;
+    }
+
+    emitDiagnostic(&diagnostic);
+    if (diagnostic.text.help) free(diagnostic.text.help);
+    compiler->hadError = true;
+}
+
+// Emit an error when a function is not found.
+void emitUndefinedFunctionError(Compiler* compiler, Token* token) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+
+    Diagnostic diagnostic;
+    memset(&diagnostic, 0, sizeof(Diagnostic));
+
+    diagnostic.code = ERROR_FUNCTION_CALL;
+    diagnostic.primarySpan.line = token->line;
+    const char* lineStart = token->start;
+    while (lineStart > compiler->sourceCode && lineStart[-1] != '\n') lineStart--;
+    diagnostic.primarySpan.column = (int)(token->start - lineStart) + 1;
+    diagnostic.primarySpan.length = token->length;
+    diagnostic.primarySpan.filePath = compiler->filePath;
+
+    char msgBuffer[128];
+    snprintf(msgBuffer, sizeof(msgBuffer),
+        "cannot find function `%.*s` in this scope",
+        token->length, token->start);
+    diagnostic.text.message = msgBuffer;
+    diagnostic.text.help = strdup("check for typos, missing imports, or incorrect function name");
+    const char* note = "functions must be defined before use and imported if from another module";
+    diagnostic.text.notes = (char**)&note;
+    diagnostic.text.noteCount = 1;
+
+    emitDiagnostic(&diagnostic);
+    if (diagnostic.text.help) free(diagnostic.text.help);
+    compiler->hadError = true;
+}
+
+void emitStructFieldTypeMismatchError(Compiler* compiler, Token* token, const char* structName, const char* fieldName, const char* expectedType, const char* actualType) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+    Diagnostic diagnostic;
+    memset(&diagnostic, 0, sizeof(Diagnostic));
+    diagnostic.code = ERROR_TYPE_MISMATCH;
+    diagnostic.primarySpan.line = token->line;
+    const char* lineStart = token->start;
+    while (lineStart > compiler->sourceCode && lineStart[-1] != '\n') lineStart--;
+    diagnostic.primarySpan.column = (int)(token->start - lineStart) + 1;
+    diagnostic.primarySpan.length = token->length;
+    diagnostic.primarySpan.filePath = compiler->filePath;
+    char msgBuffer[256];
+    snprintf(msgBuffer, sizeof(msgBuffer),
+        "type mismatch for field `%s` in struct `%s`: expected `%s`, found `%s`",
+        fieldName, structName, expectedType, actualType);
+    diagnostic.text.message = msgBuffer;
+    diagnostic.text.help = strdup("check the struct definition and the value assigned to this field");
+    const char* note = "all struct fields must match their declared types";
+    diagnostic.text.notes = (char**)&note;
+    diagnostic.text.noteCount = 1;
+    emitDiagnostic(&diagnostic);
+    if (diagnostic.text.help) free(diagnostic.text.help);
+    compiler->hadError = true;
+}
+
+void emitFieldAccessNonStructError(Compiler* compiler, Token* token, const char* actualType) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+    Diagnostic diagnostic;
+    memset(&diagnostic, 0, sizeof(Diagnostic));
+    diagnostic.code = ERROR_TYPE_MISMATCH;
+    diagnostic.primarySpan.line = token->line;
+    const char* lineStart = token->start;
+    while (lineStart > compiler->sourceCode && lineStart[-1] != '\n') lineStart--;
+    diagnostic.primarySpan.column = (int)(token->start - lineStart) + 1;
+    diagnostic.primarySpan.length = token->length;
+    diagnostic.primarySpan.filePath = compiler->filePath;
+    char msgBuffer[128];
+    snprintf(msgBuffer, sizeof(msgBuffer),
+        "can only access fields on structs, but found `%s`",
+        actualType);
+    diagnostic.text.message = msgBuffer;
+    diagnostic.text.help = strdup("make sure you are accessing a struct instance");
+    const char* note = "field access is only valid on struct types";
+    diagnostic.text.notes = (char**)&note;
+    diagnostic.text.noteCount = 1;
+    emitDiagnostic(&diagnostic);
+    if (diagnostic.text.help) free(diagnostic.text.help);
+    compiler->hadError = true;
+}
+

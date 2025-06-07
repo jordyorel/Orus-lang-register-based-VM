@@ -959,7 +959,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             }
 
             if (index == UINT8_MAX) {
-                error(compiler, "Undefined function.");
+                emitUndefinedFunctionError(compiler, &node->data.call.name);
                 return;
             }
 
@@ -984,8 +984,17 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 gsubs = (Type**)calloc(gcount, sizeof(Type*));
                 if (node->data.call.genericArgCount > 0) {
                     if (node->data.call.genericArgCount != gcount) {
-                        error(compiler, "Generic argument count mismatch.");
-                        return;
+                        char msgBuffer[128];
+                        snprintf(msgBuffer, sizeof(msgBuffer),
+        "generic argument count mismatch: expected %d, found %d",
+        gcount, node->data.call.genericArgCount);
+    char helpBuffer[128];
+    snprintf(helpBuffer, sizeof(helpBuffer),
+        "function expects %d generic type parameter(s), but %d were provided",
+        gcount, node->data.call.genericArgCount);
+    const char* note = "Check the function definition and provide the correct number of generic arguments.";
+    emitGenericTypeError(compiler, &node->data.call.name, msgBuffer, helpBuffer, note);
+    return;
                     }
                     for (int i = 0; i < gcount; i++) gsubs[i] = node->data.call.genericArgs[i];
                 }
@@ -1009,7 +1018,9 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     expected = substituteGenerics(expected, gnames, gsubs, gcount);
                 }
                 if (i >= acount || !typesEqual(expected, argNodes[i]->valueType)) {
-                    error(compiler, "Function argument type mismatch.");
+                    const char* expectedType = getTypeName(expected->kind);
+                    const char* actualType = argNodes[i] && argNodes[i]->valueType ? getTypeName(argNodes[i]->valueType->kind) : "(none)";
+                    emitTypeMismatchError(compiler, &node->data.call.name, expectedType, actualType);
                     return;
                 }
             }
@@ -1076,7 +1087,11 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 if (!typesEqual(structType->info.structure.fields[i].type,
                                 value->valueType)) {
-                    error(compiler, "Struct field type mismatch.");
+                    const char* structName = structType->info.structure.name->chars;
+                    const char* fieldName = structType->info.structure.fields[i].name->chars;
+                    const char* expectedType = getTypeName(structType->info.structure.fields[i].type->kind);
+                    const char* actualType = value->valueType ? getTypeName(value->valueType->kind) : "(none)";
+                    emitStructFieldTypeMismatchError(compiler, &node->data.structLiteral.name, structName, fieldName, expectedType, actualType);
                     return;
                 }
                 value = value->next;
@@ -1090,7 +1105,8 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             if (compiler->hadError) return;
             Type* structType = node->left->valueType;
             if (!structType || structType->kind != TYPE_STRUCT) {
-                error(compiler, "Can only access fields on structs.");
+                const char* actualType = structType ? getTypeName(structType->kind) : "(none)";
+                emitFieldAccessNonStructError(compiler, &node->data.field.fieldName, actualType);
                 return;
             }
             int index = -1;
@@ -2065,7 +2081,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             writeOp(compiler, index);
 
             generateCode(compiler, node->data.tryStmt.tryBlock);
-            if (compiler->hadError) { endScope(compiler); return; }
+            if ( compiler->hadError) { endScope(compiler); return; }
 
             writeOp(compiler, OP_POP_EXCEPT);
             int jumpOver = compiler->chunk->count;

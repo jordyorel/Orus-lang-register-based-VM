@@ -74,5 +74,13 @@ void emitTypeMismatchError(Compiler* compiler,
 void emitRedeclarationError(Compiler* compiler,
                             Token* token,
                             const char* name);
+void emitGenericTypeError(Compiler* compiler,
+                         Token* token,
+                         const char* message,
+                         const char* help,
+                         const char* note);
+void emitUndefinedFunctionError(Compiler* compiler, Token* token);
+void emitStructFieldTypeMismatchError(Compiler* compiler, Token* token, const char* structName, const char* fieldName, const char* expectedType, const char* actualType);
+void emitFieldAccessNonStructError(Compiler* compiler, Token* token, const char* actualType);
 
 #endif // ORUS_ERROR_H
