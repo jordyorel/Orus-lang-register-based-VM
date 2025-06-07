@@ -1,0 +1,135 @@
+struct FloatVector {
+    data: [f64; 8],
+    length: i32
+}
+
+impl FloatVector {
+    fn new() -> FloatVector {
+        return FloatVector{
+            data: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            length: 0
+        }
+    }
+
+    fn from(value: f64) -> FloatVector {
+        let vec = FloatVector.new()
+        vec.append(value)
+        return vec
+    }
+
+    fn append(self, value: f64) {
+        if self.length >= len(self.data) {
+            self.data.push(value)
+        } else {
+            self.data[self.length] = value
+        }
+        self.length = self.length + 1
+    }
+
+    fn remove_last(self) -> f64 {
+        if self.length == 0 {
+            return 0.0
+        }
+        self.length = self.length - 1
+        return self.data[self.length]
+    }
+
+    fn get(self, index: i32) -> f64 {
+        if index < 0 or index >= self.length {
+            return 0.0
+        }
+        return self.data[index]
+    }
+
+    fn set(self, index: i32, value: f64) -> bool {
+        if index < 0 or index >= self.length {
+            return false
+        }
+        self.data[index] = value
+        return true
+    }
+
+    fn size(self) -> i32 {
+        return self.length
+    }
+
+    fn is_empty(self) -> bool {
+        return self.length == 0
+    }
+
+    fn clear(self) {
+        self.length = 0
+    }
+
+    fn index_of(self, value: f64) -> i32 {
+        for i in 0..self.length {
+            if self.data[i] == value {
+                return i
+            }
+        }
+        return -1
+    }
+
+    fn contains(self, value: f64) -> bool {
+        return self.index_of(value) >= 0
+    }
+
+    fn remove_at(self, index: i32) -> bool {
+        if index < 0 or index >= self.length {
+            return false
+        }
+        for i in index..self.length-1 {
+            self.data[i] = self.data[i + 1]
+        }
+        self.length = self.length - 1
+        return true
+    }
+
+    fn insert(self, index: i32, value: f64) -> bool {
+        if index < 0 or index > self.length {
+            return false
+        }
+        if self.length >= len(self.data) {
+            self.data.push(0.0)
+        }
+        let i = self.length
+        while i > index {
+            self.data[i] = self.data[i - 1]
+            i = i - 1
+        }
+        self.data[index] = value
+        self.length = self.length + 1
+        return true
+    }
+}
+
+fn test_float_vector() {
+    print("\n--- FloatVector Test ---")
+
+    let vec = FloatVector.new()
+    vec.append(3.14)
+    vec.append(2.71)
+    vec.append(1.618)
+
+    print("Elements: {}, {}, {}", vec.get(0), vec.get(1), vec.get(2))
+
+    vec.set(1, 9.81)
+    print("After update: {}, {}, {}", vec.get(0), vec.get(1), vec.get(2))
+
+    let popped = vec.remove_last()
+    print("Popped: {}", popped)
+    print("New length: {}", vec.size())
+
+    vec.insert(1, 6.28)
+    print("After insert: {}, {}, {}", vec.get(0), vec.get(1), vec.get(2))
+
+    vec.remove_at(0)
+    print("After removing index 0: {}, {}", vec.get(0), vec.get(1))
+
+    print("Contains 6.28: {}", vec.contains(6.28))
+    print("Index of 9.81: {}", vec.index_of(9.81))
+}
+
+fn main() {
+    test_float_vector()
+}
