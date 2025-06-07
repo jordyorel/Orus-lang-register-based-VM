@@ -1445,6 +1445,10 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_F64:
                             writeOp(compiler, OP_LESS_F64);
                             break;
+                        case TYPE_GENERIC:
+                            // Fallback to numeric comparison with conversion
+                            writeOp(compiler, OP_LESS_F64);
+                            break;
                         default:
                             error(compiler, "Less than not supported for this type.");
                             return;
@@ -1460,6 +1464,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             writeOp(compiler, OP_LESS_EQUAL_U32);
                             break;
                         case TYPE_F64:
+                            writeOp(compiler, OP_LESS_EQUAL_F64);
+                            break;
+                        case TYPE_GENERIC:
                             writeOp(compiler, OP_LESS_EQUAL_F64);
                             break;
                         default:
@@ -1479,6 +1486,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_F64:
                             writeOp(compiler, OP_GREATER_F64);
                             break;
+                        case TYPE_GENERIC:
+                            writeOp(compiler, OP_GREATER_F64);
+                            break;
                         default:
                             error(compiler, "Greater than not supported for this type.");
                             return;
@@ -1494,6 +1504,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             writeOp(compiler, OP_GREATER_EQUAL_U32);
                             break;
                         case TYPE_F64:
+                            writeOp(compiler, OP_GREATER_EQUAL_F64);
+                            break;
+                        case TYPE_GENERIC:
                             writeOp(compiler, OP_GREATER_EQUAL_F64);
                             break;
                         default:
