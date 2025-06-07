@@ -689,6 +689,24 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 index = defineVariable(compiler, node->data.function.name, node->data.function.returnType);
             }
             node->data.function.index = index;
+            vm.functionDecls[index] = node;
+
+            int pcount = 0;
+            ASTNode* p = node->data.function.parameters;
+            while (p) { pcount++; p = p->next; }
+            Type** paramTypes = NULL;
+            if (pcount > 0) {
+                paramTypes = (Type**)malloc(sizeof(Type*) * pcount);
+                p = node->data.function.parameters;
+                for (int i = 0; i < pcount; i++) {
+                    paramTypes[i] = p->data.let.type;
+                    p = p->next;
+                }
+            }
+            Type* funcType = createFunctionType(node->data.function.returnType,
+                                               paramTypes, pcount);
+            variableTypes[index] = funcType;
+            vm.globalTypes[index] = funcType;
 
             beginScope(compiler);
             // Type check parameters
@@ -717,6 +735,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
        case AST_CALL: {
             // Attempt to resolve the function name
+            ObjString* nameObj = allocateString(node->data.call.name.start,
+                                               node->data.call.name.length);
+            int nativeIdx = findNative(nameObj);
+            node->data.call.nativeIndex = nativeIdx;
             // Built-in functions
             if (tokenEquals(node->data.call.name, "len")) {
                 if (node->data.call.argCount != 1) {
@@ -759,6 +781,32 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     return;
                 }
                 node->valueType = getPrimitiveType(TYPE_STRING);
+                break;
+            } else if (tokenEquals(node->data.call.name, "type")) {
+                if (node->data.call.argCount != 1) {
+                    error(compiler, "type() takes exactly one argument.");
+                    return;
+                }
+                ASTNode* valArg = node->data.call.arguments;
+                typeCheckNode(compiler, valArg);
+                if (compiler->hadError) return;
+                node->valueType = getPrimitiveType(TYPE_STRING);
+                break;
+            } else if (tokenEquals(node->data.call.name, "is_type")) {
+                if (node->data.call.argCount != 2) {
+                    error(compiler, "is_type() takes exactly two arguments.");
+                    return;
+                }
+                ASTNode* valArg = node->data.call.arguments;
+                ASTNode* typeArg = valArg->next;
+                typeCheckNode(compiler, valArg);
+                typeCheckNode(compiler, typeArg);
+                if (compiler->hadError) return;
+                if (!typeArg->valueType || typeArg->valueType->kind != TYPE_STRING) {
+                    error(compiler, "is_type() second argument must be string.");
+                    return;
+                }
+                node->valueType = getPrimitiveType(TYPE_BOOL);
                 break;
             } else if (tokenEquals(node->data.call.name, "push") &&
                        node->data.call.argCount == 2) {
@@ -851,23 +899,61 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             node->data.call.index = index;
 
             // Get the function's return type
-            Type* returnType = vm.globalTypes[index];
-            if (!returnType) {
-                char nameBuff[node->data.call.name.length + 1];
-                memcpy(nameBuff, node->data.call.name.start, node->data.call.name.length);
-                nameBuff[node->data.call.name.length] = '\0';
-                fprintf(stderr, "Call to %s has no return type\n", nameBuff);
-                error(compiler, "Function has no return type.");
+            Type* funcType = variableTypes[index];
+            if (!funcType || funcType->kind != TYPE_FUNCTION) {
+                error(compiler, "Called object is not a function.");
                 return;
             }
 
-            // Allocate the conversion flags array
-            node->data.call.convertArgs = (bool*)malloc(node->data.call.argCount * sizeof(bool));
-            for (int i = 0; i < node->data.call.argCount; i++) {
-                node->data.call.convertArgs[i] = false;
+            ASTNode* fnNode = vm.functionDecls[index];
+            ObjString** gnames = NULL;
+            int gcount = 0;
+            if (fnNode) {
+                gnames = fnNode->data.function.genericParams;
+                gcount = fnNode->data.function.genericCount;
+            }
+            Type** gsubs = NULL;
+            if (gcount > 0) {
+                gsubs = (Type**)calloc(gcount, sizeof(Type*));
+                if (node->data.call.genericArgCount > 0) {
+                    if (node->data.call.genericArgCount != gcount) {
+                        error(compiler, "Generic argument count mismatch.");
+                        return;
+                    }
+                    for (int i = 0; i < gcount; i++) gsubs[i] = node->data.call.genericArgs[i];
+                }
             }
 
-            // Set the call's value type to the function's return type
+            ASTNode* argIt = node->data.call.arguments;
+            ASTNode* argNodes[256];
+            int acount = 0;
+            while (argIt != NULL && acount < 256) {
+                argNodes[acount++] = argIt;
+                argIt = argIt->next;
+            }
+
+            for (int i = 0; i < funcType->info.function.paramCount; i++) {
+                Type* expected = funcType->info.function.paramTypes[i];
+                if (expected->kind == TYPE_GENERIC && gcount > 0) {
+                    for (int j = 0; j < gcount; j++) {
+                        if (strcmp(expected->info.generic.name->chars, gnames[j]->chars) == 0) {
+                            if (!gsubs[j]) gsubs[j] = argNodes[i]->valueType;
+                            expected = gsubs[j];
+                        }
+                    }
+                } else if (gcount > 0) {
+                    expected = substituteGenerics(expected, gnames, gsubs, gcount);
+                }
+                if (i >= acount || !typesEqual(expected, argNodes[i]->valueType)) {
+                    error(compiler, "Function argument type mismatch.");
+                    return;
+                }
+            }
+
+            Type* returnType = substituteGenerics(funcType->info.function.returnType,
+                                                 gnames, gsubs, gcount);
+
+            node->data.call.convertArgs = (bool*)calloc(node->data.call.argCount, sizeof(bool));
             node->valueType = returnType;
             break;
         }
@@ -1781,25 +1867,17 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             break;
         }
         case AST_CALL: {
-            // Built-in implementations
-            if (tokenEquals(node->data.call.name, "len")) {
-                generateCode(compiler, node->data.call.arguments);
-                writeOp(compiler, OP_LEN);
-                break;
-            } else if (tokenEquals(node->data.call.name, "substring")) {
-                generateCode(compiler, node->data.call.arguments);            // string
-                generateCode(compiler, node->data.call.arguments->next);      // start
-                generateCode(compiler, node->data.call.arguments->next->next); // length
-                writeOp(compiler, OP_SUBSTRING);
-                break;
-            } else if (tokenEquals(node->data.call.name, "push")) {
-                generateCode(compiler, node->data.call.arguments);            // array
-                generateCode(compiler, node->data.call.arguments->next);      // value
-                writeOp(compiler, OP_ARRAY_PUSH);
-                break;
-            } else if (tokenEquals(node->data.call.name, "pop")) {
-                generateCode(compiler, node->data.call.arguments);            // array
-                writeOp(compiler, OP_ARRAY_POP);
+            // Built-in implementations using native registry
+            if (node->data.call.nativeIndex != -1) {
+                ASTNode* arg = node->data.call.arguments;
+                while (arg) {
+                    generateCode(compiler, arg);
+                    if (compiler->hadError) return;
+                    arg = arg->next;
+                }
+                writeOp(compiler, OP_CALL_NATIVE);
+                writeOp(compiler, (uint8_t)node->data.call.nativeIndex);
+                writeOp(compiler, (uint8_t)node->data.call.argCount);
                 break;
             }
 

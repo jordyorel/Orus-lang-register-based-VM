@@ -56,14 +56,24 @@ Type* createFunctionType(Type* returnType, Type** paramTypes, int paramCount) {
     return type;
 }
 
-Type* createStructType(ObjString* name, FieldInfo* fields, int fieldCount) {
+Type* createStructType(ObjString* name, FieldInfo* fields, int fieldCount,
+                       ObjString** generics, int genericCount) {
     if (structTypeCount >= UINT8_COUNT) return NULL;
     Type* type = allocateType();
     type->kind = TYPE_STRUCT;
     type->info.structure.name = name;
     type->info.structure.fields = fields;
     type->info.structure.fieldCount = fieldCount;
+    type->info.structure.genericParams = generics;
+    type->info.structure.genericCount = genericCount;
     structTypes[structTypeCount++] = type;
+    return type;
+}
+
+Type* createGenericType(ObjString* name) {
+    Type* type = allocateType();
+    type->kind = TYPE_GENERIC;
+    type->info.generic.name = name;
     return type;
 }
 
@@ -131,6 +141,10 @@ bool typesEqual(Type* a, Type* b) {
             return strcmp(a->info.structure.name->chars,
                           b->info.structure.name->chars) == 0;
 
+        case TYPE_GENERIC:
+            return strcmp(a->info.generic.name->chars,
+                          b->info.generic.name->chars) == 0;
+
         default:
             return false;
     }
@@ -147,6 +161,7 @@ const char* getTypeName(TypeKind kind) {
         case TYPE_ARRAY: return "array";
         case TYPE_FUNCTION: return "function";
         case TYPE_STRUCT: return "struct";
+        case TYPE_GENERIC: return "generic";
         default: return "unknown";
     }
 }
@@ -158,4 +173,55 @@ void markTypeRoots() {
     for (int i = 0; i < structTypeCount; i++) {
         if (structTypes[i]) markObject((Obj*)structTypes[i]);
     }
+}
+
+Type* substituteGenerics(Type* type, ObjString** names, Type** subs, int count) {
+    if (!type) return NULL;
+    switch (type->kind) {
+        case TYPE_GENERIC: {
+            for (int i = 0; i < count; i++) {
+                if (names[i] && strcmp(type->info.generic.name->chars,
+                                      names[i]->chars) == 0) {
+                    return subs[i] ? subs[i] : type;
+                }
+            }
+            return type;
+        }
+        case TYPE_ARRAY: {
+            Type* elem = substituteGenerics(type->info.array.elementType,
+                                           names, subs, count);
+            if (elem == type->info.array.elementType) return type;
+            return createArrayType(elem);
+        }
+        case TYPE_FUNCTION: {
+            int pc = type->info.function.paramCount;
+            Type** params = NULL;
+            if (pc > 0) {
+                params = (Type**)malloc(sizeof(Type*) * pc);
+                for (int i = 0; i < pc; i++) {
+                    params[i] = substituteGenerics(type->info.function.paramTypes[i],
+                                                   names, subs, count);
+                }
+            }
+            Type* ret = substituteGenerics(type->info.function.returnType,
+                                          names, subs, count);
+            return createFunctionType(ret, params, pc);
+        }
+        default:
+            return type;
+    }
+}
+
+Type* instantiateStructType(Type* base, Type** args, int argCount) {
+    if (!base || base->kind != TYPE_STRUCT) return base;
+    FieldInfo* fields = NULL;
+    int fcount = base->info.structure.fieldCount;
+    if (fcount > 0) fields = (FieldInfo*)malloc(sizeof(FieldInfo) * fcount);
+    for (int i = 0; i < fcount; i++) {
+        fields[i].name = base->info.structure.fields[i].name;
+        fields[i].type = substituteGenerics(base->info.structure.fields[i].type,
+                                           base->info.structure.genericParams,
+                                           args, argCount);
+    }
+    return createStructType(base->info.structure.name, fields, fcount, NULL, 0);
 }

@@ -157,7 +157,8 @@ ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr,
     return node;
 }
 
-ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType, ASTNode* body) {
+ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType,
+                            ASTNode* body, ObjString** generics, int genericCount) {
     ASTNode* node = allocateASTNode();
     node->type = AST_FUNCTION;
     node->left = NULL;
@@ -171,11 +172,14 @@ ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType, A
     node->data.function.isMethod = false;
     node->data.function.implType = NULL;
     node->data.function.mangledName = NULL;
+    node->data.function.genericParams = generics;
+    node->data.function.genericCount = genericCount;
     node->valueType = NULL;
     return node;
 }
 
-ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount, Type* staticType) {
+ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount, Type* staticType,
+                        Type** genericArgs, int genericArgCount) {
     ASTNode* node = allocateASTNode();
     node->type = AST_CALL;
     node->left = NULL;
@@ -188,6 +192,9 @@ ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount, Type* stat
     node->data.call.argCount = argCount;
     node->data.call.staticType = staticType;
     node->data.call.mangledName = NULL;
+    node->data.call.nativeIndex = -1;
+    node->data.call.genericArgs = genericArgs;
+    node->data.call.genericArgCount = genericArgCount;
     node->valueType = NULL;
     return node;
 }

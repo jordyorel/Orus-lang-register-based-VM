@@ -11,6 +11,16 @@
 #define FRAMES_MAX 256
 #define LOOP_ITERATION_LIMIT 10000
 #define TRY_MAX 64
+#define MAX_NATIVES 64
+
+typedef Value (*NativeFn)(int argCount, Value* args);
+
+typedef struct {
+    ObjString* name;
+    NativeFn function;
+    int arity;      // -1 for variadic
+    Type* returnType;
+} NativeFunction;
 
 typedef struct {
     int start;          // Bytecode offset of the function body
@@ -48,6 +58,7 @@ typedef struct {
 
     Function functions[UINT8_COUNT];
     uint16_t functionCount;
+    struct ASTNode* functionDecls[UINT8_COUNT];
 
     // Call frames for function calls
     CallFrame frames[FRAMES_MAX];
@@ -60,6 +71,9 @@ typedef struct {
 
     ObjString* loadedModules[UINT8_COUNT];
     uint8_t moduleCount;
+
+    NativeFunction nativeFunctions[MAX_NATIVES];
+    int nativeFunctionCount;
 
     // Garbage collector state
     Obj* objects;
@@ -80,6 +94,10 @@ InterpretResult runChunk(Chunk* chunk);  // Execute a pre-compiled chunk
 void push(Value value);
 Value pop();
 void vmPrintStackTrace(void);
+
+// Native function helpers
+void defineNative(const char* name, NativeFn function, int arity, Type* returnType);
+int findNative(ObjString* name);
 
 extern Type* variableTypes[UINT8_COUNT];
 

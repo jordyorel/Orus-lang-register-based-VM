@@ -1,0 +1,5 @@
+fn main() {
+    print(is_type(1, "i32"))
+    print(is_type("hi", "string"))
+    print(is_type(1, "string"))
+}

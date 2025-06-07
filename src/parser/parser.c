@@ -286,7 +286,7 @@ static ASTNode* parseCall(Parser* parser, ASTNode* left) {
 
 
 
-    return createCallNode(name, arguments, argCount, NULL);
+    return createCallNode(name, arguments, argCount, NULL, NULL, 0);
 }
 
 static ASTNode* parseIndex(Parser* parser, ASTNode* left) {
@@ -338,7 +338,7 @@ static ASTNode* parseDot(Parser* parser, ASTNode* left) {
 
         consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
 
-        return createCallNode(name, arguments, argCount, staticType);
+        return createCallNode(name, arguments, argCount, staticType, NULL, 0);
     }
 
     return createFieldAccessNode(left, name);
@@ -588,6 +588,26 @@ static void functionDeclaration(Parser* parser, ASTNode** ast) {
 
     bool hasSelf = false;
 
+    // Generic parameters
+    ObjString** generics = NULL;
+    int genericCount = 0;
+    int prevGenericCount = parser->genericCount;
+    if (match(parser, TOKEN_LESS)) {
+        do {
+            consume(parser, TOKEN_IDENTIFIER, "Expect generic parameter name.");
+            Token gnameTok = parser->previous;
+            ObjString* gname = allocateString(gnameTok.start, gnameTok.length);
+            if (parser->genericCount >= parser->genericCapacity) {
+                parser->genericCapacity = parser->genericCapacity < 8 ? 8 : parser->genericCapacity * 2;
+                parser->genericParams = realloc(parser->genericParams, sizeof(ObjString*) * parser->genericCapacity);
+            }
+            parser->genericParams[parser->genericCount++] = gname;
+            generics = realloc(generics, sizeof(ObjString*) * (genericCount + 1));
+            generics[genericCount++] = gname;
+        } while (match(parser, TOKEN_COMMA));
+        consume(parser, TOKEN_GREATER, "Expect '>' after generic parameters.");
+    }
+
     // Enter function scope
     parser->functionDepth++;
 
@@ -665,8 +685,10 @@ static void functionDeclaration(Parser* parser, ASTNode** ast) {
 
     // Exit function scope
     parser->functionDepth--;
+    parser->genericCount = prevGenericCount;
 
-    ASTNode* fnNode = createFunctionNode(name, parameters, returnType, body);
+    ASTNode* fnNode = createFunctionNode(name, parameters, returnType, body,
+                                         generics, genericCount);
     fnNode->data.function.isMethod = hasSelf;
     fnNode->data.function.implType = parser->currentImplType;
     *ast = fnNode;
@@ -698,6 +720,25 @@ static void importStatement(Parser* parser, ASTNode** ast) {
 static void structDeclaration(Parser* parser, ASTNode** ast) {
     consume(parser, TOKEN_IDENTIFIER, "Expect struct name.");
     Token nameTok = parser->previous;
+
+    ObjString** generics = NULL;
+    int genericCount = 0;
+    int prevGenericCount = parser->genericCount;
+    if (match(parser, TOKEN_LESS)) {
+        do {
+            consume(parser, TOKEN_IDENTIFIER, "Expect generic parameter name.");
+            Token gnameTok = parser->previous;
+            ObjString* gname = allocateString(gnameTok.start, gnameTok.length);
+            if (parser->genericCount >= parser->genericCapacity) {
+                parser->genericCapacity = parser->genericCapacity < 8 ? 8 : parser->genericCapacity * 2;
+                parser->genericParams = realloc(parser->genericParams, sizeof(ObjString*) * parser->genericCapacity);
+            }
+            parser->genericParams[parser->genericCount++] = gname;
+            generics = realloc(generics, sizeof(ObjString*) * (genericCount + 1));
+            generics[genericCount++] = gname;
+        } while (match(parser, TOKEN_COMMA));
+        consume(parser, TOKEN_GREATER, "Expect '>' after generic parameters.");
+    }
     consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after struct name.");
 
     FieldInfo* fields = NULL;
@@ -737,7 +778,9 @@ static void structDeclaration(Parser* parser, ASTNode** ast) {
     consumeStatementEnd(parser);
 
     ObjString* structName = allocateString(nameTok.start, nameTok.length);
-    Type* structType = createStructType(structName, fields, count);
+    Type* structType = createStructType(structName, fields, count,
+                                        generics, genericCount);
+    parser->genericCount = prevGenericCount;
 
     // Create a dummy global variable for the struct name to allow method calls
     *ast = createLetNode(nameTok, structType, NULL);
@@ -986,6 +1029,9 @@ void initParser(Parser* parser, Scanner* scanner) {
     parser->scanner = scanner;
     parser->functionDepth = 0;
     parser->currentImplType = NULL;
+    parser->genericParams = NULL;
+    parser->genericCount = 0;
+    parser->genericCapacity = 0;
 }
 
 bool parse(const char* source, ASTNode** ast) {
@@ -1034,6 +1080,7 @@ bool parse(const char* source, ASTNode** ast) {
         }
         current = stmt;
     }
+    if (parser.genericParams) free(parser.genericParams);
     return !parser.hadError;
 }
 
@@ -1064,10 +1111,20 @@ static Type* parseType(Parser* parser) {
         if (strcmp(name, "string") == 0) {
             type = getPrimitiveType(TYPE_STRING);
         } else {
-            type = findStructType(name);
+            for (int i = parser->genericCount - 1; i >= 0; i--) {
+                ObjString* g = parser->genericParams[i];
+                if (g->length == ident.length &&
+                    strncmp(g->chars, ident.start, ident.length) == 0) {
+                    type = createGenericType(g);
+                    break;
+                }
+            }
             if (!type) {
-                error(parser, "Unknown type name.");
-                return NULL;
+                type = findStructType(name);
+                if (!type) {
+                    error(parser, "Unknown type name.");
+                    return NULL;
+                }
             }
         }
     } else {

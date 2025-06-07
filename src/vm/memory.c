@@ -162,11 +162,17 @@ void markObject(Obj* object) {
                     if (node->data.function.returnType) markObject((Obj*)node->data.function.returnType);
                     if (node->data.function.implType) markObject((Obj*)node->data.function.implType);
                     if (node->data.function.mangledName) markObject((Obj*)node->data.function.mangledName);
+                    for (int i = 0; i < node->data.function.genericCount; i++) {
+                        markObject((Obj*)node->data.function.genericParams[i]);
+                    }
                     break;
                 case AST_CALL:
                     if (node->data.call.arguments) markObject((Obj*)node->data.call.arguments);
                     if (node->data.call.staticType) markObject((Obj*)node->data.call.staticType);
                     if (node->data.call.mangledName) markObject((Obj*)node->data.call.mangledName);
+                    for (int i = 0; i < node->data.call.genericArgCount; i++) {
+                        markObject((Obj*)node->data.call.genericArgs[i]);
+                    }
                     break;
                 case AST_RETURN:
                     if (node->data.returnStmt.value) markObject((Obj*)node->data.returnStmt.value);
@@ -206,6 +212,12 @@ void markObject(Obj* object) {
                         markObject((Obj*)type->info.structure.fields[i].name);
                         markObject((Obj*)type->info.structure.fields[i].type);
                     }
+                    for (int i = 0; i < type->info.structure.genericCount; i++) {
+                        markObject((Obj*)type->info.structure.genericParams[i]);
+                    }
+                    break;
+                case TYPE_GENERIC:
+                    markObject((Obj*)type->info.generic.name);
                     break;
                 default:
                     break;
@@ -227,6 +239,9 @@ void collectGarbage() {
         }
         if (variableTypes[i] != NULL) {
             markObject((Obj*)variableTypes[i]);
+        }
+        if (vm.functionDecls[i] != NULL) {
+            markObject((Obj*)vm.functionDecls[i]);
         }
     }
     if (vm.chunk != NULL) {
@@ -284,8 +299,16 @@ static void freeObject(Obj* object) {
         }
         case OBJ_AST: {
             ASTNode* node = (ASTNode*)object;
-            if (node->type == AST_CALL && node->data.call.convertArgs) {
-                free(node->data.call.convertArgs);
+            if (node->type == AST_CALL) {
+                if (node->data.call.convertArgs) {
+                    free(node->data.call.convertArgs);
+                }
+                if (node->data.call.genericArgs) {
+                    free(node->data.call.genericArgs);
+                }
+            }
+            if (node->type == AST_FUNCTION && node->data.function.genericParams) {
+                free(node->data.function.genericParams);
             }
             free(node);
             break;
@@ -298,6 +321,9 @@ static void freeObject(Obj* object) {
                     break;
                 case TYPE_STRUCT:
                     free(type->info.structure.fields);
+                    free(type->info.structure.genericParams);
+                    break;
+                case TYPE_GENERIC:
                     break;
                 default:
                     break;
