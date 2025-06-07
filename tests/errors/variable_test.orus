@@ -1,0 +1,41 @@
+// Comprehensive test for variable-related errors in Orus
+
+fn main() {
+    // 1. Basic variable declaration and usage
+    let x: i32 = 10
+    print("Variable x declared with value:")
+    print(x)
+    
+    // 2. ERROR: Variable redeclaration in same scope
+    // This will cause ERROR_UNDEFINED_VARIABLE (E0425)
+    let x: i32 = 20
+    
+    // 3. Scope testing
+    {
+        // 4. Inner scope variable declaration (shadowing)
+        let x: i32 = 30
+        print("Inner scope x value:")
+        print(x)
+        
+        // 5. New variable in inner scope
+        let y: i32 = 40
+        print("Inner scope y value:")
+        print(y)
+    }
+    
+    // 6. ERROR: Accessing inner scope variable from outer scope
+    // This will cause ERROR_UNDEFINED_VARIABLE (E0425) or ERROR_SCOPE_ERROR (E0426)
+    print("Trying to access y from outer scope:")
+    print(y)
+    
+    // 7. ERROR: Using a variable before declaration
+    // This will cause ERROR_UNDEFINED_VARIABLE (E0425)
+    print("Trying to use z before declaration:")
+    print(z)
+    let z: i32 = 50
+    
+    // 8. ERROR: Using an undeclared variable
+    // This will cause ERROR_UNDEFINED_VARIABLE (E0425)
+    print("Using completely undeclared variable:")
+    print(undeclared_var)
+}
