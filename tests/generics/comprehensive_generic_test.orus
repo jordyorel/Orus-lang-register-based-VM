@@ -1,0 +1,239 @@
+// Comprehensive Generic Test
+// This test showcases generics with struct, impl, and functions
+
+// A basic generic wrapper type
+struct Result<T> {
+    value: T
+    isError: bool
+}
+
+// Implementation for the Result type
+impl Result {
+    // Static method to create a success result
+    fn ok<T>(value: T) -> Result<T> {
+        return Result<T>{
+            value: value,
+            isError: false
+        }
+    }
+    
+    // Static method to create an error result
+    fn err<T>(value: T) -> Result<T> {
+        return Result<T>{
+            value: value,
+            isError: true
+        }
+    }
+}
+
+// Instance methods for Result<T> defined separately as functions
+fn isOk<T>(self: Result<T>) -> bool {
+    return not self.isError
+}
+
+fn isErr<T>(self: Result<T>) -> bool {
+    return self.isError
+}
+
+fn unwrapOr<T>(self: Result<T>, defaultValue: T) -> T {
+    if (self.isError) {
+        return defaultValue
+    } else {
+        return self.value
+    }
+}
+
+// A generic collection type with multiple type parameters
+struct KeyValue<K, V> {
+    key: K
+    value: V
+}
+
+// Implementation for the KeyValue type
+impl KeyValue<K, V> {
+    // Static method to create a new key-value pair
+    fn new<K, V>(key: K, value: V) -> KeyValue<K, V> {
+        return KeyValue<K, V>{
+            key: key,
+            value: value
+        }
+    }
+    
+    // Instance method to convert to string representation
+    fn toString(self) -> string {
+        return "Key: " + self.key + ", Value: " + self.value
+    }
+}
+
+// A generic data structure for a binary tree
+struct TreeNode<T> {
+    value: T
+    left: [TreeNode<T>]  // Using array as optional
+    right: [TreeNode<T>] // Using array as optional
+}
+
+// Implementation for the TreeNode type
+impl TreeNode<T> {
+    // Static method to create a leaf node (no children)
+    fn leaf<T>(value: T) -> TreeNode<T> {
+        return TreeNode<T>{
+            value: value,
+            left: [],
+            right: []
+        }
+    }
+    
+    // Static method to create an internal node (with children)
+    fn node<T>(value: T, left: TreeNode<T>, right: TreeNode<T>) -> TreeNode<T> {
+        let node = TreeNode<T>{
+            value: value,
+            left: [],
+            right: []
+        }
+        node.left.push(left)
+        node.right.push(right)
+        return node
+    }
+    
+    // Instance method to check if node is a leaf
+    fn isLeaf(self) -> bool {
+        return len(self.left) == 0 and len(self.right) == 0
+    }
+    
+    // Instance method to get value
+    fn getValue(self) -> T {
+        return self.value
+    }
+}
+
+// Generic function to calculate the sum of values in an array
+fn sum<T>(values: [T]) -> T {
+    if (len(values) == 0) {
+        // This is a bit of a hack since we need to return something of type T
+        // but don't have a proper "zero" for all types
+        error("Cannot sum an empty array")
+    }
+    
+    let result = values[0]
+    for i in 1..len(values) {
+        result = result + values[i]
+    }
+    return result
+}
+
+// Generic map function with callback
+fn map<T, U>(items: [T], transform: (T) -> U) -> [U] {
+    let result = []
+    for i in 0..len(items) {
+        result.push(transform(items[i]))
+    }
+    return result
+}
+
+// Generic filter function with predicate
+fn filter<T>(items: [T], predicate: (T) -> bool) -> [T] {
+    let result = []
+    for i in 0..len(items) {
+        if (predicate(items[i])) {
+            result.push(items[i])
+        }
+    }
+    return result
+}
+
+// Callback functions for testing
+fn double(x: i32) -> i32 {
+    return x * 2
+}
+
+fn isEven(x: i32) -> bool {
+    return x % 2 == 0
+}
+
+fn error(msg: string) {
+    print("Error: " + msg)
+}
+
+// Main function to test all generic features
+fn main() {
+    print("Starting comprehensive generic test...")
+    
+    // Test the Result implementation
+    let successResult = Result.ok(42)
+    let errorResult = Result.err("Something went wrong")
+    
+    print("Success result: {}, isOk: {}", successResult.value, successResult.isOk())
+    print("Error result: {}, isErr: {}", errorResult.value, errorResult.isErr())
+    
+    // Test unwrapOr method
+    let defaultInt = 0
+    print("Unwrap success: {}", successResult.unwrapOr(defaultInt))
+    
+    let defaultString = "Default message"
+    print("Unwrap error with default: {}", errorResult.unwrapOr(defaultString))
+    
+    // Test KeyValue implementation
+    let userEntry = KeyValue.new(1, "John")
+    let configEntry = KeyValue.new("server", "localhost:8080")
+    
+    print("User entry: {}", userEntry.toString())
+    print("Config entry: {}", configEntry.toString())
+    
+    // Test TreeNode implementation
+    let leaf1 = TreeNode.leaf(1)
+    let leaf2 = TreeNode.leaf(3)
+    let root = TreeNode.node(2, leaf1, leaf2)
+    
+    print("Root value: {}", root.getValue())
+    print("Is leaf1 a leaf? {}", leaf1.isLeaf())
+    print("Is root a leaf? {}", root.isLeaf())
+    
+    // Test traversing the tree (in-order)
+    let result = []
+    inOrderTraversal(root, result)
+    print("In-order traversal: {}", result)
+    
+    // Test generic array functions
+    let numbers = [1, 2, 3, 4, 5]
+    let sumResult = sum(numbers)
+    print("Sum of numbers: {}", sumResult)
+    
+    // Test map function
+    let doubled = map(numbers, double)
+    print("Doubled numbers: {}", doubled)
+    
+    // Test filter function
+    let evenNumbers = filter(numbers, isEven)
+    print("Even numbers: {}", evenNumbers)
+    
+    // Test nested generics
+    let nestedResult = Result.ok(KeyValue.new("api_key", "secret123"))
+    if (nestedResult.isOk()) {
+        print("Nested result: {}", nestedResult.value.toString())
+    }
+    
+    // Test array of generic types
+    let results = []
+    results.push(Result.ok(100))
+    results.push(Result.ok(200))
+    results.push(Result.err(300))
+    
+    print("Results array:")
+    for i in 0..len(results) {
+        let status = if (results[i].isOk()) "OK" else "Error"
+        print("  {}: {} - {}", i, status, results[i].value)
+    }
+}
+
+// Helper function for tree traversal
+fn inOrderTraversal<T>(node: TreeNode<T>, result: [T]) {
+    if (len(node.left) > 0) {
+        inOrderTraversal(node.left[0], result)
+    }
+    
+    result.push(node.value)
+    
+    if (len(node.right) > 0) {
+        inOrderTraversal(node.right[0], result)
+    }
+}
