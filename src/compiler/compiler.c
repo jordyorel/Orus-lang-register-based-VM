@@ -882,6 +882,20 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
             uint8_t index = resolveVariable(compiler, node->data.call.name);
 
+            // If the function name matches a built-in but wasn't defined in
+            // the current scope, provide a helpful argument count error instead
+            // of reporting it as an undefined function.
+            if (index == UINT8_MAX && node->data.call.nativeIndex != -1) {
+                int expected = vm.nativeFunctions[node->data.call.nativeIndex].arity;
+                const char* builtinName = vm.nativeFunctions[node->data.call.nativeIndex].name->chars;
+                if (node->data.call.argCount != expected) {
+                    emitBuiltinArgCountError(compiler, &node->data.call.name,
+                                            builtinName, expected,
+                                            node->data.call.argCount);
+                    return;
+                }
+            }
+
             // Type check arguments first to know the type of the receiver
             ASTNode* arg = node->data.call.arguments;
             while (arg != NULL) {
