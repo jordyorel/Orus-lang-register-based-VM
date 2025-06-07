@@ -35,7 +35,7 @@ run_category_tests() {
             exit_code=$?
 
             # Determine expected behaviour for error tests
-            if [ "$category" = "errors" ]; then
+            if [[ "$category" = "errors" || "$category" == */errors ]]; then
                 if [ $exit_code -ne 0 ]; then
                     echo -e "  ${GREEN}✓ PASS${NC}: $test_name"
                     ((category_pass++))
@@ -75,12 +75,10 @@ run_all_tests() {
     
     # Get all category directories
     categories=()
-    for dir in "$SCRIPT_DIR"/*/; do
-        if [ -d "$dir" ]; then
-            category=$(basename "$dir")
-            categories+=("$category")
-        fi
-    done
+    while IFS= read -r -d '' dir; do
+        category="${dir#$SCRIPT_DIR/}"
+        categories+=("$category")
+    done < <(find "$SCRIPT_DIR" -mindepth 1 -type d -print0)
     
     # Sort categories
     IFS=$'\n' sorted_categories=($(sort <<<"${categories[*]}"))
