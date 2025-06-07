@@ -36,10 +36,9 @@ fn some<T>(value: T) -> Optional<T> {
     return Optional<T>{hasValue: true, value: value}
 }
 
-fn none<T>() -> Optional<T> {
-    // Note: This is tricky in languages without a proper null/none concept
-    // We're setting a default value even though hasValue is false
-    return Optional<T>{hasValue: false, value: nil}
+fn none<T>(defaultValue: T) -> Optional<T> {
+    // Provide an explicit default value when none is present
+    return Optional<T>{hasValue: false, value: defaultValue}
 }
 
 fn getValue<T>(opt: Optional<T>, defaultValue: T) -> T {
@@ -58,36 +57,36 @@ struct NullableArray<T> {
 fn main() {
     // Test numeric constraints
     let minValue = min(5, 3)
-    print("Min of 5 and 3: " + minValue)
+    print("Min of 5 and 3: {}", minValue)
     
     let maxValue = max(5, 3)
-    print("Max of 5 and 3: " + maxValue)
+    print("Max of 5 and 3: {}", maxValue)
     
     // Test with floats
     let minFloat = min(3.14, 2.71)
-    print("Min of 3.14 and 2.71: " + minFloat)
+    print("Min of 3.14 and 2.71: {}", minFloat)
     
     // Test generic equality
-    print("5 == 5: " + equals(5, 5))
-    print("5 == 3: " + equals(5, 3))
-    print("\"hello\" == \"hello\": " + equals("hello", "hello"))
-    print("\"hello\" == \"world\": " + equals("hello", "world"))
+    print("5 == 5: {}", equals(5, 5))
+    print("5 == 3: {}", equals(5, 3))
+    print("\"hello\" == \"hello\": {}", equals("hello", "hello"))
+    print("\"hello\" == \"world\": {}", equals("hello", "world"))
     
     // Test optional values
     let optionalInt = some(42)
-    print("Has value: " + optionalInt.hasValue)
-    print("Value: " + getValue(optionalInt, 0))
+    print("Has value: {}", optionalInt.hasValue)
+    print("Value: {}", getValue<i32>(optionalInt, 0))
     
-    let emptyOpt = none<i32>()
-    print("Has value: " + emptyOpt.hasValue)
-    print("Default value: " + getValue(emptyOpt, -1))
+    let emptyOpt = none<i32>(0)
+    print("Has value: {}", emptyOpt.hasValue)
+    print("Default value: {}", getValue<i32>(emptyOpt, -1))
     
     // Edge case: Empty array with generic type
     let emptyArray = NullableArray<string>{items: []}
     emptyArray.items.push("First item")
-    print("Array after adding item: " + emptyArray.items[0])
+    print("Array after adding item: {}", emptyArray.items[0])
     
     // Test with booleans
     let boolOpt = some(true)
-    print("Boolean optional: " + getValue(boolOpt, false))
+    print("Boolean optional: {}", getValue<bool>(boolOpt, false))
 }

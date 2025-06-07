@@ -67,21 +67,21 @@ fn main() {
     let strContainer = createContainer("Hello")
     let intContainer = createContainer(42)
     
-    print("String container: " + strContainer.value)
-    print("Integer container: " + intContainer.value)
+    print("String container: {}", strContainer.value)
+    print("Integer container: {}", intContainer.value)
     
     // Test binary tree
     let tree = createNode(2, createLeaf(1), createLeaf(3))
     
-    let traversalResult = []
-    inorderTraversal(tree, traversalResult)
-    print("In-order traversal: " + traversalResult)
+    let traversalResult: [i32] = []
+    inorderTraversal<i32>(tree, traversalResult)
+    print("In-order traversal: {}", traversalResult)
     
     // Test nested generics
     let wrapper = Wrapper<string>{
         data: Container<string>{value: "Nested generics"}
     }
-    print("Nested container value: " + wrapper.data.value)
+    print("Nested container value: {}", wrapper.data.value)
     
     // Test tuple
     let tuple = Tuple<i32, string, bool>{
@@ -89,7 +89,7 @@ fn main() {
         second: "two",
         third: true
     }
-    print("Tuple values: " + tuple.first + ", " + tuple.second + ", " + tuple.third)
+    print("Tuple values: {}, {}, {}", tuple.first, tuple.second, tuple.third)
     
     // Test containers with different types
     let containers = []
@@ -99,6 +99,6 @@ fn main() {
     
     print("Container values:")
     for i in 0..len(containers) {
-        print("Container " + i + ": " + containers[i].value)
+        print("Container {}: {}", i, containers[i].value)
     }
 }
