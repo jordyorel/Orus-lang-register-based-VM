@@ -501,13 +501,55 @@ void emitBuiltinArgCountError(Compiler* compiler, Token* token,
     diagnostic.text.message = msgBuffer;
 
     char helpBuffer[128];
-    snprintf(helpBuffer, sizeof(helpBuffer),
-             "provide %d argument%s to %s()",
-             expected, expected == 1 ? "" : "s", name);
+    const char* note = NULL;
+
+    // Special handling for built-in functions to provide better help messages
+    if (strcmp(name, "type_of") == 0) {
+        snprintf(helpBuffer, sizeof(helpBuffer),
+                "provide a value to check its type: %s(value)", name);
+        note = "type_of() returns a string representation of the type of the given value";
+    } 
+    else if (strcmp(name, "is_type") == 0) {
+        snprintf(helpBuffer, sizeof(helpBuffer),
+                "provide both a value and a type string: %s(value, \"type_name\")", name);
+        note = "is_type() checks if a value matches the specified type";
+    } 
+    else if (strcmp(name, "substring") == 0) {
+        snprintf(helpBuffer, sizeof(helpBuffer),
+                "provide a string, start index, and length: %s(str, start, length)", name);
+        note = "substring() extracts a portion of the given string";
+    }
+    else if (strcmp(name, "len") == 0) {
+        snprintf(helpBuffer, sizeof(helpBuffer),
+                "provide an array or string: %s(value)", name);
+        note = "len() returns the length of an array or string";
+    }
+    else if (strcmp(name, "push") == 0) {
+        snprintf(helpBuffer, sizeof(helpBuffer),
+                "provide an array and a value: %s(array, value)", name);
+        note = "push() adds an element to the end of an array";
+    }
+    else if (strcmp(name, "pop") == 0) {
+        snprintf(helpBuffer, sizeof(helpBuffer),
+                "provide an array: %s(array)", name);
+        note = "pop() removes and returns the last element from an array";
+    }
+    else {
+        // Default for other functions
+        snprintf(helpBuffer, sizeof(helpBuffer),
+                "provide %d argument%s to %s()",
+                expected, expected == 1 ? "" : "s", name);
+    }
+    
     diagnostic.text.help = strdup(helpBuffer);
 
-    diagnostic.text.notes = NULL;
-    diagnostic.text.noteCount = 0;
+    if (note) {
+        diagnostic.text.notes = (char**)&note;
+        diagnostic.text.noteCount = 1;
+    } else {
+        diagnostic.text.notes = NULL;
+        diagnostic.text.noteCount = 0;
+    }
 
     emitDiagnostic(&diagnostic);
     if (diagnostic.text.help) free(diagnostic.text.help);
