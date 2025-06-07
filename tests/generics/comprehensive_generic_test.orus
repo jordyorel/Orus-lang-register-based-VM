@@ -1,6 +1,18 @@
 // Comprehensive Generic Test
 // This test showcases generics with struct, impl, and functions
 
+// Generic helper functions must be defined before use in Orus.
+fn toString<T>(value: T) -> string {
+    if (type(value) == "string") {
+        return value
+    }
+    return "<" + type(value) + ">"
+}
+
+fn error(msg: string) {
+    print("Error: " + msg)
+}
+
 // A basic generic wrapper type
 struct Result<T> {
     value: T
@@ -26,20 +38,30 @@ impl Result {
     }
 }
 
-// Instance methods for Result<T> defined separately as functions
-fn isOk<T>(self: Result<T>) -> bool {
-    return not self.isError
+// Additional instance methods for `Result<T>`
+impl Result<T> {
+    fn isOk(self) -> bool {
+        return not self.isError
+    }
+
+    fn isErr(self) -> bool {
+        return self.isError
+    }
+
+    fn unwrapOr(self, defaultValue: T) -> T {
+        if (self.isError) {
+            return defaultValue
+        } else {
+            return self.value
+        }
+    }
 }
 
-fn isErr<T>(self: Result<T>) -> bool {
-    return self.isError
-}
-
-fn unwrapOr<T>(self: Result<T>, defaultValue: T) -> T {
-    if (self.isError) {
+fn unwrapOrElse<T>(result: Result<T>, defaultValue: T) -> T {
+    if (result.isError) {
         return defaultValue
     } else {
-        return self.value
+        return result.value
     }
 }
 
@@ -62,17 +84,6 @@ impl KeyValue<K, V> {
     // Instance method to convert to string representation
     fn toString(self) -> string {
         return "Key: " + toString(self.key) + ", Value: " + toString(self.value)
-    }
-}
-
-// Generic toString helper function for any type
-fn toString<T>(value: T) -> string {
-    if (type(value) == "string") {
-        return value
-    } elif (type(value) == "i32" or type(value) == "u32" or type(value) == "f64" or type(value) == "bool") {
-        return "" + value  // Built-in implicit conversion for primitives
-    } else {
-        return "<" + type(value) + ">"  // Fallback for other types
     }
 }
 
@@ -117,14 +128,27 @@ impl TreeNode<T> {
     }
 }
 
-// Generic function to calculate the sum of values in an array
-fn sum<T>(values: [T]) -> T {
+// Helper function for tree traversal used in the main demonstration
+fn inOrderTraversal<T>(node: TreeNode<T>, result: [T]) {
+    if (len(node.left) > 0) {
+        inOrderTraversal(node.left[0], result)
+    }
+
+    result.push(node.value)
+
+    if (len(node.right) > 0) {
+        inOrderTraversal(node.right[0], result)
+    }
+}
+
+// Calculate the sum of integer values in an array. Fully generic arithmetic is
+// not currently supported in the language, so this helper is specialised for
+// `i32` values.
+fn sum(values: [i32]) -> i32 {
     if (len(values) == 0) {
-        // This is a bit of a hack since we need to return something of type T
-        // but don't have a proper "zero" for all types
         error("Cannot sum an empty array")
     }
-    
+
     let result = values[0]
     for i in 1..len(values) {
         result = result + values[i]
@@ -161,10 +185,6 @@ fn isEven(x: i32) -> bool {
     return x % 2 == 0
 }
 
-fn error(msg: string) {
-    print("Error: " + msg)
-}
-
 // Main function to test all generic features
 fn main() {
     print("Starting comprehensive generic test...")
@@ -178,10 +198,10 @@ fn main() {
     
     // Test unwrapOr method
     let defaultInt = 0
-    print("Unwrap success: {}", successResult.unwrapOr(defaultInt))
-    
+    print("Unwrap success: {}", unwrapOrElse<i32>(successResult, defaultInt))
+
     let defaultString = "Default message"
-    print("Unwrap error with default: {}", errorResult.unwrapOr(defaultString))
+    print("Unwrap error with default: {}", unwrapOrElse<string>(errorResult, defaultString))
     
     // Test KeyValue implementation
     let userEntry = KeyValue.new(1, "John")
@@ -200,8 +220,8 @@ fn main() {
     print("Is root a leaf? {}", root.isLeaf())
     
     // Test traversing the tree (in-order)
-    let result = []
-    inOrderTraversal(root, result)
+    let result: [i32] = []
+    inOrderTraversal<i32>(root, result)
     print("In-order traversal: {}", result)
     
     // Test generic array functions
@@ -224,7 +244,7 @@ fn main() {
     }
     
     // Test array of generic types
-    let results = []
+    let results: [Result<i32>] = []
     results.push(Result.ok(100))
     results.push(Result.ok(200))
     results.push(Result.err(300))
@@ -232,24 +252,11 @@ fn main() {
     print("Results array:")
     for i in 0..len(results) {
         let status = ""
-        if isOk(results[i]) {
+        if results[i].isOk() {
             status = "OK"
         } else {
             status = "Error"
         }
         print("  {}: {} - {}", i, status, results[i].value)
-    }
-}
-
-// Helper function for tree traversal
-fn inOrderTraversal<T>(node: TreeNode<T>, result: [T]) {
-    if (len(node.left) > 0) {
-        inOrderTraversal(node.left[0], result)
-    }
-    
-    result.push(node.value)
-    
-    if (len(node.right) > 0) {
-        inOrderTraversal(node.right[0], result)
     }
 }
