@@ -1,3 +1,5 @@
 fn main() {
+
     print(type_of())
+
 }
