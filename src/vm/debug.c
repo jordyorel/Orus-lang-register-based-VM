@@ -160,6 +160,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_LEN", offset);
         case OP_SUBSTRING:
             return simpleInstruction("OP_SUBSTRING", offset);
+        case OP_SLICE:
+            return simpleInstruction("OP_SLICE", offset);
 
         case OP_CALL: {
             uint8_t functionIndex = chunk->code[offset + 1];
@@ -187,6 +189,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_F64_TO_STRING", offset);
         case OP_BOOL_TO_STRING:
             return simpleInstruction("OP_BOOL_TO_STRING", offset);
+        case OP_ARRAY_TO_STRING:
+            return simpleInstruction("OP_ARRAY_TO_STRING", offset);
         case OP_CONCAT:
             return simpleInstruction("OP_CONCAT", offset);
 

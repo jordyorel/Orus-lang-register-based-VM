@@ -198,17 +198,18 @@ static ASTNode* parseNumber(Parser* parser) {
         node->valueType = createPrimitiveType(TYPE_F64);
     } else {
         long value = strtol(numStr, &endptr, 10);
-        if (value >= INT32_MIN && value <= INT32_MAX) {
-            // fprintf(stderr, "DEBUG: Created I32 literal with value: %ld\n", value);
+        bool isUnsigned = (*endptr == 'u' || *endptr == 'U');
+        if (isUnsigned) {
+            node = createLiteralNode(U32_VAL((uint32_t)value));
+            node->valueType = createPrimitiveType(TYPE_U32);
+        } else if (value >= INT32_MIN && value <= INT32_MAX) {
             node = createLiteralNode(I32_VAL((int32_t)value));
             node->valueType = createPrimitiveType(TYPE_I32);
         } else if (value >= 0 && value <= UINT32_MAX) {
-            // fprintf(stderr, "DEBUG: Created U32 literal with value: %lu\n", (unsigned long)value);
             node = createLiteralNode(U32_VAL((uint32_t)value));
             node->valueType = createPrimitiveType(TYPE_U32);
         } else {
             double dvalue = strtod(numStr, &endptr);
-            // fprintf(stderr, "DEBUG: Created F64 literal (from large int) with value: %f\n", dvalue);
             node = createLiteralNode(F64_VAL(dvalue));
             node->valueType = createPrimitiveType(TYPE_F64);
         }
@@ -297,10 +298,16 @@ static ASTNode* parseCall(Parser* parser, ASTNode* left) {
 
 static ASTNode* parseIndex(Parser* parser, ASTNode* left) {
     Token bracket = parser->previous; // '[' token
-    ASTNode* indexExpr = NULL;
-    expression(parser, &indexExpr);
+    ASTNode* startExpr = NULL;
+    expression(parser, &startExpr);
+    if (match(parser, TOKEN_DOT_DOT)) {
+        ASTNode* endExpr = NULL;
+        expression(parser, &endExpr);
+        consume(parser, TOKEN_RIGHT_BRACKET, "Expect ']' after slice expression.");
+        return createSliceNode(left, startExpr, endExpr);
+    }
     consume(parser, TOKEN_RIGHT_BRACKET, "Expect ']' after index expression.");
-    return createBinaryNode(bracket, left, indexExpr);
+    return createBinaryNode(bracket, left, startExpr);
 }
 
 static ASTNode* parseDot(Parser* parser, ASTNode* left) {

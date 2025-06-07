@@ -577,6 +577,29 @@ static InterpretResult run() {
                 vmPush(&vm, convertToString(v));
                 break;
             }
+            case OP_ARRAY_TO_STRING: {
+                if (!IS_ARRAY(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be an array.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Value v = vmPop(&vm);
+                int capacity = 64;
+                int length = 0;
+                char* buffer = (char*)malloc(capacity);
+                if (!buffer) {
+                    RUNTIME_ERROR("Memory allocation failed for array string conversion.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                buffer[0] = '\0';
+                if (!appendValueString(v, &buffer, &length, &capacity)) {
+                    free(buffer);
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                ObjString* str = allocateString(buffer, length);
+                free(buffer);
+                vmPush(&vm, STRING_VAL(str));
+                break;
+            }
             case OP_CONCAT: {
                 concatOp(&vm);
                 break;
@@ -937,6 +960,34 @@ static InterpretResult run() {
 
                 ObjString* result = allocateString(str->chars + start, length);
                 vmPush(&vm, STRING_VAL(result));
+                break;
+            }
+            case OP_SLICE: {
+                Value endVal = vmPop(&vm);
+                Value startVal = vmPop(&vm);
+                Value arrayVal = vmPop(&vm);
+
+                if (!IS_ARRAY(arrayVal) ||
+                    !(IS_I32(startVal) || IS_U32(startVal)) ||
+                    !(IS_I32(endVal) || IS_U32(endVal))) {
+                    RUNTIME_ERROR("slice expects (array, i32, i32).");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                ObjArray* src = AS_ARRAY(arrayVal);
+                int start = IS_I32(startVal) ? AS_I32(startVal) : (int)AS_U32(startVal);
+                int end = IS_I32(endVal) ? AS_I32(endVal) : (int)AS_U32(endVal);
+                if (start < 0) start = 0;
+                if (end > src->length) end = src->length;
+                if (start > end) start = end;
+                int len = end - start;
+
+                ObjArray* result = allocateArray(len);
+                result->length = len;
+                for (int i = 0; i < len; i++) {
+                    result->elements[i] = src->elements[start + i];
+                }
+                vmPush(&vm, ARRAY_VAL(result));
                 break;
             }
             case OP_CALL: {

@@ -261,6 +261,11 @@ static Token number() {
         }
     }
 
+    // Optional unsigned suffix
+    if (peek() == 'u' || peek() == 'U') {
+        advance();
+    }
+
     // Number contains underscores, which is allowed
 
     return make_token(TOKEN_NUMBER);

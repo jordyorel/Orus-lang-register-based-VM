@@ -235,6 +235,18 @@ ASTNode* createArraySetNode(ASTNode* array, ASTNode* index, ASTNode* value) {
     return node;
 }
 
+ASTNode* createSliceNode(ASTNode* array, ASTNode* start, ASTNode* end) {
+    ASTNode* node = allocateASTNode();
+    node->type = AST_SLICE;
+    node->left = array;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.slice.start = start;
+    node->data.slice.end = end;
+    node->valueType = NULL;
+    return node;
+}
+
 ASTNode* createStructLiteralNode(Token name, ASTNode* values, int fieldCount,
                                  Type** genericArgs, int genericArgCount) {
     ASTNode* node = allocateASTNode();
