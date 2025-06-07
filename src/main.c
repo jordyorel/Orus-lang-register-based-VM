@@ -34,7 +34,8 @@ static void printError(ObjError* err) {
     } else {
         fprintf(stderr, "%s\n", err->message->chars);
     }
-    vmPrintStackTrace();
+    // Stack trace is already printed elsewhere
+    // vmPrintStackTrace();
 }
 
 extern VM vm;
@@ -148,6 +149,7 @@ static void runFile(const char* path) {
     free(source);
     vm.filePath = NULL;
     if (result == INTERPRET_RUNTIME_ERROR) {
+        fprintf(stderr, "Runtime error in \"%s\".\n", path);
         if (IS_ERROR(vm.lastError)) {
             printError(AS_ERROR(vm.lastError));
         }
