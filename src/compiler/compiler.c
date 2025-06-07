@@ -801,9 +801,9 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 node->valueType = getPrimitiveType(TYPE_STRING);
                 break;
-            } else if (tokenEquals(node->data.call.name, "type")) {
+            } else if (tokenEquals(node->data.call.name, "type_of")) {
                 if (node->data.call.argCount != 1) {
-                    error(compiler, "type() takes exactly one argument.");
+                    error(compiler, "type_of() takes exactly one argument.");
                     return;
                 }
                 ASTNode* valArg = node->data.call.arguments;

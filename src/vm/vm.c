@@ -24,7 +24,7 @@ static Value native_len(int argCount, Value* args);
 static Value native_substring(int argCount, Value* args);
 static Value native_push(int argCount, Value* args);
 static Value native_pop(int argCount, Value* args);
-static Value native_type(int argCount, Value* args);
+static Value native_type_of(int argCount, Value* args);
 static Value native_is_type(int argCount, Value* args);
 
 static InterpretResult run();
@@ -62,7 +62,7 @@ void initVM() {
     defineNative("substring", native_substring, 3, getPrimitiveType(TYPE_STRING));
     defineNative("push", native_push, 2, NULL);
     defineNative("pop", native_pop, 1, NULL);
-    defineNative("type", native_type, 1, getPrimitiveType(TYPE_STRING));
+    defineNative("type_of", native_type_of, 1, getPrimitiveType(TYPE_STRING));
     defineNative("is_type", native_is_type, 2, getPrimitiveType(TYPE_BOOL));
 }
 
@@ -275,9 +275,9 @@ static const char* getValueTypeName(Value val) {
     }
 }
 
-static Value native_type(int argCount, Value* args) {
+static Value native_type_of(int argCount, Value* args) {
     if (argCount != 1) {
-        RUNTIME_ERROR("type() takes exactly one argument.");
+        RUNTIME_ERROR("type_of() takes exactly one argument.");
         return NIL_VAL;
     }
     const char* name = getValueTypeName(args[0]);
