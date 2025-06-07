@@ -852,6 +852,26 @@ static void implBlock(Parser* parser, ASTNode** ast) {
     Type* prevType = parser->currentImplType;
     parser->currentImplType = findStructTypeToken(structNameTok);
 
+    // Parse generic parameters for the impl block so that methods can
+    // reference them just like function or struct generics.
+    int prevGenericCount = parser->genericCount;
+    if (match(parser, TOKEN_LESS)) {
+        do {
+            consume(parser, TOKEN_IDENTIFIER, "Expect generic parameter name.");
+            Token gnameTok = parser->previous;
+            ObjString* gname = allocateString(gnameTok.start, gnameTok.length);
+            if (parser->genericCount >= parser->genericCapacity) {
+                parser->genericCapacity =
+                    parser->genericCapacity < 8 ? 8 : parser->genericCapacity * 2;
+                parser->genericParams =
+                    realloc(parser->genericParams,
+                            sizeof(ObjString*) * parser->genericCapacity);
+            }
+            parser->genericParams[parser->genericCount++] = gname;
+        } while (match(parser, TOKEN_COMMA));
+        consume(parser, TOKEN_GREATER, "Expect '>' after generic parameters.");
+    }
+
     consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after impl name.");
     ASTNode* methods = NULL;
     ASTNode* last = NULL;
@@ -872,6 +892,7 @@ static void implBlock(Parser* parser, ASTNode** ast) {
     consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after impl block.");
     consumeStatementEnd(parser);
     parser->currentImplType = prevType;
+    parser->genericCount = prevGenericCount;
     // Methods defined in an impl block should remain in the outer scope
     *ast = createBlockNode(methods, false);
 }
