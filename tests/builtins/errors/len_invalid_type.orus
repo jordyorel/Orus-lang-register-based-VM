@@ -1,4 +1,4 @@
 fn main() {
-let num: i32 = 5
+    let num: i32 = 5
     print(len(num))
 }
