@@ -806,6 +806,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 break;
             } else if (tokenEquals(node->data.call.name, "type_of")) {
                 if (node->data.call.argCount != 1) {
+                    // Special handling for zero arguments to ensure the error message is consistent
                     emitBuiltinArgCountError(compiler, &node->data.call.name,
                                             "type_of", 1, node->data.call.argCount);
                     return;
