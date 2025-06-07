@@ -1,0 +1,108 @@
+// Advanced Generic Features Test
+// Tests more complex generic features and edge cases
+
+// Define a container for generic interface
+struct Container<T> {
+    value: T
+}
+
+// Generic function with return type inference
+fn createContainer<T>(value: T) -> Container<T> {
+    return Container<T>{value: value}
+}
+
+// Recursive generic structure
+struct TreeNode<T> {
+    value: T
+    left: [TreeNode<T>] // Using array as optional
+    right: [TreeNode<T>] // Using array as optional
+}
+
+fn createLeaf<T>(value: T) -> TreeNode<T> {
+    return TreeNode<T>{
+        value: value,
+        left: [],
+        right: []
+    }
+}
+
+fn createNode<T>(value: T, left: TreeNode<T>, right: TreeNode<T>) -> TreeNode<T> {
+    let node = TreeNode<T>{
+        value: value,
+        left: [],
+        right: []
+    };
+    node.left.push(left)
+    node.right.push(right)
+    return node
+}
+
+// Function that traverses tree in-order
+fn inorderTraversal<T>(node: TreeNode<T>, result: [T]) {
+    if (len(node.left) > 0) {
+        inorderTraversal(node.left[0], result)
+    }
+    
+    result.push(node.value)
+    
+    if (len(node.right) > 0) {
+        inorderTraversal(node.right[0], result)
+    }
+}
+
+// Test nested generics
+struct Wrapper<T> {
+    data: Container<T>
+}
+
+// Generic with multiple parameters
+struct Tuple<A, B, C> {
+    first: A
+    second: B
+    third: C
+}
+
+fn main() {
+    // Test container creation
+    let strContainer = createContainer("Hello")
+    let intContainer = createContainer(42)
+    
+    print "String container: " + strContainer.value
+    print "Integer container: " + intContainer.value
+    
+    // Test binary tree
+    let tree = createNode(
+        2,
+        createLeaf(1),
+        createLeaf(3)
+    )
+    
+    let traversalResult = []
+    inorderTraversal(tree, traversalResult)
+    print "In-order traversal: " + traversalResult
+    
+    // Test nested generics
+    let wrapper = Wrapper<string>{
+        data: Container<string>{value: "Nested generics"}
+    }
+    print "Nested container value: " + wrapper.data.value
+    
+    // Test tuple
+    let tuple = Tuple<i32, string, bool>{
+        first: 1,
+        second: "two",
+        third: true
+    }
+    print "Tuple values: " + tuple.first + ", " + tuple.second + ", " + tuple.third
+    
+    // Test containers with different types
+    let containers = []
+    containers.push(createContainer(100))
+    containers.push(createContainer(200))
+    containers.push(createContainer(300))
+    
+    print "Container values:"
+    for (let i = 0; i < len(containers); i = i + 1) {
+        print "Container " + i + ": " + containers[i].value
+    }
+}

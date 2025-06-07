@@ -1,0 +1,85 @@
+// Generic Functions Test
+// Tests defining and using functions with generic type parameters
+
+// Generic identity function
+fn identity<T>(value: T) -> T {
+    return value
+}
+
+// Function that works with any array type
+fn firstElement<T>(arr: [T]) -> T {
+    if (len(arr) > 0) {
+        return arr[0]
+    } else {
+        error "Array is empty"
+    }
+}
+
+// Function with multiple type parameters
+fn zip<A, B>(as: [A], bs: [B]) -> [[A, B]] {
+    let result = []
+    let length = len(as)
+    if (len(bs) < length) {
+        length = len(bs)
+    }
+    
+    for (let i = 0; i < length; i = i + 1) {
+        let pair = [as[i], bs[i]]
+        result.push(pair)
+    }
+    
+    return result
+}
+
+// Higher-order function with generic parameters
+fn map<T, U>(arr: [T], fn: (T) -> U) -> [U] {
+    let result = []
+    for (let i = 0; i < len(arr); i = i + 1) {
+        result.push(fn(arr[i]))
+    }
+    return result
+}
+
+fn double(x: i32) -> i32 {
+    return x * 2
+}
+
+fn toUpper(s: string) -> string {
+    // This is a placeholder - assuming Orus has a built-in way to convert to uppercase
+    // If not, this would need to be implemented differently
+    return s + " (uppercase)"
+}
+
+fn main() {
+    // Test the identity function
+    let num = identity(42)
+    print "Identity of 42: " + num
+    
+    let str = identity("Hello")
+    print "Identity of 'Hello': " + str
+    
+    // Test firstElement function
+    let numbers = [10, 20, 30, 40]
+    print "First number: " + firstElement(numbers)
+    
+    let names = ["Alice", "Bob", "Charlie"]
+    print "First name: " + firstElement(names)
+    
+    // Test zip function
+    let ids = [1, 2, 3, 4]
+    let users = ["user1", "user2", "user3"]
+    let zipped = zip(ids, users)
+    
+    print "Zipped results:"
+    for (let i = 0; i < len(zipped); i = i + 1) {
+        print "ID: " + zipped[i][0] + ", User: " + zipped[i][1]
+    }
+    
+    // Test map function
+    let doubled = map(ids, double)
+    print "Original numbers: " + ids
+    print "Doubled numbers: " + doubled
+    
+    let uppercased = map(users, toUpper)
+    print "Uppercased users: " + uppercased
+}

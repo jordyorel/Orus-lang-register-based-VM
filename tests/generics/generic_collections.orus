@@ -1,0 +1,65 @@
+// Generic Collections Test
+// Tests the implementation of generic collections
+
+// Define a basic generic collection
+struct List<T> {
+    items: [T]
+}
+
+// Implementation for the List
+fn add<T>(list: List<T>, item: T) {
+    list.items.push(item)
+}
+
+fn get<T>(list: List<T>, index: i32) -> T {
+    return list.items[index]
+}
+
+fn size<T>(list: List<T>) -> i32 {
+    return len(list.items)
+}
+
+// Define a specialized collection for comparable items
+struct SortedList<T> {
+    items: [T]
+}
+
+// Create generic complex data structure with multiple type parameters
+struct Pair<K, V> {
+    key: K
+    value: V
+}
+
+fn main() {
+    // Test basic list operations
+    let numbers = List<i32>{items: []}
+    add(numbers, 10)
+    add(numbers, 20)
+    add(numbers, 30)
+    
+    print "List size: " + size(numbers)
+    print "First item: " + get(numbers, 0)
+    print "Second item: " + get(numbers, 1)
+    
+    // Test list with strings
+    let names = List<string>{items: []}
+    add(names, "Alice")
+    add(names, "Bob")
+    add(names, "Charlie")
+    
+    print "Names list:"
+    for (let i = 0; i < size(names); i = i + 1) {
+        print get(names, i)
+    }
+    
+    // Test with complex data structure
+    let dict = []
+    dict.push(Pair<string, i32>{key: "one", value: 1})
+    dict.push(Pair<string, i32>{key: "two", value: 2})
+    dict.push(Pair<string, i32>{key: "three", value: 3})
+    
+    print "Dictionary entries:"
+    for (let i = 0; i < len(dict); i = i + 1) {
+        print dict[i].key + " -> " + dict[i].value
+    }
+}

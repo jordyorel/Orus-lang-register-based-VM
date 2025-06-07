@@ -1,0 +1,93 @@
+// Generic Type Constraints and Edge Cases Test
+// Tests boundary conditions and edge cases for generic types
+
+// Generic minimum function with numeric constraint
+// Note: In this test file we're assuming the language supports some kind of type constraints
+// If it doesn't, this would need to be adjusted accordingly
+fn min<T>(a: T, b: T) -> T {
+    if (a < b) {  // This assumes the type T supports comparison operations
+        return a
+    } else {
+        return b
+    }
+}
+
+// Max function with similar constraints
+fn max<T>(a: T, b: T) -> T {
+    if (a > b) {
+        return a
+    } else {
+        return b
+    }
+}
+
+// Generic equality test
+fn equals<T>(a: T, b: T) -> bool {
+    return a == b
+}
+
+// A struct with generic default value
+struct Optional<T> {
+    hasValue: bool
+    value: T
+}
+
+fn some<T>(value: T) -> Optional<T> {
+    return Optional<T>{hasValue: true, value: value}
+}
+
+fn none<T>() -> Optional<T> {
+    // Note: This is tricky in languages without a proper null/none concept
+    // We're setting a default value even though hasValue is false
+    return Optional<T>{hasValue: false, value: nil}
+}
+
+fn getValue<T>(opt: Optional<T>, defaultValue: T) -> T {
+    if (opt.hasValue) {
+        return opt.value
+    } else {
+        return defaultValue
+    }
+}
+
+// Test using generics with arrays and nil values
+struct NullableArray<T> {
+    items: [T]
+}
+
+fn main() {
+    // Test numeric constraints
+    let minValue = min(5, 3)
+    print "Min of 5 and 3: " + minValue
+    
+    let maxValue = max(5, 3)
+    print "Max of 5 and 3: " + maxValue
+    
+    // Test with floats
+    let minFloat = min(3.14, 2.71)
+    print "Min of 3.14 and 2.71: " + minFloat
+    
+    // Test generic equality
+    print "5 == 5: " + equals(5, 5)
+    print "5 == 3: " + equals(5, 3)
+    print "\"hello\" == \"hello\": " + equals("hello", "hello")
+    print "\"hello\" == \"world\": " + equals("hello", "world")
+    
+    // Test optional values
+    let optionalInt = some(42)
+    print "Has value: " + optionalInt.hasValue
+    print "Value: " + getValue(optionalInt, 0)
+    
+    let emptyOpt = none<i32>()
+    print "Has value: " + emptyOpt.hasValue
+    print "Default value: " + getValue(emptyOpt, -1)
+    
+    // Edge case: Empty array with generic type
+    let emptyArray = NullableArray<string>{items: []}
+    emptyArray.items.push("First item")
+    print "Array after adding item: " + emptyArray.items[0]
+    
+    // Test with booleans
+    let boolOpt = some(true)
+    print "Boolean optional: " + getValue(boolOpt, false)
+}
