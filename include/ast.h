@@ -35,6 +35,8 @@ typedef enum {
 typedef struct {
     Token name;
     uint8_t index;
+    Type** genericArgs;
+    int genericArgCount;
 } VariableData;
 
 typedef struct {
@@ -90,6 +92,8 @@ typedef struct {
     Token name;                 // Struct name
     struct ASTNode* values;     // Linked list of field value expressions
     int fieldCount;
+    Type** genericArgs;         // Generic argument types
+    int genericArgCount;
 } StructLiteralData;
 
 typedef struct {
@@ -191,7 +195,8 @@ ASTNode* createTryNode(ASTNode* tryBlock, Token errorName, ASTNode* catchBlock);
 ASTNode* createReturnNode(ASTNode* value);
 ASTNode* createArrayNode(ASTNode* elements, int elementCount);
 ASTNode* createArraySetNode(ASTNode* array, ASTNode* index, ASTNode* value);
-ASTNode* createStructLiteralNode(Token name, ASTNode* values, int fieldCount);
+ASTNode* createStructLiteralNode(Token name, ASTNode* values, int fieldCount,
+                                 Type** genericArgs, int genericArgCount);
 ASTNode* createFieldAccessNode(ASTNode* object, Token name);
 ASTNode* createFieldSetNode(ASTNode* object, Token name, ASTNode* value);
 ASTNode* createBreakNode();

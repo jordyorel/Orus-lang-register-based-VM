@@ -21,10 +21,12 @@ static ASTNode* parseLogical(Parser* parser, ASTNode* left);  // New logical ope
 static ASTNode* parseCall(Parser* parser, ASTNode* left);
 static ASTNode* parseIndex(Parser* parser, ASTNode* left);
 static ASTNode* parseDot(Parser* parser, ASTNode* left);
-static ASTNode* parseStructLiteral(Parser* parser, ASTNode* left);
+static ASTNode* parseStructLiteral(Parser* parser, Token structName,
+                                   Type** genericArgs, int genericArgCount);
 static Type* findStructTypeToken(Token token);
 static ASTNode* parseBoolean(Parser* parser);
 static ASTNode* parseVariable(Parser* parser);
+static ASTNode* parseNil(Parser* parser);
 static ASTNode* parseArray(Parser* parser);
 static void structDeclaration(Parser* parser, ASTNode** ast);
 static void implBlock(Parser* parser, ASTNode** ast);
@@ -258,8 +260,12 @@ static ASTNode* parseCall(Parser* parser, ASTNode* left) {
         return NULL;
     }
 
-    // Get the function name from the variable node
+    // Get the function name and any generic arguments
     Token name = left->data.variable.name;
+    Type** genArgs = left->data.variable.genericArgs;
+    int genCount = left->data.variable.genericArgCount;
+    left->data.variable.genericArgs = NULL;
+    left->data.variable.genericArgCount = 0;
 
     // Parse arguments
     ASTNode* arguments = NULL;
@@ -286,7 +292,7 @@ static ASTNode* parseCall(Parser* parser, ASTNode* left) {
 
 
 
-    return createCallNode(name, arguments, argCount, NULL, NULL, 0);
+    return createCallNode(name, arguments, argCount, NULL, genArgs, genCount);
 }
 
 static ASTNode* parseIndex(Parser* parser, ASTNode* left) {
@@ -344,17 +350,58 @@ static ASTNode* parseDot(Parser* parser, ASTNode* left) {
     return createFieldAccessNode(left, name);
 }
 
+static bool looksLikeStructGeneric() {
+    Scanner backup = scanner;
+    int depth = 1;
+    while (depth > 0) {
+        Token t = scan_token();
+        if (t.type == TOKEN_EOF || t.type == TOKEN_NEWLINE) {
+            scanner = backup;
+            return false;
+        }
+        if (t.type == TOKEN_LESS) depth++;
+        else if (t.type == TOKEN_GREATER) depth--;
+    }
+    Token after = scan_token();
+    scanner = backup;
+    return after.type == TOKEN_LEFT_BRACE;
+}
+
 static ASTNode* parseVariable(Parser* parser) {
     Token name = parser->previous;
-    ASTNode* var = createVariableNode(name, 0);  // Index will be resolved by Compiler
+    Type** genericArgs = NULL;
+    int genericCount = 0;
+
+    if (check(parser, TOKEN_LESS) && looksLikeStructGeneric()) {
+        advance(parser); // consume '<'
+        do {
+            Type* argType = parseType(parser);
+            if (parser->hadError) return NULL;
+            genericArgs = realloc(genericArgs, sizeof(Type*) * (genericCount + 1));
+            genericArgs[genericCount++] = argType;
+        } while (match(parser, TOKEN_COMMA));
+        consume(parser, TOKEN_GREATER, "Expect '>' after generic arguments.");
+    }
+
+    ASTNode* var = createVariableNode(name, 0);  // Index resolved later
 
     if (check(parser, TOKEN_LEFT_BRACE)) {
         if (findStructTypeToken(name)) {
             advance(parser); // consume '{'
-            return parseStructLiteral(parser, var);
+            return parseStructLiteral(parser, name, genericArgs, genericCount);
         }
     }
+
+    var->data.variable.genericArgs = genericArgs;
+    var->data.variable.genericArgCount = genericCount;
     return var;
+}
+
+static ASTNode* parseNil(Parser* parser) {
+    (void)parser;
+    ASTNode* node = createLiteralNode(NIL_VAL);
+    node->valueType = getPrimitiveType(TYPE_NIL);
+    return node;
 }
 
 static ASTNode* parseArray(Parser* parser) {
@@ -390,9 +437,8 @@ static Type* findStructTypeToken(Token token) {
     return findStructType(name);
 }
 
-static ASTNode* parseStructLiteral(Parser* parser, ASTNode* left) {
-    // 'left' is the struct name variable
-    Token structName = left->data.variable.name;
+static ASTNode* parseStructLiteral(Parser* parser, Token structName,
+                                   Type** genericArgs, int genericArgCount) {
 
 
     ASTNode* values = NULL;
@@ -422,7 +468,7 @@ static ASTNode* parseStructLiteral(Parser* parser, ASTNode* left) {
 
     consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after struct literal.");
 
-    return createStructLiteralNode(structName, values, count);
+    return createStructLiteralNode(structName, values, count, genericArgs, genericArgCount);
 }
 
 static ASTNode* parse_precedence(Parser* parser, Precedence precedence) {
@@ -741,6 +787,9 @@ static void structDeclaration(Parser* parser, ASTNode** ast) {
     }
     consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after struct name.");
 
+    ObjString* structName = allocateString(nameTok.start, nameTok.length);
+    Type* structType = createStructType(structName, NULL, 0, generics, genericCount);
+
     FieldInfo* fields = NULL;
     int count = 0;
     int capacity = 0;
@@ -777,9 +826,8 @@ static void structDeclaration(Parser* parser, ASTNode** ast) {
     consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after struct fields.");
     consumeStatementEnd(parser);
 
-    ObjString* structName = allocateString(nameTok.start, nameTok.length);
-    Type* structType = createStructType(structName, fields, count,
-                                        generics, genericCount);
+    structType->info.structure.fields = fields;
+    structType->info.structure.fieldCount = count;
     parser->genericCount = prevGenericCount;
 
     // Create a dummy global variable for the struct name to allow method calls
@@ -1003,6 +1051,7 @@ ParseRule rules[] = {
     [TOKEN_STRING] = {parseString, NULL, PREC_NONE},
     [TOKEN_TRUE] = {parseBoolean, NULL, PREC_NONE},
     [TOKEN_FALSE] = {parseBoolean, NULL, PREC_NONE},
+    [TOKEN_NIL] = {parseNil, NULL, PREC_NONE},
     [TOKEN_NOT] = {parseUnary, NULL, PREC_UNARY},
     // Logical operators
     [TOKEN_AND] = {NULL, parseLogical, PREC_AND},
@@ -1086,11 +1135,28 @@ bool parse(const char* source, ASTNode** ast) {
 
 static Type* parseType(Parser* parser) {
     Type* type = NULL;
-    if (match(parser, TOKEN_LEFT_BRACKET)) {
+    if (match(parser, TOKEN_LEFT_PAREN)) {
+        Type** params = NULL;
+        int pcount = 0;
+        if (!check(parser, TOKEN_RIGHT_PAREN)) {
+            do {
+                Type* pt = parseType(parser);
+                if (parser->hadError) return NULL;
+                params = realloc(params, sizeof(Type*) * (pcount + 1));
+                params[pcount++] = pt;
+            } while (match(parser, TOKEN_COMMA));
+        }
+        consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
+        consume(parser, TOKEN_ARROW, "Expect '->' after parameter types.");
+        Type* ret = parseType(parser);
+        if (parser->hadError) return NULL;
+        type = createFunctionType(ret, params, pcount);
+    } else if (match(parser, TOKEN_LEFT_BRACKET)) {
         Type* elementType = parseType(parser);
         if (parser->hadError) return NULL;
-        consume(parser, TOKEN_SEMICOLON, "Expect ';' in array type.");
-        consume(parser, TOKEN_NUMBER, "Expect array size.");
+        if (match(parser, TOKEN_SEMICOLON)) {
+            consume(parser, TOKEN_NUMBER, "Expect array size.");
+        }
         consume(parser, TOKEN_RIGHT_BRACKET, "Expect ']' after array type.");
         type = createArrayType(elementType);
     } else if (match(parser, TOKEN_INT)) {
@@ -1124,6 +1190,18 @@ static Type* parseType(Parser* parser) {
                 if (!type) {
                     error(parser, "Unknown type name.");
                     return NULL;
+                }
+                if (match(parser, TOKEN_LESS)) {
+                    Type** args = NULL;
+                    int acount = 0;
+                    do {
+                        Type* at = parseType(parser);
+                        if (parser->hadError) return NULL;
+                        args = realloc(args, sizeof(Type*) * (acount + 1));
+                        args[acount++] = at;
+                    } while (match(parser, TOKEN_COMMA));
+                    consume(parser, TOKEN_GREATER, "Expect '>' after generic arguments.");
+                    type = instantiateStructType(type, args, acount);
                 }
             }
         }
