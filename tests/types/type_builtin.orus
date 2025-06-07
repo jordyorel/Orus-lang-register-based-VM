@@ -1,0 +1,6 @@
+fn main() {
+    print(type(1))
+    print(type("hi"))
+    let arr: [i32; 1] = [0]
+    print(type(arr))
+}

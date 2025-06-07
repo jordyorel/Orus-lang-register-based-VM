@@ -106,6 +106,8 @@ typedef struct {
     bool isMethod;             // True if function has implicit self
     Type* implType;            // Struct type if method
     ObjString* mangledName;    // GC-managed mangled name
+    ObjString** genericParams; // Generic parameter names
+    int genericCount;
 } FunctionData;
 
 typedef struct {
@@ -116,6 +118,9 @@ typedef struct {
     int argCount;             // Number of arguments
     Type* staticType;         // Struct type if called as Struct.fn
     ObjString* mangledName;    // GC-managed mangled name if method call
+    int nativeIndex;           // -1 if not a native function
+    Type** genericArgs;        // Generic argument types
+    int genericArgCount;
 } CallData;
 
 typedef struct {
@@ -177,8 +182,11 @@ ASTNode* createIfNode(ASTNode* condition, ASTNode* thenBranch, ASTNode* elifCond
 ASTNode* createBlockNode(ASTNode* statements, bool scoped);
 ASTNode* createWhileNode(ASTNode* condition, ASTNode* body);
 ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr, ASTNode* stepExpr, ASTNode* body);
-ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType, ASTNode* body);
-ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount, Type* staticType);
+ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType,
+                            ASTNode* body, ObjString** generics,
+                            int genericCount);
+ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount, Type* staticType,
+                        Type** genericArgs, int genericArgCount);
 ASTNode* createTryNode(ASTNode* tryBlock, Token errorName, ASTNode* catchBlock);
 ASTNode* createReturnNode(ASTNode* value);
 ASTNode* createArrayNode(ASTNode* elements, int elementCount);

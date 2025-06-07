@@ -382,19 +382,28 @@ a short stack trace is printed showing the call chain.
 
 ## Generics
 
-The Orus language itself doesn't have generic syntax, but the C interpreter implementation provides macro-based generic data structures for internal use:
+Orus functions and structs can take generic type parameters. Generic parameters
+are declared after the name using angle brackets and can be referenced within
+the definition. Type arguments may be supplied at call sites.
 
-```c
-// C macro to define type-specific array operations
-DEFINE_ARRAY_TYPE(int, Int);
+```orus
+fn id<T>(x: T) -> T {
+    return x
+}
 
-IntArray array;
-initIntArray(&array);
-writeIntArray(&array, 42);
-freeIntArray(&array);
+struct Box<T> {
+    value: T,
+}
+
+fn main() {
+    print(id<i32>(1))
+    print(id<string>("hi"))
+    let b: Box<i32> = Box { value: 2 }
+    print(b.value)
+}
 ```
 
-This feature is primarily for internal interpreter development, not for Orus language users.
-
-For more details on this implementation approach, see `docs/GENERICS.md`.
+Generic parameters are checked during compilation and must be supplied or can
+be inferred from argument types. The compiler verifies that generic arguments
+match usage within the function or struct.
 

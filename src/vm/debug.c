@@ -168,6 +168,13 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return offset + 3;
         }
 
+        case OP_CALL_NATIVE: {
+            uint8_t index = chunk->code[offset + 1];
+            uint8_t argCount = chunk->code[offset + 2];
+            printf("%-16s %4d %4d\n", "OP_CALL_NATIVE", index, argCount);
+            return offset + 3;
+        }
+
         case OP_I32_TO_F64:
             return simpleInstruction("OP_I32_TO_F64", offset);
         case OP_U32_TO_F64:
