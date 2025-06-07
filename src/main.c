@@ -13,9 +13,24 @@
 #include "../include/version.h"
 
 static void printError(ObjError* err) {
+    // Format like the compiler's diagnostic system
     if (err->location.file) {
-        fprintf(stderr, "%s:%d:%d: %s\n", err->location.file, err->location.line,
-                err->location.column, err->message->chars);
+        // Print error message with file location
+        fprintf(stderr, "%sError%s: %s\n", 
+                "\x1b[31;1m", "\x1b[0m", err->message->chars);
+        
+        // Print file location
+        fprintf(stderr, "%s --> %s:%d:%d%s\n",
+               "\x1b[36m", err->location.file, err->location.line,
+               err->location.column, "\x1b[0m");
+        
+        // For string interpolation errors, provide helpful note
+        if (strstr(err->message->chars, "string interpolation")) {
+            fprintf(stderr, "%snote%s: each '{}' in the format string corresponds to one argument provided after the format string\n",
+                   "\x1b[34m", "\x1b[0m");
+            fprintf(stderr, "%shelp%s: ensure the number of '{}' placeholders matches the number of arguments\n\n",
+                   "\x1b[32m", "\x1b[0m");
+        }
     } else {
         fprintf(stderr, "%s\n", err->message->chars);
     }

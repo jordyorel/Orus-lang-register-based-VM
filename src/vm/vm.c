@@ -1100,7 +1100,7 @@ static InterpretResult run() {
 
                 // Check that we have enough arguments below the format string
                 if (vm.stackTop - vm.stack < 2 + argCount) {
-                    RUNTIME_ERROR("Not enough arguments for string interpolation.");
+                    RUNTIME_ERROR("Not enough arguments for string interpolation: missing argument values for format string.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
@@ -1121,9 +1121,11 @@ static InterpretResult run() {
                         formatStr->chars[formatIndex] == '{' &&
                         formatStr->chars[formatIndex + 1] == '}') {
                         if (argIndex >= argCount) {
-                            RUNTIME_ERROR("Too few arguments for format string (needed "
-                                "more than %d).",
-                                argIndex);
+                            SrcLocation location = {vm.filePath, vm.currentLine, 0};
+                            runtimeError(ERROR_TYPE, location,
+                                "Too few arguments for string interpolation: format string has %d placeholder%s but only %d argument%s provided",
+                                argIndex + 1, argIndex + 1 == 1 ? "" : "s",
+                                argCount, argCount == 1 ? "" : "s");
                             free(resultBuffer);
                             return INTERPRET_RUNTIME_ERROR;
                         }
@@ -1229,9 +1231,11 @@ static InterpretResult run() {
                 }
 
                 if (argIndex < argCount) {
-                    RUNTIME_ERROR("Too many arguments for format string (used %d, given "
-                        "%d).",
-                        argIndex, argCount);
+                    SrcLocation location = {vm.filePath, vm.currentLine, 0};
+                    runtimeError(ERROR_TYPE, location, 
+                        "Too many arguments for string interpolation: format string has %d placeholder%s but %d argument%s provided",
+                        argIndex, argIndex == 1 ? "" : "s",
+                        argCount, argCount == 1 ? "" : "s");
 
                     free(resultBuffer);
                     return INTERPRET_RUNTIME_ERROR;
