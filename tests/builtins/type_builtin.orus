@@ -1,6 +1,8 @@
 fn main() {
-    print(type(1))
-    print(type("hi"))
+
+    print(type_of(1))
+    print(type_of("hi"))
     let arr: [i32; 1] = [0]
-    print(type(arr))
+    print(type_of(arr))
+
 }

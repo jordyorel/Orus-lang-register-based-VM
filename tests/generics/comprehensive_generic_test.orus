@@ -3,10 +3,10 @@
 
 // Generic helper functions must be defined before use in Orus.
 fn toString<T>(value: T) -> string {
-    if (type(value) == "string") {
+    if (type_of(value) == "string") {
         return value
     }
-    return "<" + type(value) + ">"
+    return "<" + type_of(value) + ">"
 }
 
 fn error(msg: string) {
