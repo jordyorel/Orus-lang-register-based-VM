@@ -770,7 +770,8 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 if (!arg->valueType ||
                     (arg->valueType->kind != TYPE_ARRAY &&
                      arg->valueType->kind != TYPE_STRING)) {
-                    error(compiler, "len() expects array or string.");
+                    const char* actualType = arg->valueType ? getTypeName(arg->valueType->kind) : "unknown";
+                    emitLenInvalidTypeError(compiler, &node->data.call.name, actualType);
                     return;
                 }
                 node->valueType = getPrimitiveType(TYPE_I32);
@@ -822,7 +823,8 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 typeCheckNode(compiler, typeArg);
                 if (compiler->hadError) return;
                 if (!typeArg->valueType || typeArg->valueType->kind != TYPE_STRING) {
-                    error(compiler, "is_type() second argument must be string.");
+                    const char* actualType = typeArg->valueType ? getTypeName(typeArg->valueType->kind) : "unknown";
+                    emitIsTypeSecondArgError(compiler, &node->data.call.name, actualType);
                     return;
                 }
                 node->valueType = getPrimitiveType(TYPE_BOOL);

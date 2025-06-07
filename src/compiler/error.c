@@ -415,3 +415,66 @@ void emitFieldAccessNonStructError(Compiler* compiler, Token* token, const char*
     compiler->hadError = true;
 }
 
+void emitIsTypeSecondArgError(Compiler* compiler, Token* token, const char* actualType) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+    
+    Diagnostic diagnostic;
+    memset(&diagnostic, 0, sizeof(Diagnostic));
+    diagnostic.code = ERROR_TYPE_MISMATCH;
+    diagnostic.primarySpan.line = token->line;
+    const char* lineStart = token->start;
+    while (lineStart > compiler->sourceCode && lineStart[-1] != '\n') lineStart--;
+    diagnostic.primarySpan.column = (int)(token->start - lineStart) + 1;
+    diagnostic.primarySpan.length = token->length;
+    diagnostic.primarySpan.filePath = compiler->filePath;
+    
+    char msgBuffer[128];
+    snprintf(msgBuffer, sizeof(msgBuffer),
+        "second argument to `is_type()` must be a string, found `%s`",
+        actualType);
+    diagnostic.text.message = msgBuffer;
+    
+    diagnostic.text.help = strdup("provide a string literal representing a type name, e.g., \"i32\", \"string\", etc.");
+    
+    const char* note = "is_type() checks if a value has the specified type, where the type name must be a string";
+    diagnostic.text.notes = (char**)&note;
+    diagnostic.text.noteCount = 1;
+    
+    emitDiagnostic(&diagnostic);
+    if (diagnostic.text.help) free(diagnostic.text.help);
+    compiler->hadError = true;
+}
+
+void emitLenInvalidTypeError(Compiler* compiler, Token* token, const char* actualType) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+    
+    Diagnostic diagnostic;
+    memset(&diagnostic, 0, sizeof(Diagnostic));
+    diagnostic.code = ERROR_TYPE_MISMATCH;
+    diagnostic.primarySpan.line = token->line;
+    const char* lineStart = token->start;
+    while (lineStart > compiler->sourceCode && lineStart[-1] != '\n') lineStart--;
+    diagnostic.primarySpan.column = (int)(token->start - lineStart) + 1;
+    diagnostic.primarySpan.length = token->length;
+    diagnostic.primarySpan.filePath = compiler->filePath;
+    
+    char msgBuffer[128];
+    snprintf(msgBuffer, sizeof(msgBuffer),
+        "`len()` expects an array or string, found `%s`",
+        actualType);
+    diagnostic.text.message = msgBuffer;
+    
+    const char* help = "provide an array or string as the argument to len()";
+    diagnostic.text.help = strdup(help);
+    
+    const char* note = "the len() function can only be used with arrays or strings to determine their length";
+    diagnostic.text.notes = (char**)&note;
+    diagnostic.text.noteCount = 1;
+    
+    emitDiagnostic(&diagnostic);
+    if (diagnostic.text.help) free(diagnostic.text.help);
+    compiler->hadError = true;
+}
+
