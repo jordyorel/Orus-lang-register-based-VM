@@ -61,7 +61,18 @@ impl KeyValue<K, V> {
     
     // Instance method to convert to string representation
     fn toString(self) -> string {
-        return "Key: " + self.key + ", Value: " + self.value
+        return "Key: " + toString(self.key) + ", Value: " + toString(self.value)
+    }
+}
+
+// Generic toString helper function for any type
+fn toString<T>(value: T) -> string {
+    if (type(value) == "string") {
+        return value
+    } elif (type(value) == "i32" or type(value) == "u32" or type(value) == "f64" or type(value) == "bool") {
+        return "" + value  // Built-in implicit conversion for primitives
+    } else {
+        return "<" + type(value) + ">"  // Fallback for other types
     }
 }
 
@@ -220,7 +231,12 @@ fn main() {
     
     print("Results array:")
     for i in 0..len(results) {
-        let status = if (results[i].isOk()) "OK" else "Error"
+        let status = ""
+        if isOk(results[i]) {
+            status = "OK"
+        } else {
+            status = "Error"
+        }
         print("  {}: {} - {}", i, status, results[i].value)
     }
 }

@@ -1300,8 +1300,12 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         else if (leftType->kind == TYPE_U32)
                             writeOp(compiler, OP_U32_TO_F64);
                         else {
-                            error(compiler,
-                                  "Unsupported left operand conversion for binary operation.");
+                            char msgBuffer[256];
+                            const char* leftTypeName = getTypeName(leftType->kind);
+                            snprintf(msgBuffer, sizeof(msgBuffer),
+                                "Unsupported left operand conversion for binary operation. Left type: '%s', operation at line %d",
+                                leftTypeName, node->data.operation.operator.line);
+                            error(compiler, msgBuffer);
                             return;
                         }
                         break;
@@ -1370,8 +1374,12 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                                 writeOp(compiler, OP_ARRAY_TO_STRING);
                                 break;
                             default:
-                                error(compiler,
-                                      "Unsupported right operand conversion for binary operation.");
+                                char msgBuffer[256];
+                                const char* rightTypeName = getTypeName(rightType->kind);
+                                snprintf(msgBuffer, sizeof(msgBuffer),
+                                    "Unsupported right operand conversion for binary operation. Right type: '%s', operation at line %d",
+                                    rightTypeName, node->data.operation.operator.line);
+                                error(compiler, msgBuffer);
                                 return;
                         }
                         break;
