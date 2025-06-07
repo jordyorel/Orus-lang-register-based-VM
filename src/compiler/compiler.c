@@ -1345,8 +1345,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             writeOp(compiler, OP_U32_TO_F64);
                         else {
                             error(compiler,
-                                  "Unsupported right operand conversion for "
-                                  "binary operation.");
+                                  "Unsupported right operand conversion for binary operation.");
                             return;
                         }
                         break;
@@ -1376,10 +1375,20 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                                 return;
                         }
                         break;
-                    default:
-                        error(compiler,
-                              "Unsupported result type for binary operation.");
-                        return;
+                    default: {
+    const char* leftTypeName = leftType ? getTypeName(leftType->kind) : "(none)";
+    const char* rightTypeName = rightType ? getTypeName(rightType->kind) : "(none)";
+    char msgBuffer[256];
+    snprintf(msgBuffer, sizeof(msgBuffer),
+        "unsupported right operand conversion for binary operation: left type '%s', right type '%s', attempted result type '%s'",
+        leftTypeName, rightTypeName, getTypeName(resultType));
+    char helpBuffer[128];
+    snprintf(helpBuffer, sizeof(helpBuffer),
+        "try converting the right operand to a compatible type or use explicit string conversion (e.g., str(x))");
+    const char* note = "Orus does not support implicit conversion between these types in this operation";
+    emitGenericTypeError(compiler, &node->data.operation.operator, msgBuffer, helpBuffer, note);
+    return;
+                    }
                 }
             }
 
