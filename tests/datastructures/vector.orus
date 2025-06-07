@@ -1,2 +1,31 @@
+// Test: Basic vector operations in Orus
+
 fn main() {
+    // Create an empty vector of integers
+    let v = []
+    print("Initial length: " + len(v))
+
+    // Push elements
+    v.push(10)
+    v.push(20)
+    v.push(30)
+    print("After push: " + v)
+    print("Length after push: " + len(v))
+
+    // Indexing
+    print("First element: " + v[0])
+    print("Second element: " + v[1])
+    print("Third element: " + v[2])
+
+    // Pop element
+    let last = v.pop()
+    print("Popped element: " + last)
+    print("After pop: " + v)
+    print("Length after pop: " + len(v))
+
+    // Iterate
+    print("Iterate vector:")
+    for i in 0..len(v) {
+        print("v[" + i + "]: " + v[i])
+    }
 }

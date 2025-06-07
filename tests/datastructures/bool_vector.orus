@@ -1,2 +1,18 @@
+// Test: Vector of booleans in Orus
+
 fn main() {
+    let vb: [bool; 5] = [true]
+    vb.push(true)
+    vb.push(false)
+    vb.push(true)
+    print("Bool vector: " + vb)
+    print("Length: " + len(vb))
+    print("First: " + vb[0] + ", Last: " + vb[len(vb)-1])
+    let popped = vb.pop()
+    print("Popped: " + popped)
+    print("After pop: " + vb)
+    print("Iterate:")
+    for i in 0..len(vb) {
+        print("vb[" + i + "]: " + vb[i])
+    }
 }

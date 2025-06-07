@@ -110,34 +110,38 @@ impl Queue {
     }
 }
 
-// Test the Stack implementation
+// Test: Stack and Queue operations in Orus
+
 fn main() {
-    let stack: Stack = Stack.new()
-    print("Stack created, isEmpty: {}", stack.is_empty())
+    // Stack (LIFO)
+    let stack = []
+    stack.push(1)
+    stack.push(2)
+    stack.push(3)
+    print("Stack after pushes: " + stack)
+    let s1 = stack.pop()
+    print("Popped from stack: " + s1)
+    print("Stack now: " + stack)
 
-    stack.push(10)
-    stack.push(20)
-    stack.push(30)
-    print("Stack size after pushes: {}", stack.size())
-    print("Stack top element: {}", stack.peek())
+    // Queue (FIFO)
+    let queue = []
+    queue.push(10)
+    queue.push(20)
+    queue.push(30)
+    print("Queue after pushes: " + queue)
+    let q1 = queue[0]
+    queue = queue[1..len(queue)]
+    print("Dequeued from queue: " + q1)
+    print("Queue now: " + queue)
 
-    let popped: i32 = stack.pop()
-    print("Popped from stack: {}", popped)
-    print("Stack size after pop: {}", stack.size())
-    print("New stack top: {}", stack.peek())
-
-    // Test the Queue implementation
-    let queue: Queue = Queue.create()
-    print("Queue created, isEmpty: {}", queue.is_empty())
-
-    queue.enqueue(10)
-    queue.enqueue(20)
-    queue.enqueue(30)
-    print("Queue size after enqueues: {}", queue.size())
-    print("Queue front element: {}", queue.peek())
-
-    let dequeued: i32 = queue.dequeue()
-    print("Dequeued from queue: {}", dequeued)
-    print("Queue size after dequeue: {}", queue.size())
-    print("New queue front: {}", queue.peek())
+    // Iterate stack
+    print("Iterate stack:")
+    for i in 0..len(stack) {
+        print("stack[" + i + "]: " + stack[i])
+    }
+    // Iterate queue
+    print("Iterate queue:")
+    for i in 0..len(queue) {
+        print("queue[" + i + "]: " + queue[i])
+    }
 }
