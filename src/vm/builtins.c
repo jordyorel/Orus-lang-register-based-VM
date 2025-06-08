@@ -73,6 +73,32 @@ static Value native_pop(int argCount, Value* args) {
     return arrayPop(arr);
 }
 
+static Value native_range(int argCount, Value* args) {
+    if (argCount != 2) {
+        vmRuntimeError("range() takes exactly two arguments.");
+        return NIL_VAL;
+    }
+    if (!(IS_I32(args[0]) || IS_U32(args[0])) ||
+        !(IS_I32(args[1]) || IS_U32(args[1]))) {
+        vmRuntimeError("range() expects (i32/u32, i32/u32).");
+        return NIL_VAL;
+    }
+    int start = IS_I32(args[0]) ? AS_I32(args[0]) : (int)AS_U32(args[0]);
+    int end = IS_I32(args[1]) ? AS_I32(args[1]) : (int)AS_U32(args[1]);
+    if (end < start) {
+        ObjArray* arr = allocateArray(0);
+        arr->length = 0;
+        return ARRAY_VAL(arr);
+    }
+    int len = end - start;
+    ObjArray* arr = allocateArray(len);
+    arr->length = len;
+    for (int i = 0; i < len; i++) {
+        arr->elements[i] = I32_VAL(start + i);
+    }
+    return ARRAY_VAL(arr);
+}
+
 static const char* getValueTypeName(Value val) {
     switch (val.type) {
         case VAL_I32:   return "i32";
@@ -191,6 +217,7 @@ static BuiltinEntry builtinTable[] = {
     {"substring", native_substring, 3, TYPE_STRING},
     {"push", native_push, 2, TYPE_COUNT},
     {"pop", native_pop, 1, TYPE_COUNT},
+    {"range", native_range, 2, TYPE_COUNT},
     {"type_of", native_type_of, 1, TYPE_STRING},
     {"is_type", native_is_type, 2, TYPE_BOOL},
     {"input", native_input, 1, TYPE_STRING},
