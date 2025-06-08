@@ -1018,6 +1018,20 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             }
 
             if (index == UINT8_MAX) {
+                if (node->data.call.nativeIndex != -1 && tokenEquals(node->data.call.name, "sum")) {
+                    ASTNode* arr = node->data.call.arguments;
+                    if (!arr->valueType || arr->valueType->kind != TYPE_ARRAY) {
+                        error(compiler, "sum() expects array.");
+                        return;
+                    }
+                    Type* elem = arr->valueType->info.array.elementType;
+                    if (elem->kind != TYPE_I32 && elem->kind != TYPE_U32 && elem->kind != TYPE_F64) {
+                        error(compiler, "sum() array must contain numbers.");
+                        return;
+                    }
+                    node->valueType = elem;
+                    break;
+                }
                 emitUndefinedFunctionError(compiler, &node->data.call.name);
                 return;
             }
