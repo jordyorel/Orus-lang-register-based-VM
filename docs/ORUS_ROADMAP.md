@@ -40,28 +40,6 @@ This document consolidates the development roadmaps for the Orus language, track
 
 **Next Version Milestone**: 0.6.0 - Implementation of Generic Forward Declarations & Prepass Collection
 
-### 2. Native Compilation Pipeline
-
-**Status**: Optional future enhancement (post-stability)
-
-**Note**: Compilation is considered an optional feature to be explored after language stability is achieved. It is not a mandatory development path and may be pursued based on community interest and practical needs.
-
-| Task | Status | Priority | Version Impact |
-|------|--------|----------|----------------|
-| IR Design | Not started | Low | Post-1.0 |
-| Type System Enhancements | Not started | Low | Minor feature |
-| Core Compilation Pipeline | Not started | Low | Post-1.0 |
-| Compiler Optimizations | Not started | Low | Minor feature |
-| Standard Library Adaptation | Not started | Low | Minor feature |
-| Build System | Not started | Low | Minor feature |
-| Toolchain Integration | Not started | Low | Minor feature |
-| Advanced Compilation Features | Not started | Low | Post-1.0 |
-| Compiler Documentation | Not started | Low | No impact |
-| Interpreter/Compiler Compatibility | Not started | Medium | Minor feature |
-| ABI Stability | Not started | Medium | Minor feature |
-
-**Next Version Milestone**: 0.8.0 - Implementation of IR Design and basic compilation
-
 ### 3. Memory Management (Garbage Collection)
 
 **Status**: ✅ Implemented
@@ -192,16 +170,7 @@ Based on the current state and roadmap, the path to version 1.0 is expected to i
 4. **Version 0.9.0**: Complete concurrency support and enhanced error handling
 5. **Version 1.0.0**: Finalize language stability, documentation, and performance optimizations
 
-**Note**: Native compilation remains an optional enhancement that may be pursued after achieving language stability in version 1.0, but is not a requirement for the 1.0 release.
 
-## Timeline Estimates
-
-- **Version 0.6.0**: Q3 2025
-- **Version 0.7.0**: Q4 2025
-- **Version 0.8.0**: Q1 2026
-- **Version 0.9.0**: Q3 2026
-- **Version 1.0.0**: Q1 2027
-- **Compilation (if pursued)**: Post-1.0 release, timeline TBD based on community interest
 
 ## Development Priorities
 
@@ -220,12 +189,25 @@ Based on the current state and roadmap, the path to version 1.0 is expected to i
    - Enhance language stability and reliability
    - Reach 1.0.0 stability milestone
 
-4. **Post 1.0 (Optional)**
-   - Explore compilation options if community interest warrants
-   - Design IR structure if compilation is pursued
-   - Consider LLVM-based approach as one possible implementation path
+## Versioning Strategy and Compatibility
 
-## Compatibility Considerations
+### Version Numbering
+
+Orus follows semantic versioning with the following principles:
+- **Major version** (1.0.0): Represents significant language stability milestones
+- **Minor version** (0.x.0): Added features and substantial improvements (e.g., generic constraints)
+- **Patch version** (0.0.x): Bug fixes and minor improvements that don't affect compatibility
+
+### Feature-based Versioning
+
+Each minor version increment represents the completion of specific feature sets:
+- **0.6.0**: Generic forward declarations support
+- **0.7.0**: Generic constraints
+- **0.8.0**: Standard library core components
+- **0.9.0**: Concurrency and enhanced error handling
+- **1.0.0**: Stability, performance, and feature completeness
+
+### Compatibility Considerations
 
 - Maintain backward compatibility with existing Orus code through 0.x series
 - Document breaking changes clearly when they occur

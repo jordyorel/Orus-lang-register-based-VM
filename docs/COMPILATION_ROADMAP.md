@@ -1,6 +1,8 @@
-# Orus Compilation Roadmap
+# [ARCHIVED] Orus Compilation Ideas
 
-This document outlines a potential future plan for adding optional compilation capabilities to the Orus language. Note that compilation is considered an optional enhancement to be explored after achieving language stability (post version 1.0), and is not on the critical path for Orus language development.
+**NOTE: This document contains historical notes about compilation that are NOT part of the current Orus development roadmap.**
+
+This document contains speculative ideas about how compilation could potentially be approached, should it ever become relevant. However, Orus is designed as an interpreted language, and there are no current plans to pursue compilation.
 
 ## Current Status
 
