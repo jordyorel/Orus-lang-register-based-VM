@@ -14,6 +14,8 @@ description.
 | `pop(array)` | Remove and return the last element of an array. |
 | `range(start, end)` | Return an array of integers from `start` (inclusive) to `end` (exclusive). |
 | `sum(array)` | Sum all numeric elements of an array.
+| `min(array)` | Return the smallest numeric element of an array.
+| `max(array)` | Return the largest numeric element of an array.
 | `type_of(value)` | Return the name of a value's type as a string. |
 | `is_type(value, name)` | Check whether a value is of the given type. |
 | `input(prompt)` | Display a prompt and return a line of user input. |

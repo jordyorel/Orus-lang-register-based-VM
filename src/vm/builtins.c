@@ -237,6 +237,106 @@ static Value native_sum(int argCount, Value* args) {
         return I32_VAL((int32_t)total);
 }
 
+static Value native_min(int argCount, Value* args) {
+    if (argCount != 1) {
+        vmRuntimeError("min() takes exactly one argument.");
+        return NIL_VAL;
+    }
+    if (!IS_ARRAY(args[0])) {
+        vmRuntimeError("min() expects array.");
+        return NIL_VAL;
+    }
+    ObjArray* arr = AS_ARRAY(args[0]);
+    if (arr->length == 0) return NIL_VAL;
+
+    Value first = arr->elements[0];
+    double best;
+    bool asFloat = false;
+    if (IS_I32(first)) {
+        best = AS_I32(first);
+    } else if (IS_U32(first)) {
+        best = AS_U32(first);
+    } else if (IS_F64(first)) {
+        best = AS_F64(first);
+        asFloat = true;
+    } else {
+        vmRuntimeError("min() array must contain only numbers.");
+        return NIL_VAL;
+    }
+
+    for (int i = 1; i < arr->length; i++) {
+        Value v = arr->elements[i];
+        double val;
+        if (IS_I32(v)) {
+            val = AS_I32(v);
+        } else if (IS_U32(v)) {
+            val = AS_U32(v);
+        } else if (IS_F64(v)) {
+            val = AS_F64(v);
+            asFloat = true;
+        } else {
+            vmRuntimeError("min() array must contain only numbers.");
+            return NIL_VAL;
+        }
+        if (val < best) best = val;
+    }
+
+    if (asFloat)
+        return F64_VAL(best);
+    else
+        return I32_VAL((int32_t)best);
+}
+
+static Value native_max(int argCount, Value* args) {
+    if (argCount != 1) {
+        vmRuntimeError("max() takes exactly one argument.");
+        return NIL_VAL;
+    }
+    if (!IS_ARRAY(args[0])) {
+        vmRuntimeError("max() expects array.");
+        return NIL_VAL;
+    }
+    ObjArray* arr = AS_ARRAY(args[0]);
+    if (arr->length == 0) return NIL_VAL;
+
+    Value first = arr->elements[0];
+    double best;
+    bool asFloat = false;
+    if (IS_I32(first)) {
+        best = AS_I32(first);
+    } else if (IS_U32(first)) {
+        best = AS_U32(first);
+    } else if (IS_F64(first)) {
+        best = AS_F64(first);
+        asFloat = true;
+    } else {
+        vmRuntimeError("max() array must contain only numbers.");
+        return NIL_VAL;
+    }
+
+    for (int i = 1; i < arr->length; i++) {
+        Value v = arr->elements[i];
+        double val;
+        if (IS_I32(v)) {
+            val = AS_I32(v);
+        } else if (IS_U32(v)) {
+            val = AS_U32(v);
+        } else if (IS_F64(v)) {
+            val = AS_F64(v);
+            asFloat = true;
+        } else {
+            vmRuntimeError("max() array must contain only numbers.");
+            return NIL_VAL;
+        }
+        if (val > best) best = val;
+    }
+
+    if (asFloat)
+        return F64_VAL(best);
+    else
+        return I32_VAL((int32_t)best);
+}
+
 typedef struct {
     const char* name;
     NativeFn fn;
@@ -251,6 +351,8 @@ static BuiltinEntry builtinTable[] = {
     {"pop", native_pop, 1, TYPE_COUNT},
     {"range", native_range, 2, TYPE_COUNT},
     {"sum", native_sum, 1, TYPE_COUNT},
+    {"min", native_min, 1, TYPE_COUNT},
+    {"max", native_max, 1, TYPE_COUNT},
     {"type_of", native_type_of, 1, TYPE_STRING},
     {"is_type", native_is_type, 2, TYPE_BOOL},
     {"input", native_input, 1, TYPE_STRING},

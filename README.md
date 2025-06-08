@@ -7,7 +7,7 @@ include:
 - Static type annotations for integers (`i32`/`u32`), floating point numbers
   (`f64`), booleans and strings with local type inference using `let`.
 - Arrays with fixed lengths (including multidimensional arrays) and
-  dynamic arrays using `push`, `pop`, `len` and `sum`.
+  dynamic arrays using `push`, `pop`, `len`, `sum`, `min` and `max`.
 - User defined `struct` types and `impl` blocks for instance or static methods.
 - Generic functions and structs with type parameters.
 - Modules and `import` statements for splitting code across files.
