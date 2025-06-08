@@ -1018,15 +1018,23 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             }
 
             if (index == UINT8_MAX) {
-                if (node->data.call.nativeIndex != -1 && tokenEquals(node->data.call.name, "sum")) {
+                if (node->data.call.nativeIndex != -1 &&
+                    (tokenEquals(node->data.call.name, "sum") ||
+                     tokenEquals(node->data.call.name, "min") ||
+                     tokenEquals(node->data.call.name, "max"))) {
+                    const char* fname = node->data.call.name.start;
                     ASTNode* arr = node->data.call.arguments;
                     if (!arr->valueType || arr->valueType->kind != TYPE_ARRAY) {
-                        error(compiler, "sum() expects array.");
+                        char msg[32];
+                        snprintf(msg, sizeof(msg), "%s() expects array.", fname);
+                        error(compiler, msg);
                         return;
                     }
                     Type* elem = arr->valueType->info.array.elementType;
                     if (elem->kind != TYPE_I32 && elem->kind != TYPE_U32 && elem->kind != TYPE_F64) {
-                        error(compiler, "sum() array must contain numbers.");
+                        char msg[64];
+                        snprintf(msg, sizeof(msg), "%s() array must contain numbers.", fname);
+                        error(compiler, msg);
                         return;
                     }
                     node->valueType = elem;
@@ -1037,6 +1045,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             }
 
             node->data.call.index = index;
+            node->data.call.nativeIndex = -1; // prefer user-defined function
 
             // Get the function's return type
             Type* funcType = variableTypes[index];
