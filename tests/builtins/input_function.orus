@@ -1,0 +1,9 @@
+fn read_line() -> string {
+    return input("line: ")
+}
+
+fn main() {
+    let a = read_line()
+    let b = read_line()
+    print(a + b)
+}

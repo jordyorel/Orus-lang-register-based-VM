@@ -1,0 +1,5 @@
+fn main() {
+    let age: i32 = int(input("Age: "))
+    let height: f64 = float(input("Height: "))
+    print("{} {}", age, height)
+}
