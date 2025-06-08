@@ -31,6 +31,7 @@ typedef enum {
     ERROR_IMMUTABLE_ASSIGNMENT = 594,  // E0594
     ERROR_SCOPE_ERROR        = 426,    // E0426
     ERROR_FUNCTION_CALL      =  61,    // E0061
+    ERROR_GENERAL            =   2,    // E0002
     ERROR_PARSE                = 1,    // E0001
 } ErrorCode;
 
@@ -94,6 +95,9 @@ void emitIsTypeSecondArgError(Compiler* compiler, Token* token, const char* actu
 void emitLenInvalidTypeError(Compiler* compiler, Token* token, const char* actualType);
 void emitBuiltinArgCountError(Compiler* compiler, Token* token,
                               const char* name, int expected, int actual);
+
+// Emit a simple compiler error with no specific span information.
+void emitSimpleError(Compiler* compiler, ErrorCode code, const char* message);
 
 void emitDiagnostic(Diagnostic* diagnostic);
 

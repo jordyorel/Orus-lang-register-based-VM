@@ -546,3 +546,22 @@ void emitBuiltinArgCountError(Compiler* compiler, Token* token,
     compiler->hadError = true;
 }
 
+// Emit a simple compiler error when no detailed context is available.
+void emitSimpleError(Compiler* compiler, ErrorCode code, const char* message) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+
+    Diagnostic diagnostic;
+    memset(&diagnostic, 0, sizeof(Diagnostic));
+
+    diagnostic.code = code;
+    diagnostic.text.message = message;
+    diagnostic.primarySpan.filePath = compiler->filePath;
+    diagnostic.primarySpan.line = compiler->currentLine > 0 ? compiler->currentLine : 1;
+    diagnostic.primarySpan.column = 1;
+    diagnostic.primarySpan.length = 1;
+
+    emitDiagnostic(&diagnostic);
+    compiler->hadError = true;
+}
+
