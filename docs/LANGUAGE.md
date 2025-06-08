@@ -412,6 +412,8 @@ module:
 - `type_of(value)` – Return the name of a value's type as a string.
 - `is_type(value, name)` – Check whether a value is of the given type.
 - `input(prompt)` – Display a prompt and return a line of user input.
+- `int(text)` – Convert a string to an `i32`, raising an error on failure.
+- `float(text)` – Convert a string to an `f64`, raising an error on failure.
 
 ```orus
 let arr: [i32; 1] = [1]
@@ -421,6 +423,8 @@ print(type_of(arr))        // "[i32]"
 print(is_type(10, "i32"))  // true
 let name = input("Enter your name: ")
 print("Hello, {}", name)
+let age: i32 = int(input("How old are you? "))
+let height: f64 = float(input("Height in meters? "))
 ```
 
 ## Error Handling

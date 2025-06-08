@@ -849,6 +849,36 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 node->valueType = getPrimitiveType(TYPE_STRING);
                 break;
+            } else if (tokenEquals(node->data.call.name, "int")) {
+                if (node->data.call.argCount != 1) {
+                    emitBuiltinArgCountError(compiler, &node->data.call.name,
+                                            "int", 1, node->data.call.argCount);
+                    return;
+                }
+                ASTNode* arg = node->data.call.arguments;
+                typeCheckNode(compiler, arg);
+                if (compiler->hadError) return;
+                if (!arg->valueType || arg->valueType->kind != TYPE_STRING) {
+                    error(compiler, "int() argument must be a string.");
+                    return;
+                }
+                node->valueType = getPrimitiveType(TYPE_I32);
+                break;
+            } else if (tokenEquals(node->data.call.name, "float")) {
+                if (node->data.call.argCount != 1) {
+                    emitBuiltinArgCountError(compiler, &node->data.call.name,
+                                            "float", 1, node->data.call.argCount);
+                    return;
+                }
+                ASTNode* arg = node->data.call.arguments;
+                typeCheckNode(compiler, arg);
+                if (compiler->hadError) return;
+                if (!arg->valueType || arg->valueType->kind != TYPE_STRING) {
+                    error(compiler, "float() argument must be a string.");
+                    return;
+                }
+                node->valueType = getPrimitiveType(TYPE_F64);
+                break;
             } else if (tokenEquals(node->data.call.name, "push")) {
                 if (node->data.call.argCount != 2) {
                     emitBuiltinArgCountError(compiler, &node->data.call.name,
