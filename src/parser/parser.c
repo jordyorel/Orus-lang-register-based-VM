@@ -270,6 +270,11 @@ static ASTNode* parseLogical(Parser* parser, ASTNode* left) {
     return node;
 }
 
+static bool tokenEquals(Token token, const char* str) {
+    size_t len = strlen(str);
+    return token.length == (int)len && strncmp(token.start, str, len) == 0;
+}
+
 static ASTNode* parseCall(Parser* parser, ASTNode* left) {
     // Function calls are only valid for identifiers
     if (left->type != AST_VARIABLE) {
@@ -288,11 +293,28 @@ static ASTNode* parseCall(Parser* parser, ASTNode* left) {
     ASTNode* arguments = NULL;
     ASTNode* lastArg = NULL;
     int argCount = 0;
+    bool firstArgChecked = false;
+    bool firstArgNeedsString =
+        tokenEquals(name, "input") || tokenEquals(name, "print");
 
     if (!check(parser, TOKEN_RIGHT_PAREN)) {
         do {
+            Token argStart = parser->current;
             ASTNode* arg;
             expression(parser, &arg);
+            if (parser->hadError) return NULL;
+
+            if (!firstArgChecked) {
+                firstArgChecked = true;
+                if (firstArgNeedsString && argStart.type != TOKEN_STRING) {
+                    char msg[128];
+                    snprintf(msg, sizeof(msg),
+                             "%.*s() expects a string as the first argument",
+                             name.length, name.start);
+                    errorAt(parser, &argStart, msg);
+                    if (parser->hadError) return NULL;
+                }
+            }
 
             // Add to argument list
             if (arguments == NULL) {
