@@ -481,3 +481,7 @@ Generic parameters are checked during compilation and must be supplied or can
 be inferred from argument types. The compiler verifies that generic arguments
 match usage within the function or struct.
 
+While regular functions support forward declarations (can be called before being defined), 
+generic functions currently must be defined before they are used in the code. Forward 
+declarations for generic functions are planned for a future version.
+

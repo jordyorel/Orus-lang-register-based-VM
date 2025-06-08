@@ -25,9 +25,11 @@ This document consolidates the development roadmaps for the Orus language, track
 
 **Status**: Partially implemented (Basic functionality available)
 
+**Note**: Regular (non-generic) forward declarations are already supported in the language. Forward declarations for generic functions are still needed.
+
 | Task | Status | Priority | Version Impact |
 |------|--------|----------|----------------|
-| Forward Declarations & Prepass | Not started | High | 0.5.0 → 0.6.0 |
+| Generic Forward Declarations & Prepass | Partially implemented | High | 0.5.0 → 0.6.0 |
 | Generic Constraints | Not started | High | 0.6.0 → 0.7.0 |
 | Improved Type Inference | Not started | High | Minor feature |
 | Generic Arithmetic and Operators | Not started | Medium | Minor feature |
@@ -36,22 +38,24 @@ This document consolidates the development roadmaps for the Orus language, track
 | Cross-Module Generics | Not started | Low | Minor feature |
 | Generics Documentation | Not started | Low | No impact |
 
-**Next Version Milestone**: 0.6.0 - Implementation of Forward Declarations & Prepass Collection
+**Next Version Milestone**: 0.6.0 - Implementation of Generic Forward Declarations & Prepass Collection
 
 ### 2. Native Compilation Pipeline
 
-**Status**: Planning phase
+**Status**: Optional future enhancement (post-stability)
+
+**Note**: Compilation is considered an optional feature to be explored after language stability is achieved. It is not a mandatory development path and may be pursued based on community interest and practical needs.
 
 | Task | Status | Priority | Version Impact |
 |------|--------|----------|----------------|
-| IR Design | Not started | High | 0.7.0 → 0.8.0 |
-| Type System Enhancements | Not started | High | Minor feature |
-| Core Compilation Pipeline | Not started | High | 0.8.0 → 0.9.0 |
-| Compiler Optimizations | Not started | Medium | Minor feature |
-| Standard Library Adaptation | Not started | Medium | Minor feature |
-| Build System | Not started | Medium | Minor feature |
+| IR Design | Not started | Low | Post-1.0 |
+| Type System Enhancements | Not started | Low | Minor feature |
+| Core Compilation Pipeline | Not started | Low | Post-1.0 |
+| Compiler Optimizations | Not started | Low | Minor feature |
+| Standard Library Adaptation | Not started | Low | Minor feature |
+| Build System | Not started | Low | Minor feature |
 | Toolchain Integration | Not started | Low | Minor feature |
-| Advanced Compilation Features | Not started | Low | 0.9.0 → 1.0.0 |
+| Advanced Compilation Features | Not started | Low | Post-1.0 |
 | Compiler Documentation | Not started | Low | No impact |
 | Interpreter/Compiler Compatibility | Not started | Medium | Minor feature |
 | ABI Stability | Not started | Medium | Minor feature |
@@ -182,11 +186,13 @@ The garbage collection implementation resulted in version increment from 0.3.0 t
 
 Based on the current state and roadmap, the path to version 1.0 is expected to include:
 
-1. **Version 0.6.0**: Complete generic forward declarations/prepass 
+1. **Version 0.6.0**: Complete generic forward declarations/prepass (regular forward declarations already supported)
 2. **Version 0.7.0**: Implement generic constraints
-3. **Version 0.8.0**: Complete IR design and basic compilation
-4. **Version 0.9.0**: Implement core compilation pipeline
-5. **Version 1.0.0**: Add advanced compilation features and finalize ABI stability
+3. **Version 0.8.0**: Expand standard library, focus on core types and collections
+4. **Version 0.9.0**: Complete concurrency support and enhanced error handling
+5. **Version 1.0.0**: Finalize language stability, documentation, and performance optimizations
+
+**Note**: Native compilation remains an optional enhancement that may be pursued after achieving language stability in version 1.0, but is not a requirement for the 1.0 release.
 
 ## Timeline Estimates
 
@@ -195,23 +201,29 @@ Based on the current state and roadmap, the path to version 1.0 is expected to i
 - **Version 0.8.0**: Q1 2026
 - **Version 0.9.0**: Q3 2026
 - **Version 1.0.0**: Q1 2027
+- **Compilation (if pursued)**: Post-1.0 release, timeline TBD based on community interest
 
 ## Development Priorities
 
 1. **Short-term (3 months)**
-   - Complete generic forward declarations & prepass collection
+   - Complete generic forward declarations & prepass collection (building on existing non-generic forward declaration support)
    - Begin design work on generic constraints
 
 2. **Medium-term (6-12 months)**
    - Implement generic constraints 
-   - Design IR structure for compilation
-   - Begin work on LLVM binding layer
+   - Expand standard library core types and collections
+   - Enhance error handling and reporting
 
 3. **Long-term (1-2 years)**
-   - Complete core compilation pipeline
-   - Implement optimizations
-   - Establish ABI stability
+   - Complete concurrency support
+   - Optimize interpreter performance
+   - Enhance language stability and reliability
    - Reach 1.0.0 stability milestone
+
+4. **Post 1.0 (Optional)**
+   - Explore compilation options if community interest warrants
+   - Design IR structure if compilation is pursued
+   - Consider LLVM-based approach as one possible implementation path
 
 ## Compatibility Considerations
 

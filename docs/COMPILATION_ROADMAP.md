@@ -1,15 +1,15 @@
 # Orus Compilation Roadmap
 
-This document outlines the plan for transforming Orus from an interpreted language to a compiled language.
+This document outlines a potential future plan for adding optional compilation capabilities to the Orus language. Note that compilation is considered an optional enhancement to be explored after achieving language stability (post version 1.0), and is not on the critical path for Orus language development.
 
 ## Current Status
 
 - [x] Functioning interpreter implementation
 - [x] AST-based execution model
 - [x] Type system foundation
-- [ ] Native compilation pipeline
+- [ ] Native compilation pipeline (optional future enhancement)
 
-## High Priority Tasks
+## Future Optional Tasks
 
 ### IR (Intermediate Representation) Design
 - [ ] Design LLVM-compatible IR structure
@@ -18,21 +18,22 @@ This document outlines the plan for transforming Orus from an interpreted langua
 - [ ] Document IR specification
 - [ ] Add IR visualization tools
 
-### Type System Enhancements
-- [ ] Implement static type checking
-- [ ] Add compile-time type inference
-- [ ] Extend generics to support compilation
-- [ ] Create type verification passes
+### Type System Adaptations
+- [ ] Adapt the existing type system for compilation
+- [ ] Extend type checking for compilation context
+- [ ] Design compilation strategy for generics
+- [ ] Create type verification passes for compiled code
 - [ ] Implement monomorphization for generic code
+- [ ] Ensure forward declarations work consistently in compiled code
 
 ### Core Compilation Pipeline
-- [ ] Build LLVM binding layer
+- [ ] Evaluate LLVM vs other backends
 - [ ] Implement compilation driver
 - [ ] Create target-specific code generation
 - [ ] Develop linking strategy for external libraries
 - [ ] Add debug information generation
 
-## Medium Priority Tasks
+## Other Compilation Tasks
 
 ### Compiler Optimizations
 - [ ] Implement inlining for performance-critical functions
@@ -94,25 +95,39 @@ This document outlines the plan for transforming Orus from an interpreted langua
 - [ ] Document binary compatibility guarantees
 - [ ] Develop tooling for ABI verification
 
-## Implementation Plan
+## Implementation Considerations
 
-### Phase 1: Foundation (6 months)
-- IR design and implementation
-- Basic LLVM pipeline
-- Type system adaptations
-- Simple function compilation
+### Potential Timeline (If Pursued)
+- **Exploration Phase**: 3-6 months post version 1.0
+  - Research compilation strategies
+  - Evaluate backend options
+  - Prototype core components
+  
+- **Implementation Phase**: 6-12 months
+  - IR design and implementation
+  - Core compilation logic
+  - Standard library adaptation
 
-### Phase 2: Core Features (6 months)
-- Full language feature support
-- Standard library compilation
-- Optimizations
-- Cross-platform support
+- **Refinement Phase**: 3-6 months
+  - Optimizations
+  - Toolchain integration
+  - Documentation
 
-### Phase 3: Polish (3 months)
-- Toolchain integration
-- Performance tuning
-- Documentation
-- Migration tools
+## Why Compilation Might Be Valuable
+
+Compilation could provide several benefits to the Orus ecosystem:
+- Performance improvements for compute-intensive applications
+- Static analysis opportunities
+- Deployment flexibility
+- Integration with systems programming contexts
+
+## Why Compilation Remains Optional
+
+Orus is designed to be an effective interpreted language with:
+- Good performance through its optimized VM
+- Strong type system that catches errors at runtime
+- Flexibility and dynamic features that some compiled languages struggle with
+- Simpler development workflow without compilation steps
 
 ## Additional Resources
 - Existing compiler references: LLVM, GCC, Clang
@@ -126,3 +141,4 @@ This document outlines the plan for transforming Orus from an interpreted langua
 - Generic specialization vs. code bloat
 - Debug information generation
 - Cross-platform consistency
+- Preserving interpreter semantics exactly

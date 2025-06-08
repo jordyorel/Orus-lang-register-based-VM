@@ -4,14 +4,17 @@
 ## Current Status
 - [x] Basic generic functionality implemented
 - [x] Generic types for collections via C-side macros (`DEFINE_ARRAY_TYPE`)
+- [x] Regular function forward declarations supported
+- [ ] Generic function forward declarations (in progress)
 - [ ] Full generics implementation (in progress)
 
 ## High Priority Tasks
 
-### Forward Declarations & Prepass Collection
-- [ ] Implement prepass mechanism to collect function signatures
-- [ ] Remove function definition order restrictions
-- [ ] Add tests for forward declaration functionality
+### Generic Forward Declarations & Prepass Collection
+- [x] Regular (non-generic) forward declarations are already supported
+- [ ] Implement prepass mechanism to collect generic function signatures
+- [ ] Remove generic function definition order restrictions
+- [ ] Add tests for generic forward declaration functionality
 - [ ] Document the prepass collection process
 
 ### Generic Constraints
@@ -61,7 +64,8 @@
 - [ ] Update docs when new features are implemented
 
 ## Implementation Notes
-* Current limitations: function order restrictions, limited arithmetic support
+* Current progress: regular function forward declarations are supported
+* Current limitations: generic function order restrictions, limited arithmetic support
 * Reference the `tests/generics/` directory for existing test cases
 * Prioritize improving developer experience with better error messages
 * Consider performance implications of specialization vs. type erasure
