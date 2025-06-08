@@ -65,8 +65,3 @@
 * Reference the `tests/generics/` directory for existing test cases
 * Prioritize improving developer experience with better error messages
 * Consider performance implications of specialization vs. type erasure
-
-## Timeline
-- Q3 2025: Complete high priority tasks
-- Q4 2025: Complete medium priority tasks
-- Q1 2026: Complete remaining tasks and documentation
