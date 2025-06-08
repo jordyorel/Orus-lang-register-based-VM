@@ -443,6 +443,7 @@ For a complete list see [BUILTINS.md](BUILTINS.md).
 - `push(array, value)` – Append a value to a dynamic array.
 - `pop(array)` – Remove and return the last element of an array.
 - `range(start, end)` – Generate a sequence of integers for `for` loops.
+- `sum(array)` – Sum all numeric elements of an array.
 - `type_of(value)` – Return the name of a value's type as a string.
 - `is_type(value, name)` – Check whether a value is of the given type.
 - `input(prompt)` – Display a prompt and return a line of user input.

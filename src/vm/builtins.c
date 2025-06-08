@@ -205,6 +205,38 @@ static Value native_float(int argCount, Value* args) {
     return F64_VAL(value);
 }
 
+static Value native_sum(int argCount, Value* args) {
+    if (argCount != 1) {
+        vmRuntimeError("sum() takes exactly one argument.");
+        return NIL_VAL;
+    }
+    if (!IS_ARRAY(args[0])) {
+        vmRuntimeError("sum() expects array.");
+        return NIL_VAL;
+    }
+    ObjArray* arr = AS_ARRAY(args[0]);
+    double total = 0;
+    bool asFloat = false;
+    for (int i = 0; i < arr->length; i++) {
+        Value v = arr->elements[i];
+        if (IS_I32(v)) {
+            total += AS_I32(v);
+        } else if (IS_U32(v)) {
+            total += AS_U32(v);
+        } else if (IS_F64(v)) {
+            total += AS_F64(v);
+            asFloat = true;
+        } else {
+            vmRuntimeError("sum() array must contain only numbers.");
+            return NIL_VAL;
+        }
+    }
+    if (asFloat)
+        return F64_VAL(total);
+    else
+        return I32_VAL((int32_t)total);
+}
+
 typedef struct {
     const char* name;
     NativeFn fn;
@@ -218,6 +250,7 @@ static BuiltinEntry builtinTable[] = {
     {"push", native_push, 2, TYPE_COUNT},
     {"pop", native_pop, 1, TYPE_COUNT},
     {"range", native_range, 2, TYPE_COUNT},
+    {"sum", native_sum, 1, TYPE_COUNT},
     {"type_of", native_type_of, 1, TYPE_STRING},
     {"is_type", native_is_type, 2, TYPE_BOOL},
     {"input", native_input, 1, TYPE_STRING},
