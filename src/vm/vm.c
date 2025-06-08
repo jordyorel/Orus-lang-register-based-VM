@@ -26,6 +26,7 @@ static Value native_push(int argCount, Value* args);
 static Value native_pop(int argCount, Value* args);
 static Value native_type_of(int argCount, Value* args);
 static Value native_is_type(int argCount, Value* args);
+static Value native_input(int argCount, Value* args);
 
 static InterpretResult run();
 
@@ -66,6 +67,7 @@ void initVM() {
     defineNative("pop", native_pop, 1, NULL);
     defineNative("type_of", native_type_of, 1, getPrimitiveType(TYPE_STRING));
     defineNative("is_type", native_is_type, 2, getPrimitiveType(TYPE_BOOL));
+    defineNative("input", native_input, 1, getPrimitiveType(TYPE_STRING));
 }
 
 void freeVM() {
@@ -310,6 +312,30 @@ static Value native_is_type(int argCount, Value* args) {
     bool result = query->length == (int)strlen(name) &&
                   strncmp(query->chars, name, query->length) == 0;
     return BOOL_VAL(result);
+}
+
+static Value native_input(int argCount, Value* args) {
+    if (argCount != 1) {
+        RUNTIME_ERROR("input() takes exactly one argument.");
+        return NIL_VAL;
+    }
+    if (!IS_STRING(args[0])) {
+        RUNTIME_ERROR("input() argument must be a string.");
+        return NIL_VAL;
+    }
+    ObjString* prompt = AS_STRING(args[0]);
+    printf("%s", prompt->chars);
+    fflush(stdout);
+    char buffer[1024];
+    if (!fgets(buffer, sizeof(buffer), stdin)) {
+        return STRING_VAL(allocateString("", 0));
+    }
+    size_t len = strlen(buffer);
+    while (len > 0 && (buffer[len - 1] == '\n' || buffer[len - 1] == '\r')) {
+        buffer[--len] = '\0';
+    }
+    ObjString* result = allocateString(buffer, (int)len);
+    return STRING_VAL(result);
 }
 
 static InterpretResult interpretModule(const char* path) {
