@@ -398,7 +398,7 @@ static InterpretResult interpretModule(const char* path) {
         }
     }
     ASTNode* ast;
-    if (!parse(source, &ast)) {
+    if (!parse(source, path, &ast)) {
         free(source);
         RUNTIME_ERROR("Parsing failed for module.");
         return INTERPRET_COMPILE_ERROR;
@@ -1460,7 +1460,7 @@ Value pop() {
 
 InterpretResult interpret(const char* source) {
     ASTNode* ast;
-    if (!parse(source, &ast)) {
+    if (!parse(source, "<exec>", &ast)) {
         return INTERPRET_COMPILE_ERROR;
     }
 

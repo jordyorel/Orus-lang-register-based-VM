@@ -29,6 +29,7 @@ typedef struct {
     ObjString** genericParams;
     int genericCount;
     int genericCapacity;
+    const char* filePath;
     int parenDepth;
 } Parser;
 
@@ -40,8 +41,8 @@ typedef struct {
     Precedence precedence;
 } ParseRule;
 
-void initParser(Parser* parser, Scanner* scanner);
-bool parse(const char* source, ASTNode** ast);
+void initParser(Parser* parser, Scanner* scanner, const char* filePath);
+bool parse(const char* source, const char* filePath, ASTNode** ast);
 ParseRule* get_rule(TokenType type);
 
 #endif

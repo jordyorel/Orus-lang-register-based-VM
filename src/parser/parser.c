@@ -42,40 +42,35 @@ static void block(Parser* parser, ASTNode** ast);
 static void consumeStatementEnd(Parser* parser);
 static void synchronize(Parser* parser);
 
-static void printErrorContext(Token* token) {
-    // Determine the start of the line containing the token
-    const char* lineStart = token->start;
-    while (lineStart > scanner.source && lineStart[-1] != '\n') {
-        lineStart--;
-    }
-
-    // Determine the end of the line
-    const char* lineEnd = token->start;
-    while (*lineEnd != '\n' && *lineEnd != '\0') {
-        lineEnd++;
-    }
-
-    int lineLength = (int)(lineEnd - lineStart);
-    fprintf(stderr, "%.*s\n", lineLength, lineStart);
-
-    // Print caret under the offending token
-    int column = (int)(token->start - lineStart);
-    for (int i = 0; i < column; i++) fputc(' ', stderr);
-    int caretLen = token->length > 0 ? token->length : 1;
-    for (int i = 0; i < caretLen; i++) fputc('^', stderr);
-    fputc('\n', stderr);
-}
 
 static void errorAt(Parser* parser, Token* token, const char* message) {
     if (parser->panicMode) return;
     parser->panicMode = true;
-    fprintf(stderr, "[line %d] Error", token->line);
-    if (token->type == TOKEN_EOF)
-        fprintf(stderr, " at end");
-    else if (token->type != TOKEN_ERROR)
-        fprintf(stderr, " at '%.*s'", token->length, token->start);
-    fprintf(stderr, ": %s\n", message);
-    printErrorContext(token);
+
+    Diagnostic diagnostic;
+    memset(&diagnostic, 0, sizeof(Diagnostic));
+    diagnostic.code = ERROR_PARSE;
+    diagnostic.text.message = message;
+    diagnostic.primarySpan.line = token->line;
+
+    const char* lineStart = token->start;
+    while (lineStart > scanner.source && lineStart[-1] != '\n') lineStart--;
+    diagnostic.primarySpan.column = (int)(token->start - lineStart) + 1;
+    diagnostic.primarySpan.length = token->length > 0 ? token->length : 1;
+    diagnostic.primarySpan.filePath =
+        parser->filePath ? parser->filePath : "<source>";
+
+    const char* lineEnd = token->start;
+    while (*lineEnd != '\n' && *lineEnd != '\0') lineEnd++;
+    int lineLength = (int)(lineEnd - lineStart);
+    char* buf = (char*)malloc(lineLength + 1);
+    memcpy(buf, lineStart, lineLength);
+    buf[lineLength] = '\0';
+    diagnostic.sourceText = buf;
+
+    emitDiagnostic(&diagnostic);
+
+    free(buf);
     parser->hadError = true;
 }
 
@@ -1187,7 +1182,7 @@ ParseRule rules[] = {
 
 ParseRule* get_rule(TokenType type) { return &rules[type]; }
 
-void initParser(Parser* parser, Scanner* scanner) {
+void initParser(Parser* parser, Scanner* scanner, const char* filePath) {
     parser->current = (Token){0};
     parser->previous = (Token){0};
     parser->hadError = false;
@@ -1198,15 +1193,16 @@ void initParser(Parser* parser, Scanner* scanner) {
     parser->genericParams = NULL;
     parser->genericCount = 0;
     parser->genericCapacity = 0;
+    parser->filePath = filePath;
     parser->parenDepth = 0;
 }
 
-bool parse(const char* source, ASTNode** ast) {
+bool parse(const char* source, const char* filePath, ASTNode** ast) {
     // fprintf(stderr, ">>> ENTERED PARSE FUNCTION <<<\n");
     Scanner scanner;
     init_scanner(source);
     Parser parser;
-    initParser(&parser, &scanner);
+    initParser(&parser, &scanner, filePath);
     advance(&parser);
 
     *ast = NULL;

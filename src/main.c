@@ -13,29 +13,30 @@
 #include "../include/version.h"
 
 static void printError(ObjError* err) {
-    // Format like the compiler's diagnostic system
-    if (err->location.file) {
-        // Print error message with file location
-        fprintf(stderr, "%sError%s: %s\n", 
-                "\x1b[31;1m", "\x1b[0m", err->message->chars);
-        
-        // Print file location
-        fprintf(stderr, "%s --> %s:%d:%d%s\n",
-               "\x1b[36m", err->location.file, err->location.line,
-               err->location.column, "\x1b[0m");
-        
-        // For string interpolation errors, provide helpful note
-        if (strstr(err->message->chars, "string interpolation")) {
-            fprintf(stderr, "%snote%s: each '{}' in the format string corresponds to one argument provided after the format string\n",
-                   "\x1b[34m", "\x1b[0m");
-            fprintf(stderr, "%shelp%s: ensure the number of '{}' placeholders matches the number of arguments\n\n",
-                   "\x1b[32m", "\x1b[0m");
-        }
-    } else {
-        fprintf(stderr, "%s\n", err->message->chars);
+    Diagnostic diag;
+    memset(&diag, 0, sizeof(Diagnostic));
+    diag.code = ERROR_RUNTIME;
+    diag.text.message = err->message->chars;
+    diag.primarySpan.filePath = err->location.file ? err->location.file : "<runtime>";
+    diag.primarySpan.line = err->location.line;
+    diag.primarySpan.column = err->location.column;
+    diag.primarySpan.length = 1;
+
+    char* help = NULL;
+    const char* note = NULL;
+    if (strstr(err->message->chars, "string interpolation")) {
+        help = strdup("ensure the number of '{}' placeholders matches the number of arguments");
+        note = "each '{}' in the format string corresponds to one argument provided after the format string";
     }
-    // Stack trace is already printed elsewhere
-    // vmPrintStackTrace();
+    diag.text.help = help;
+    if (note) {
+        diag.text.notes = (char**)&note;
+        diag.text.noteCount = 1;
+    }
+
+    emitDiagnostic(&diag);
+
+    if (help) free(help);
 }
 
 extern VM vm;
@@ -69,7 +70,7 @@ static void repl() {
 
         // Process the input
         ASTNode* ast;
-        if (!parse(buffer, &ast)) {
+        if (!parse(buffer, "<repl>", &ast)) {
             printf("Parsing failed.\n");
             fflush(stdout);
             continue;
@@ -125,7 +126,7 @@ static void runFile(const char* path) {
         exit(65);
     }
     ASTNode* ast;
-    if (!parse(source, &ast)) {
+    if (!parse(source, path, &ast)) {
         fprintf(stderr, "Parsing failed for \"%s\".\n", path);
         free(source);
         exit(65);
