@@ -1,41 +1,72 @@
-# Generic Data Structures
+<!-- filepath: /Users/hierat/Documents/Development/learning/orus_lang/docs/GENERICS.md -->
+# Generics in Orus Language
 
-Based on the codebase and documentation, future work for generics could include:
+This document outlines the current state and future roadmap for generic data structures and functions in the Orus language.
 
-Forward Declarations or Prepass Collection
+## Current Implementation
 
-Allow calling a function before its definition by performing a prepass to record function signatures. This would remove the current order restriction.
+Currently, Orus supports basic generic functionality with some limitations. Generic types can be used for collections and functions, primarily through C-side macros like `DEFINE_ARRAY_TYPE` for arrays.
 
-Generic Constraints
+## Roadmap for Future Development
 
-The type_constraints.orus test assumes support for numeric comparisons and other operations. Adding a constraint system (e.g., T: Numeric) would provide compile-time checks for operations like < or +.
+Based on the codebase analysis and implementation testing, the following enhancements are planned:
 
-Improved Type Inference
+### 1. Forward Declarations & Prepass Collection
 
-While generics can be inferred from arguments, more advanced inference could reduce explicit type annotations—especially for nested generics or complex expressions.
+**Goal**: Allow calling generic functions before their definitions.
+- Implement a prepass mechanism to collect function signatures
+- Remove the current order restriction for generic function definitions
+- Enable more natural code organization
 
-Generic Arithmetic and Operators
+### 2. Generic Constraints
 
-The comprehensive test includes a specialized sum for [i32] because “fully generic arithmetic is not currently supported”:
+**Goal**: Ensure type safety for generic operations.
+- Add constraint systems (e.g., `T: Numeric`, `T: Comparable`)
+- Provide compile-time checks for operations like `<`, `>`, or `+`
+- Reference implementation in `type_constraints.orus` test
 
-Extending operator overloading or trait-based constraints would let arithmetic work generically across numeric types.
+### 3. Improved Type Inference
 
-Better Collection and Iterator Support
+**Goal**: Reduce explicit type annotations.
+- Enhance inference for arguments in generic functions
+- Improve handling of nested generics
+- Support complex expressions with generics
 
-The C-side macros (DEFINE_ARRAY_TYPE) provide generic arrays:
+### 4. Generic Arithmetic and Operators
 
-Building higher-level generic collections (maps, sets) and iterators would make generics more practical.
+**Goal**: Support arithmetic operations across generic types.
+- Implement trait-based constraints for numeric operations
+- Enable operator overloading for generic types
+- Remove need for specialized implementations (e.g., current `sum` for `[i32]`)
 
-Error Reporting Enhancements
+### 5. Better Collection and Iterator Support
 
-Diagnostics mention function-order issues but could also suggest using a forward declaration mechanism once implemented. Clearer messages for generic mismatches would aid debugging.
+**Goal**: Provide a rich ecosystem of generic collections.
+- Build on existing C-side macros for arrays
+- Implement higher-level generic collections (maps, sets)
+- Add comprehensive iterator support for all collections
 
-Cross-Module Generic Types
+### 6. Error Reporting Enhancements
 
-Current tests reside in single files. Future steps might include importing generic types from other modules and ensuring specialization works across compilation units.
+**Goal**: Improve developer experience with clearer error messages.
+- Provide better diagnostics for generic type mismatches
+- Add suggestions for using forward declarations when appropriate
+- Include helpful examples in error messages
 
-Tooling and Documentation
+### 7. Cross-Module Generic Types
 
-Expand docs/GENERICS.md to include more complex patterns and best practices. Provide examples of advanced generics once new features land.
+**Goal**: Support generics across module boundaries.
+- Enable importing generic types from other modules
+- Ensure specialization works correctly across compilation units
+- Test with multi-file scenarios
 
-This roadmap aims to make generics more ergonomic and expressive, while also addressing the function-definition order constraint highlighted in the current design.
+### 8. Tooling and Documentation
+
+**Goal**: Support developers with comprehensive resources.
+- Expand this documentation with complex patterns and best practices
+- Provide examples for advanced generic usage
+- Update as new features are implemented
+
+## Conclusion
+
+This roadmap aims to make generics in Orus more ergonomic and expressive while addressing the current function-definition order constraint. These improvements will enable more powerful abstractions and safer code.
