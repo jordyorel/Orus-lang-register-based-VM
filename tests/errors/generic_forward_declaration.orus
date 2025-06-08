@@ -4,11 +4,11 @@
 
 fn main() {
     // This should fail because generic_function is used before its definition
-    let result = generic_function<i32>(10);
+    let result = generic_function<i32>(10)
     print(result);
 }
 
 // The generic function definition comes after its use
 fn generic_function<T>(value: T) -> T {
-    return value;
+    return value
 }
