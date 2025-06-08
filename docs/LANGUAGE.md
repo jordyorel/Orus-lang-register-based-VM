@@ -23,6 +23,21 @@ let boolean: bool = true
 let text: string = "Hello, Orus"
 ```
 
+## Comments
+
+Single-line comments start with `//` and continue to the end of the line. Block
+comments are written using `/*` and `*/` and may span multiple lines.
+
+```orus
+// This is a single-line comment
+let value = 1 /* inline comment */ + 2
+
+/*
+Multi-line comments can cover
+several lines.
+*/
+```
+
 ## Compound Types
 
 Orus provides two primary compound data types:
@@ -63,6 +78,17 @@ push(numbers, 10)            // Array grows to size 2
 push(numbers, 20)            // Array grows to size 3
 print(len(numbers))          // Prints 3
 let last = pop(numbers)      // last = 20, array size back to 2
+```
+
+### Array Slicing
+
+Arrays can be sliced to obtain a sub-array using the `[start..end]` syntax. The
+`start` index is inclusive and `end` is exclusive.
+
+```orus
+let nums: [i32; 5] = [1, 2, 3, 4, 5]
+let first_two = nums[0..2]        // [1, 2]
+let tail = nums[2..len(nums)]     // [3, 4, 5]
 ```
 
 ### Structs
@@ -257,6 +283,20 @@ for i in 0..10 {       // Range is inclusive of start, exclusive of end (0 to 9)
 while condition {
     // code executed as long as condition is true
 }
+
+// Nested loops
+for x in 0..3 {
+    for y in 0..3 {
+        print("({},{})", x, y)
+    }
+}
+
+// Countdown with while
+let n = 3
+while n > 0 {
+    print(n)
+    n = n - 1
+}
 ```
 
 ### Loop Control
@@ -358,6 +398,28 @@ let length = len("Hello")  // 5
 let part = substring("Hello, world!", 0, 5)  // "Hello"
 ```
 
+## Built-in Functions
+
+The language provides a small set of built-in functions available in every
+module:
+
+- `print(values...)` – Output values to the console using `{}` placeholders for
+  interpolation.
+- `len(value)` – Length of a string or array.
+- `substring(str, start, len)` – Extract a portion of a string.
+- `push(array, value)` – Append a value to a dynamic array.
+- `pop(array)` – Remove and return the last element of an array.
+- `type_of(value)` – Return the name of a value's type as a string.
+- `is_type(value, name)` – Check whether a value is of the given type.
+
+```orus
+let arr: [i32; 1] = [1]
+push(arr, 2)
+print(len(arr))            // 2
+print(type_of(arr))        // "[i32]"
+print(is_type(10, "i32"))  // true
+```
+
 ## Error Handling
 
 Orus provides exception-like error handling with `try`/`catch` blocks:
@@ -403,6 +465,17 @@ fn main() {
     print(b.value)
 }
 ```
+
+// Generic function returning a pair with swapped values
+fn swap<T>(a: T, b: T) -> [T; 2] {
+    return [b, a]
+}
+
+fn demo() {
+    let pair = swap<i32>(1, 2)
+    print(pair[0])  // 2
+    print(pair[1])  // 1
+}
 
 Generic parameters are checked during compilation and must be supplied or can
 be inferred from argument types. The compiler verifies that generic arguments
