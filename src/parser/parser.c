@@ -692,26 +692,45 @@ static void forStatement(Parser* parser, ASTNode** ast) {
     // Parse the 'in' keyword
     consume(parser, TOKEN_IN, "Expect 'in' after iterator variable.");
 
-    // Parse the range start expression
+    // Support two syntaxes:
+    // 1. for i in start..end[..step]
+    // 2. for i in range(start, end)
     ASTNode* startExpr;
-    expression(parser, &startExpr);
-
-    // Parse the range operator
-    consume(parser, TOKEN_DOT_DOT, "Expect '..' in range expression.");
-
-    // Parse the range end expression
     ASTNode* endExpr;
-    expression(parser, &endExpr);
-
-    // Check for optional step value
     ASTNode* stepExpr = NULL;
-    if (match(parser, TOKEN_DOT_DOT)) {
-        // Parse the step expression
-        expression(parser, &stepExpr);
-    } else {
+
+    if (check(parser, TOKEN_IDENTIFIER) &&
+        tokenEquals(parser->current, "range")) {
+        // Parse the range(start, end) form
+        advance(parser); // consume 'range'
+        consume(parser, TOKEN_LEFT_PAREN, "Expect '(' after 'range'.");
+        expression(parser, &startExpr);
+        consume(parser, TOKEN_COMMA, "Expect ',' after range start.");
+        expression(parser, &endExpr);
+        consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after range.");
+
         // Default step is 1
         stepExpr = createLiteralNode(I32_VAL(1));
         stepExpr->valueType = getPrimitiveType(TYPE_I32);
+    } else {
+        // Parse the range start expression
+        expression(parser, &startExpr);
+
+        // Parse the range operator
+        consume(parser, TOKEN_DOT_DOT, "Expect '..' in range expression.");
+
+        // Parse the range end expression
+        expression(parser, &endExpr);
+
+        // Check for optional step value
+        if (match(parser, TOKEN_DOT_DOT)) {
+            // Parse the step expression
+            expression(parser, &stepExpr);
+        } else {
+            // Default step is 1
+            stepExpr = createLiteralNode(I32_VAL(1));
+            stepExpr->valueType = getPrimitiveType(TYPE_I32);
+        }
     }
 
     // Parse the body
