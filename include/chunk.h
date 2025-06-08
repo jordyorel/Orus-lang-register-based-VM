@@ -106,6 +106,7 @@ typedef enum {
 
 typedef struct {
     int line;
+    int column;
     int run_length;
 } LineInfo;
 
@@ -128,11 +129,12 @@ typedef struct {
 
 void initChunk(Chunk* chunk);
 void freeChunk(Chunk* chunk);
-void writeChunk(Chunk* chunk, uint8_t byte, int line);
+void writeChunk(Chunk* chunk, uint8_t byte, int line, int column);
 int addConstant(Chunk* Chunk, Value value);
-void writeConstant(Chunk* chunk, Value value, int line);
+void writeConstant(Chunk* chunk, Value value, int line, int column);
 int len(Chunk* chunk);
 int get_line(Chunk* chunk, int offset);
+int get_column(Chunk* chunk, int offset);
 uint8_t get_code(Chunk* chunk, int offset);
 Value get_constant(Chunk* chunk, int offset);
 

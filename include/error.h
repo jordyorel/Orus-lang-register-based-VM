@@ -99,6 +99,12 @@ void emitBuiltinArgCountError(Compiler* compiler, Token* token,
 // Emit a simple compiler error with no specific span information.
 void emitSimpleError(Compiler* compiler, ErrorCode code, const char* message);
 
+// Emit an error anchored at a specific token location.
+void emitTokenError(Compiler* compiler,
+                    Token* token,
+                    ErrorCode code,
+                    const char* message);
+
 void emitDiagnostic(Diagnostic* diagnostic);
 
 #endif // ORUS_ERROR_H

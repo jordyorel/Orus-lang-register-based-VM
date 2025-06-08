@@ -41,7 +41,7 @@ void freeChunk(Chunk* chunk) {
 // Parameters:
 //   chunk - Pointer to the Chunk where the byte will be written.
 //   byte - The byte (instruction) to add to the chunk.
-void writeChunk(Chunk* chunk, uint8_t byte, int line) {
+void writeChunk(Chunk* chunk, uint8_t byte, int line, int column) {
     if (chunk->capacity < chunk->count + 1) {
         int oldCapacity = chunk->capacity;
         chunk->capacity = GROW_CAPACITY(oldCapacity);
@@ -59,23 +59,24 @@ void writeChunk(Chunk* chunk, uint8_t byte, int line) {
                                       chunk->line_capcity);
     }
     chunk->line_info[chunk->line_count].line = line;
+    chunk->line_info[chunk->line_count].column = column;
     chunk->line_info[chunk->line_count].run_length = 1;
     chunk->line_count++;
 }
 
-void writeConstant(Chunk* chunk, Value value, int line) {
+void writeConstant(Chunk* chunk, Value value, int line, int column) {
     int constantindex = addConstant(chunk, value);
     
     if (constantindex < 256) {
-        writeChunk(chunk, OP_CONSTANT, line);
-        writeChunk(chunk, (uint8_t)constantindex, line);
+        writeChunk(chunk, OP_CONSTANT, line, column);
+        writeChunk(chunk, (uint8_t)constantindex, line, column);
     } else {
-        writeChunk(chunk, OP_CONSTANT_LONG, line);
+        writeChunk(chunk, OP_CONSTANT_LONG, line, column);
 
         // write the constant index in 3 bytes
-        writeChunk(chunk, (constantindex >> 16) & 0xFF, line);
-        writeChunk(chunk, (constantindex >> 8) & 0xFF, line);
-        writeChunk(chunk, constantindex & 0xFF, line);
+        writeChunk(chunk, (constantindex >> 16) & 0xFF, line, column);
+        writeChunk(chunk, (constantindex >> 8) & 0xFF, line, column);
+        writeChunk(chunk, constantindex & 0xFF, line, column);
     }
 }
 
@@ -101,6 +102,17 @@ int get_line(Chunk* chunk, int instruction_offset) {
         }
    }
    return -1;
+}
+
+int get_column(Chunk* chunk, int instruction_offset) {
+   int offset = 0;
+   for (int i = 0; i < chunk->line_count; i++) {
+        offset += chunk->line_info[i].run_length;
+        if (instruction_offset < offset) {
+            return chunk->line_info[i].column;
+        }
+   }
+   return 1;
 }
 
 uint8_t get_code(Chunk* chunk, int offset) {
