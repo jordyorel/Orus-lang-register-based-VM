@@ -68,8 +68,14 @@ static void errorAt(Parser* parser, Token* token, const char* message) {
     buf[lineLength] = '\0';
     diagnostic.sourceText = buf;
 
+    diagnostic.text.help = strdup("verify the syntax near this token");
+    const char* note = "the parser could not understand this part of the source";
+    diagnostic.text.notes = (char**)&note;
+    diagnostic.text.noteCount = 1;
+
     emitDiagnostic(&diagnostic);
 
+    if (diagnostic.text.help) free(diagnostic.text.help);
     free(buf);
     parser->hadError = true;
 }

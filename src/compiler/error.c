@@ -561,7 +561,13 @@ void emitSimpleError(Compiler* compiler, ErrorCode code, const char* message) {
     diagnostic.primarySpan.column = 1;
     diagnostic.primarySpan.length = 1;
 
+    diagnostic.text.help = strdup("refer to the Orus documentation for possible resolutions");
+    const char* note = "a generic compiler error occurred";
+    diagnostic.text.notes = (char**)&note;
+    diagnostic.text.noteCount = 1;
+
     emitDiagnostic(&diagnostic);
+    if (diagnostic.text.help) free(diagnostic.text.help);
     compiler->hadError = true;
 }
 
@@ -587,7 +593,13 @@ void emitTokenError(Compiler* compiler,
     diagnostic.primarySpan.column = (int)(token->start - lineStart) + 1;
     diagnostic.primarySpan.length = token->length > 0 ? token->length : 1;
 
+    diagnostic.text.help = strdup("check the highlighted token for mistakes");
+    const char* note = "the compiler encountered an unexpected token here";
+    diagnostic.text.notes = (char**)&note;
+    diagnostic.text.noteCount = 1;
+
     emitDiagnostic(&diagnostic);
+    if (diagnostic.text.help) free(diagnostic.text.help);
     compiler->hadError = true;
 }
 
