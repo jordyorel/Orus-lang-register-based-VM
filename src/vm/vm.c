@@ -45,6 +45,7 @@ void initVM() {
     vm.astRoot = NULL;
     vm.filePath = NULL;
     vm.currentLine = 0;
+    vm.currentColumn = 1;
     vm.moduleCount = 0;
     vm.nativeFunctionCount = 0;
     const char* envTrace = getenv("ORUS_TRACE");
@@ -88,6 +89,7 @@ void freeVM() {
     vm.moduleCount = 0;
     vm.filePath = NULL;
     vm.currentLine = 0;
+    vm.currentColumn = 1;
 }
 
 static void printStackTrace() {
@@ -113,7 +115,7 @@ static void runtimeError(ErrorType type, SrcLocation location,
     if (location.file == NULL && vm.filePath) {
         location.file = vm.filePath;
         location.line = vm.currentLine;
-        location.column = 0;
+        location.column = vm.currentColumn;
     }
 
     ObjError* err = allocateError(type, buffer, location);
@@ -450,6 +452,7 @@ static InterpretResult run() {
     for (;;) {
         if (vm.trace) traceExecution();
         vm.currentLine = get_line(vm.chunk, (int)(vm.ip - vm.chunk->code));
+        vm.currentColumn = get_column(vm.chunk, (int)(vm.ip - vm.chunk->code));
         uint8_t instruction = READ_BYTE();
 
         switch (instruction) {
@@ -1200,7 +1203,7 @@ static InterpretResult run() {
                         formatStr->chars[formatIndex] == '{' &&
                         formatStr->chars[formatIndex + 1] == '}') {
                         if (argIndex >= argCount) {
-                            SrcLocation location = {vm.filePath, vm.currentLine, 0};
+                            SrcLocation location = {vm.filePath, vm.currentLine, vm.currentColumn};
                             runtimeError(ERROR_TYPE, location,
                                 "Too few arguments for string interpolation: format string has %d placeholder%s but only %d argument%s provided",
                                 argIndex + 1, argIndex + 1 == 1 ? "" : "s",
@@ -1310,7 +1313,7 @@ static InterpretResult run() {
                 }
 
                 if (argIndex < argCount) {
-                    SrcLocation location = {vm.filePath, vm.currentLine, 0};
+                    SrcLocation location = {vm.filePath, vm.currentLine, vm.currentColumn};
                     runtimeError(ERROR_TYPE, location, 
                         "Too many arguments for string interpolation: format string has %d placeholder%s but %d argument%s provided",
                         argIndex, argIndex == 1 ? "" : "s",

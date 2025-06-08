@@ -565,3 +565,29 @@ void emitSimpleError(Compiler* compiler, ErrorCode code, const char* message) {
     compiler->hadError = true;
 }
 
+// Emit a compiler error at a specific token location so the diagnostic caret
+// points to the offending part of the source code.
+void emitTokenError(Compiler* compiler,
+                    Token* token,
+                    ErrorCode code,
+                    const char* message) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+
+    Diagnostic diagnostic;
+    memset(&diagnostic, 0, sizeof(Diagnostic));
+
+    diagnostic.code = code;
+    diagnostic.text.message = message;
+    diagnostic.primarySpan.filePath = compiler->filePath;
+    diagnostic.primarySpan.line = token->line;
+
+    const char* lineStart = token->start;
+    while (lineStart > compiler->sourceCode && lineStart[-1] != '\n') lineStart--;
+    diagnostic.primarySpan.column = (int)(token->start - lineStart) + 1;
+    diagnostic.primarySpan.length = token->length > 0 ? token->length : 1;
+
+    emitDiagnostic(&diagnostic);
+    compiler->hadError = true;
+}
+

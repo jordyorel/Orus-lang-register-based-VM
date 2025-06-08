@@ -27,6 +27,20 @@ static bool tokenEquals(Token token, const char* str) {
     return token.length == (int)len && strncmp(token.start, str, len) == 0;
 }
 
+static int tokenColumn(Compiler* compiler, Token* token) {
+    const char* lineStart = token->start;
+    while (lineStart > compiler->sourceCode && lineStart[-1] != '\n') lineStart--;
+    return (int)(token->start - lineStart) + 1;
+}
+
+static int firstNonWhitespaceColumn(Compiler* compiler, int line) {
+    if (!compiler->lineStarts || line <= 0 || line > compiler->lineCount) return 1;
+    const char* start = compiler->lineStarts[line - 1];
+    int column = 1;
+    while (*start == ' ' || *start == '\t') { start++; column++; }
+    return column;
+}
+
 static void generateCode(Compiler* compiler, ASTNode* node);
 static void addBreakJump(Compiler* compiler, int jumpPos);
 static void patchBreakJumps(Compiler* compiler);
@@ -106,11 +120,11 @@ static void errorFmt(Compiler* compiler, const char* format, ...) {
 
 
 static void writeOp(Compiler* compiler, uint8_t op) {
-    writeChunk(compiler->chunk, op, compiler->currentLine);
+    writeChunk(compiler->chunk, op, compiler->currentLine, compiler->currentColumn);
 }
 
 static void writeByte(Compiler* compiler, uint8_t byte) {
-    writeChunk(compiler->chunk, byte, compiler->currentLine);
+    writeChunk(compiler->chunk, byte, compiler->currentLine, compiler->currentColumn);
 }
 
 static int makeConstant(Compiler* compiler, ObjString* string) {
@@ -131,7 +145,7 @@ static void emitConstant(Compiler* compiler, Value value) {
         // fprintf(stderr, "DEBUG: Emitting valid constant: ");
         // printValue(value);
         // fprintf(stderr, "\n");
-        writeConstant(compiler->chunk, value, compiler->currentLine);
+        writeConstant(compiler->chunk, value, compiler->currentLine, compiler->currentColumn);
     } else {
         // fprintf(stderr, "ERROR: Invalid constant type\n");
         // Debug log to trace invalid constants
@@ -149,6 +163,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
     }
 
     compiler->currentLine = node->line;
+    compiler->currentColumn = firstNonWhitespaceColumn(compiler, node->line);
 
     switch (node->type) {
         case AST_LITERAL: {
@@ -159,6 +174,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_BINARY: {
+            compiler->currentColumn = tokenColumn(compiler, &node->data.operation.operator);
 
             typeCheckNode(compiler, node->left);
             typeCheckNode(compiler, node->right);
@@ -190,7 +206,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                         node->data.operation.convertLeft = false;
                         node->data.operation.convertRight = false;
                     } else {
-                        error(compiler, "Type mismatch in addition operation.");
+                        emitTokenError(compiler,
+                                       &node->data.operation.operator,
+                                       ERROR_GENERAL,
+                                       "Type mismatch in addition operation.");
                         return;
                     }
                     break;
@@ -253,11 +272,17 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
                 case TOKEN_LEFT_BRACKET: {
                     if (leftType->kind != TYPE_ARRAY) {
-                        error(compiler, "Can only index arrays.");
+                        emitTokenError(compiler,
+                                       &node->data.operation.operator,
+                                       ERROR_GENERAL,
+                                       "Can only index arrays.");
                         return;
                     }
                     if (rightType->kind != TYPE_I32 && rightType->kind != TYPE_U32) {
-                        error(compiler, "Array index must be an integer.");
+                        emitTokenError(compiler,
+                                       &node->data.operation.operator,
+                                       ERROR_GENERAL,
+                                       "Array index must be an integer.");
                         return;
                     }
                     node->valueType = leftType->info.array.elementType;
@@ -302,6 +327,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_UNARY: {
+            compiler->currentColumn = tokenColumn(compiler, &node->data.operation.operator);
             typeCheckNode(compiler, node->left);
             if (compiler->hadError) return;
 
@@ -340,6 +366,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_VARIABLE: {
+            compiler->currentColumn = tokenColumn(compiler, &node->data.variable.name);
             uint8_t index = resolveVariable(compiler, node->data.variable.name);
             if (index == UINT8_MAX) {
                 char tempName[node->data.variable.name.length + 1];
@@ -749,6 +776,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
        case AST_CALL: {
+            compiler->currentColumn = tokenColumn(compiler, &node->data.call.name);
             // Attempt to resolve the function name
             ObjString* nameObj = allocateString(node->data.call.name.start,
                                                node->data.call.name.length);
@@ -1087,6 +1115,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_STRUCT_LITERAL: {
+            compiler->currentColumn = tokenColumn(compiler, &node->data.structLiteral.name);
             Type* structType = findStructTypeToken(node->data.structLiteral.name);
             if (!structType) {
                 error(compiler, "Unknown struct type.");
@@ -1132,6 +1161,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_FIELD: {
+            compiler->currentColumn = tokenColumn(compiler, &node->data.field.fieldName);
             typeCheckNode(compiler, node->left);
             if (compiler->hadError) return;
             Type* structType = node->left->valueType;
@@ -1152,7 +1182,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
             }
             if (index < 0) {
-                error(compiler, "Unknown field name.");
+                emitTokenError(compiler,
+                               &node->data.field.fieldName,
+                               ERROR_GENERAL,
+                               "Unknown field name.");
                 return;
             }
             node->data.field.index = index;
@@ -1161,6 +1194,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_FIELD_SET: {
+            compiler->currentColumn = tokenColumn(compiler, &node->data.fieldSet.fieldName);
             typeCheckNode(compiler, node->right); // object
             if (compiler->hadError) return;
             Type* structType = node->right->valueType;
@@ -1180,7 +1214,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
             }
             if (index < 0) {
-                error(compiler, "Unknown field name.");
+                emitTokenError(compiler,
+                               &node->data.fieldSet.fieldName,
+                               ERROR_GENERAL,
+                               "Unknown field name.");
                 return;
             }
             node->data.fieldSet.index = index;
@@ -1754,6 +1791,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_FIELD_SET: {
+            compiler->currentColumn = tokenColumn(compiler, &node->data.fieldSet.fieldName);
             generateCode(compiler, node->right); // object
             if (compiler->hadError) return;
             emitConstant(compiler, I32_VAL(node->data.fieldSet.index));
@@ -1778,6 +1816,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_STRUCT_LITERAL: {
+            compiler->currentColumn = tokenColumn(compiler, &node->data.structLiteral.name);
             int count = 0;
             ASTNode* val = node->data.structLiteral.values;
             while (val) {
@@ -1792,6 +1831,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_FIELD: {
+            compiler->currentColumn = tokenColumn(compiler, &node->data.field.fieldName);
             generateCode(compiler, node->left);
             if (compiler->hadError) return;
             emitConstant(compiler, I32_VAL(node->data.field.index));
@@ -1809,8 +1849,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             // We'll patch this jump later
             int thenJump = compiler->chunk->count;
             writeOp(compiler, OP_JUMP_IF_FALSE);
-            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
-            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+            writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
+            writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
 
             // Pop the condition value from the stack
             writeOp(compiler, OP_POP);
@@ -1823,8 +1863,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             // We'll patch this jump later
             int elseJump = compiler->chunk->count;
             writeOp(compiler, OP_JUMP);
-            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
-            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+            writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
+            writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
 
             // Patch the then jump
             int thenEnd = compiler->chunk->count;
@@ -1864,8 +1904,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 // We'll patch this jump later
                 int elifThenJump = compiler->chunk->count;
                 writeOp(compiler, OP_JUMP_IF_FALSE);
-                writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
-                writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+                writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
+                writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
 
                 // Pop the condition value from the stack
                 writeOp(compiler, OP_POP);
@@ -1880,8 +1920,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 // We'll patch this jump later
                 elifJumps[elifIndex] = compiler->chunk->count;
                 writeOp(compiler, OP_JUMP);
-                writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
-                writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+                writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
+                writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
 
                 // Patch the elif jump
                 int elifEnd = compiler->chunk->count;
@@ -1959,8 +1999,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             // We'll patch this jump later
             int exitJump = compiler->chunk->count;
             writeOp(compiler, OP_JUMP_IF_FALSE);
-            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
-            writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+            writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
+            writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
 
             // Pop the condition value from the stack
             writeOp(compiler, OP_POP);
@@ -1980,8 +2020,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             // Emit a loop instruction to jump back to the condition
             writeOp(compiler, OP_LOOP);
             int offset = compiler->chunk->count - compiler->loopStart + 2;
-            writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0);
-            writeChunk(compiler->chunk, offset & 0xFF, 0);
+            writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0, 1);
+            writeChunk(compiler->chunk, offset & 0xFF, 0, 1);
 
             // Patch the exit jump
             int exitDest = compiler->chunk->count;
@@ -2022,8 +2062,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             // Reserve jump over function body
             int jumpOverFunction = compiler->chunk->count;
             writeOp(compiler, OP_JUMP);
-            writeChunk(compiler->chunk, 0xFF, 0);
-            writeChunk(compiler->chunk, 0xFF, 0);
+            writeChunk(compiler->chunk, 0xFF, 0, 1);
+            writeChunk(compiler->chunk, 0xFF, 0, 1);
 
             // Record function body start
             int functionStart = compiler->chunk->count;
@@ -2066,6 +2106,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             break;
         }
         case AST_CALL: {
+            compiler->currentColumn = tokenColumn(compiler, &node->data.call.name);
             // Built-in implementations using native registry
             if (node->data.call.nativeIndex != -1) {
                 ASTNode* arg = node->data.call.arguments;
@@ -2130,8 +2171,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
             int jumpPos = compiler->chunk->count;
             writeOp(compiler, OP_JUMP);
-            writeChunk(compiler->chunk, 0xFF, 0);
-            writeChunk(compiler->chunk, 0xFF, 0);
+            writeChunk(compiler->chunk, 0xFF, 0, 1);
+            writeChunk(compiler->chunk, 0xFF, 0, 1);
             addBreakJump(compiler, jumpPos);
             break;
         }
@@ -2148,8 +2189,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 // For-loop continue before increment section is emitted.
                 int jumpPos = compiler->chunk->count;
                 writeOp(compiler, OP_JUMP);
-                writeChunk(compiler->chunk, 0xFF, 0);
-                writeChunk(compiler->chunk, 0xFF, 0);
+                writeChunk(compiler->chunk, 0xFF, 0, 1);
+                writeChunk(compiler->chunk, 0xFF, 0, 1);
                 addContinueJump(compiler, jumpPos);
             } else {
                 if (!isForLoop) {
@@ -2159,8 +2200,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
                 writeOp(compiler, OP_LOOP);
                 int offset = compiler->chunk->count - compiler->loopContinue + 2;
-                writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0);
-                writeChunk(compiler->chunk, offset & 0xFF, 0);
+                writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0, 1);
+                writeChunk(compiler->chunk, offset & 0xFF, 0, 1);
             }
 
             break;
@@ -2171,8 +2212,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             uint8_t index = node->data.tryStmt.errorIndex;
             int setup = compiler->chunk->count;
             writeOp(compiler, OP_SETUP_EXCEPT);
-            writeChunk(compiler->chunk, 0xFF, 0);
-            writeChunk(compiler->chunk, 0xFF, 0);
+            writeChunk(compiler->chunk, 0xFF, 0, 1);
+            writeChunk(compiler->chunk, 0xFF, 0, 1);
             writeOp(compiler, index);
 
             generateCode(compiler, node->data.tryStmt.tryBlock);
@@ -2181,8 +2222,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             writeOp(compiler, OP_POP_EXCEPT);
             int jumpOver = compiler->chunk->count;
             writeOp(compiler, OP_JUMP);
-            writeChunk(compiler->chunk, 0xFF, 0);
-            writeChunk(compiler->chunk, 0xFF, 0);
+            writeChunk(compiler->chunk, 0xFF, 0, 1);
+            writeChunk(compiler->chunk, 0xFF, 0, 1);
 
             int handler = compiler->chunk->count;
             compiler->chunk->code[setup + 1] = (handler - setup - 4) >> 8;
@@ -2256,8 +2297,8 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     // Emit a jump-if-false instruction to exit the loop when condition is false
     int exitJump = compiler->chunk->count;
     writeOp(compiler, OP_JUMP_IF_FALSE);
-    writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
-    writeChunk(compiler->chunk, 0xFF, 0);  // Placeholder for jump offset
+    writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
+    writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
 
     // Pop the condition value from the stack
     writeOp(compiler, OP_POP);
@@ -2306,8 +2347,8 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     // Jump back to the condition check
     writeOp(compiler, OP_LOOP);
     int offset = compiler->chunk->count - loopStart + 2;
-    writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0);
-    writeChunk(compiler->chunk, offset & 0xFF, 0);
+            writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0, 1);
+            writeChunk(compiler->chunk, offset & 0xFF, 0, 1);
 
     // Patch the exit jump
     int exitDest = compiler->chunk->count;
@@ -2523,6 +2564,7 @@ void initCompiler(Compiler* compiler, Chunk* chunk,
     compiler->filePath = filePath;
     compiler->sourceCode = sourceCode;
     compiler->currentLine = 0;
+    compiler->currentColumn = 1;
 
     // Count lines in sourceCode and record start pointers for each line
     if (sourceCode) {

@@ -59,6 +59,7 @@ typedef struct {
     // Path of the file currently being executed. Used for runtime diagnostics.
     const char* filePath;
     int currentLine;
+    int currentColumn;
 
     Function functions[UINT8_COUNT];
     uint16_t functionCount;
