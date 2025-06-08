@@ -1060,13 +1060,15 @@ static void statement(Parser* parser, ASTNode** ast) {
                 argCount++;
             } while (match(parser, TOKEN_COMMA));
 
-            consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after print arguments.");
+            consume(parser, TOKEN_RIGHT_PAREN,
+                    "Expect ')' after print arguments. (Hint: string arguments must be quoted)");
             consumeStatementEnd(parser);
 
             *ast = createPrintNode(formatExpr, arguments, argCount, parser->previous.line);
         } else {
             // This is a simple print without interpolation
-            consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after print argument.");
+            consume(parser, TOKEN_RIGHT_PAREN,
+                    "Expect ')' after print argument. (Hint: string arguments must be quoted)");
             consumeStatementEnd(parser);
             
             // Create a print node with no additional arguments
