@@ -27,6 +27,8 @@ static Value native_pop(int argCount, Value* args);
 static Value native_type_of(int argCount, Value* args);
 static Value native_is_type(int argCount, Value* args);
 static Value native_input(int argCount, Value* args);
+static Value native_int(int argCount, Value* args);
+static Value native_float(int argCount, Value* args);
 
 static InterpretResult run();
 
@@ -68,6 +70,8 @@ void initVM() {
     defineNative("type_of", native_type_of, 1, getPrimitiveType(TYPE_STRING));
     defineNative("is_type", native_is_type, 2, getPrimitiveType(TYPE_BOOL));
     defineNative("input", native_input, 1, getPrimitiveType(TYPE_STRING));
+    defineNative("int", native_int, 1, getPrimitiveType(TYPE_I32));
+    defineNative("float", native_float, 1, getPrimitiveType(TYPE_F64));
 }
 
 void freeVM() {
@@ -336,6 +340,48 @@ static Value native_input(int argCount, Value* args) {
     }
     ObjString* result = allocateString(buffer, (int)len);
     return STRING_VAL(result);
+}
+
+static Value native_int(int argCount, Value* args) {
+    if (argCount != 1) {
+        RUNTIME_ERROR("int() takes exactly one argument.");
+        return NIL_VAL;
+    }
+    if (!IS_STRING(args[0])) {
+        RUNTIME_ERROR("int() argument must be a string.");
+        return NIL_VAL;
+    }
+    char* end;
+    const char* text = AS_STRING(args[0])->chars;
+    long value = strtol(text, &end, 10);
+    if (*end != '\0') {
+        RUNTIME_ERROR("invalid integer literal.");
+        return NIL_VAL;
+    }
+    if (value < INT32_MIN || value > INT32_MAX) {
+        RUNTIME_ERROR("integer value out of range.");
+        return NIL_VAL;
+    }
+    return I32_VAL((int32_t)value);
+}
+
+static Value native_float(int argCount, Value* args) {
+    if (argCount != 1) {
+        RUNTIME_ERROR("float() takes exactly one argument.");
+        return NIL_VAL;
+    }
+    if (!IS_STRING(args[0])) {
+        RUNTIME_ERROR("float() argument must be a string.");
+        return NIL_VAL;
+    }
+    char* end;
+    const char* text = AS_STRING(args[0])->chars;
+    double value = strtod(text, &end);
+    if (*end != '\0') {
+        RUNTIME_ERROR("invalid float literal.");
+        return NIL_VAL;
+    }
+    return F64_VAL(value);
 }
 
 static InterpretResult interpretModule(const char* path) {
@@ -1097,6 +1143,9 @@ static InterpretResult run() {
 
                 Value result = nf->function(argCount, vm.stackTop - argCount);
                 vm.stackTop -= argCount;
+                if (IS_ERROR(vm.lastError)) {
+                    return INTERPRET_RUNTIME_ERROR;
+                }
                 vmPush(&vm, result);
                 break;
             }
