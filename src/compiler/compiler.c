@@ -834,6 +834,21 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 node->valueType = getPrimitiveType(TYPE_BOOL);
                 break;
+            } else if (tokenEquals(node->data.call.name, "input")) {
+                if (node->data.call.argCount != 1) {
+                    emitBuiltinArgCountError(compiler, &node->data.call.name,
+                                            "input", 1, node->data.call.argCount);
+                    return;
+                }
+                ASTNode* promptArg = node->data.call.arguments;
+                typeCheckNode(compiler, promptArg);
+                if (compiler->hadError) return;
+                if (!promptArg->valueType || promptArg->valueType->kind != TYPE_STRING) {
+                    error(compiler, "input() argument must be a string.");
+                    return;
+                }
+                node->valueType = getPrimitiveType(TYPE_STRING);
+                break;
             } else if (tokenEquals(node->data.call.name, "push")) {
                 if (node->data.call.argCount != 2) {
                     emitBuiltinArgCountError(compiler, &node->data.call.name,

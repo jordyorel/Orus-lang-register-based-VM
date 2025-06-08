@@ -2,12 +2,13 @@
 
 This document consolidates the development roadmaps for the Orus language, tracking progress and version increments across multiple development streams.
 
-**Current Version: 0.5.0**
+**Current Version: 0.5.1**
 
 ## Version History
 
 - **0.1.0**: Initial release with basic language features
 - **0.5.0**: Current version with generics, modules, error handling, and garbage collection
+- **0.5.1**: Added `input()` builtin for basic user input
 
 ## Completed Major Features
 
@@ -18,6 +19,7 @@ This document consolidates the development roadmaps for the Orus language, track
 | ✅ Module System | Modules and import statements | 0.1.0 → 0.2.0 |
 | ✅ Error Handling | Try/catch blocks for exception handling | 0.4.0 → 0.5.0 |
 | ✅ Dynamic Arrays | Arrays with push, pop, and len operations | Minor feature |
+| ✅ User Input | input() builtin for reading from stdin | 0.5.0 → 0.5.1 |
 
 ## Pending Features and Version Targets
 
@@ -95,7 +97,7 @@ The garbage collection implementation resulted in version increment from 0.3.0 t
    - Collection algorithms (sort, filter, map, reduce)
 
 3. **I/O and System (High Priority)**
-   - Standard input/output streams
+   - Standard input/output streams (basic `input()` implemented)
    - File reading and writing
    - Environment variables
    - Command-line argument parsing

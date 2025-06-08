@@ -411,6 +411,7 @@ module:
 - `pop(array)` – Remove and return the last element of an array.
 - `type_of(value)` – Return the name of a value's type as a string.
 - `is_type(value, name)` – Check whether a value is of the given type.
+- `input(prompt)` – Display a prompt and return a line of user input.
 
 ```orus
 let arr: [i32; 1] = [1]
@@ -418,6 +419,8 @@ push(arr, 2)
 print(len(arr))            // 2
 print(type_of(arr))        // "[i32]"
 print(is_type(10, "i32"))  // true
+let name = input("Enter your name: ")
+print("Hello, {}", name)
 ```
 
 ## Error Handling
