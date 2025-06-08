@@ -34,6 +34,7 @@ static Type* parseType(Parser* parser);
 static void expression(Parser* parser, ASTNode** ast);
 static void statement(Parser* parser, ASTNode** ast);
 static void ifStatement(Parser* parser, ASTNode** ast);
+static void matchStatement(Parser* parser, ASTNode** ast);
 static void tryStatement(Parser* parser, ASTNode** ast);
 static void functionDeclaration(Parser* parser, ASTNode** ast);
 static void returnStatement(Parser* parser, ASTNode** ast);
@@ -657,6 +658,10 @@ static void consumeStatementEnd(Parser* parser) {
         return;
     }
 
+    if (parser->inMatchCase && (check(parser, TOKEN_COMMA) || check(parser, TOKEN_RIGHT_BRACE))) {
+        return;
+    }
+
     error(parser, "Expect newline after statement.");
 }
 
@@ -715,6 +720,82 @@ static void forStatement(Parser* parser, ASTNode** ast) {
 
     *ast = createForNode(iteratorName, startExpr, endExpr, stepExpr, body);
     (*ast)->line = line;
+}
+
+static void matchStatement(Parser* parser, ASTNode** ast) {
+    ASTNode* value;
+    expression(parser, &value);
+
+    consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after match value.");
+
+    ASTNode* ifCond = NULL;
+    ASTNode* thenBranch = NULL;
+    ASTNode* elifConds = NULL;
+    ASTNode* elifBranches = NULL;
+    ASTNode* elseBranch = NULL;
+    ASTNode* lastCond = NULL;
+    ASTNode* lastBranch = NULL;
+    bool first = true;
+
+    while (!check(parser, TOKEN_RIGHT_BRACE) && !check(parser, TOKEN_EOF)) {
+        while (match(parser, TOKEN_NEWLINE)) {}
+
+        bool isWildcard = check(parser, TOKEN_IDENTIFIER) &&
+                          parser->current.length == 1 &&
+                          parser->current.start[0] == '_';
+        ASTNode* pattern = NULL;
+        if (!isWildcard) {
+            expression(parser, &pattern);
+        } else {
+            advance(parser);
+        }
+
+        consume(parser, TOKEN_EQUAL, "Expect '=>' after pattern.");
+        consume(parser, TOKEN_GREATER, "Expect '=>' after pattern.");
+
+        parser->inMatchCase = true;
+        ASTNode* branch;
+        statement(parser, &branch);
+        parser->inMatchCase = false;
+
+        if (isWildcard) {
+            elseBranch = branch;
+        } else {
+            Token eqToken = { TOKEN_EQUAL_EQUAL, "==", 2, pattern->line };
+            ASTNode* cond = createBinaryNode(eqToken, value, pattern);
+            cond->line = pattern->line;
+
+            if (first) {
+                ifCond = cond;
+                thenBranch = branch;
+                first = false;
+            } else {
+                if (elifConds == NULL) {
+                    elifConds = cond;
+                    lastCond = cond;
+                } else {
+                    lastCond->next = cond;
+                    lastCond = cond;
+                }
+
+                if (elifBranches == NULL) {
+                    elifBranches = branch;
+                    lastBranch = branch;
+                } else {
+                    lastBranch->next = branch;
+                    lastBranch = branch;
+                }
+            }
+        }
+
+        match(parser, TOKEN_COMMA);
+        while (match(parser, TOKEN_NEWLINE)) {}
+    }
+
+    consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after match cases.");
+
+    *ast = createIfNode(ifCond, thenBranch, elifConds, elifBranches, elseBranch);
+    (*ast)->line = value->line;
 }
 
 static void tryStatement(Parser* parser, ASTNode** ast) {
@@ -1077,6 +1158,9 @@ static void statement(Parser* parser, ASTNode** ast) {
     } else if (match(parser, TOKEN_IF)) {
         ifStatement(parser, ast);
 
+    } else if (match(parser, TOKEN_MATCH)) {
+        matchStatement(parser, ast);
+
     } else if (match(parser, TOKEN_WHILE)) {
         whileStatement(parser, ast);
 
@@ -1208,6 +1292,7 @@ ParseRule rules[] = {
     // Add other tokens as needed
     [TOKEN_EOF] = {NULL, NULL, PREC_NONE},
     [TOKEN_NEWLINE] = {NULL, NULL, PREC_NONE}, // Add explicit rule for newlines
+    [TOKEN_MATCH] = {NULL, NULL, PREC_NONE},
 };
 
 ParseRule* get_rule(TokenType type) { return &rules[type]; }
@@ -1225,6 +1310,7 @@ void initParser(Parser* parser, Scanner* scanner, const char* filePath) {
     parser->genericCapacity = 0;
     parser->filePath = filePath;
     parser->parenDepth = 0;
+    parser->inMatchCase = false;
 }
 
 bool parse(const char* source, const char* filePath, ASTNode** ast) {

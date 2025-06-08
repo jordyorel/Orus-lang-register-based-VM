@@ -1,0 +1,8 @@
+fn main() {
+    let value = "yes"
+    match value {
+        "yes" => print("ok"),
+        "no" => print("not ok"),
+        _ => print("unknown")
+    }
+}

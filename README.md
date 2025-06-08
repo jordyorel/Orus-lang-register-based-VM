@@ -13,6 +13,7 @@ include:
 - Modules and `import` statements for splitting code across files.
 - Control flow with `if`/`elif`/`else`, `for` ranges and `while` loops as well
   as `break` and `continue`.
+- Pattern matching with `match` statements.
 - Error handling with `try`/`catch` blocks.
 - Functions with parameters, recursion and optional return types.
 - Function calls can reference functions defined later in the file.
