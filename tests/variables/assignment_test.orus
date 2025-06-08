@@ -25,4 +25,21 @@ fn main() {
     x = x + 5
     print("After expression assignment:")
     print(x)
+
+    // Compound assignments
+    x += 5
+    print("After +=:")
+    print(x)
+    x -= 2
+    print("After -=:")
+    print(x)
+    x *= 3
+    print("After *=:")
+    print(x)
+    x /= 3
+    print("After /=:")
+    print(x)
+    x %= 4
+    print("After %=:")
+    print(x)
 }

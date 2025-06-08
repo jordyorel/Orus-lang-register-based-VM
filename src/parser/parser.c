@@ -1275,6 +1275,58 @@ static void statement(Parser* parser, ASTNode** ast) {
                 *ast = NULL;
                 return;
             }
+        } else if (match(parser, TOKEN_PLUS_EQUAL) || match(parser, TOKEN_MINUS_EQUAL) ||
+                   match(parser, TOKEN_STAR_EQUAL) || match(parser, TOKEN_SLASH_EQUAL) ||
+                   match(parser, TOKEN_MODULO_EQUAL)) {
+            TokenType compound = parser->previous.type;
+            ASTNode* value;
+            expression(parser, &value);
+            consumeStatementEnd(parser);
+
+            Token opToken = parser->previous;
+            switch (compound) {
+                case TOKEN_PLUS_EQUAL: opToken.type = TOKEN_PLUS; break;
+                case TOKEN_MINUS_EQUAL: opToken.type = TOKEN_MINUS; break;
+                case TOKEN_STAR_EQUAL: opToken.type = TOKEN_STAR; break;
+                case TOKEN_SLASH_EQUAL: opToken.type = TOKEN_SLASH; break;
+                case TOKEN_MODULO_EQUAL: opToken.type = TOKEN_MODULO; break;
+                default: break;
+            }
+
+            if (expr->type == AST_VARIABLE) {
+                ASTNode* varCopy = createVariableNode(expr->data.variable.name, 0);
+                ASTNode* binary = createBinaryNode(opToken, varCopy, value);
+                binary->line = opToken.line;
+                *ast = createAssignmentNode(expr->data.variable.name, binary);
+                (*ast)->line = parser->previous.line;
+                expr->left = expr->right = NULL;
+            } else if (expr->type == AST_BINARY &&
+                       expr->data.operation.operator.type == TOKEN_LEFT_BRACKET) {
+                ASTNode* arrayExpr = expr->left;
+                ASTNode* indexExpr = expr->right;
+                ASTNode* arrayAccess = createBinaryNode(expr->data.operation.operator,
+                                                       arrayExpr, indexExpr);
+                arrayAccess->line = expr->line;
+                ASTNode* binary = createBinaryNode(opToken, arrayAccess, value);
+                binary->line = opToken.line;
+                expr->left = expr->right = NULL;
+                *ast = createArraySetNode(arrayExpr, indexExpr, binary);
+                (*ast)->line = parser->previous.line;
+            } else if (expr->type == AST_FIELD) {
+                ASTNode* object = expr->left;
+                Token fieldName = expr->data.field.fieldName;
+                ASTNode* fieldAccess = createFieldAccessNode(object, fieldName);
+                fieldAccess->line = expr->line;
+                ASTNode* binary = createBinaryNode(opToken, fieldAccess, value);
+                binary->line = opToken.line;
+                expr->left = NULL;
+                *ast = createFieldSetNode(object, fieldName, binary);
+                (*ast)->line = parser->previous.line;
+            } else {
+                error(parser, "Invalid assignment target.");
+                *ast = NULL;
+                return;
+            }
         } else {
             consumeStatementEnd(parser);
             *ast = expr;
@@ -1291,6 +1343,11 @@ ParseRule rules[] = {
     [TOKEN_SLASH] = {NULL, parseBinary, PREC_FACTOR},
     [TOKEN_STAR] = {NULL, parseBinary, PREC_FACTOR},
     [TOKEN_MODULO] = {NULL, parseBinary, PREC_FACTOR},
+    [TOKEN_PLUS_EQUAL] = {NULL, NULL, PREC_NONE},
+    [TOKEN_MINUS_EQUAL] = {NULL, NULL, PREC_NONE},
+    [TOKEN_STAR_EQUAL] = {NULL, NULL, PREC_NONE},
+    [TOKEN_SLASH_EQUAL] = {NULL, NULL, PREC_NONE},
+    [TOKEN_MODULO_EQUAL] = {NULL, NULL, PREC_NONE},
     [TOKEN_NUMBER] = {parseNumber, NULL, PREC_NONE},
     [TOKEN_IDENTIFIER] = {parseVariable, NULL, PREC_NONE},
     [TOKEN_STRING] = {parseString, NULL, PREC_NONE},

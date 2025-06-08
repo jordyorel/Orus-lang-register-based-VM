@@ -339,11 +339,20 @@ Token scan_token() {
                 advance();
                 return make_token(TOKEN_ARROW);
             }
+            if (match('=')) return make_token(TOKEN_MINUS_EQUAL);
             return make_token(TOKEN_MINUS);
-        case '+': return make_token(TOKEN_PLUS);
-        case '/': return make_token(TOKEN_SLASH);
-        case '%': return make_token(TOKEN_MODULO);
-        case '*': return make_token(TOKEN_STAR);
+        case '+':
+            if (match('=')) return make_token(TOKEN_PLUS_EQUAL);
+            return make_token(TOKEN_PLUS);
+        case '/':
+            if (match('=')) return make_token(TOKEN_SLASH_EQUAL);
+            return make_token(TOKEN_SLASH);
+        case '%':
+            if (match('=')) return make_token(TOKEN_MODULO_EQUAL);
+            return make_token(TOKEN_MODULO);
+        case '*':
+            if (match('=')) return make_token(TOKEN_STAR_EQUAL);
+            return make_token(TOKEN_STAR);
         case '!':
             if (match('=')) {
                 return make_token(TOKEN_BANG_EQUAL);
