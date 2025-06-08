@@ -30,8 +30,13 @@ run_category_tests() {
             test_name=$(basename "$test_file")
             echo -e "  Testing: ${test_name}..."
             
-            # Run the test and capture the output
-            output=$($ORUS_EXECUTABLE "$test_file" 2>&1)
+            # Check if the test has an accompanying .in file to provide stdin
+            input_file="${test_file%.orus}.in"
+            if [ -f "$input_file" ]; then
+                output=$($ORUS_EXECUTABLE "$test_file" < "$input_file" 2>&1)
+            else
+                output=$($ORUS_EXECUTABLE "$test_file" 2>&1)
+            fi
             exit_code=$?
 
             # Determine expected behaviour for error tests
