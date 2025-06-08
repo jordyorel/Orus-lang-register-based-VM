@@ -99,6 +99,11 @@ void push(Value value);
 Value pop();
 void vmPrintStackTrace(void);
 
+// Record a runtime error with the current execution location so the
+// caller can emit a diagnostic later. The message format should not
+// include a trailing newline.
+void vmRuntimeError(const char* message);
+
 // Native function helpers
 void defineNative(const char* name, NativeFn function, int arity, Type* returnType);
 int findNative(ObjString* name);

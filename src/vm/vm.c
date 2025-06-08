@@ -120,6 +120,10 @@ static void runtimeError(ErrorType type, SrcLocation location,
     vm.lastError = ERROR_VAL(err);
 }
 
+void vmRuntimeError(const char* message) {
+    runtimeError(ERROR_RUNTIME, (SrcLocation){NULL, 0, 0}, "%s", message);
+}
+
 #define RUNTIME_ERROR(fmt, ...) \
     runtimeError(ERROR_RUNTIME, (SrcLocation){NULL, 0, 0}, fmt, ##__VA_ARGS__)
 
