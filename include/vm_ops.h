@@ -59,7 +59,7 @@ static inline void binaryOpI32(VM* vm, char op, InterpretResult* result) {
         case '*': vmPush(vm, I32_VAL(a * b)); break;
         case '/':
             if (b == 0) {
-                fprintf(stderr, "Division by zero.\n");
+                vmRuntimeError("Division by zero.");
                 *result = INTERPRET_RUNTIME_ERROR;
                 return;
             }
@@ -86,7 +86,7 @@ static inline void binaryOpU32(VM* vm, char op, InterpretResult* result) {
         case '*': vmPush(vm, U32_VAL(a * b)); break;
         case '/':
             if (b == 0) {
-                fprintf(stderr, "Division by zero.\n");
+                vmRuntimeError("Division by zero.");
                 *result = INTERPRET_RUNTIME_ERROR;
                 return;
             }
