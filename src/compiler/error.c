@@ -29,8 +29,18 @@ static const char* getSourceLine(const char* filePath, int lineNum) {
 
 void emitDiagnostic(Diagnostic* diagnostic) {
     // 1. Header with error code and message
-    printf("%sError[E%04d]%s: %s\n",
-           COLOR_RED, diagnostic->code, COLOR_RESET,
+    const char* category = "Compile error";
+    if (diagnostic->code == (ErrorCode)ERROR_RUNTIME) {
+        category = "Runtime error";
+    } else if (diagnostic->code == (ErrorCode)ERROR_TYPE &&
+               diagnostic->code != ERROR_PARSE) {
+        category = "Runtime type error";
+    } else if (diagnostic->code == (ErrorCode)ERROR_IO) {
+        category = "Runtime I/O error";
+    }
+
+    printf("%s%s [E%04d]%s: %s\n",
+           COLOR_RED, category, diagnostic->code, COLOR_RESET,
            diagnostic->text.message);
 
     // 2. File location

@@ -15,7 +15,7 @@
 static void printError(ObjError* err) {
     Diagnostic diag;
     memset(&diag, 0, sizeof(Diagnostic));
-    diag.code = (ErrorCode)ERROR_RUNTIME;
+    diag.code = (ErrorCode)err->type;
     diag.text.message = err->message->chars;
     diag.primarySpan.filePath = err->location.file ? err->location.file : "<runtime>";
     diag.primarySpan.line = err->location.line;
