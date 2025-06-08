@@ -28,11 +28,17 @@ static void printError(ObjError* err) {
         help = strdup("ensure the number of '{}' placeholders matches the number of arguments");
         note = "each '{}' in the format string corresponds to one argument provided after the format string";
     }
-    diag.text.help = help;
-    if (note) {
-        diag.text.notes = (char**)&note;
-        diag.text.noteCount = 1;
+
+    if (!help) {
+        help = strdup("refer to the runtime error message for more details");
     }
+    if (!note) {
+        note = "a runtime error occurred";
+    }
+
+    diag.text.help = help;
+    diag.text.notes = (char**)&note;
+    diag.text.noteCount = 1;
 
     emitDiagnostic(&diag);
 
