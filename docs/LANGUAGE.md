@@ -330,6 +330,19 @@ match value {
 }
 ```
 
+### Match Patterns
+
+Each branch begins with a *pattern* followed by `=>`. Patterns are compared to
+the matched value using equality:
+
+- **Literal patterns** – numbers, strings or booleans. These are evaluated as
+  expressions and checked with `==`.
+- **Wildcard pattern** – the underscore `_` matches any value and is typically
+  used for the final default case.
+
+Cases are evaluated from top to bottom and the first matching branch runs. A
+comma may follow each branch for readability.
+
 ## Methods with `impl`
 
 Methods are defined inside `impl` blocks attached to a struct type:
