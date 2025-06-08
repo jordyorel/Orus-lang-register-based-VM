@@ -129,6 +129,7 @@ let flag = true               // Type inference (bool)
 
 // Reassignment 
 count = 10                    // Simple reassignment
+count += 2                    // Compound assignment
 
 // Block scope
 {
@@ -147,6 +148,7 @@ Orus provides these operators with standard precedence rules:
 - `*` – Multiplication
 - `/` – Division (integer division for i32/u32, floating point division for f64)
 - `%` – Modulo (remainder after division)
+- `+=`, `-=`, `*=`, `/=`, `%=` – Compound assignments
 
 ### Comparison Operators
 - `==` – Equal to
