@@ -31,6 +31,7 @@ typedef struct {
     int genericCapacity;
     const char* filePath;
     int parenDepth;
+    bool inMatchCase;
 } Parser;
 
 typedef ASTNode* (*ParseFn)(Parser*);

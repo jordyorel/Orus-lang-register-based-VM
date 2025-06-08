@@ -318,6 +318,18 @@ for i in 0..10 {
 }
 ```
 
+### Match Statements
+
+Pattern matching compares a value against patterns:
+
+```orus
+match value {
+    "yes" => print("ok"),
+    "no" => print("not ok"),
+    _ => print("unknown")
+}
+```
+
 ## Methods with `impl`
 
 Methods are defined inside `impl` blocks attached to a struct type:
