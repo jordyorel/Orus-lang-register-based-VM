@@ -1,6 +1,6 @@
 # Orus Language Reference
 
-This document provides a comprehensive reference for the Orus programming language (version 0.1.0).
+This document provides a comprehensive reference for the Orus programming language (version 0.5.0).
 All examples are taken from the programs located in the `tests/` directory.
 
 ## Primitive Types
