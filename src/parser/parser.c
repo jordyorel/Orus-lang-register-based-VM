@@ -309,7 +309,7 @@ static ASTNode* parseCall(Parser* parser, ASTNode* left) {
                 if (firstArgNeedsString && argStart.type != TOKEN_STRING) {
                     char msg[128];
                     snprintf(msg, sizeof(msg),
-                             "%.*s() expects a string as the first argument",
+                             "%.*s() expects a string argument",
                              name.length, name.start);
                     errorAt(parser, &argStart, msg);
                     if (parser->hadError) return NULL;
