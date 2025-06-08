@@ -7,6 +7,13 @@
 #include "compiler.h"
 #include "scanner.h"
 
+// ANSI color codes for diagnostics
+#define COLOR_RESET "\x1b[0m"
+#define COLOR_RED   "\x1b[31;1m"
+#define COLOR_GREEN "\x1b[32;1m"
+#define COLOR_BLUE  "\x1b[34;1m"
+#define COLOR_CYAN  "\x1b[36;1m"
+
 typedef enum {
     ERROR_RUNTIME,
     ERROR_TYPE,
@@ -24,6 +31,7 @@ typedef enum {
     ERROR_IMMUTABLE_ASSIGNMENT = 594,  // E0594
     ERROR_SCOPE_ERROR        = 426,    // E0426
     ERROR_FUNCTION_CALL      =  61,    // E0061
+    ERROR_PARSE                = 1,    // E0001
 } ErrorCode;
 
 // Span of source code used for highlighting errors.
@@ -86,5 +94,7 @@ void emitIsTypeSecondArgError(Compiler* compiler, Token* token, const char* actu
 void emitLenInvalidTypeError(Compiler* compiler, Token* token, const char* actualType);
 void emitBuiltinArgCountError(Compiler* compiler, Token* token,
                               const char* name, int expected, int actual);
+
+void emitDiagnostic(Diagnostic* diagnostic);
 
 #endif // ORUS_ERROR_H
