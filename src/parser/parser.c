@@ -88,6 +88,13 @@ static void advance(Parser* parser) {
     for (;;) {
         Token token = scan_token();
 
+        if (token.type == TOKEN_LEFT_PAREN || token.type == TOKEN_LEFT_BRACKET) {
+            parser->parenDepth++;
+        } else if (token.type == TOKEN_RIGHT_PAREN ||
+                   token.type == TOKEN_RIGHT_BRACKET) {
+            if (parser->parenDepth > 0) parser->parenDepth--;
+        }
+
         // Special handling for newline tokens
         if (token.type == TOKEN_NEWLINE) {
             parser->current = token;
@@ -505,7 +512,39 @@ static ASTNode* parseStructLiteral(Parser* parser, Token structName,
     return node;
 }
 
+static bool isContinuationToken(TokenType type) {
+    switch (type) {
+        case TOKEN_AND:
+        case TOKEN_OR:
+        case TOKEN_PLUS:
+        case TOKEN_MINUS:
+        case TOKEN_SLASH:
+        case TOKEN_STAR:
+        case TOKEN_MODULO:
+        case TOKEN_EQUAL_EQUAL:
+        case TOKEN_BANG_EQUAL:
+        case TOKEN_LESS:
+        case TOKEN_LESS_EQUAL:
+        case TOKEN_GREATER:
+        case TOKEN_GREATER_EQUAL:
+        case TOKEN_COMMA:
+        case TOKEN_LEFT_PAREN:
+        case TOKEN_LEFT_BRACKET:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static void skipNewlines(Parser* parser) {
+    while (check(parser, TOKEN_NEWLINE) &&
+           (parser->parenDepth > 0 || isContinuationToken(parser->previous.type))) {
+        advance(parser);
+    }
+}
+
 static ASTNode* parse_precedence(Parser* parser, Precedence precedence) {
+    skipNewlines(parser);
     advance(parser);
 
     // Check for EOF
@@ -525,8 +564,12 @@ static ASTNode* parse_precedence(Parser* parser, Precedence precedence) {
         return NULL;
     }
 
-    while (!parser->hadError &&
-           precedence <= get_rule(parser->current.type)->precedence) {
+    while (true) {
+        skipNewlines(parser);
+        if (parser->hadError ||
+            precedence > get_rule(parser->current.type)->precedence) {
+            break;
+        }
         advance(parser);
         ASTNode* (*infixRule)(Parser*, ASTNode*) =
             get_rule(parser->previous.type)->infix;
@@ -1155,6 +1198,7 @@ void initParser(Parser* parser, Scanner* scanner) {
     parser->genericParams = NULL;
     parser->genericCount = 0;
     parser->genericCapacity = 0;
+    parser->parenDepth = 0;
 }
 
 bool parse(const char* source, ASTNode** ast) {

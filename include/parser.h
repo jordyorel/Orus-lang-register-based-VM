@@ -29,6 +29,7 @@ typedef struct {
     ObjString** genericParams;
     int genericCount;
     int genericCapacity;
+    int parenDepth;
 } Parser;
 
 typedef ASTNode* (*ParseFn)(Parser*);
