@@ -3,43 +3,31 @@ fn main() {
     let x: i32 = 10
     let y: i32 = 20
 
-    print("Initial values:")
-    print(x)
-    print(y)
+    print("Initial values x: {}, y: {}", x, y)
 
     x = 30
-    print("After first assignment:")
-    print(x)
+    print("After first assignment x: {}", x)
 
     y = 40
-    print("After second assignment:")
-    print(y)
+    print("After second assignment y: {}", y)
 
     // Advanced assignments 
     y = 50
     x = y
-    print("After assignment:")
-    print(x)
-    print(y)
+    print("After assignment x: {}, y: {}", x, y)
 
     x = x + 5
-    print("After expression assignment:")
-    print(x)
+    print("After expression assignment x: {}", x)
 
     // Compound assignments
     x += 5
-    print("After +=:")
-    print(x)
+    print("After += x: {}", x)
     x -= 2
-    print("After -=:")
-    print(x)
+    print("After -= x: {}", x)
     x *= 3
-    print("After *=:")
-    print(x)
+    print("After *= x: {}", x)
     x /= 3
-    print("After /=:")
-    print(x)
+    print("After /= x: {}", x)
     x %= 4
-    print("After %=:")
-    print(x)
+    print("After %= x: {}", x)
 }
