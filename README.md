@@ -6,19 +6,22 @@ include:
 
 - Static type annotations for integers (`i32`/`u32`), floating point numbers
   (`f64`), booleans and strings with local type inference using `let`.
-- Arrays with fixed lengths (including multidimensional arrays) and indexed
-  assignment.
+- Arrays with fixed lengths (including multidimensional arrays) and
+  dynamic arrays using `push`, `pop` and `len`.
 - User defined `struct` types and `impl` blocks for instance or static methods.
+- Generic functions and structs with type parameters.
+- Modules and `import` statements for splitting code across files.
 - Control flow with `if`/`elif`/`else`, `for` ranges and `while` loops as well
   as `break` and `continue`.
+- Error handling with `try`/`catch` blocks.
 - Functions with parameters, recursion and optional return types.
 - Function calls can reference functions defined later in the file.
-- Arithmetic, comparison and logical (`and`/`or`) operators.
+- Arithmetic, comparison and logical (`and`/`or`/`not`) operators.
 - String concatenation with `+` and a `print` function supporting simple
   interpolation using `{}` placeholders.
-- Generic dynamic array macros for parameterizing data structures by type.
+- Macro helpers for generic dynamic arrays.
 
-The repository contains the source code for the interpreter and a collection of sample programs used as tests. For a quick tour of the language syntax see [`docs/LANGUAGE.md`](docs/LANGUAGE.md). Additional notes on the generic array helper are available in [`docs/GENERICS.md`](docs/GENERICS.md).
+The repository contains the source code for the interpreter and a collection of sample programs used as tests. For a quick tour of the language syntax see [`docs/LANGUAGE.md`](docs/LANGUAGE.md). Additional notes on the generics and array helper are available in [`docs/GENERICS.md`](docs/GENERICS.md). A future compilation roadmap is outlined in [`docs/COMPILATION_ROADMAP.md`](docs/COMPILATION_ROADMAP.md).
 
 ## Building
 
@@ -108,11 +111,35 @@ python3 tools/oruspm.py pack
 ## Repository layout
 
 - `src/` – C source for the interpreter.
+  - `compiler/` - Compiler components for syntax analysis
+  - `parser/` - Parsing implementation
+  - `scanner/` - Lexical analysis
+  - `util/` - Utility functions
+  - `vm/` - Virtual machine implementation
 - `tests/` – Example programs and regression tests.
-- `Makefile` – Build rules producing the `orus` executable.
-- `docs/LANGUAGE.md` – Overview of the language syntax.
-- `docs/GENERICS.md` – Notes on the macro-based generic array helper.
+  - `algorithms/` - Algorithm implementations
+  - `arithmetic/` - Arithmetic operation tests
+  - `builtins/` - Tests for built-in functions
+  - `control_flow/` - Tests for if/else/loops/try-catch
+  - `datastructures/` - Data structure implementations
+  - `edge_cases/` - Edge case testing
+  - `errors/` - Error handling tests
+  - `generics/` - Tests for generic functionality
+- `include/` - Header files for language components
+- `std/` - Standard library components
+- `docs/` - Documentation
+  - `LANGUAGE.md` – Overview of the language syntax
+  - `GENERICS.md` – Notes on the generic programming capabilities
+  - `COMPILATION_ROADMAP.md` – Planning for future compilation features
 - `tools/` – Utility scripts including the `oruspm.py` package manager.
+
+## Future Development
+
+Work is currently underway to enhance Orus with the following:
+
+1. **Improved Generics**: Expanding type constraints and generic data structures (see `docs/GENERICS.md`)
+2. **Potential Compilation**: Exploration of adding compilation capabilities (see `docs/COMPILATION_ROADMAP.md`)
+3. **Standard Library Expansion**: Building out more comprehensive standard libraries
 
 ## Contributing
 
