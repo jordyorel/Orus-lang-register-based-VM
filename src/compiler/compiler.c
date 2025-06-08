@@ -90,22 +90,16 @@ static void endScope(Compiler* compiler) {
 }
 
 static void error(Compiler* compiler, const char* message) {
-    if (compiler->panicMode) return;
-    compiler->panicMode = true;
-    fprintf(stderr, "Compiler Error: %s\n", message);
-    compiler->hadError = true;
+    emitSimpleError(compiler, ERROR_GENERAL, message);
 }
 
 static void errorFmt(Compiler* compiler, const char* format, ...) {
-    if (compiler->panicMode) return;
-    compiler->panicMode = true;
     char buffer[256];
     va_list args;
     va_start(args, format);
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
-    fprintf(stderr, "Compiler Error: %s\n", buffer);
-    compiler->hadError = true;
+    emitSimpleError(compiler, ERROR_GENERAL, buffer);
 }
 
 
@@ -153,6 +147,8 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
     if (!node) {
         return;
     }
+
+    compiler->currentLine = node->line;
 
     switch (node->type) {
         case AST_LITERAL: {
