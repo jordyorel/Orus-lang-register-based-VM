@@ -274,8 +274,13 @@ if condition1 {
 ### Loops
 
 ```orus
-// For loop with range
+// For loop with start..end syntax
 for i in 0..10 {       // Range is inclusive of start, exclusive of end (0 to 9)
+    print(i)
+}
+
+// Equivalent using range(start, end)
+for i in range(0, 10) {
     print(i)
 }
 
@@ -427,6 +432,7 @@ let part = substring("Hello, world!", 0, 5)  // "Hello"
 
 The language provides a small set of built-in functions available in every
 module:
+For a complete list see [BUILTINS.md](BUILTINS.md).
 
 - `print(values...)` – Output values to the console using `{}` placeholders for
   interpolation.
@@ -434,6 +440,7 @@ module:
 - `substring(str, start, len)` – Extract a portion of a string.
 - `push(array, value)` – Append a value to a dynamic array.
 - `pop(array)` – Remove and return the last element of an array.
+- `range(start, end)` – Generate a sequence of integers for `for` loops.
 - `type_of(value)` – Return the name of a value's type as a string.
 - `is_type(value, name)` – Check whether a value is of the given type.
 - `input(prompt)` – Display a prompt and return a line of user input.
