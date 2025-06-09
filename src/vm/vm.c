@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include "../../include/common.h"
 #include "../../include/compiler.h"
@@ -269,7 +270,7 @@ static InterpretResult interpretModule(const char* path) {
     vm.ip = chunk->code;
     InterpretResult result = run();
 
-    for (int i = startGlobals; i < vm.variableCount && mod.export_count < UINT8_COUNT; i++) {
+    for (int i = startGlobals; i < vm.variableCount && mod.export_count < UINT8_MAX; i++) {
         Export ex;
         ex.name = vm.variableNames[i].name ? vm.variableNames[i].name->chars : NULL;
         if (ex.name) {
