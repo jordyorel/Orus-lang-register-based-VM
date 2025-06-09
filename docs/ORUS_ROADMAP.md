@@ -3,13 +3,14 @@
 
 This document consolidates the development roadmaps for the Orus language, tracking progress and version increments across multiple development streams.
 
-**Current Version: 0.5.1**
+**Current Version: 0.5.2**
 
 ## Version History
 
 - **0.1.0**: Initial release with basic language features  
 - **0.5.0**: Current version with generics, modules, error handling, and garbage collection  
-- **0.5.1**: Added `input()` builtin for basic user input  
+- **0.5.1**: Added `input()` builtin for basic user input
+- **0.5.2**: Improved diagnostics for repeated module imports
 
 ## Completed Major Features
 
