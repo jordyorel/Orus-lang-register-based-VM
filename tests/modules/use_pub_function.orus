@@ -1,0 +1,6 @@
+use tests::modules::pub_module::{public_fn}
+
+fn main() {
+    public_fn()
+}
+

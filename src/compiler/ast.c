@@ -162,7 +162,8 @@ ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr,
 }
 
 ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType,
-                            ASTNode* body, ObjString** generics, int genericCount) {
+                            ASTNode* body, ObjString** generics, int genericCount,
+                            bool isPublic) {
     ASTNode* node = allocateASTNode();
     node->type = AST_FUNCTION;
     node->left = NULL;
@@ -178,6 +179,7 @@ ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType,
     node->data.function.mangledName = NULL;
     node->data.function.genericParams = generics;
     node->data.function.genericCount = genericCount;
+    node->data.function.isPublic = isPublic;
     node->valueType = NULL;
     return node;
 }

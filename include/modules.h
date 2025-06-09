@@ -14,7 +14,8 @@ typedef struct {
 } Export;
 
 typedef struct {
-    char* module_name;
+    char* module_name; // full path
+    char* name;        // base module name
     Chunk* bytecode;
     Export exports[UINT8_COUNT];
     uint8_t export_count;
@@ -29,6 +30,8 @@ Chunk* compile_module_ast(ASTNode* ast, const char* module_name);
 bool register_module(Module* module);
 Module* get_module(const char* name);
 InterpretResult compile_module_only(const char* path);
+
+extern bool traceImports;
 
 // Holds the last module loading error message if any
 extern const char* moduleError;

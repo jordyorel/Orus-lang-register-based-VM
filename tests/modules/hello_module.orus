@@ -1,4 +1,4 @@
-fn greet() {
+pub fn greet() {
     let greeting = "Hello from module"
     print(greeting)
 }

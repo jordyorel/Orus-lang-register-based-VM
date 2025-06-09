@@ -55,6 +55,7 @@ void initVM() {
         vm.variableNames[i].length = 0;
         vm.globals[i] = NIL_VAL;
         vm.globalTypes[i] = NULL;
+        vm.publicGlobals[i] = false;
         vm.functions[i].start = 0;
         vm.functions[i].arity = 0;
         vm.functions[i].chunk = NULL;
@@ -71,6 +72,7 @@ void freeVM() {
         vm.variableNames[i].name = NULL;
         vm.globalTypes[i] = NULL;  // No freeing here
         vm.functionDecls[i] = NULL;
+        vm.publicGlobals[i] = false;
     }
     vm.astRoot = NULL;
     freeObjects();
@@ -213,6 +215,7 @@ int findNative(ObjString* name) {
 }
 
 static InterpretResult interpretModule(const char* path) {
+    if (traceImports) fprintf(stderr, "[import] interpreting %s\n", path);
     for (int i = 0; i < runtimeStackCount; i++) {
         if (strcmp(runtimeStack[i], path) == 0) {
             RUNTIME_ERROR("Import cycle detected for module '%s'.", path);
@@ -278,6 +281,13 @@ static InterpretResult interpretModule(const char* path) {
 
     Module mod;
     mod.module_name = strdup(path);
+    const char* base = strrchr(path, '/');
+    base = base ? base + 1 : path;
+    size_t len = strlen(base);
+    if (len > 5 && strcmp(base + len - 5, ".orus") == 0) len -= 5;
+    mod.name = (char*)malloc(len + 1);
+    memcpy(mod.name, base, len);
+    mod.name[len] = '\0';
     mod.bytecode = chunk;
     mod.export_count = 0;
     mod.executed = true;
@@ -292,7 +302,7 @@ static InterpretResult interpretModule(const char* path) {
     for (int i = startGlobals; i < vm.variableCount && mod.export_count < UINT8_MAX; i++) {
         Export ex;
         ex.name = vm.variableNames[i].name ? vm.variableNames[i].name->chars : NULL;
-        if (ex.name) {
+        if (ex.name && vm.publicGlobals[i]) {
             ex.name = strdup(ex.name);
             ex.value = vm.globals[i];
             ex.index = i;

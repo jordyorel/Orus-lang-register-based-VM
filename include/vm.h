@@ -53,6 +53,7 @@ typedef struct {
     Value* stackTop;
     Value globals[UINT8_COUNT];
     Type* globalTypes[UINT8_COUNT];
+    bool publicGlobals[UINT8_COUNT];
     VarName variableNames[UINT8_COUNT];
     uint16_t variableCount;
 

@@ -124,6 +124,7 @@ typedef struct {
     ObjString* mangledName;    // GC-managed mangled name
     ObjString** genericParams; // Generic parameter names
     int genericCount;
+    bool isPublic;             // Exported from module
 } FunctionData;
 
 typedef struct {
@@ -206,7 +207,7 @@ ASTNode* createWhileNode(ASTNode* condition, ASTNode* body);
 ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr, ASTNode* stepExpr, ASTNode* body);
 ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType,
                             ASTNode* body, ObjString** generics,
-                            int genericCount);
+                            int genericCount, bool isPublic);
 ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount, Type* staticType,
                         Type** genericArgs, int genericArgCount);
 ASTNode* createTryNode(ASTNode* tryBlock, Token errorName, ASTNode* catchBlock);
