@@ -618,6 +618,31 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     valueType = varType;
                 }
             }
+
+            // Persist type if the variable was previously nil
+            if (varType->kind == TYPE_NIL && valueType->kind != TYPE_NIL) {
+                variableTypes[index] = valueType;
+                vm.globalTypes[index] = valueType;
+                char tempName[node->data.variable.name.length + 1];
+                memcpy(tempName, node->data.variable.name.start,
+                       node->data.variable.name.length);
+                tempName[node->data.variable.name.length] = '\0';
+                Symbol* sym = findSymbol(&compiler->symbols, tempName);
+                if (sym) sym->type = valueType;
+                varType = valueType;
+            } else if (varType->kind == TYPE_ARRAY &&
+                       varType->info.array.elementType->kind == TYPE_NIL &&
+                       valueType->kind == TYPE_ARRAY) {
+                variableTypes[index] = valueType;
+                vm.globalTypes[index] = valueType;
+                char tempName[node->data.variable.name.length + 1];
+                memcpy(tempName, node->data.variable.name.start,
+                       node->data.variable.name.length);
+                tempName[node->data.variable.name.length] = '\0';
+                Symbol* sym = findSymbol(&compiler->symbols, tempName);
+                if (sym) sym->type = valueType;
+                varType = valueType;
+            }
             // Allow i32/u32 literals to be used for f64 variables
             else if (varType->kind == TYPE_F64 &&
                     (valueType->kind == TYPE_I32 || valueType->kind == TYPE_U32) &&

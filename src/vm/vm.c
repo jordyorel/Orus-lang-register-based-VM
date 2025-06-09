@@ -26,6 +26,20 @@ Type* variableTypes[UINT8_COUNT] = {NULL};
 static const char* runtimeStack[UINT8_COUNT];
 static uint8_t runtimeStackCount = 0;
 
+static bool checkValueAgainstType(Value value, Type* type) {
+    if (!type) return true;
+    switch (type->kind) {
+        case TYPE_I32: return IS_I32(value);
+        case TYPE_U32: return IS_U32(value);
+        case TYPE_F64: return IS_F64(value);
+        case TYPE_BOOL: return IS_BOOL(value);
+        case TYPE_STRING: return IS_STRING(value);
+        case TYPE_NIL: return IS_NIL(value);
+        case TYPE_ARRAY: return IS_ARRAY(value);
+        default: return true;
+    }
+}
+
 
 static InterpretResult run();
 
@@ -710,6 +724,12 @@ static InterpretResult run() {
                         }
                         
                     }
+                }
+
+                // Runtime type enforcement
+                if (!checkValueAgainstType(value, vm.globalTypes[index])) {
+                    RUNTIME_ERROR("Type mismatch for variable assignment.");
+                    return INTERPRET_RUNTIME_ERROR;
                 }
 
                 // Store the value in the global variable
