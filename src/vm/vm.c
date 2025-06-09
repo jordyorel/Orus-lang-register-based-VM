@@ -228,8 +228,9 @@ static InterpretResult interpretModule(const char* path) {
     Module* cached = get_module(path);
     if (cached) {
         if (cached->executed) {
+            RUNTIME_ERROR("Module '%s' already executed.", path);
             runtimeStackCount--;
-            return INTERPRET_OK;
+            return INTERPRET_RUNTIME_ERROR;
         }
 
         Chunk* prevChunk = vm.chunk;
@@ -731,12 +732,15 @@ static InterpretResult run() {
                         break;
                     }
                 }
-                if (!already) {
-                    InterpretResult modRes = interpretModule(pathStr->chars);
-                    if (modRes != INTERPRET_OK) return modRes;
-                    if (vm.moduleCount < UINT8_MAX)
-                        vm.loadedModules[vm.moduleCount++] = pathStr;
+                if (already) {
+                    RUNTIME_ERROR("Module '%s' already executed.", pathStr->chars);
+                    return INTERPRET_RUNTIME_ERROR;
                 }
+
+                InterpretResult modRes = interpretModule(pathStr->chars);
+                if (modRes != INTERPRET_OK) return modRes;
+                if (vm.moduleCount < UINT8_MAX)
+                    vm.loadedModules[vm.moduleCount++] = pathStr;
                 break;
             }
             case OP_JUMP: {
