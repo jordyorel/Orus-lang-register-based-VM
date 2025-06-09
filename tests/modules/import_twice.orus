@@ -1,0 +1,7 @@
+import "tests/modules/hello_module.orus"
+import "tests/modules/hello_module.orus"
+
+fn main() {
+    print("done")
+}
+
