@@ -1,3 +1,4 @@
+
 # Orus Language Roadmap
 
 This document consolidates the development roadmaps for the Orus language, tracking progress and version increments across multiple development streams.
@@ -6,20 +7,22 @@ This document consolidates the development roadmaps for the Orus language, track
 
 ## Version History
 
-- **0.1.0**: Initial release with basic language features
-- **0.5.0**: Current version with generics, modules, error handling, and garbage collection
-- **0.5.1**: Added `input()` builtin for basic user input
+- **0.1.0**: Initial release with basic language features  
+- **0.5.0**: Current version with generics, modules, error handling, and garbage collection  
+- **0.5.1**: Added `input()` builtin for basic user input  
 
 ## Completed Major Features
 
-| Feature | Description | Version Impact |
-|---------|-------------|----------------|
-| ✅ Garbage Collection | Mark-sweep GC replacing manual memory management | 0.3.0 → 0.4.0 |
-| ✅ Generic Types (Basic) | Generic functions and structs with type parameters | 0.2.0 → 0.3.0 |
-| ✅ Module System | Modules and import statements | 0.1.0 → 0.2.0 |
-| ✅ Error Handling | Try/catch blocks for exception handling | 0.4.0 → 0.5.0 |
-| ✅ Dynamic Arrays | Arrays with push, pop, and len operations | Minor feature |
-| ✅ User Input | input() builtin for reading from stdin | 0.5.0 → 0.5.1 |
+| Feature                | Description                                       | Version Impact     |
+|------------------------|---------------------------------------------------|--------------------|
+| ✅ Garbage Collection   | Mark-sweep GC replacing manual memory management | 0.3.0 → 0.4.0      |
+| ✅ Generic Types (Basic)| Generic functions and structs with type parameters| 0.2.0 → 0.3.0      |
+| ✅ Module System        | Modules and import statements                    | 0.1.0 → 0.2.0      |
+| ✅ Error Handling       | Try/catch blocks for exception handling          | 0.4.0 → 0.5.0      |
+| ✅ Dynamic Arrays       | Arrays with push, pop, and len operations        | Minor feature      |
+| ✅ User Input           | input() builtin for reading from stdin           | 0.5.0 → 0.5.1      |
+
+---
 
 ## Pending Features and Version Targets
 
@@ -27,191 +30,129 @@ This document consolidates the development roadmaps for the Orus language, track
 
 **Status**: Partially implemented (Basic functionality available)
 
-**Note**: Regular (non-generic) forward declarations are already supported in the language. Forward declarations for generic functions are still needed.
+| Task                              | Status           | Priority | Version Impact   |
+|-----------------------------------|------------------|----------|------------------|
+| Generic Forward Declarations      | Partially done   | High     | 0.5.0 → 0.6.0    |
+| Generic Constraints               | Not started      | High     | 0.6.0 → 0.7.0    |
+| Improved Type Inference           | Not started      | High     | Minor feature    |
+| Generic Arithmetic & Operators    | Not started      | Medium   | Minor feature    |
+| Collection and Iterator Support   | Not started      | Medium   | Minor feature    |
+| Enhanced Error Reporting          | Not started      | Medium   | Minor feature    |
+| Cross-Module Generics             | Not started      | Low      | Minor feature    |
+| Generics Documentation            | Not started      | Low      | No impact        |
 
-| Task | Status | Priority | Version Impact |
-|------|--------|----------|----------------|
-| Generic Forward Declarations & Prepass | Partially implemented | High | 0.5.0 → 0.6.0 |
-| Generic Constraints | Not started | High | 0.6.0 → 0.7.0 |
-| Improved Type Inference | Not started | High | Minor feature |
-| Generic Arithmetic and Operators | Not started | Medium | Minor feature |
-| Collection and Iterator Support | Not started | Medium | Minor feature |
-| Enhanced Error Reporting | Not started | Medium | Minor feature |
-| Cross-Module Generics | Not started | Low | Minor feature |
-| Generics Documentation | Not started | Low | No impact |
-
-**Next Version Milestone**: 0.6.0 - Implementation of Generic Forward Declarations & Prepass Collection
+---
 
 ### 3. Memory Management (Garbage Collection)
 
-**Status**: ✅ Implemented
+**Status**: ✅ Fully implemented
 
-A mark-sweep garbage collector has been implemented according to the GARBAGE_COLLECTOR_PLAN.md document:
+| Task                          | Status     | Impact             |
+|-------------------------------|------------|--------------------|
+| Object Header Structure       | ✅ Complete| Core implementation|
+| Value Representation Changes  | ✅ Complete| Core implementation|
+| GC State and Integration      | ✅ Complete| Core implementation|
+| Mark & Sweep Phases           | ✅ Complete| Core implementation|
+| Final Testing & Tuning        | ✅ Complete| Core implementation|
 
-| Task | Status | Impact |
-|------|--------|--------|
-| Object Header Structure | ✅ Complete | Core implementation |
-| Value Representation Changes | ✅ Complete | Core implementation |
-| VM State Updates | ✅ Complete | Core implementation |
-| Allocation Helper Functions | ✅ Complete | Core implementation |
-| Mark Phase Implementation | ✅ Complete | Core implementation |
-| Sweep Phase Implementation | ✅ Complete | Core implementation |
-| Integration with Existing Code | ✅ Complete | Core implementation |
-| GC Testing and Tuning | ✅ Complete | Core implementation |
+---
 
-The garbage collection implementation resulted in version increment from 0.3.0 to 0.4.0.
+### 4. Built-in Functions and Standard Library
 
-### 4. Standard Library
+**Status**: Initial runtime built-ins completed; standard library modules in planning
 
-**Status**: Early planning phase (Not yet supported)
+The following built-in functions are implemented in the Orus runtime and available in every module:
 
-| Module | Status | Priority | Version Impact |
-|--------|--------|----------|----------------|
-| Core Types | Not started | High | 0.5.0 → 0.6.0 |
-| Collections | Not started | High | Minor feature |
-| I/O | Not started | High | Minor feature |
-| String Processing | Not started | Medium | Minor feature |
-| File System | Not started | Medium | Minor feature |
-| Time and Date | Not started | Medium | Minor feature |
-| Networking | Not started | Low | 0.7.0 → 0.8.0 |
-| Regular Expressions | Not started | Low | Minor feature |
-| Serialization | Not started | Low | Minor feature |
-| Concurrency | Not started | Low | 0.9.0 → 1.0.0 |
+#### ✅ Core Built-ins (VM-level, implemented)
 
-**Standard Library Development Plan:**
+- `print(values...)` – Formatted console output  
+- `len(value)` – Length of a string or array  
+- `substring(str, start, len)` – Extract part of a string  
+- `push(array, value)` / `pop(array)` – Dynamic array operations  
+- `range(start, end)` – Range generator for loops  
+- `sum(array)` – Return sum of numeric values in array  
+- `min(array)` / `max(array)` – Return min/max value from array  
+- `sorted(array, reverse)` – Returns a new sorted array  
+- `type_of(value)` / `is_type(value, name)` – Type inspection and checking  
+- `input(prompt)` – Console input from user  
+- `int(text)` / `float(text)` – Safe type conversion from string  
 
-1. **Core Types (High Priority)**
-   - Enhanced numeric types (BigInt, BigDecimal)
-   - Option/Result types for error handling
-   - Range implementations
-   - Basic tuple types
-   - Reference documentation
+#### 🧩 Next Built-ins (Planned for runtime inclusion)
 
-2. **Collections (High Priority)**
-   - Generic Map implementation
-   - Generic Set implementation
-   - Linked List
-   - Queue and Priority Queue
-   - Stack
-   - Comprehensive iterator support
-   - Collection algorithms (sort, filter, map, reduce)
+- `abs(x)` – Absolute value  
+- `round(x)` – Rounding of floats  
+- `any(array)` / `all(array)` – Truth aggregation  
+- `filter(array, fn)` – Higher-order filtering (requires function-as-value support)  
+- `map(array, fn)` – Transformation function (same as above)  
 
-3. **I/O and System (High Priority)**
-   - Standard input/output streams (basic `input()` implemented)
-   - File reading and writing
-   - Environment variables
-   - Command-line argument parsing
-   - Process execution
+---
 
-4. **String Processing (Medium Priority)**
-   - String builders
-   - Pattern matching
-   - String transformations (case conversion, trimming, etc.)
-   - Unicode support
-   - String validation
+### 📦 Standard Library Modules (To be written in Orus)
 
-5. **File System (Medium Priority)**
-   - Directory operations
-   - File metadata
-   - Path manipulation
-   - File watching
+Orus will include a set of standard library modules located in a `std/` directory. These will be imported using the module system:
 
-6. **Time and Date (Medium Priority)**
-   - Date and time types
-   - Time zone support
-   - Date formatting and parsing
-   - Duration and interval calculations
+```orus
+import "std/math.orus"
+```
 
-7. **Networking (Low Priority)**
-   - TCP/IP client/server
-   - HTTP client
-   - URI parsing
-   - Socket programming
-   - Basic protocols (SMTP, FTP)
+| Module         | Description                                     | Target Version   |
+|----------------|-------------------------------------------------|------------------|
+| `std/math`       | `clamp`, `sqrt`, `average`, constants like `PI` | 0.6.0            |
+| `std/random`     | LCG `rand`, `rand_int`, `choice`, `shuffle`     | 0.6.0            |
+| `std/functional` | `map`, `filter`, `reduce`                       | 0.6.0+ (depends on function support) |
+| `std/datetime`   | `now()`, `timestamp()`, formatting              | 0.6.0+ (needs runtime `_timestamp`) |
+| `std/os`         | `cwd()`, file I/O, environment info             | 0.6.0+           |
+| `std/strings`    | `lowercase`, `trim`, `split`, `replace`         | 0.6.0+           |
 
-8. **Regular Expressions (Low Priority)**
-   - Pattern compilation
-   - String matching
-   - Capturing groups
-   - Replacement operations
+---
 
-9. **Serialization (Low Priority)**
-   - JSON support
-   - Binary serialization
-   - CSV parsing/generation
-   - YAML support
+### Implementation Strategy
 
-10. **Concurrency (Low Priority)**
-    - Thread abstractions
-    - Async/await patterns
-    - Worker pools
-    - Channels for communication
-    - Synchronization primitives
+- Standard library modules are written in pure Orus and organized in `std/`  
+- Only minimal system functions are exposed from the VM runtime (e.g., `_timestamp`)  
+- Higher-order functions like `map(fn)` or `filter(fn)` will depend on function-as-value support planned for 0.6.x
 
-**Implementation Strategy:**
-
-- Modular design with minimal interdependencies
-- Consistent API design across all modules
-- Comprehensive test coverage
-- Focus on performance and memory efficiency
-- Leverage generic capabilities when available
-- Build incrementally, starting with core modules
-
-**Version Impact:**
-- Core Types and Collections are targeted for version 0.6.0
-- Networking features are targeted for version 0.8.0
-- Complete concurrency support is targeted for version 1.0.0
+---
 
 ## Path to Version 1.0
 
-Based on the current state and roadmap, the path to version 1.0 is expected to include:
+| Milestone | Focus |
+|-----------|-------|
+| **0.6.0** | Generic forward declarations, stdlib base modules, more built-ins |
+| **0.7.0** | Generic constraints |
+| **0.8.0** | Expand standard library and core collections |
+| **0.9.0** | Concurrency and error handling improvements |
+| **1.0.0** | Finalized language stability, documentation, performance |
 
-1. **Version 0.6.0**: Complete generic forward declarations/prepass (regular forward declarations already supported)
-2. **Version 0.7.0**: Implement generic constraints
-3. **Version 0.8.0**: Expand standard library, focus on core types and collections
-4. **Version 0.9.0**: Complete concurrency support and enhanced error handling
-5. **Version 1.0.0**: Finalize language stability, documentation, and performance optimizations
-
-
+---
 
 ## Development Priorities
 
-1. **Short-term (3 months)**
-   - Complete generic forward declarations & prepass collection (building on existing non-generic forward declaration support)
-   - Begin design work on generic constraints
+### Short-Term (0–3 months)
+- Complete generic forward declarations  
+- Add remaining built-ins: `abs`, `round`, `any`, `all`  
+- Begin core standard library: `math`, `random`, `functional`
 
-2. **Medium-term (6-12 months)**
-   - Implement generic constraints 
-   - Expand standard library core types and collections
-   - Enhance error handling and reporting
+### Medium-Term (3–12 months)
+- Generic constraints and arithmetic  
+- Build out I/O, date/time, strings, and collections  
+- Improve diagnostics and error reporting
 
-3. **Long-term (1-2 years)**
-   - Complete concurrency support
-   - Optimize interpreter performance
-   - Enhance language stability and reliability
-   - Reach 1.0.0 stability milestone
+### Long-Term (12+ months)
+- Full concurrency model with async/thread support  
+- Language optimizations and bytecode performance  
+- Prepare stable 1.0 release
 
-## Versioning Strategy and Compatibility
+---
 
-### Version Numbering
+## Versioning Strategy
 
-Orus follows semantic versioning with the following principles:
-- **Major version** (1.0.0): Represents significant language stability milestones
-- **Minor version** (0.x.0): Added features and substantial improvements (e.g., generic constraints)
-- **Patch version** (0.0.x): Bug fixes and minor improvements that don't affect compatibility
+### Semantic Versioning
+- **Major** (1.0.0): Stability milestone  
+- **Minor** (0.x.0): Features like generics, collections  
+- **Patch** (0.0.x): Fixes, minor additions
 
-### Feature-based Versioning
-
-Each minor version increment represents the completion of specific feature sets:
-- **0.6.0**: Generic forward declarations support
-- **0.7.0**: Generic constraints
-- **0.8.0**: Standard library core components
-- **0.9.0**: Concurrency and enhanced error handling
-- **1.0.0**: Stability, performance, and feature completeness
-
-### Compatibility Considerations
-
-- Maintain backward compatibility with existing Orus code through 0.x series
-- Document breaking changes clearly when they occur
-- Provide migration guides between major versions
-- Consider providing compatibility layers where feasible
+### Compatibility
+- Backward compatibility maintained during 0.x phase  
+- Breaking changes clearly documented  
+- Migration tools/guides for major version jumps  
