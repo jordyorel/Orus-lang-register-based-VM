@@ -53,6 +53,7 @@ void initVM() {
         vm.globalTypes[i] = NULL;
         vm.functions[i].start = 0;
         vm.functions[i].arity = 0;
+        vm.functions[i].chunk = NULL;
         vm.functionDecls[i] = NULL;
     }
 
@@ -567,7 +568,8 @@ static InterpretResult run() {
                     // Restore the previous call frame
                     CallFrame* frame = &vm.frames[--vm.frameCount];
 
-                    // Restore the instruction pointer
+                    // Restore the instruction pointer and chunk
+                    vm.chunk = frame->previousChunk;
                     vm.ip = frame->returnAddress;
 
                     // Reset the stack to the frame's base, but keep the return value
@@ -965,6 +967,7 @@ static InterpretResult run() {
                 // Set up new call frame
                 CallFrame* frame = &vm.frames[vm.frameCount++];
                 frame->returnAddress = vm.ip;
+                frame->previousChunk = vm.chunk;
                 
                 // Ensure we have a valid stack offset
                 int stackOffset = (int)(vm.stackTop - vm.stack - argCount);
@@ -981,8 +984,9 @@ static InterpretResult run() {
                     vmPush(&vm, I32_VAL(0));  // Push a dummy value that won't be used
                 }
 
-                // Jump to function body
-                vm.ip = vm.chunk->code + fn->start;
+                // Switch to the function's chunk and jump to its body
+                vm.chunk = fn->chunk;
+                vm.ip = fn->chunk->code + fn->start;
 
                 break;
             }

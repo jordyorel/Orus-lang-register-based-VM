@@ -25,6 +25,7 @@ typedef struct {
 typedef struct {
     int start;          // Bytecode offset of the function body
     uint8_t arity;      // Number of parameters
+    Chunk* chunk;       // Owning chunk for the function
 } Function;
 
 typedef struct VarName {
@@ -36,6 +37,7 @@ typedef struct {
     uint8_t* returnAddress;  // Where to return to after function completes
     int stackOffset;         // Where this frame's stack starts
     uint8_t functionIndex;   // Index of the function being called
+    Chunk* previousChunk;    // Chunk to restore after return
 } CallFrame;
 
 typedef struct {
