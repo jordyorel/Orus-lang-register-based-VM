@@ -21,7 +21,7 @@ description.
 | `input(prompt)` | Display a prompt and return a line of user input. |
 | `int(text)` | Convert a string to an `i32`, raising an error on failure. |
 | `float(text)` | Convert a string to an `f64`, raising an error on failure. |
-| `sorted(array, key, reverse)` | Return a new array with the elements sorted. |
+| `sorted(array, key, reverse)` | Return a new array with the elements sorted. The `key` and `reverse` arguments are optional. |
 
 ### `sorted`
 
@@ -29,17 +29,18 @@ The `sorted()` builtin takes an array of numbers or strings and returns a new
 array containing the elements in order. The original array is left unchanged.
 
 ```
-sorted(array, nil, reverse)
+sorted(array, key=nil, reverse)
 ```
 
 * **array** – The values to sort. All elements must be numbers or strings.
-* **key** – Reserved for a future key function. It must be `nil` for now.
+* **key** – Optional. Reserved for a future key function. It must be `nil` if
+  provided.
 * **reverse** – Optional boolean. If `true`, the array is sorted in descending
   order. Defaults to ascending order when omitted.
 
 ```orus
 let data = [3, 1, 4, 1]
-print(sorted(data, nil, false))  // [1, 1, 3, 4]
+print(sorted(data))              // [1, 1, 3, 4]
 print(sorted(data, nil, true))   // [4, 3, 1, 1]
 ```
 
