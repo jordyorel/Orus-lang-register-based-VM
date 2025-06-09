@@ -117,6 +117,7 @@ Variables are introduced with the `let` keyword and follow these rules:
 - All variables must be explicitly declared before use
 - Type annotations are optional when the type can be inferred
 - Variables can be reassigned with a compatible value
+- A variable's type is fixed after its declaration or first assignment
 - Variable scope is block-based
 - Variables cannot be declared outside functions
 - Variable names follow the common identifier rules (letters, digits, underscore; must start with letter/underscore)

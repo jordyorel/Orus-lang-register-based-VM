@@ -1,0 +1,5 @@
+fn main() {
+    let x = nil
+    x = 1
+    x = "oops"
+}
