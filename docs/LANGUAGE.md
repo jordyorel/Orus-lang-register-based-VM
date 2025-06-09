@@ -175,6 +175,7 @@ Orus organizes code in files that serve as modules. The module system follows th
 - `use` statements must appear at the top level of a file, not inside functions
 - Each file is executed only once during the program's lifetime, regardless of how many times it's imported
 - Modules can contain function definitions, struct definitions, and `impl` blocks
+- Module files do **not** require a `main` function and are not meant to be executed directly
 
 Example:
 ```orus
@@ -188,7 +189,7 @@ fn main() {
 
 ### Program Entry Point
 
-All Orus programs must define a `main` function, which serves as the entry point:
+The entry file of an Orus program must define a `main` function, which serves as the starting point. A project may contain only **one** such function:
 
 ```orus
 fn main() {
@@ -197,10 +198,16 @@ fn main() {
 }
 ```
 
-Requirements:
-- The `main` function must be defined (directly or via imports)
-- Top-level code outside functions is not allowed except for imports and struct/impl definitions
-- `let` declarations and statements must be inside functions
+- Requirements:
+- The project must provide exactly one `main` function (directly or via imports).
+- Top-level code outside functions is not allowed except for imports and struct/impl definitions.
+- `let` declarations and statements must be inside functions.
+
+If the manifest does not specify an entry file, the interpreter searches all
+files in the project to locate the unique `main` function.
+
+Modules imported with `use` may omit a `main` function. Such files are compiled
+when imported as part of a project but cannot be executed on their own.
 
 ## Functions
 

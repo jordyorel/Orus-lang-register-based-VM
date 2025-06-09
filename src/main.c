@@ -11,6 +11,10 @@
 #include "../include/vm.h"
 #include "../include/error.h"
 #include "../include/version.h"
+#include <limits.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <sys/stat.h>
 
 static void printError(ObjError* err) {
     Diagnostic diag;
@@ -164,9 +168,137 @@ static void runFile(const char* path) {
     }
 }
 
+static bool file_has_main(const char* path) {
+    char* source = readFile(path);
+    if (!source) return false;
+
+    ASTNode* ast;
+    bool ok = parse(source, path, &ast);
+    bool found = false;
+    if (ok && ast) {
+        for (ASTNode* node = ast; node; node = node->next) {
+            if (node->type == AST_FUNCTION &&
+                node->data.function.name.length == 4 &&
+                strncmp(node->data.function.name.start, "main", 4) == 0) {
+                found = true;
+                break;
+            }
+        }
+    }
+
+    free(source);
+    return found;
+}
+
+static void search_for_main(const char* base, const char* sub, int* count,
+                            char* result, size_t resultSize) {
+    char dirPath[PATH_MAX];
+    if (sub[0] == '\0') {
+        snprintf(dirPath, sizeof(dirPath), "%s", base);
+    } else {
+        snprintf(dirPath, sizeof(dirPath), "%s/%s", base, sub);
+    }
+
+    DIR* d = opendir(dirPath);
+    if (!d) return;
+
+    struct dirent* entry;
+    while ((entry = readdir(d)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            continue;
+
+        char relPath[PATH_MAX];
+        if (sub[0] == '\0') {
+            snprintf(relPath, sizeof(relPath), "%s", entry->d_name);
+        } else {
+            snprintf(relPath, sizeof(relPath), "%s/%s", sub, entry->d_name);
+        }
+
+        char fullPath[PATH_MAX];
+        snprintf(fullPath, sizeof(fullPath), "%s/%s", base, relPath);
+
+        struct stat st;
+        if (stat(fullPath, &st) == 0 && S_ISDIR(st.st_mode)) {
+            search_for_main(base, relPath, count, result, resultSize);
+        } else {
+            size_t len = strlen(entry->d_name);
+            if (len > 5 && strcmp(entry->d_name + len - 5, ".orus") == 0) {
+                if (file_has_main(fullPath)) {
+                    (*count)++;
+                    if (*count == 1) {
+                        strncpy(result, relPath, resultSize - 1);
+                        result[resultSize - 1] = '\0';
+                    }
+                }
+            }
+        }
+    }
+
+    closedir(d);
+}
+
+static void runProject(const char* dir) {
+    char manifestPath[PATH_MAX];
+    snprintf(manifestPath, sizeof(manifestPath), "%s/orus.json", dir);
+    char* json = readFile(manifestPath);
+    const char* entry = NULL;
+    char* entryAlloc = NULL;
+    if (json) {
+        char* p = strstr(json, "\"entry\"");
+        if (p) {
+            p = strchr(p, ':');
+            if (p) {
+                p++;
+                while (*p == ' ' || *p == '\t' || *p == '"') p++;
+                char* start = p;
+                while (*p && *p != '"' && *p != '\n') p++;
+                size_t len = p - start;
+                if (len > 0) {
+                    entryAlloc = malloc(len + 1);
+                    memcpy(entryAlloc, start, len);
+                    entryAlloc[len] = '\0';
+                    entry = entryAlloc;
+                }
+            }
+        }
+    }
+
+    char foundPath[PATH_MAX];
+    int mainCount = 0;
+    if (!entry) {
+        foundPath[0] = '\0';
+        search_for_main(dir, "", &mainCount, foundPath, sizeof(foundPath));
+        if (mainCount == 0) {
+            fprintf(stderr, "No 'main' function found in project.\n");
+            free(json);
+            return;
+        } else if (mainCount > 1) {
+            fprintf(stderr, "Multiple 'main' functions found in project.\n");
+            free(json);
+            return;
+        }
+        entry = foundPath;
+    } else {
+        search_for_main(dir, "", &mainCount, foundPath, sizeof(foundPath));
+        if (mainCount > 1 || (mainCount == 1 && strcmp(foundPath, entry) != 0)) {
+            fprintf(stderr, "Project must contain a single 'main' function.\n");
+            free(json);
+            if (entryAlloc) free(entryAlloc);
+            return;
+        }
+    }
+
+    chdir(dir);
+    runFile(entry);
+
+    free(json);
+    if (entryAlloc) free(entryAlloc);
+}
+
 int main(int argc, const char* argv[]) {
     bool traceFlag = false;
     const char* path = NULL;
+    const char* projectDir = NULL;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "-v") == 0) {
@@ -174,10 +306,16 @@ int main(int argc, const char* argv[]) {
             return 0;
         } else if (strcmp(argv[i], "--trace") == 0) {
             traceFlag = true;
+        } else if (strcmp(argv[i], "--project") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "Usage: orus --project <dir>\n");
+                return 64;
+            }
+            projectDir = argv[++i];
         } else if (!path) {
             path = argv[i];
         } else {
-            fprintf(stderr, "Usage: orus [--trace] [path]\n");
+            fprintf(stderr, "Usage: orus [--trace] [--project dir] [path]\n");
             return 64;
         }
     }
@@ -185,7 +323,9 @@ int main(int argc, const char* argv[]) {
     initVM();
     if (traceFlag) vm.trace = true;
 
-    if (!path) {
+    if (projectDir) {
+        runProject(projectDir);
+    } else if (!path) {
         repl();
     } else {
         runFile(path);

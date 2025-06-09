@@ -63,6 +63,15 @@ After building, run the interpreter in two ways:
 # Execute a script file
 ./orus path/to/script.orus
 
+# Execute a project directory
+./orus --project path/to/project
+
+```
+
+When run in project mode the interpreter searches all `.orus` files for a
+`main` function if the manifest doesn't specify an entry file. The project must
+contain exactly one such function.
+
 # Display the current interpreter version
 ./orus --version
 ```

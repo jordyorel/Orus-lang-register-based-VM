@@ -28,12 +28,17 @@ def build(args):
 
 def run(args):
     build(args)
-    entry = "src/main.orus"
     if os.path.exists("orus.json"):
         with open("orus.json") as f:
             data = json.load(f)
-            entry = data.get("entry", entry)
-    subprocess.run(["./orus", entry])
+            entry = data.get("entry")
+    else:
+        entry = None
+
+    if entry:
+        subprocess.run(["./orus", entry])
+    else:
+        subprocess.run(["./orus", "--project", "."])
 
 def pack(args):
     build(args)
