@@ -1,0 +1,38 @@
+struct SeedBox {
+    value: u32
+}
+
+fn seed_storage() -> [SeedBox; 1] {
+    let store: [SeedBox; 1] = [SeedBox{ value: 123456789 }]
+    return store
+}
+
+fn rand() -> f64 {
+    let store = seed_storage()
+
+    let a: u32 = 1664525
+    let c: u32 = 1013904223
+    let m: u32 = 4294967295
+
+    let current = store[0].value
+    let next = (a * current + c) % m
+    store[0].value = next
+
+    let numerator: f64 = next * 1.0
+    return numerator / 4294967296.0
+}
+
+fn rand_int(min: i32, max: i32) -> i32 {
+    let range: f64 = (max - min + 1) * 1.0
+    return min + (rand() * range) / 1
+}
+
+fn main() {
+    print("Random float: {}", rand())
+
+    let a = rand_int(1, 10)
+    let b = rand_int(1, 10)
+    let c = rand_int(1, 10)
+
+    print("Random ints: {}, {}, {}", a, b, c)
+}
