@@ -1306,17 +1306,32 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 typeCheckNode(compiler, value);
                 if (compiler->hadError) return;
+                Type* expected = structType->info.structure.fields[i].type;
                 if (value->type == AST_ARRAY && value->valueType &&
                     value->valueType->kind == TYPE_ARRAY &&
                     value->valueType->info.array.elementType->kind == TYPE_NIL &&
-                    structType->info.structure.fields[i].type->kind == TYPE_ARRAY) {
-                    value->valueType = structType->info.structure.fields[i].type;
+                    expected->kind == TYPE_ARRAY) {
+                    value->valueType = expected;
                 }
-                if (!typesEqual(structType->info.structure.fields[i].type,
-                                value->valueType)) {
+                if (!typesEqual(expected, value->valueType)) {
+                    if (expected->kind == TYPE_U32 && value->type == AST_LITERAL &&
+                        value->valueType && value->valueType->kind == TYPE_I32 &&
+                        IS_I32(value->data.literal) && AS_I32(value->data.literal) >= 0) {
+                        int32_t v = AS_I32(value->data.literal);
+                        value->data.literal = U32_VAL((uint32_t)v);
+                        value->valueType = expected;
+                    } else if (expected->kind == TYPE_I32 && value->type == AST_LITERAL &&
+                               value->valueType && value->valueType->kind == TYPE_U32 &&
+                               IS_U32(value->data.literal) && AS_U32(value->data.literal) <= INT32_MAX) {
+                        uint32_t v = AS_U32(value->data.literal);
+                        value->data.literal = I32_VAL((int32_t)v);
+                        value->valueType = expected;
+                    }
+                }
+                if (!typesEqual(expected, value->valueType)) {
                     const char* structName = structType->info.structure.name->chars;
                     const char* fieldName = structType->info.structure.fields[i].name->chars;
-                    const char* expectedType = getTypeName(structType->info.structure.fields[i].type->kind);
+                    const char* expectedType = getTypeName(expected->kind);
                     const char* actualType = value->valueType ? getTypeName(value->valueType->kind) : "(none)";
                     emitStructFieldTypeMismatchError(compiler, &node->data.structLiteral.name, structName, fieldName, expectedType, actualType);
                     return;
