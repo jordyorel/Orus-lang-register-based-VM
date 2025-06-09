@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <limits.h>
 
 static Module module_cache[UINT8_COUNT];
 static uint8_t module_cache_count = 0;
@@ -40,7 +41,7 @@ Chunk* compile_module_ast(ASTNode* ast, const char* module_name) {
 }
 
 bool register_module(Module* module) {
-    if (module_cache_count >= UINT8_COUNT) return false;
+    if (module_cache_count == UINT8_MAX) return false;
     module_cache[module_cache_count++] = *module;
     return true;
 }
@@ -98,7 +99,7 @@ InterpretResult compile_module_only(const char* path) {
     mod.export_count = 0;
     mod.executed = false;
 
-    for (int i = startGlobals; i < vm.variableCount && mod.export_count < UINT8_COUNT; i++) {
+    for (int i = startGlobals; i < vm.variableCount && mod.export_count < UINT8_MAX; i++) {
         Export ex;
         ex.name = vm.variableNames[i].name ? vm.variableNames[i].name->chars : NULL;
         if (ex.name) {
