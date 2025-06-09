@@ -1,6 +1,6 @@
 use tests::modules::cycles::cycle_b
 
-fn greet_a() {
+pub fn greet_a() {
     print("Hello from A")
 }
 

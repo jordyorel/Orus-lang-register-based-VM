@@ -9,6 +9,7 @@
 #include "../include/parser.h"
 #include "../include/file_utils.h"
 #include "../include/vm.h"
+#include "../include/modules.h"
 #include "../include/error.h"
 #include "../include/version.h"
 #include <limits.h>
@@ -297,6 +298,7 @@ static void runProject(const char* dir) {
 
 int main(int argc, const char* argv[]) {
     bool traceFlag = false;
+    bool traceImportsFlag = false;
     const char* path = NULL;
     const char* projectDir = NULL;
 
@@ -306,6 +308,8 @@ int main(int argc, const char* argv[]) {
             return 0;
         } else if (strcmp(argv[i], "--trace") == 0) {
             traceFlag = true;
+        } else if (strcmp(argv[i], "--trace-imports") == 0) {
+            traceImportsFlag = true;
         } else if (strcmp(argv[i], "--project") == 0) {
             if (i + 1 >= argc) {
                 fprintf(stderr, "Usage: orus --project <dir>\n");
@@ -315,13 +319,14 @@ int main(int argc, const char* argv[]) {
         } else if (!path) {
             path = argv[i];
         } else {
-            fprintf(stderr, "Usage: orus [--trace] [--project dir] [path]\n");
+            fprintf(stderr, "Usage: orus [--trace] [--trace-imports] [--project dir] [path]\n");
             return 64;
         }
     }
 
     initVM();
     if (traceFlag) vm.trace = true;
+    if (traceImportsFlag) traceImports = true;
 
     if (projectDir) {
         runProject(projectDir);

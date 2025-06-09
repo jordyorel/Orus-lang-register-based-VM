@@ -7,6 +7,7 @@
 #include "../../include/memory.h"
 #include "../../include/vm_ops.h"
 #include "../../include/type.h"
+#include "../../include/modules.h"
 
 extern VM vm;
 
@@ -465,6 +466,34 @@ static Value native_sorted(int argCount, Value* args) {
     return ARRAY_VAL(out);
 }
 
+static Value native_module_name(int argCount, Value* args) {
+    if (argCount != 1 || !IS_STRING(args[0])) {
+        vmRuntimeError("module_name() expects module path string.");
+        return NIL_VAL;
+    }
+    Module* m = get_module(AS_STRING(args[0])->chars);
+    if (!m) {
+        vmRuntimeError("Module not loaded.");
+        return NIL_VAL;
+    }
+    ObjString* s = allocateString(m->name, (int)strlen(m->name));
+    return STRING_VAL(s);
+}
+
+static Value native_module_path(int argCount, Value* args) {
+    if (argCount != 1 || !IS_STRING(args[0])) {
+        vmRuntimeError("module_path() expects module path string.");
+        return NIL_VAL;
+    }
+    Module* m = get_module(AS_STRING(args[0])->chars);
+    if (!m) {
+        vmRuntimeError("Module not loaded.");
+        return NIL_VAL;
+    }
+    ObjString* s = allocateString(m->module_name, (int)strlen(m->module_name));
+    return STRING_VAL(s);
+}
+
 typedef struct {
     const char* name;
     NativeFn fn;
@@ -487,6 +516,8 @@ static BuiltinEntry builtinTable[] = {
     {"int", native_int, 1, TYPE_I32},
     {"float", native_float, 1, TYPE_F64},
     {"sorted", native_sorted, -1, TYPE_ARRAY},
+    {"module_name", native_module_name, 1, TYPE_STRING},
+    {"module_path", native_module_path, 1, TYPE_STRING},
 };
 
 void initBuiltins(void) {

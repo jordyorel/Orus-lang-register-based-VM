@@ -14,6 +14,8 @@ static uint8_t module_cache_count = 0;
 static const char* loading_stack[UINT8_COUNT];
 static uint8_t loading_stack_count = 0;
 
+bool traceImports = false;
+
 const char* moduleError = NULL;
 static char module_error_buffer[256];
 
@@ -71,6 +73,7 @@ Export* get_export(Module* module, const char* name) {
 
 InterpretResult compile_module_only(const char* path) {
     moduleError = NULL;
+    if (traceImports) fprintf(stderr, "[import] loading %s\n", path);
     for (int i = 0; i < loading_stack_count; i++) {
         if (strcmp(loading_stack[i], path) == 0) {
             snprintf(module_error_buffer, sizeof(module_error_buffer),
@@ -122,6 +125,13 @@ InterpretResult compile_module_only(const char* path) {
 
     Module mod;
     mod.module_name = strdup(path);
+    const char* base = strrchr(path, '/');
+    base = base ? base + 1 : path;
+    size_t len = strlen(base);
+    if (len > 5 && strcmp(base + len - 5, ".orus") == 0) len -= 5;
+    mod.name = (char*)malloc(len + 1);
+    memcpy(mod.name, base, len);
+    mod.name[len] = '\0';
     mod.bytecode = chunk;
     mod.export_count = 0;
     mod.executed = false;
@@ -129,7 +139,7 @@ InterpretResult compile_module_only(const char* path) {
     for (int i = startGlobals; i < vm.variableCount && mod.export_count < UINT8_MAX; i++) {
         Export ex;
         ex.name = vm.variableNames[i].name ? vm.variableNames[i].name->chars : NULL;
-        if (ex.name) {
+        if (ex.name && vm.publicGlobals[i]) {
             ex.name = strdup(ex.name);
             ex.value = vm.globals[i];
             ex.index = i;

@@ -36,7 +36,7 @@ static void statement(Parser* parser, ASTNode** ast);
 static void ifStatement(Parser* parser, ASTNode** ast);
 static void matchStatement(Parser* parser, ASTNode** ast);
 static void tryStatement(Parser* parser, ASTNode** ast);
-static void functionDeclaration(Parser* parser, ASTNode** ast);
+static void functionDeclaration(Parser* parser, ASTNode** ast, bool isPublic);
 static void returnStatement(Parser* parser, ASTNode** ast);
 static void importStatement(Parser* parser, ASTNode** ast);
 static void useStatement(Parser* parser, ASTNode** ast);
@@ -842,7 +842,7 @@ static void tryStatement(Parser* parser, ASTNode** ast) {
     (*ast)->line = line;
 }
 
-static void functionDeclaration(Parser* parser, ASTNode** ast) {
+static void functionDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
     // Parse function name
     consume(parser, TOKEN_IDENTIFIER, "Expect function name.");
     Token name = parser->previous;
@@ -950,7 +950,7 @@ static void functionDeclaration(Parser* parser, ASTNode** ast) {
     parser->genericCount = prevGenericCount;
 
     ASTNode* fnNode = createFunctionNode(name, parameters, returnType, body,
-                                         generics, genericCount);
+                                         generics, genericCount, isPublic);
     fnNode->line = name.line;
     fnNode->data.function.isMethod = hasSelf;
     fnNode->data.function.implType = parser->currentImplType;
@@ -1014,7 +1014,12 @@ static void useStatement(Parser* parser, ASTNode** ast) {
         consume(parser, TOKEN_IDENTIFIER, "Expect alias after 'as'.");
         alias = allocateString(parser->previous.start, parser->previous.length);
     } else if (match(parser, TOKEN_DOUBLE_COLON)) {
-        if (match(parser, TOKEN_LEFT_BRACE)) {
+        if (match(parser, TOKEN_STAR)) {
+            if (match(parser, TOKEN_AS)) {
+                consume(parser, TOKEN_IDENTIFIER, "Expect alias name.");
+                alias = allocateString(parser->previous.start, parser->previous.length);
+            }
+        } else if (match(parser, TOKEN_LEFT_BRACE)) {
             if (!check(parser, TOKEN_RIGHT_BRACE)) {
                 do {
                     consume(parser, TOKEN_IDENTIFIER, "Expect symbol name.");
@@ -1171,7 +1176,7 @@ static void implBlock(Parser* parser, ASTNode** ast) {
     while (!check(parser, TOKEN_RIGHT_BRACE) && !check(parser, TOKEN_EOF)) {
         if (match(parser, TOKEN_FN)) {
             ASTNode* fn;
-            functionDeclaration(parser, &fn);
+            functionDeclaration(parser, &fn, false);
             if (methods == NULL) {
                 methods = fn;
             } else {
@@ -1289,7 +1294,14 @@ static void statement(Parser* parser, ASTNode** ast) {
         implBlock(parser, ast);
 
     } else if (match(parser, TOKEN_FN)) {
-        functionDeclaration(parser, ast);
+        functionDeclaration(parser, ast, false);
+
+    } else if (match(parser, TOKEN_PUB)) {
+        if (match(parser, TOKEN_FN)) {
+            functionDeclaration(parser, ast, true);
+        } else {
+            error(parser, "Expected 'fn' after 'pub'.");
+        }
 
     } else if (match(parser, TOKEN_RETURN)) {
         returnStatement(parser, ast);

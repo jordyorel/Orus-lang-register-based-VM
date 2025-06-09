@@ -2533,6 +2533,7 @@ uint8_t addLocal(Compiler* compiler, Token name, Type* type) {
     variableTypes[index] = type;  // Should be getPrimitiveType result
     vm.globalTypes[index] = type;
     vm.globals[index] = NIL_VAL;
+    vm.publicGlobals[index] = false;
 
     addSymbol(&compiler->symbols, nameObj->chars, name, type, compiler->scopeDepth, index);
 
@@ -2639,6 +2640,7 @@ static void predeclareFunction(Compiler* compiler, ASTNode* node) {
         index = defineVariable(compiler, node->data.function.name, node->data.function.returnType);
     }
     node->data.function.index = index;
+    vm.publicGlobals[index] = node->data.function.isPublic;
     vm.functionDecls[index] = node;
 
     int pcount = 0;

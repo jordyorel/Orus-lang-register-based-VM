@@ -1,0 +1,14 @@
+pub fn public_fn() {
+    let greeting = "public"
+    print(greeting)
+}
+
+fn private_fn() {
+    print("private")
+}
+
+fn main() {
+
+}
+
+

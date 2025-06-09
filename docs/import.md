@@ -148,9 +148,11 @@ Module* get_module(const char* name);
 
 ## 📌 Enhancements
 
-* Allow `pub` keyword to mark exported functions in modules
-* Support `use *` to import everything
-* Expose module metadata (name, path)
-* CLI flag to trace imports for debugging
+The import system now supports:
+
+* The `pub` keyword to mark exported functions in modules.
+* `use *` syntax to import all public members of a module.
+* Accessing loaded module metadata via `module_name()` and `module_path()`.
+* A `--trace-imports` CLI flag for debugging module loading.
 
 ---
