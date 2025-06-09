@@ -1,12 +1,11 @@
 # Roadmap for Enabling Effective `use` Imports in Orus (C-based Language)
 
-This roadmap outlines the detailed steps to make the `use` import system in Orus functional.
-
+This roadmap outlines the detailed steps to make the `use` import system in Orus functional. 
 ---
 
 ## ✅ Goals
 
-* Support `use tests::modules::hello_module as hm`, `use tests::modules::hello_module`, `use tests::modules::hello_module::{greet}`, etc.
+* Support `use math`, `use random::{rand}`, `use datetime as dt`, etc.
 * Ensure imported files execute once and expose usable functions, types, and constants.
 * Maintain a clean, professional structure aligned with the current codebase.
 
@@ -71,17 +70,24 @@ Module* get_module(const char* name);
   use math
   use random::{rand, rand_int}
   use datetime as dt
+  use tests::modules::hello_module
+  use tests::modules::hello_module as hm
+  use tests::modules::hello_module::{greet}
   ```
-* Output an `ImportNode` in AST
+* Output an `ImportNode` in AST with:
+
+  * full module path (`tests/modules/hello_module.orus`)
+  * optional alias name
+  * optional list of selected symbols
 
 ### Step 2: Resolve Module Path
 
-* In `compiler.c`, translate `use math` into something like:
+* In `compiler.c`, convert `use tests::modules::hello_module` to:
 
   ```c
-  std/math.orus
+  tests/modules/hello_module.orus
   ```
-* For nested use: `use tools::xyz` → `tools/xyz.orus`
+* Use the path to locate the module file on disk
 
 ### Step 3: Load and Parse Module
 
@@ -102,20 +108,22 @@ Module* get_module(const char* name);
 
   ```orus
   use math::{clamp, round}  // Only these are exposed
+  use tests::modules::hello_module::{greet}
   ```
 
 ### Step 6: Handle Aliasing
 
 * `use datetime as dt` should alias the module in symbol table.
-* Access then becomes `dt.now()` depending on resolution rules.
+* `use tests::modules::hello_module as hm` binds all public members under `hm`
+* Access becomes `hm.greet()`
 
 ### Step 7: Prevent Recompilation
 
 * Register compiled modules in a global cache.
 * On re-import, retrieve from cache instead of reloading/recompiling.
 
----
 
+---
 
 ## 🛡️ Error Handling
 
