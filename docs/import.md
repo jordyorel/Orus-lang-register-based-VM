@@ -1,12 +1,12 @@
 # Roadmap for Enabling Effective `use` Imports in Orus (C-based Language)
 
-This roadmap outlines the detailed steps to make the `use` import system in Orus functional. It assumes you’ve already implemented the syntax parsing and now want to link and execute imported modules.
+This roadmap outlines the detailed steps to make the `use` import system in Orus functional.
 
 ---
 
 ## ✅ Goals
 
-* Support `use math`, `use random::{rand}`, `use datetime as dt`, etc.
+* Support `use tests::modules::hello_module as hm`, `use tests::modules::hello_module`, `use tests::modules::hello_module::{greet}`, etc.
 * Ensure imported files execute once and expose usable functions, types, and constants.
 * Maintain a clean, professional structure aligned with the current codebase.
 
@@ -116,15 +116,6 @@ Module* get_module(const char* name);
 
 ---
 
-## 📦 Future: Standard Library Support
-
-Once the import system works:
-
-* Place stdlib in `orus_std/` or `lib/`.
-* Support `use math` → maps to `orus_std/math.orus`
-* Embed `orus_std/` path in default import resolver.
-
----
 
 ## 🛡️ Error Handling
 
@@ -147,7 +138,7 @@ Once the import system works:
 
 ---
 
-## 📌 Optional Enhancements
+## 📌 Enhancements
 
 * Allow `pub` keyword to mark exported functions in modules
 * Support `use *` to import everything
