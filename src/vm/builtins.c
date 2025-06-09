@@ -337,6 +337,127 @@ static Value native_max(int argCount, Value* args) {
         return I32_VAL((int32_t)best);
 }
 
+// ---------- sorted() built-in ----------
+
+// Helper functions for timsort implementation
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+static bool isNumber(Value v) {
+    return IS_I32(v) || IS_U32(v) || IS_F64(v);
+}
+
+static double toNumber(Value v) {
+    if (IS_I32(v)) return AS_I32(v);
+    if (IS_U32(v)) return AS_U32(v);
+    return AS_F64(v);
+}
+
+static int compareValues(Value a, Value b) {
+    if (isNumber(a) && isNumber(b)) {
+        double da = toNumber(a);
+        double db = toNumber(b);
+        if (da < db) return -1;
+        if (da > db) return 1;
+        return 0;
+    } else if (IS_STRING(a) && IS_STRING(b)) {
+        int cmp = strcmp(AS_STRING(a)->chars, AS_STRING(b)->chars);
+        if (cmp < 0) return -1;
+        if (cmp > 0) return 1;
+        return 0;
+    } else {
+        vmRuntimeError("sorted() array must contain only numbers or strings.");
+        return 0;
+    }
+}
+
+static void insertionSort(Value* arr, int left, int right, bool reverse) {
+    for (int i = left + 1; i <= right; i++) {
+        Value key = arr[i];
+        int j = i - 1;
+        while (j >= left && (reverse ? compareValues(arr[j], key) < 0
+                                    : compareValues(arr[j], key) > 0)) {
+            arr[j + 1] = arr[j];
+            j--;
+        }
+        arr[j + 1] = key;
+    }
+}
+
+static void merge(Value* arr, int l, int m, int r, Value* temp, bool reverse) {
+    int len1 = m - l + 1;
+    int len2 = r - m;
+    for (int i = 0; i < len1; i++) temp[i] = arr[l + i];
+    for (int i = 0; i < len2; i++) temp[len1 + i] = arr[m + 1 + i];
+
+    int i = 0, j = len1, k = l;
+    while (i < len1 && j < len1 + len2) {
+        if (reverse ? compareValues(temp[i], temp[j]) >= 0
+                     : compareValues(temp[i], temp[j]) <= 0) {
+            arr[k++] = temp[i++];
+        } else {
+            arr[k++] = temp[j++];
+        }
+    }
+    while (i < len1) arr[k++] = temp[i++];
+    while (j < len1 + len2) arr[k++] = temp[j++];
+}
+
+static void timSort(Value* arr, int n, bool reverse) {
+    const int MIN_RUN = 32;
+    for (int i = 0; i < n; i += MIN_RUN) {
+        int right = MIN(i + MIN_RUN - 1, n - 1);
+        insertionSort(arr, i, right, reverse);
+    }
+
+    Value* temp = (Value*)malloc(sizeof(Value) * n);
+    for (int size = MIN_RUN; size < n; size *= 2) {
+        for (int left = 0; left < n; left += 2 * size) {
+            int mid = left + size - 1;
+            int right = MIN(left + 2 * size - 1, n - 1);
+            if (mid < right) {
+                merge(arr, left, mid, right, temp, reverse);
+            }
+        }
+    }
+    free(temp);
+}
+
+static Value native_sorted(int argCount, Value* args) {
+    if (argCount < 1 || argCount > 3) {
+        vmRuntimeError("sorted() takes between 1 and 3 arguments.");
+        return NIL_VAL;
+    }
+    if (!IS_ARRAY(args[0])) {
+        vmRuntimeError("sorted() first argument must be array.");
+        return NIL_VAL;
+    }
+
+    if (argCount >= 2 && !IS_NIL(args[1])) {
+        vmRuntimeError("sorted() key function not supported yet.");
+        return NIL_VAL;
+    }
+
+    bool reverse = false;
+    if (argCount == 3) {
+        if (!IS_BOOL(args[2])) {
+            vmRuntimeError("sorted() third argument must be bool.");
+            return NIL_VAL;
+        }
+        reverse = AS_BOOL(args[2]);
+    }
+
+    ObjArray* in = AS_ARRAY(args[0]);
+    ObjArray* out = allocateArray(in->length);
+    out->length = in->length;
+    for (int i = 0; i < in->length; i++) {
+        out->elements[i] = in->elements[i];
+    }
+
+    timSort(out->elements, out->length, reverse);
+
+    return ARRAY_VAL(out);
+}
+
 typedef struct {
     const char* name;
     NativeFn fn;
@@ -358,6 +479,7 @@ static BuiltinEntry builtinTable[] = {
     {"input", native_input, 1, TYPE_STRING},
     {"int", native_int, 1, TYPE_I32},
     {"float", native_float, 1, TYPE_F64},
+    {"sorted", native_sorted, -1, TYPE_ARRAY},
 };
 
 void initBuiltins(void) {

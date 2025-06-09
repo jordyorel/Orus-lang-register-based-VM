@@ -451,6 +451,7 @@ For a complete list see [BUILTINS.md](BUILTINS.md).
 - `input(prompt)` – Display a prompt and return a line of user input.
 - `int(text)` – Convert a string to an `i32`, raising an error on failure.
 - `float(text)` – Convert a string to an `f64`, raising an error on failure.
+- `sorted(array, key, reverse)` – Return a new array with the elements sorted.
 
 ```orus
 let arr: [i32; 1] = [1]
