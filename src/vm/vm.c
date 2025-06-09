@@ -15,6 +15,7 @@
 #include "../../include/file_utils.h"
 #include "../../include/parser.h"
 #include "../../include/vm_ops.h"
+#include "../../include/modules.h"
 
 VM vm;
 
@@ -207,49 +208,45 @@ int findNative(ObjString* name) {
 }
 
 static InterpretResult interpretModule(const char* path) {
-    char* source = readFile(path);
+    char* source = load_module_source(path);
     if (!source) {
         const char* stdPath = getenv("ORUS_STD_PATH");
         if (!stdPath) stdPath = "std";
         char full[256];
         snprintf(full, sizeof(full), "%s/%s", stdPath, path);
-        source = readFile(full);
+        source = load_module_source(full);
         if (!source) {
             RUNTIME_ERROR("Could not open module '%s'.", path);
             return INTERPRET_RUNTIME_ERROR;
         }
     }
-    ASTNode* ast;
-    if (!parse(source, path, &ast)) {
+
+    ASTNode* ast = parse_module_source(source, path);
+    if (!ast) {
         free(source);
         RUNTIME_ERROR("Parsing failed for module.");
         return INTERPRET_COMPILE_ERROR;
     }
-    Chunk chunk;
-    initChunk(&chunk);
-    Compiler compiler;
-    initCompiler(&compiler, &chunk, "<module>", source);
 
-    Chunk* prevChunk = vm.chunk;
-    uint8_t* prevIp = vm.ip;
-
-    vm.astRoot = ast;
-    if (!compile(ast, &compiler, false)) {
-        vm.chunk = prevChunk;
-        vm.ip = prevIp;
-        freeChunk(&chunk);
+    Chunk* chunk = compile_module_ast(ast, path);
+    if (!chunk) {
         free(source);
         RUNTIME_ERROR("Compilation failed for module.");
         return INTERPRET_COMPILE_ERROR;
     }
-    vm.astRoot = NULL;
-    vm.chunk = &chunk;
-    vm.ip = chunk.code;
+
+    Module mod = {strdup(path), chunk};
+    register_module(&mod);
+
+    Chunk* prevChunk = vm.chunk;
+    uint8_t* prevIp = vm.ip;
+
+    vm.chunk = chunk;
+    vm.ip = chunk->code;
     InterpretResult result = run();
     vm.chunk = prevChunk;
     vm.ip = prevIp;
 
-    freeChunk(&chunk);
     free(source);
     return result;
 }

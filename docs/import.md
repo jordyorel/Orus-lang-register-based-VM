@@ -62,7 +62,7 @@ Module* get_module(const char* name);
 
 ## 🧩 Step-by-Step Roadmap
 
-### Step 1: Parse `use` Statements
+### Step 1: Parse `use` Statements ✅
 
 * Extend `parser.c` to recognize:
 
@@ -80,7 +80,7 @@ Module* get_module(const char* name);
   * optional alias name
   * optional list of selected symbols
 
-### Step 2: Resolve Module Path
+### Step 2: Resolve Module Path ✅
 
 * In `compiler.c`, convert `use tests::modules::hello_module` to:
 
@@ -89,7 +89,7 @@ Module* get_module(const char* name);
   ```
 * Use the path to locate the module file on disk
 
-### Step 3: Load and Parse Module
+### Step 3: Load and Parse Module ✅
 
 * Use `file_utils.c` to load file contents.
 * Pass to `parser` → AST → `compiler` → bytecode (like normal program).
