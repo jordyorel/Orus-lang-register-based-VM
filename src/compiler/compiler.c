@@ -952,6 +952,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     error(compiler, "sorted() takes between 1 and 3 arguments.");
                     return;
                 }
+
                 ASTNode* arr = node->data.call.arguments;
                 typeCheckNode(compiler, arr);
                 if (compiler->hadError) return;
@@ -959,8 +960,21 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     error(compiler, "sorted() first argument must be array.");
                     return;
                 }
-                ASTNode* key = arr->next;
-                if (node->data.call.argCount >= 2) {
+
+                if (node->data.call.argCount == 2) {
+                    ASTNode* second = arr->next;
+                    typeCheckNode(compiler, second);
+                    if (compiler->hadError) return;
+                    if (!second->valueType) return; // safety
+                    if (second->valueType->kind == TYPE_BOOL) {
+                        // reverse flag only
+                    } else if (second->valueType->kind != TYPE_NIL) {
+                        error(compiler,
+                              "sorted() key function not supported yet.");
+                        return;
+                    }
+                } else if (node->data.call.argCount == 3) {
+                    ASTNode* key = arr->next;
                     typeCheckNode(compiler, key);
                     if (compiler->hadError) return;
                     if (!key->valueType || key->valueType->kind != TYPE_NIL) {
@@ -968,8 +982,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                               "sorted() key function not supported yet.");
                         return;
                     }
-                }
-                if (node->data.call.argCount == 3) {
+
                     ASTNode* rev = key->next;
                     typeCheckNode(compiler, rev);
                     if (compiler->hadError) return;
@@ -978,6 +991,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                         return;
                     }
                 }
+
                 node->valueType = arr->valueType;
                 break;
             }

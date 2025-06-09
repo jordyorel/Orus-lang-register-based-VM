@@ -1,12 +1,12 @@
 fn main() {
     let nums = [5, 1, 4, 3, 2, 2]
-    print(sorted(nums, nil, false))
-    print(sorted(nums, nil, true))
+    print(sorted(nums, false))
+    print(sorted(nums, true))
 
     let words: [string; 1] = ["b"]
     push(words, "d")
     push(words, "a")
     push(words, "c")
-    print(sorted(words, nil, false))
-    print(sorted(words, nil, true))
+    print(sorted(words, false))
+    print(sorted(words, true))
 }

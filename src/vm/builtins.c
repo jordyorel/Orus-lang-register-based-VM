@@ -432,13 +432,20 @@ static Value native_sorted(int argCount, Value* args) {
         return NIL_VAL;
     }
 
-    if (argCount >= 2 && !IS_NIL(args[1])) {
-        vmRuntimeError("sorted() key function not supported yet.");
-        return NIL_VAL;
-    }
-
     bool reverse = false;
-    if (argCount == 3) {
+
+    if (argCount == 2) {
+        if (IS_BOOL(args[1])) {
+            reverse = AS_BOOL(args[1]);
+        } else if (!IS_NIL(args[1])) {
+            vmRuntimeError("sorted() key function not supported yet.");
+            return NIL_VAL;
+        }
+    } else if (argCount == 3) {
+        if (!IS_NIL(args[1])) {
+            vmRuntimeError("sorted() key function not supported yet.");
+            return NIL_VAL;
+        }
         if (!IS_BOOL(args[2])) {
             vmRuntimeError("sorted() third argument must be bool.");
             return NIL_VAL;
