@@ -142,6 +142,14 @@ static bool check(Parser* parser, TokenType type) {
     return parser->current.type == type;
 }
 
+// Peek at the next token without consuming it
+static bool checkNext(TokenType type) {
+    Scanner backup = scanner;
+    Token next = scan_token();
+    scanner = backup;
+    return next.type == type;
+}
+
 static ASTNode* parseString(Parser* parser) {
     // Comment out debug statement
     // fprintf(stderr, "DEBUG: parseString processing token: type=%d, '%.*s'\n",
@@ -984,7 +992,8 @@ static void useStatement(Parser* parser, ASTNode** ast) {
     parts = realloc(parts, sizeof(ObjString*) * (partCount + 1));
     parts[partCount++] = allocateString(nameTok.start, nameTok.length);
 
-    while (match(parser, TOKEN_DOUBLE_COLON)) {
+    while (check(parser, TOKEN_DOUBLE_COLON) && checkNext(TOKEN_IDENTIFIER)) {
+        advance(parser); // consume '::'
         consume(parser, TOKEN_IDENTIFIER, "Expect identifier after '::'.");
         Token t = parser->previous;
         parts = realloc(parts, sizeof(ObjString*) * (partCount + 1));
