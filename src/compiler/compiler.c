@@ -9,6 +9,7 @@
 #include "../../include/chunk.h"
 #include "../../include/value.h"
 #include "../../include/vm.h"
+#include "../../include/modules.h"
 #include "../../include/debug.h"
 #include "../../include/scanner.h"
 #include "../../include/error.h"
@@ -1383,6 +1384,49 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             break;
         }
         case AST_USE: {
+            // Ensure module is loaded and bind its exports into the symbol table
+            const char* path = node->data.useStmt.path->chars;
+            InterpretResult r = compile_module_only(path);
+            if (r != INTERPRET_OK) {
+                compiler->hadError = true;
+                break;
+            }
+
+            Module* mod = get_module(path);
+            if (!mod) {
+                error(compiler, "Module not found after loading.");
+                break;
+            }
+
+            if (node->data.useStmt.symbolCount > 0) {
+                for (int i = 0; i < node->data.useStmt.symbolCount; i++) {
+                    const char* symName = node->data.useStmt.symbols[i]->chars;
+                    Export* ex = get_export(mod, symName);
+                    if (!ex) {
+                        error(compiler, "Symbol not found in module.");
+                        continue;
+                    }
+                    const char* bindName = symName;
+                    if (node->data.useStmt.symbolAliases && node->data.useStmt.symbolAliases[i]) {
+                        bindName = node->data.useStmt.symbolAliases[i]->chars;
+                    }
+                    Token t;
+                    t.start = bindName;
+                    t.length = (int)strlen(bindName);
+                    t.line = node->line;
+                    addSymbol(&compiler->symbols, bindName, t, variableTypes[ex->index], compiler->scopeDepth, ex->index);
+                }
+            } else {
+                for (int i = 0; i < mod->export_count; i++) {
+                    Export* ex = &mod->exports[i];
+                    Token t;
+                    t.start = ex->name;
+                    t.length = (int)strlen(ex->name);
+                    t.line = node->line;
+                    addSymbol(&compiler->symbols, ex->name, t, variableTypes[ex->index], compiler->scopeDepth, ex->index);
+                }
+            }
+
             node->valueType = NULL;
             break;
         }

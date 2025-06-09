@@ -2,12 +2,16 @@
 #include "../../include/file_utils.h"
 #include "../../include/parser.h"
 #include "../../include/compiler.h"
+#include "../../include/vm.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 
 static Module module_cache[UINT8_COUNT];
 static uint8_t module_cache_count = 0;
+
+extern VM vm;
 
 char* load_module_source(const char* resolved_path) {
     return readFile(resolved_path);
@@ -50,11 +54,62 @@ Module* get_module(const char* name) {
     return NULL;
 }
 
-Value* get_export(Module* module, const char* name) {
+Export* get_export(Module* module, const char* name) {
     for (int i = 0; i < module->export_count; i++) {
         if (strcmp(module->exports[i].name, name) == 0) {
-            return &module->exports[i].value;
+            return &module->exports[i];
         }
     }
     return NULL;
+}
+
+InterpretResult compile_module_only(const char* path) {
+    if (get_module(path)) return INTERPRET_OK;
+
+    char* source = load_module_source(path);
+    if (!source) {
+        const char* stdPath = getenv("ORUS_STD_PATH");
+        if (!stdPath) stdPath = "std";
+        char full[256];
+        snprintf(full, sizeof(full), "%s/%s", stdPath, path);
+        source = load_module_source(full);
+        if (!source) {
+            return INTERPRET_RUNTIME_ERROR;
+        }
+    }
+
+    ASTNode* ast = parse_module_source(source, path);
+    if (!ast) {
+        free(source);
+        return INTERPRET_COMPILE_ERROR;
+    }
+
+    int startGlobals = vm.variableCount;
+
+    Chunk* chunk = compile_module_ast(ast, path);
+    if (!chunk) {
+        free(source);
+        return INTERPRET_COMPILE_ERROR;
+    }
+
+    Module mod;
+    mod.module_name = strdup(path);
+    mod.bytecode = chunk;
+    mod.export_count = 0;
+    mod.executed = false;
+
+    for (int i = startGlobals; i < vm.variableCount && mod.export_count < UINT8_COUNT; i++) {
+        Export ex;
+        ex.name = vm.variableNames[i].name ? vm.variableNames[i].name->chars : NULL;
+        if (ex.name) {
+            ex.name = strdup(ex.name);
+            ex.value = vm.globals[i];
+            ex.index = i;
+            mod.exports[mod.export_count++] = ex;
+        }
+    }
+
+    register_module(&mod);
+    free(source);
+    return INTERPRET_OK;
 }

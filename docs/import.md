@@ -101,7 +101,7 @@ Module* get_module(const char* name);
 * If not, compile and run it in an isolated scope.
 * Store public functions/values into an `exports` map.
 
-### Step 5: Bind Imports to Symbol Table
+### Step 5: Bind Imports to Symbol Table ✅
 
 * When compiling the main file, inject the imported symbols into its scope.
 * If selective import: only bind those.

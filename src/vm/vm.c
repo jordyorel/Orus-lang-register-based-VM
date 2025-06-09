@@ -210,7 +210,20 @@ int findNative(ObjString* name) {
 static InterpretResult interpretModule(const char* path) {
     Module* cached = get_module(path);
     if (cached) {
-        return INTERPRET_OK;
+        if (cached->executed) return INTERPRET_OK;
+
+        Chunk* prevChunk = vm.chunk;
+        uint8_t* prevIp = vm.ip;
+        vm.chunk = cached->bytecode;
+        vm.ip = cached->bytecode->code;
+        InterpretResult res = run();
+        for (int i = 0; i < cached->export_count; i++) {
+            cached->exports[i].value = vm.globals[cached->exports[i].index];
+        }
+        cached->executed = true;
+        vm.chunk = prevChunk;
+        vm.ip = prevIp;
+        return res;
     }
 
     char* source = load_module_source(path);
@@ -226,6 +239,8 @@ static InterpretResult interpretModule(const char* path) {
         }
     }
 
+    int startGlobals = vm.variableCount;
+
     ASTNode* ast = parse_module_source(source, path);
     if (!ast) {
         free(source);
@@ -239,12 +254,12 @@ static InterpretResult interpretModule(const char* path) {
         RUNTIME_ERROR("Compilation failed for module.");
         return INTERPRET_COMPILE_ERROR;
     }
-    int startGlobals = vm.variableCount;
 
     Module mod;
     mod.module_name = strdup(path);
     mod.bytecode = chunk;
     mod.export_count = 0;
+    mod.executed = true;
 
     Chunk* prevChunk = vm.chunk;
     uint8_t* prevIp = vm.ip;
@@ -259,6 +274,7 @@ static InterpretResult interpretModule(const char* path) {
         if (ex.name) {
             ex.name = strdup(ex.name);
             ex.value = vm.globals[i];
+            ex.index = i;
             mod.exports[mod.export_count++] = ex;
         }
     }
@@ -269,6 +285,10 @@ static InterpretResult interpretModule(const char* path) {
 
     free(source);
     return result;
+}
+
+InterpretResult interpret_module(const char* path) {
+    return interpretModule(path);
 }
 
 static InterpretResult run() {

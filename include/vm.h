@@ -95,6 +95,7 @@ typedef enum {
 void initVM();
 void freeVM();
 InterpretResult interpret(const char* source);
+InterpretResult interpret_module(const char* path);
 InterpretResult runChunk(Chunk* chunk);  // Execute a pre-compiled chunk
 void push(Value value);
 Value pop();
