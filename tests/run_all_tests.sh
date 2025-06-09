@@ -24,9 +24,31 @@ run_category_tests() {
     local category_pass=0
     local category_fail=0
     
-    # Find all .orus files in the category directory
-    for test_file in "${SCRIPT_DIR}/${category}"/*.orus; do
-        if [ -f "$test_file" ]; then
+    if [ "$category" = "projects" ]; then
+        for proj_dir in "${SCRIPT_DIR}/${category}"/*; do
+            if [ -d "$proj_dir" ] && [ -f "$proj_dir/orus.json" ]; then
+                test_name=$(basename "$proj_dir")
+                echo -e "  Testing: ${test_name}..."
+                output=$($ORUS_EXECUTABLE --project "$proj_dir" 2>&1)
+                exit_code=$?
+
+                if [ $exit_code -eq 0 ]; then
+                    echo -e "  ${GREEN}✓ PASS${NC}: $test_name"
+                    ((category_pass++))
+                    ((passed++))
+                else
+                    echo -e "  ${RED}✗ FAIL${NC}: $test_name"
+                    echo -e "  Error details:"
+                    echo -e "  $output" | sed 's/^/  /'
+                    ((category_fail++))
+                    ((failed++))
+                fi
+            fi
+        done
+    else
+        # Find all .orus files in the category directory
+        for test_file in "${SCRIPT_DIR}/${category}"/*.orus; do
+            if [ -f "$test_file" ]; then
             test_name=$(basename "$test_file")
             echo -e "  Testing: ${test_name}..."
             
@@ -66,8 +88,9 @@ run_category_tests() {
                     ((failed++))
                 fi
             fi
-        fi
-    done
+            fi
+        done
+    fi
     echo -e "  ${YELLOW}Category summary:${NC} ${category_pass} passed, ${category_fail} failed"
     echo ""
 }
@@ -83,7 +106,7 @@ run_all_tests() {
     while IFS= read -r -d '' dir; do
         category="${dir#$SCRIPT_DIR/}"
         categories+=("$category")
-    done < <(find "$SCRIPT_DIR" -mindepth 1 -type d -print0)
+    done < <(find "$SCRIPT_DIR" -mindepth 1 -maxdepth 1 -type d -print0)
     
     # Sort categories
     IFS=$'\n' sorted_categories=($(sort <<<"${categories[*]}"))
