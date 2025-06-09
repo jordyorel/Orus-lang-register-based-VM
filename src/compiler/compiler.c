@@ -947,6 +947,39 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     break;
                 }
                 // Not an array: treat as normal call
+            } else if (tokenEquals(node->data.call.name, "sorted")) {
+                if (node->data.call.argCount < 1 || node->data.call.argCount > 3) {
+                    error(compiler, "sorted() takes between 1 and 3 arguments.");
+                    return;
+                }
+                ASTNode* arr = node->data.call.arguments;
+                typeCheckNode(compiler, arr);
+                if (compiler->hadError) return;
+                if (!arr->valueType || arr->valueType->kind != TYPE_ARRAY) {
+                    error(compiler, "sorted() first argument must be array.");
+                    return;
+                }
+                ASTNode* key = arr->next;
+                if (node->data.call.argCount >= 2) {
+                    typeCheckNode(compiler, key);
+                    if (compiler->hadError) return;
+                    if (!key->valueType || key->valueType->kind != TYPE_NIL) {
+                        error(compiler,
+                              "sorted() key function not supported yet.");
+                        return;
+                    }
+                }
+                if (node->data.call.argCount == 3) {
+                    ASTNode* rev = key->next;
+                    typeCheckNode(compiler, rev);
+                    if (compiler->hadError) return;
+                    if (!rev->valueType || rev->valueType->kind != TYPE_BOOL) {
+                        error(compiler, "sorted() third argument must be bool.");
+                        return;
+                    }
+                }
+                node->valueType = arr->valueType;
+                break;
             }
 
             uint8_t index = resolveVariable(compiler, node->data.call.name);
@@ -957,7 +990,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             if (index == UINT8_MAX && node->data.call.nativeIndex != -1) {
                 int expected = vm.nativeFunctions[node->data.call.nativeIndex].arity;
                 const char* builtinName = vm.nativeFunctions[node->data.call.nativeIndex].name->chars;
-                if (node->data.call.argCount != expected) {
+                if (expected >= 0 && node->data.call.argCount != expected) {
                     emitBuiltinArgCountError(compiler, &node->data.call.name,
                                             builtinName, expected,
                                             node->data.call.argCount);
