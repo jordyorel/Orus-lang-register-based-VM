@@ -977,6 +977,11 @@ static void returnStatement(Parser* parser, ASTNode** ast) {
 static void importStatement(Parser* parser, ASTNode** ast) {
     consume(parser, TOKEN_STRING, "Expect module path string after 'import'.");
     Token path = parser->previous;
+
+    // Emit an error recommending the new `use` statement syntax
+    errorAt(parser, &parser->previous,
+            "`import` statements are deprecated; use `use module::path` instead");
+
     consumeStatementEnd(parser);
     *ast = createImportNode(path);
     (*ast)->line = path.line;
