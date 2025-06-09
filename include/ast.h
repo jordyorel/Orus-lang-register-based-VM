@@ -30,7 +30,8 @@ typedef enum {
     AST_RETURN,
     AST_BREAK,
     AST_CONTINUE,
-    AST_IMPORT
+    AST_IMPORT,
+    AST_USE
 } ASTNodeType;
 
 typedef struct {
@@ -88,6 +89,16 @@ typedef struct {
 typedef struct {
     ObjString* path;
 } ImportData;
+
+typedef struct {
+    ObjString** parts;       // Module path components
+    int partCount;
+    ObjString** symbols;     // Imported symbols
+    ObjString** symbolAliases; // Aliases for symbols
+    int symbolCount;
+    ObjString* alias;        // Alias for the module
+    ObjString* path;         // Resolved file path
+} UseData;
 
 typedef struct {
     Token name;                 // Struct name
@@ -176,6 +187,7 @@ typedef struct ASTNode {
         TryData tryStmt;
         ReturnData returnStmt;
         ImportData importStmt;
+        UseData useStmt;
     } data;
     Type* valueType;
     int line; // Source line number for diagnostics
@@ -209,6 +221,7 @@ ASTNode* createFieldSetNode(ASTNode* object, Token name, ASTNode* value);
 ASTNode* createBreakNode();
 ASTNode* createContinueNode();
 ASTNode* createImportNode(Token path);
+ASTNode* createUseNode(UseData data);
 
 void freeASTNode(ASTNode* node);
 

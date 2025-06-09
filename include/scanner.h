@@ -29,7 +29,7 @@ typedef enum {
   TOKEN_PRINT, TOKEN_RETURN,
   TOKEN_TRUE, TOKEN_LET, TOKEN_WHILE, TOKEN_TRY, TOKEN_CATCH,
   TOKEN_INT, TOKEN_IN, TOKEN_BOOL,
-  TOKEN_STRUCT, TOKEN_IMPL, TOKEN_IMPORT,
+  TOKEN_STRUCT, TOKEN_IMPL, TOKEN_IMPORT, TOKEN_USE, TOKEN_AS,
   TOKEN_MATCH,
 
   // Add type tokens
@@ -41,6 +41,7 @@ typedef enum {
   TOKEN_NEWLINE,
 
   TOKEN_COLON,      // Add this for type annotations
+  TOKEN_DOUBLE_COLON,
 } TokenType;
 
 typedef struct {

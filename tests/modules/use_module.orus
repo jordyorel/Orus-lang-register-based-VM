@@ -1,4 +1,4 @@
-import "tests/modules/hello_module.orus"
+use tests::modules::hello_module
 
 fn main() {
 }

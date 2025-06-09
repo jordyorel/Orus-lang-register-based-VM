@@ -1,4 +1,4 @@
-import "tests/modules/not_there.orus"
+use tests::modules::not_there
 
 fn main() {
 }

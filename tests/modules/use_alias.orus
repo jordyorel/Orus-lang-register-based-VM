@@ -1,0 +1,4 @@
+use tests::modules::hello_module as hm
+
+fn main() {
+}
