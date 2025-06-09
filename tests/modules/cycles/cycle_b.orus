@@ -1,0 +1,7 @@
+use tests::modules::cycles::cycle_a
+
+fn greet_b() {
+    print("Hello from B")
+}
+
+fn main() {}

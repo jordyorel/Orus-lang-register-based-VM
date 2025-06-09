@@ -1388,13 +1388,20 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             const char* path = node->data.useStmt.path->chars;
             InterpretResult r = compile_module_only(path);
             if (r != INTERPRET_OK) {
+                if (moduleError) {
+                    error(compiler, moduleError);
+                } else if (r == INTERPRET_RUNTIME_ERROR) {
+                    errorFmt(compiler, "Module `%s` not found", path);
+                } else {
+                    errorFmt(compiler, "Failed to load module `%s`", path);
+                }
                 compiler->hadError = true;
                 break;
             }
 
             Module* mod = get_module(path);
             if (!mod) {
-                error(compiler, "Module not found after loading.");
+                errorFmt(compiler, "Module `%s` not found", path);
                 break;
             }
 
@@ -1403,7 +1410,8 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     const char* symName = node->data.useStmt.symbols[i]->chars;
                     Export* ex = get_export(mod, symName);
                     if (!ex) {
-                        error(compiler, "Symbol not found in module.");
+                        errorFmt(compiler, "Symbol `%s` not found in module `%s`",
+                                symName, path);
                         continue;
                     }
                     const char* bindName = symName;
