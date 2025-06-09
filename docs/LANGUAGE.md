@@ -451,7 +451,7 @@ For a complete list see [BUILTINS.md](BUILTINS.md).
 - `input(prompt)` – Display a prompt and return a line of user input.
 - `int(text)` – Convert a string to an `i32`, raising an error on failure.
 - `float(text)` – Convert a string to an `f64`, raising an error on failure.
-- `sorted(array, key, reverse)` – Return a new array with the elements sorted. The `key` and `reverse` arguments are optional.
+- `sorted(array, key, reverse)` – Return a new array with the elements sorted. The `key` argument is optional and reserved for future use. `reverse` may be passed as the second argument when no key is supplied.
 
 ```orus
 let arr: [i32; 1] = [1]
@@ -465,6 +465,7 @@ let age: i32 = int(input("How old are you? "))
 let height: f64 = float(input("Height in meters? "))
 let nums = [4, 2, 1]
 print(sorted(nums))
+print(sorted(nums, true))
 ```
 
 ## Error Handling
