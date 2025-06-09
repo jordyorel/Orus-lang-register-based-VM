@@ -322,6 +322,17 @@ ASTNode* createImportNode(Token path) {
     return node;
 }
 
+ASTNode* createUseNode(UseData data) {
+    ASTNode* node = allocateASTNode();
+    node->type = AST_USE;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.useStmt = data;
+    node->valueType = NULL;
+    return node;
+}
+
 ASTNode* createTryNode(ASTNode* tryBlock, Token errorName, ASTNode* catchBlock) {
     ASTNode* node = allocateASTNode();
     node->type = AST_TRY;

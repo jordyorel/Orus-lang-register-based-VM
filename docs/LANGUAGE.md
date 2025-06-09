@@ -171,14 +171,14 @@ Type conversion must be performed explicitly, as Orus does not perform implicit 
 
 Orus organizes code in files that serve as modules. The module system follows these rules:
 
-- Files can be imported using the `import` statement with a string literal path
-- Import statements must appear at the top level of a file, not inside functions
+- Modules are loaded using the `use` statement
+- `use` statements must appear at the top level of a file, not inside functions
 - Each file is executed only once during the program's lifetime, regardless of how many times it's imported
 - Modules can contain function definitions, struct definitions, and `impl` blocks
 
 Example:
 ```orus
-import "path/to/module.orus"  // Must appear at top level
+use path::to::module
 
 fn main() {
     // Call functions from the imported module

@@ -39,6 +39,7 @@ static void tryStatement(Parser* parser, ASTNode** ast);
 static void functionDeclaration(Parser* parser, ASTNode** ast);
 static void returnStatement(Parser* parser, ASTNode** ast);
 static void importStatement(Parser* parser, ASTNode** ast);
+static void useStatement(Parser* parser, ASTNode** ast);
 static void block(Parser* parser, ASTNode** ast);
 static void consumeStatementEnd(Parser* parser);
 static void synchronize(Parser* parser);
@@ -973,6 +974,84 @@ static void importStatement(Parser* parser, ASTNode** ast) {
     (*ast)->line = path.line;
 }
 
+static void useStatement(Parser* parser, ASTNode** ast) {
+    // Parse module path components
+    ObjString** parts = NULL;
+    int partCount = 0;
+
+    consume(parser, TOKEN_IDENTIFIER, "Expect module path after 'use'.");
+    Token nameTok = parser->previous;
+    parts = realloc(parts, sizeof(ObjString*) * (partCount + 1));
+    parts[partCount++] = allocateString(nameTok.start, nameTok.length);
+
+    while (match(parser, TOKEN_DOUBLE_COLON)) {
+        consume(parser, TOKEN_IDENTIFIER, "Expect identifier after '::'.");
+        Token t = parser->previous;
+        parts = realloc(parts, sizeof(ObjString*) * (partCount + 1));
+        parts[partCount++] = allocateString(t.start, t.length);
+    }
+
+    ObjString** symbols = NULL;
+    ObjString** aliases = NULL;
+    int symbolCount = 0;
+    ObjString* alias = NULL;
+
+    if (match(parser, TOKEN_AS)) {
+        consume(parser, TOKEN_IDENTIFIER, "Expect alias after 'as'.");
+        alias = allocateString(parser->previous.start, parser->previous.length);
+    } else if (match(parser, TOKEN_DOUBLE_COLON)) {
+        if (match(parser, TOKEN_LEFT_BRACE)) {
+            if (!check(parser, TOKEN_RIGHT_BRACE)) {
+                do {
+                    consume(parser, TOKEN_IDENTIFIER, "Expect symbol name.");
+                    Token st = parser->previous;
+                    symbols = realloc(symbols, sizeof(ObjString*) * (symbolCount + 1));
+                    aliases = realloc(aliases, sizeof(ObjString*) * (symbolCount + 1));
+                    symbols[symbolCount] = allocateString(st.start, st.length);
+                    aliases[symbolCount] = NULL;
+                    symbolCount++;
+                } while (match(parser, TOKEN_COMMA));
+            }
+            consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after symbol list.");
+        } else {
+            consume(parser, TOKEN_IDENTIFIER, "Expect symbol name after '::'.");
+            Token st = parser->previous;
+            symbols = realloc(symbols, sizeof(ObjString*) * 1);
+            aliases = realloc(aliases, sizeof(ObjString*) * 1);
+            symbols[0] = allocateString(st.start, st.length);
+            aliases[0] = NULL;
+            symbolCount = 1;
+            if (match(parser, TOKEN_AS)) {
+                consume(parser, TOKEN_IDENTIFIER, "Expect alias name.");
+                aliases[0] = allocateString(parser->previous.start, parser->previous.length);
+            }
+        }
+    }
+
+    // Build path string
+    int total = 0;
+    for (int i = 0; i < partCount; i++) total += parts[i]->length + 1;
+    const char* ext = ".orus";
+    total += 5; // for extension
+    char* buffer = malloc(total + 1);
+    int pos = 0;
+    for (int i = 0; i < partCount; i++) {
+        memcpy(buffer + pos, parts[i]->chars, parts[i]->length);
+        pos += parts[i]->length;
+        if (i < partCount - 1) buffer[pos++] = '/';
+    }
+    memcpy(buffer + pos, ext, 5);
+    pos += 5;
+    buffer[pos] = '\0';
+    ObjString* pathStr = allocateString(buffer, pos);
+    free(buffer);
+
+    UseData data = {parts, partCount, symbols, aliases, symbolCount, alias, pathStr};
+    consumeStatementEnd(parser);
+    *ast = createUseNode(data);
+    (*ast)->line = nameTok.line;
+}
+
 static void structDeclaration(Parser* parser, ASTNode** ast) {
     consume(parser, TOKEN_IDENTIFIER, "Expect struct name.");
     Token nameTok = parser->previous;
@@ -1207,6 +1286,12 @@ static void statement(Parser* parser, ASTNode** ast) {
         }
         importStatement(parser, ast);
 
+    } else if (match(parser, TOKEN_USE)) {
+        if (parser->functionDepth > 0) {
+            error(parser, "'use' must be at top level.");
+        }
+        useStatement(parser, ast);
+
     } else if (match(parser, TOKEN_BREAK)) {
         consumeStatementEnd(parser);
         *ast = createBreakNode();
@@ -1369,6 +1454,9 @@ ParseRule rules[] = {
     [TOKEN_EOF] = {NULL, NULL, PREC_NONE},
     [TOKEN_NEWLINE] = {NULL, NULL, PREC_NONE}, // Add explicit rule for newlines
     [TOKEN_MATCH] = {NULL, NULL, PREC_NONE},
+    [TOKEN_USE] = {NULL, NULL, PREC_NONE},
+    [TOKEN_AS] = {NULL, NULL, PREC_NONE},
+    [TOKEN_DOUBLE_COLON] = {NULL, NULL, PREC_NONE},
 };
 
 ParseRule* get_rule(TokenType type) { return &rules[type]; }

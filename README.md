@@ -10,7 +10,7 @@ include:
   dynamic arrays using `push`, `pop`, `len`, `sum`, `min` and `max`.
 - User defined `struct` types and `impl` blocks for instance or static methods.
 - Generic functions and structs with type parameters.
-- Modules and `import` statements for splitting code across files.
+- Modules and `use` statements for splitting code across files.
 - Control flow with `if`/`elif`/`else`, `for` ranges and `while` loops as well
   as `break` and `continue`.
 - A `range(start, end)` syntax for `for` loops to iterate over a sequence of

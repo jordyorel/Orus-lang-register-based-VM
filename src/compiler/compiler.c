@@ -1382,6 +1382,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             node->valueType = NULL;
             break;
         }
+        case AST_USE: {
+            node->valueType = NULL;
+            break;
+        }
 
         case AST_TRY: {
             beginScope(compiler);
@@ -2313,6 +2317,12 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         case AST_IMPORT: {
             // Emit an import instruction with module path constant
             int constant = makeConstant(compiler, node->data.importStmt.path);
+            writeOp(compiler, OP_IMPORT);
+            writeOp(compiler, (uint8_t)constant);
+            break;
+        }
+        case AST_USE: {
+            int constant = makeConstant(compiler, node->data.useStmt.path);
             writeOp(compiler, OP_IMPORT);
             writeOp(compiler, (uint8_t)constant);
             break;
