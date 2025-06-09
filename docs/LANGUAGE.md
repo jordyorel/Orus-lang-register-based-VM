@@ -463,6 +463,8 @@ let name = input("Enter your name: ")
 print("Hello, {}", name)
 let age: i32 = int(input("How old are you? "))
 let height: f64 = float(input("Height in meters? "))
+let nums = [4, 2, 1]
+print(sorted(nums, nil, false))
 ```
 
 ## Error Handling

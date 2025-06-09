@@ -23,5 +23,26 @@ description.
 | `float(text)` | Convert a string to an `f64`, raising an error on failure. |
 | `sorted(array, key, reverse)` | Return a new array with the elements sorted. |
 
+### `sorted`
+
+The `sorted()` builtin takes an array of numbers or strings and returns a new
+array containing the elements in order. The original array is left unchanged.
+
+```
+sorted(array, nil, reverse)
+```
+
+* **array** – The values to sort. All elements must be numbers or strings.
+* **key** – Reserved for a future key function. It must be `nil` for now.
+* **reverse** – Optional boolean. If `true`, the array is sorted in descending
+  order. Defaults to ascending order when omitted.
+
+```orus
+let data = [3, 1, 4, 1]
+print(sorted(data, nil, false))  // [1, 1, 3, 4]
+print(sorted(data, nil, true))   // [4, 3, 1, 1]
+```
+
+
 These built-ins form the core of the standard library and are sufficient for
 basic programs. More utility functions may be added in the future.
