@@ -2216,6 +2216,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             uint8_t funcIndex = vm.functionCount++;
             vm.functions[funcIndex].start = functionStart;
             vm.functions[funcIndex].arity = (uint8_t)paramCount;
+            vm.functions[funcIndex].chunk = compiler->chunk;
 
             // Store function index in globals for lookup at runtime
             vm.globals[node->data.function.index] = I32_VAL(funcIndex);

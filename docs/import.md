@@ -117,7 +117,7 @@ Module* get_module(const char* name);
 * `use tests::modules::hello_module as hm` binds all public members under `hm`
 * Access becomes `hm.greet()`
 
-### Step 7: Prevent Recompilation
+### Step 7: Prevent Recompilation ✅
 
 * Register compiled modules in a global cache.
 * On re-import, retrieve from cache instead of reloading/recompiling.
