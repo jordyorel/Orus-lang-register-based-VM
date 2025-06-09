@@ -26,15 +26,15 @@ struct Pair<A, B> {
 }
 
 // Function with multiple type parameters
-fn zip<A, B>(as: [A], bs: [B]) -> [Pair<A, B>] {
+fn zip<A, B>(arrA: [A], arrB: [B]) -> [Pair<A, B>] {
     let result = []
-    let length = len(as)
-    if (len(bs) < length) {
-        length = len(bs)
+    let length = len(arrA)
+    if (len(arrB) < length) {
+        length = len(arrB)
     }
     
     for i in 0..length {
-        let pair = Pair<A, B>{first: as[i], second: bs[i]}
+        let pair = Pair<A, B>{first: arrA[i], second: arrB[i]}
         result.push(pair)
     }
     
