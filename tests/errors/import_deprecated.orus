@@ -1,0 +1,3 @@
+import "tests/modules/hello_module.orus"
+
+fn main() {}
