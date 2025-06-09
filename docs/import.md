@@ -95,7 +95,7 @@ Module* get_module(const char* name);
 * Pass to `parser` → AST → `compiler` → bytecode (like normal program).
 * Store result in a global module registry.
 
-### Step 4: Execute Module Once
+### Step 4: Execute Module Once ✅
 
 * Use `get_module()` to check if already loaded.
 * If not, compile and run it in an isolated scope.

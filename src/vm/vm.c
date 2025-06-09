@@ -208,6 +208,11 @@ int findNative(ObjString* name) {
 }
 
 static InterpretResult interpretModule(const char* path) {
+    Module* cached = get_module(path);
+    if (cached) {
+        return INTERPRET_OK;
+    }
+
     char* source = load_module_source(path);
     if (!source) {
         const char* stdPath = getenv("ORUS_STD_PATH");
@@ -234,9 +239,12 @@ static InterpretResult interpretModule(const char* path) {
         RUNTIME_ERROR("Compilation failed for module.");
         return INTERPRET_COMPILE_ERROR;
     }
+    int startGlobals = vm.variableCount;
 
-    Module mod = {strdup(path), chunk};
-    register_module(&mod);
+    Module mod;
+    mod.module_name = strdup(path);
+    mod.bytecode = chunk;
+    mod.export_count = 0;
 
     Chunk* prevChunk = vm.chunk;
     uint8_t* prevIp = vm.ip;
@@ -244,6 +252,18 @@ static InterpretResult interpretModule(const char* path) {
     vm.chunk = chunk;
     vm.ip = chunk->code;
     InterpretResult result = run();
+
+    for (int i = startGlobals; i < vm.variableCount && mod.export_count < UINT8_COUNT; i++) {
+        Export ex;
+        ex.name = vm.variableNames[i].name ? vm.variableNames[i].name->chars : NULL;
+        if (ex.name) {
+            ex.name = strdup(ex.name);
+            ex.value = vm.globals[i];
+            mod.exports[mod.export_count++] = ex;
+        }
+    }
+
+    register_module(&mod);
     vm.chunk = prevChunk;
     vm.ip = prevIp;
 

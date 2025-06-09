@@ -49,3 +49,12 @@ Module* get_module(const char* name) {
     }
     return NULL;
 }
+
+Value* get_export(Module* module, const char* name) {
+    for (int i = 0; i < module->export_count; i++) {
+        if (strcmp(module->exports[i].name, name) == 0) {
+            return &module->exports[i].value;
+        }
+    }
+    return NULL;
+}
