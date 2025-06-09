@@ -30,6 +30,9 @@ bool register_module(Module* module);
 Module* get_module(const char* name);
 InterpretResult compile_module_only(const char* path);
 
+// Holds the last module loading error message if any
+extern const char* moduleError;
+
 // Ensure a module is loaded and executed. Returns INTERPRET_OK on success.
 InterpretResult interpret_module(const char* path);
 

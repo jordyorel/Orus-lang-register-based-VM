@@ -11,6 +11,11 @@
 
 static Module module_cache[UINT8_COUNT];
 static uint8_t module_cache_count = 0;
+static const char* loading_stack[UINT8_COUNT];
+static uint8_t loading_stack_count = 0;
+
+const char* moduleError = NULL;
+static char module_error_buffer[256];
 
 extern VM vm;
 
@@ -65,7 +70,23 @@ Export* get_export(Module* module, const char* name) {
 }
 
 InterpretResult compile_module_only(const char* path) {
-    if (get_module(path)) return INTERPRET_OK;
+    moduleError = NULL;
+    for (int i = 0; i < loading_stack_count; i++) {
+        if (strcmp(loading_stack[i], path) == 0) {
+            snprintf(module_error_buffer, sizeof(module_error_buffer),
+                     "Import cycle detected for module `%s`", path);
+            moduleError = module_error_buffer;
+            return INTERPRET_COMPILE_ERROR;
+        }
+    }
+
+    if (loading_stack_count < UINT8_MAX)
+        loading_stack[loading_stack_count++] = path;
+
+    if (get_module(path)) {
+        loading_stack_count--;
+        return INTERPRET_OK;
+    }
 
     char* source = load_module_source(path);
     if (!source) {
@@ -75,6 +96,10 @@ InterpretResult compile_module_only(const char* path) {
         snprintf(full, sizeof(full), "%s/%s", stdPath, path);
         source = load_module_source(full);
         if (!source) {
+            snprintf(module_error_buffer, sizeof(module_error_buffer),
+                     "Module `%s` not found", path);
+            moduleError = module_error_buffer;
+            loading_stack_count--;
             return INTERPRET_RUNTIME_ERROR;
         }
     }
@@ -82,6 +107,7 @@ InterpretResult compile_module_only(const char* path) {
     ASTNode* ast = parse_module_source(source, path);
     if (!ast) {
         free(source);
+        loading_stack_count--;
         return INTERPRET_COMPILE_ERROR;
     }
 
@@ -90,6 +116,7 @@ InterpretResult compile_module_only(const char* path) {
     Chunk* chunk = compile_module_ast(ast, path);
     if (!chunk) {
         free(source);
+        loading_stack_count--;
         return INTERPRET_COMPILE_ERROR;
     }
 
@@ -111,6 +138,7 @@ InterpretResult compile_module_only(const char* path) {
     }
 
     register_module(&mod);
+    loading_stack_count--;
     free(source);
     return INTERPRET_OK;
 }

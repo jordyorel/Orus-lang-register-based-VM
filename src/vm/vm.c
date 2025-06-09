@@ -23,6 +23,9 @@ VM vm;
 static void resetStack() { vm.stackTop = vm.stack; }
 Type* variableTypes[UINT8_COUNT] = {NULL};
 
+static const char* runtimeStack[UINT8_COUNT];
+static uint8_t runtimeStackCount = 0;
+
 
 static InterpretResult run();
 
@@ -210,9 +213,21 @@ int findNative(ObjString* name) {
 }
 
 static InterpretResult interpretModule(const char* path) {
+    for (int i = 0; i < runtimeStackCount; i++) {
+        if (strcmp(runtimeStack[i], path) == 0) {
+            RUNTIME_ERROR("Import cycle detected for module '%s'.", path);
+            return INTERPRET_RUNTIME_ERROR;
+        }
+    }
+    if (runtimeStackCount < UINT8_MAX)
+        runtimeStack[runtimeStackCount++] = path;
+
     Module* cached = get_module(path);
     if (cached) {
-        if (cached->executed) return INTERPRET_OK;
+        if (cached->executed) {
+            runtimeStackCount--;
+            return INTERPRET_OK;
+        }
 
         Chunk* prevChunk = vm.chunk;
         uint8_t* prevIp = vm.ip;
@@ -225,6 +240,7 @@ static InterpretResult interpretModule(const char* path) {
         cached->executed = true;
         vm.chunk = prevChunk;
         vm.ip = prevIp;
+        runtimeStackCount--;
         return res;
     }
 
@@ -236,7 +252,8 @@ static InterpretResult interpretModule(const char* path) {
         snprintf(full, sizeof(full), "%s/%s", stdPath, path);
         source = load_module_source(full);
         if (!source) {
-            RUNTIME_ERROR("Could not open module '%s'.", path);
+            RUNTIME_ERROR("Module '%s' not found", path);
+            runtimeStackCount--;
             return INTERPRET_RUNTIME_ERROR;
         }
     }
@@ -247,6 +264,7 @@ static InterpretResult interpretModule(const char* path) {
     if (!ast) {
         free(source);
         RUNTIME_ERROR("Parsing failed for module.");
+        runtimeStackCount--;
         return INTERPRET_COMPILE_ERROR;
     }
 
@@ -254,6 +272,7 @@ static InterpretResult interpretModule(const char* path) {
     if (!chunk) {
         free(source);
         RUNTIME_ERROR("Compilation failed for module.");
+        runtimeStackCount--;
         return INTERPRET_COMPILE_ERROR;
     }
 
@@ -285,6 +304,7 @@ static InterpretResult interpretModule(const char* path) {
     vm.chunk = prevChunk;
     vm.ip = prevIp;
 
+    runtimeStackCount--;
     free(source);
     return result;
 }
