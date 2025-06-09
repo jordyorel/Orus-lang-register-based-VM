@@ -173,7 +173,7 @@ Orus organizes code in files that serve as modules. The module system follows th
 
 - Modules are loaded using the `use` statement
 - `use` statements must appear at the top level of a file, not inside functions
-- Each file is executed only once during the program's lifetime, regardless of how many times it's imported
+- Importing the same module more than once results in a runtime error
 - Modules can contain function definitions, struct definitions, and `impl` blocks
 - Module files do **not** require a `main` function and are not meant to be executed directly
 

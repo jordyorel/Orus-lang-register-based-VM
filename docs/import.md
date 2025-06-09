@@ -98,6 +98,7 @@ Module* get_module(const char* name);
 ### Step 4: Execute Module Once ✅
 
 * Use `get_module()` to check if already loaded.
+* If the module has already executed, report an error instead of running it again.
 * If not, compile and run it in an isolated scope.
 * Store public functions/values into an `exports` map.
 
