@@ -363,6 +363,64 @@ void emitUndefinedFunctionError(Compiler* compiler, Token* token) {
     compiler->hadError = true;
 }
 
+void emitPrivateFunctionError(Compiler* compiler, Token* token) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+
+    Diagnostic diagnostic;
+    memset(&diagnostic, 0, sizeof(Diagnostic));
+
+    diagnostic.code = ERROR_PRIVATE_ACCESS;
+    diagnostic.primarySpan.line = token->line;
+    const char* lineStart = token->start;
+    while (lineStart > compiler->sourceCode && lineStart[-1] != '\n') lineStart--;
+    diagnostic.primarySpan.column = (int)(token->start - lineStart) + 1;
+    diagnostic.primarySpan.length = token->length;
+    diagnostic.primarySpan.filePath = compiler->filePath;
+
+    char msgBuffer[128];
+    snprintf(msgBuffer, sizeof(msgBuffer),
+             "function `%.*s` is private", token->length, token->start);
+    diagnostic.text.message = msgBuffer;
+    diagnostic.text.help = strdup("mark the function with `pub` to allow access from other modules");
+    const char* note = "only public items can be accessed from other modules";
+    diagnostic.text.notes = (char**)&note;
+    diagnostic.text.noteCount = 1;
+
+    emitDiagnostic(&diagnostic);
+    if (diagnostic.text.help) free(diagnostic.text.help);
+    compiler->hadError = true;
+}
+
+void emitPrivateVariableError(Compiler* compiler, Token* token) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+
+    Diagnostic diagnostic;
+    memset(&diagnostic, 0, sizeof(Diagnostic));
+
+    diagnostic.code = ERROR_PRIVATE_ACCESS;
+    diagnostic.primarySpan.line = token->line;
+    const char* lineStart = token->start;
+    while (lineStart > compiler->sourceCode && lineStart[-1] != '\n') lineStart--;
+    diagnostic.primarySpan.column = (int)(token->start - lineStart) + 1;
+    diagnostic.primarySpan.length = token->length;
+    diagnostic.primarySpan.filePath = compiler->filePath;
+
+    char msgBuffer[128];
+    snprintf(msgBuffer, sizeof(msgBuffer),
+             "variable `%.*s` is private", token->length, token->start);
+    diagnostic.text.message = msgBuffer;
+    diagnostic.text.help = strdup("mark the variable with `pub` to allow access from other modules");
+    const char* note = "only public items can be accessed from other modules";
+    diagnostic.text.notes = (char**)&note;
+    diagnostic.text.noteCount = 1;
+
+    emitDiagnostic(&diagnostic);
+    if (diagnostic.text.help) free(diagnostic.text.help);
+    compiler->hadError = true;
+}
+
 void emitStructFieldTypeMismatchError(Compiler* compiler, Token* token, const char* structName, const char* fieldName, const char* expectedType, const char* actualType) {
     if (compiler->panicMode) return;
     compiler->panicMode = true;

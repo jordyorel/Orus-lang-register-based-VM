@@ -31,6 +31,7 @@ typedef enum {
     ERROR_IMMUTABLE_ASSIGNMENT = 594,  // E0594
     ERROR_SCOPE_ERROR        = 426,    // E0426
     ERROR_FUNCTION_CALL      =  61,    // E0061
+    ERROR_PRIVATE_ACCESS     = 604,    // E0604
     ERROR_GENERAL            =   2,    // E0002
     ERROR_PARSE                = 1,    // E0001
 } ErrorCode;
@@ -89,6 +90,8 @@ void emitGenericTypeError(Compiler* compiler,
                          const char* help,
                          const char* note);
 void emitUndefinedFunctionError(Compiler* compiler, Token* token);
+void emitPrivateFunctionError(Compiler* compiler, Token* token);
+void emitPrivateVariableError(Compiler* compiler, Token* token);
 void emitStructFieldTypeMismatchError(Compiler* compiler, Token* token, const char* structName, const char* fieldName, const char* expectedType, const char* actualType);
 void emitFieldAccessNonStructError(Compiler* compiler, Token* token, const char* actualType);
 void emitIsTypeSecondArgError(Compiler* compiler, Token* token, const char* actualType);

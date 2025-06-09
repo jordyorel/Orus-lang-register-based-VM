@@ -42,6 +42,18 @@ static int firstNonWhitespaceColumn(Compiler* compiler, int line) {
     return column;
 }
 
+static uint8_t findPrivateGlobal(const char* name, int length) {
+    for (int i = 0; i < vm.variableCount; i++) {
+        if (!vm.variableNames[i].name) continue;
+        if (vm.variableNames[i].length == length &&
+            strncmp(vm.variableNames[i].name->chars, name, length) == 0 &&
+            vm.variableNames[i].name->chars[length] == '\0') {
+            if (!vm.publicGlobals[i]) return (uint8_t)i;
+        }
+    }
+    return UINT8_MAX;
+}
+
 static void generateCode(Compiler* compiler, ASTNode* node);
 static void addBreakJump(Compiler* compiler, int jumpPos);
 static void patchBreakJumps(Compiler* compiler);
@@ -374,6 +386,11 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 memcpy(tempName, node->data.variable.name.start,
                        node->data.variable.name.length);
                 tempName[node->data.variable.name.length] = '\0';
+                uint8_t priv = findPrivateGlobal(tempName, node->data.variable.name.length);
+                if (priv != UINT8_MAX) {
+                    emitPrivateVariableError(compiler, &node->data.variable.name);
+                    return;
+                }
                 Symbol* any = findAnySymbol(&compiler->symbols, tempName);
                 if (any && !any->active) {
                     emitUndefinedVarError(compiler,
@@ -1066,6 +1083,14 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             }
 
             if (index == UINT8_MAX) {
+                char tempName[node->data.call.name.length + 1];
+                memcpy(tempName, node->data.call.name.start, node->data.call.name.length);
+                tempName[node->data.call.name.length] = '\0';
+                uint8_t priv = findPrivateGlobal(tempName, node->data.call.name.length);
+                if (priv != UINT8_MAX && variableTypes[priv] && variableTypes[priv]->kind == TYPE_FUNCTION) {
+                    emitPrivateFunctionError(compiler, &node->data.call.name);
+                    return;
+                }
                 if (node->data.call.nativeIndex != -1 &&
                     (tokenEquals(node->data.call.name, "sum") ||
                      tokenEquals(node->data.call.name, "min") ||
