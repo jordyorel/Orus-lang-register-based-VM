@@ -23,6 +23,7 @@ void initTypeSystem(void) {
     primitiveTypes[TYPE_F64] = createPrimitiveType(TYPE_F64);
     primitiveTypes[TYPE_BOOL] = createPrimitiveType(TYPE_BOOL);
     primitiveTypes[TYPE_STRING] = createPrimitiveType(TYPE_STRING);
+    primitiveTypes[TYPE_VOID] = createPrimitiveType(TYPE_VOID);
     primitiveTypes[TYPE_NIL] = createPrimitiveType(TYPE_NIL);
     
     typeSystemInitialized = true;
@@ -157,6 +158,7 @@ const char* getTypeName(TypeKind kind) {
         case TYPE_F64: return "f64";
         case TYPE_BOOL: return "bool";
         case TYPE_STRING: return "string";
+        case TYPE_VOID: return "void";
         case TYPE_NIL: return "nil";
         case TYPE_ARRAY: return "array";
         case TYPE_FUNCTION: return "function";

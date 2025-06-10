@@ -2453,7 +2453,10 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
             // Emit body and return
             generateCode(compiler, node->data.function.body);
-            writeOp(compiler, OP_NIL);
+            if (node->data.function.returnType &&
+                node->data.function.returnType->kind != TYPE_VOID) {
+                writeOp(compiler, OP_NIL);
+            }
             writeOp(compiler, OP_RETURN);
 
             // Patch jump over function
@@ -2526,9 +2529,6 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             if (node->data.returnStmt.value != NULL) {
                 generateCode(compiler, node->data.returnStmt.value);
                 if (compiler->hadError) return;
-            } else {
-                // If no return value, return nil
-                writeOp(compiler, OP_NIL);
             }
 
             // Return from the function
@@ -3016,7 +3016,12 @@ bool compile(ASTNode* ast, Compiler* compiler, bool requireMain) {
         writeOp(compiler, OP_CALL);
         writeOp(compiler, mainIndex);
         writeOp(compiler, 0); // no arguments
-        writeOp(compiler, OP_POP); // discard return value
+        Type* mainType = variableTypes[mainIndex];
+        if (!mainType || mainType->kind != TYPE_FUNCTION ||
+            !mainType->info.function.returnType ||
+            mainType->info.function.returnType->kind != TYPE_VOID) {
+            writeOp(compiler, OP_POP); // discard return value
+        }
     } else if (requireMain) {
         error(compiler, "No 'main' function defined.");
     }

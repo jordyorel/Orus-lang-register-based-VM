@@ -10,6 +10,7 @@ typedef enum {
     TYPE_F64,
     TYPE_BOOL,
     TYPE_STRING,
+    TYPE_VOID,
     TYPE_NIL,
     TYPE_ARRAY,
     TYPE_FUNCTION,

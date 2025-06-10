@@ -950,7 +950,7 @@ static void functionDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
         returnType = parseType(parser);
         if (parser->hadError) return;
     } else {
-        returnType = getPrimitiveType(TYPE_NIL);
+        returnType = getPrimitiveType(TYPE_VOID);
     }
 
     if (hasSelf && parser->currentImplType != NULL) {
