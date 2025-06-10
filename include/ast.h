@@ -54,6 +54,7 @@ typedef struct {
     struct ASTNode* format;     // Format string expression
     struct ASTNode* arguments;  // Linked list of argument expressions
     int argCount;               // Number of arguments
+    bool newline;               // Whether to append newline
 } PrintData;
 
 typedef struct {
@@ -206,7 +207,7 @@ ASTNode* createBinaryNode(Token operator, ASTNode * left, ASTNode* right);
 ASTNode* createUnaryNode(Token operator, ASTNode * operand);
 ASTNode* createVariableNode(Token name, uint8_t index);
 ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer, bool isMutable);
-ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount, int line);
+ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount, bool newline, int line);
 ASTNode* createAssignmentNode(Token name, ASTNode* value);
 ASTNode* createIfNode(ASTNode* condition, ASTNode* thenBranch, ASTNode* elifConditions, ASTNode* elifBranches, ASTNode* elseBranch);
 ASTNode* createBlockNode(ASTNode* statements, bool scoped);

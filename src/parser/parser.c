@@ -1208,7 +1208,17 @@ static void statement(Parser* parser, ASTNode** ast) {
 
     *ast = NULL;  // Safe default
 
+    bool didPrint = false;
+    bool newline = false;
     if (match(parser, TOKEN_PRINT)) {
+        didPrint = true;
+        newline = false;
+    } else if (match(parser, TOKEN_PRINTLN)) {
+        didPrint = true;
+        newline = true;
+    }
+
+    if (didPrint) {
         if (parser->functionDepth == 0) {
             error(parser, "'print' outside of function.");
         }
@@ -1261,7 +1271,7 @@ static void statement(Parser* parser, ASTNode** ast) {
                     "Expect ')' after print arguments. (Hint: string arguments must be quoted)");
             consumeStatementEnd(parser);
 
-            *ast = createPrintNode(formatExpr, arguments, argCount, parser->previous.line);
+            *ast = createPrintNode(formatExpr, arguments, argCount, newline, parser->previous.line);
         } else {
             // This is a simple print without interpolation
             consume(parser, TOKEN_RIGHT_PAREN,
@@ -1269,7 +1279,7 @@ static void statement(Parser* parser, ASTNode** ast) {
             consumeStatementEnd(parser);
             
             // Create a print node with no additional arguments
-            *ast = createPrintNode(formatExpr, NULL, 0, parser->previous.line);
+            *ast = createPrintNode(formatExpr, NULL, 0, newline, parser->previous.line);
         }
     } else if (match(parser, TOKEN_IF)) {
         ifStatement(parser, ast);
@@ -1754,6 +1764,7 @@ static void synchronize(Parser* parser) {
             case TOKEN_IF:
             case TOKEN_WHILE:
             case TOKEN_PRINT:
+            case TOKEN_PRINTLN:
             case TOKEN_RETURN:
                 return;
             default:
