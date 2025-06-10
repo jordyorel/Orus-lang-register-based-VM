@@ -660,7 +660,7 @@ static InterpretResult run() {
                 Type* declared = NULL;
                 if (vm.frameCount > 0) {
                     uint8_t funcIndex = vm.frames[vm.frameCount - 1].functionIndex;
-                    if (funcIndex < UINT8_COUNT && vm.globalTypes[funcIndex] &&
+                    if (vm.globalTypes[funcIndex] &&
                         vm.globalTypes[funcIndex]->kind == TYPE_FUNCTION) {
                         declared = vm.globalTypes[funcIndex]->info.function.returnType;
                     }
