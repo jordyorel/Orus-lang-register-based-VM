@@ -4,15 +4,15 @@ struct SeedBox {
 
 fn rand(store: [SeedBox; 1]) -> f64 {
 
-    let a: u32 = 1664525
-    let c: u32 = 1013904223
-    let m: u32 = 4294967295
+    let a: u32 = 1664525 as u32
+    let c: u32 = 1013904223 as u32
+    let m: u32 = 4294967295 as u32
 
     let current = store[0].value
     let next = (a * current + c) % m
     store[0].value = next
 
-    let numerator: f64 = next * 1.0
+    let numerator: f64 = (next as f64) * 1.0
     return numerator / 4294967296.0
 }
 
@@ -21,12 +21,12 @@ fn seed_random(store: [SeedBox; 1], new_seed: u32) {
 }
 
 fn rand_int(store: [SeedBox; 1], min: i32, max: i32) -> i32 {
-    let range: f64 = (max - min + 1) * 1.0
-    return min + (rand(store) * range) / 1
+    let range: f64 = ((max - min + 1) as f64) * 1.0
+    return min + (((rand(store) * range) / 1.0) as i32)
 }
 
 fn main() {
-    let store: [SeedBox; 1] = [SeedBox{ value: 123456789 }]
+    let store: [SeedBox; 1] = [SeedBox{ value: 123456789 as u32 }]
 
     print("Random float: {}", rand(store))
 

@@ -2,21 +2,21 @@
 
 fn main() {
     let i32_val: i32 = 42
-    let u32_val: u32 = 100
+    let u32_val: u32 = 100 as u32
     let f64_val: f64 = 3.14
 
     print("Type Conversion Test:")
 
     // i32 to f64 conversion
-    let conv1 = i32_val + f64_val
+    let conv1 = (i32_val as f64) + f64_val
     print("i32 + f64 conversion (42 + 3.14): {}", conv1)
 
     // u32 to f64 conversion
-    let conv2 = u32_val + f64_val
+    let conv2 = (u32_val as f64) + f64_val
     print("u32 + f64 conversion (100 + 3.14): {} ", conv2)
 
     // Fix: Convert u32_val to i32 before division
-    let u32_as_i32: i32 = 100  // Create a new i32 variable with the same value
+    let u32_as_i32: i32 = 100
     let div_result = i32_val / u32_as_i32
     print("Division operation (42 / 100): {} ", div_result)
 }

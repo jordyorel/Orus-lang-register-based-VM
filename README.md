@@ -25,6 +25,7 @@ include:
 - User input via `input(prompt)` for interactive programs.
 - Macro helpers for generic dynamic arrays.
 - Variables are immutable by default. Use `let mut` for reassignment.
+  See [docs/MUTABILITY.md](docs/MUTABILITY.md) for a detailed explanation.
 - Explicit numeric casting with the `as` keyword; no implicit conversions.
 
 The repository contains the source code for the interpreter and a collection of sample programs used as tests. For a quick tour of the language syntax see [`docs/LANGUAGE.md`](docs/LANGUAGE.md). Additional notes on the generics and array helper are available in [`docs/GENERICS.md`](docs/GENERICS.md). A future compilation roadmap is outlined in [`docs/COMPILATION_ROADMAP.md`](docs/COMPILATION_ROADMAP.md). For a summary of built-in functions consult [`docs/BUILTINS.md`](docs/BUILTINS.md).

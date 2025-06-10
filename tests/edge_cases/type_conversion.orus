@@ -2,7 +2,7 @@
 fn main() {
     let i: i32 = 5
     let f: f64 = 2.5
-    print(i + f)
+    print((i as f64) + f)
     let text: string = "number:" + i
     print(text)
 }

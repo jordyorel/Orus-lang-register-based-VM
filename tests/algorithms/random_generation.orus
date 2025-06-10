@@ -8,7 +8,7 @@ fn rand_i32(seed: [i32; 1]) -> i32 {
 }
 
 fn rand(seed: [i32; 1]) -> f64 {
-    return rand_i32(seed) / 4294967296.0
+    return (rand_i32(seed) as f64) / 4294967296.0
 }
 
 // Returns an integer in [min, max]

@@ -57,6 +57,10 @@ typedef enum {
     // Type conversion opcodes
     OP_I32_TO_F64,
     OP_U32_TO_F64,
+    OP_I32_TO_U32,
+    OP_U32_TO_I32,
+    OP_F64_TO_I32,
+    OP_F64_TO_U32,
     OP_I32_TO_STRING,
     OP_U32_TO_STRING,
     OP_F64_TO_STRING,
