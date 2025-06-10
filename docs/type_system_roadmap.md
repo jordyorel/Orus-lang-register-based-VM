@@ -46,11 +46,11 @@ name = "world"
 
 ### ✔️ Tasks
 
-- [] Implement `as` keyword for type casting
-- [] Support casting between `i32`, `u32`, and `f64`
-- [] Enforce truncation behavior for float → int conversions
-- [] Disallow implicit coercion
-- [] Add parser/compiler support for syntax: `value as Type`
+- [x] Implement `as` keyword for type casting
+- [x] Support casting between `i32`, `u32`, and `f64`
+- [x] Enforce truncation behavior for float → int conversions
+- [x] Disallow implicit coercion
+- [x] Add parser/compiler support for syntax: `value as Type`
 
 ---
 

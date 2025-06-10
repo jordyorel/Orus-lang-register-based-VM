@@ -116,7 +116,7 @@ Variables are introduced with the `let` keyword and follow these rules:
 
 - All variables must be explicitly declared before use
 - Type annotations are optional when the type can be inferred
-- Variables are immutable by default and can only be reassigned when declared with `let mut`
+- Variables are immutable by default and can only be reassigned when declared with `let mut`. See [MUTABILITY.md](MUTABILITY.md) for a deep dive.
 - A variable's type is fixed after its declaration or first assignment
 - Variable scope is block-based
 - Variables cannot be declared outside functions

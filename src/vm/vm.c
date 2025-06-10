@@ -532,6 +532,42 @@ static InterpretResult run() {
                 vmPush(&vm, F64_VAL(floatValue));
                 break;
             }
+            case OP_I32_TO_U32: {
+                if (!IS_I32(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be an integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int32_t value = AS_I32(vmPop(&vm));
+                vmPush(&vm, U32_VAL((uint32_t)value));
+                break;
+            }
+            case OP_U32_TO_I32: {
+                if (!IS_U32(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be an unsigned integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                uint32_t value = AS_U32(vmPop(&vm));
+                vmPush(&vm, I32_VAL((int32_t)value));
+                break;
+            }
+            case OP_F64_TO_I32: {
+                if (!IS_F64(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a floating point number.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                double value = AS_F64(vmPop(&vm));
+                vmPush(&vm, I32_VAL((int32_t)value));
+                break;
+            }
+            case OP_F64_TO_U32: {
+                if (!IS_F64(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a floating point number.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                double value = AS_F64(vmPop(&vm));
+                vmPush(&vm, U32_VAL((uint32_t)value));
+                break;
+            }
             case OP_I32_TO_STRING: {
                 if (!IS_I32(vmPeek(&vm, 0))) {
                     RUNTIME_ERROR("Operand must be an integer.");

@@ -207,36 +207,8 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                         node->valueType = getPrimitiveType(TYPE_STRING);
                         node->data.operation.convertLeft = leftType->kind != TYPE_STRING && leftType->kind != TYPE_NIL;
                         node->data.operation.convertRight = rightType->kind != TYPE_STRING && rightType->kind != TYPE_NIL;
-                    } else if (leftType->kind == TYPE_F64 || rightType->kind == TYPE_F64) {
-                        node->valueType = getPrimitiveType(TYPE_F64);
-
-                        node->data.operation.convertLeft =
-                            (leftType->kind == TYPE_I32 || leftType->kind == TYPE_U32);
-                        node->data.operation.convertRight =
-                            (rightType->kind == TYPE_I32 || rightType->kind == TYPE_U32);
-                    } else if (leftType->kind == TYPE_U32 && rightType->kind == TYPE_I32 &&
-                               node->right->type == AST_LITERAL &&
-                               IS_I32(node->right->data.literal) &&
-                               AS_I32(node->right->data.literal) >= 0) {
-                        int32_t value = AS_I32(node->right->data.literal);
-                        node->right->data.literal = U32_VAL((uint32_t)value);
-                        node->right->valueType = getPrimitiveType(TYPE_U32);
-                        rightType = node->right->valueType;
-                        node->valueType = getPrimitiveType(TYPE_U32);
-                        node->data.operation.convertLeft = false;
-                        node->data.operation.convertRight = false;
-                    } else if (leftType->kind == TYPE_I32 && rightType->kind == TYPE_U32 &&
-                               node->left->type == AST_LITERAL &&
-                               IS_I32(node->left->data.literal) &&
-                               AS_I32(node->left->data.literal) >= 0) {
-                        int32_t value = AS_I32(node->left->data.literal);
-                        node->left->data.literal = U32_VAL((uint32_t)value);
-                        node->left->valueType = getPrimitiveType(TYPE_U32);
-                        leftType = node->left->valueType;
-                        node->valueType = getPrimitiveType(TYPE_U32);
-                        node->data.operation.convertLeft = false;
-                        node->data.operation.convertRight = false;
-                    } else if (typesEqual(leftType, rightType)) {
+                    } else if (typesEqual(leftType, rightType) &&
+                               (leftType->kind == TYPE_I32 || leftType->kind == TYPE_U32 || leftType->kind == TYPE_F64)) {
                         node->valueType = leftType;
                         node->data.operation.convertLeft = false;
                         node->data.operation.convertRight = false;
@@ -244,7 +216,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                         emitTokenError(compiler,
                                        &node->data.operation.operator,
                                        ERROR_GENERAL,
-                                       "Type mismatch in addition operation.");
+                                       "Type mismatch in addition operation. Use 'as' for explicit casts.");
                         return;
                     }
                     break;
@@ -252,56 +224,27 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 case TOKEN_MINUS:
                 case TOKEN_STAR:
                 case TOKEN_SLASH: {
-                    // If either operand is a float, the result is a float
-                    if (leftType->kind == TYPE_F64 ||
-                        rightType->kind == TYPE_F64) {
-                        node->valueType = getPrimitiveType(TYPE_F64);
-
-                        // Mark operands for conversion if needed
-                        if (leftType->kind == TYPE_I32 || leftType->kind == TYPE_U32) {
-
-                            node->data.operation.convertLeft = true;
-                        } else {
-                            node->data.operation.convertLeft = false;
-                        }
-
-                        if (rightType->kind == TYPE_I32 || rightType->kind == TYPE_U32) {
-
-                            node->data.operation.convertRight = true;
-                        } else {
-                            node->data.operation.convertRight = false;
-                        }
-                    }
-                    // If both operands are the same type, the result is that type
-                    else if (typesEqual(leftType, rightType)) {
+                    if (typesEqual(leftType, rightType) &&
+                        (leftType->kind == TYPE_I32 || leftType->kind == TYPE_U32 || leftType->kind == TYPE_F64)) {
                         node->valueType = leftType;
                         node->data.operation.convertLeft = false;
                         node->data.operation.convertRight = false;
-                    }
-                    // Otherwise, it's a type mismatch
-                    else {
+                    } else {
                         error(compiler,
-                              "Type mismatch in arithmetic operation.");
+                              "Type mismatch in arithmetic operation. Use explicit 'as' casts.");
                         return;
                     }
                     break;
                 }
 
                 case TOKEN_MODULO: {
-                    if (leftType->kind != TYPE_I32 &&
-                        leftType->kind != TYPE_U32) {
+                    if (!typesEqual(leftType, rightType) ||
+                        (leftType->kind != TYPE_I32 && leftType->kind != TYPE_U32)) {
                         error(compiler,
-                              "Left operand of modulo must be an integer.");
+                              "Modulo operands must both be i32 or u32.");
                         return;
                     }
-                    if (rightType->kind != TYPE_I32 &&
-                        rightType->kind != TYPE_U32) {
-                        error(compiler,
-                              "Right operand of modulo must be an integer.");
-                        return;
-                    }
-                    node->valueType =
-                        leftType;  // Result matches left operand type
+                    node->valueType = leftType;
                     break;
                 }
 
@@ -412,11 +355,30 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 error(compiler, "Invalid cast types.");
                 return;
             }
+
+            bool allowed = false;
+            if ((src->kind == TYPE_I32 && (dst->kind == TYPE_U32 || dst->kind == TYPE_F64)) ||
+                (src->kind == TYPE_U32 && (dst->kind == TYPE_I32 || dst->kind == TYPE_F64)) ||
+                (src->kind == TYPE_F64 && (dst->kind == TYPE_I32 || dst->kind == TYPE_U32)) ||
+                (src->kind == dst->kind)) {
+                allowed = true;
+            }
+
+            if (!allowed) {
+                error(compiler, "Unsupported cast between these types.");
+                return;
+            }
             if (node->left->type == AST_LITERAL) {
                 if (src->kind == TYPE_I32 && dst->kind == TYPE_U32) {
-                    if (IS_I32(node->left->data.literal) && AS_I32(node->left->data.literal) >= 0) {
+                    if (IS_I32(node->left->data.literal)) {
                         int32_t v = AS_I32(node->left->data.literal);
                         node->left->data.literal = U32_VAL((uint32_t)v);
+                        node->left->valueType = dst;
+                    }
+                } else if (src->kind == TYPE_U32 && dst->kind == TYPE_I32) {
+                    if (IS_U32(node->left->data.literal)) {
+                        uint32_t v = AS_U32(node->left->data.literal);
+                        node->left->data.literal = I32_VAL((int32_t)v);
                         node->left->valueType = dst;
                     }
                 } else if ((src->kind == TYPE_I32 || src->kind == TYPE_U32) && dst->kind == TYPE_F64) {
@@ -494,56 +456,6 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
             if (declType) {
                 if (initType) {
-                    // Allow i32 literals to be used for u32 variables if the value is non-negative
-                    if (declType->kind == TYPE_U32 && initType->kind == TYPE_I32) {
-                        if (IS_I32(node->data.let.initializer->data.literal) &&
-                            AS_I32(node->data.let.initializer->data.literal) >= 0) {
-                            // Convert the literal to u32
-                            int32_t value = AS_I32(node->data.let.initializer->data.literal);
-                            node->data.let.initializer->data.literal = U32_VAL((uint32_t)value);
-                            node->data.let.initializer->valueType = declType;
-                            initType = declType;
-                        }
-                    }
-                    // Allow i32/u32 literals to be used for f64 variables
-                    else if (declType->kind == TYPE_F64 &&
-                            (initType->kind == TYPE_I32 || initType->kind == TYPE_U32)) {
-                        if (IS_I32(node->data.let.initializer->data.literal)) {
-                            int32_t value = AS_I32(node->data.let.initializer->data.literal);
-                            node->data.let.initializer->data.literal = F64_VAL((double)value);
-                            node->data.let.initializer->valueType = declType;
-                            initType = declType;
-                        } else if (IS_U32(node->data.let.initializer->data.literal)) {
-                            uint32_t value = AS_U32(node->data.let.initializer->data.literal);
-                            node->data.let.initializer->data.literal = F64_VAL((double)value);
-                            node->data.let.initializer->valueType = declType;
-                            initType = declType;
-                        }
-                    }
-                    // Allow arrays of i32 literals for u32 array variables
-                    else if (declType->kind == TYPE_ARRAY &&
-                             declType->info.array.elementType->kind == TYPE_U32 &&
-                             initType->kind == TYPE_ARRAY &&
-                             initType->info.array.elementType->kind == TYPE_I32) {
-                        ASTNode* elem = node->data.let.initializer->data.array.elements;
-                        bool convertible = true;
-                        while (elem) {
-                            if (elem->type == AST_LITERAL && IS_I32(elem->data.literal) &&
-                                AS_I32(elem->data.literal) >= 0) {
-                                int32_t value = AS_I32(elem->data.literal);
-                                elem->data.literal = U32_VAL((uint32_t)value);
-                                elem->valueType = declType->info.array.elementType;
-                            } else {
-                                convertible = false;
-                                break;
-                            }
-                            elem = elem->next;
-                        }
-                        if (convertible) {
-                            node->data.let.initializer->valueType = declType;
-                            initType = declType;
-                        }
-                    }
                     if (!typesEqual(declType, initType)) {
                         if (initType->kind == TYPE_ARRAY &&
                             initType->info.array.elementType->kind == TYPE_NIL &&
@@ -690,22 +602,6 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 Symbol* sym = findSymbol(&compiler->symbols, tempName);
                 if (sym) sym->type = valueType;
                 varType = valueType;
-            }
-            // Allow i32/u32 literals to be used for f64 variables
-            else if (varType->kind == TYPE_F64 &&
-                    (valueType->kind == TYPE_I32 || valueType->kind == TYPE_U32) &&
-                    node->left->type == AST_LITERAL) {
-                if (IS_I32(node->left->data.literal)) {
-                    int32_t value = AS_I32(node->left->data.literal);
-                    node->left->data.literal = F64_VAL((double)value);
-                    node->left->valueType = varType;
-                    valueType = varType;
-                } else if (IS_U32(node->left->data.literal)) {
-                    uint32_t value = AS_U32(node->left->data.literal);
-                    node->left->data.literal = F64_VAL((double)value);
-                    node->left->valueType = varType;
-                    valueType = varType;
-                }
             }
 
             if (!typesEqual(varType, valueType)) {
@@ -2008,6 +1904,14 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 writeOp(compiler, OP_I32_TO_F64);
             } else if (from == TYPE_U32 && to == TYPE_F64) {
                 writeOp(compiler, OP_U32_TO_F64);
+            } else if (from == TYPE_I32 && to == TYPE_U32) {
+                writeOp(compiler, OP_I32_TO_U32);
+            } else if (from == TYPE_U32 && to == TYPE_I32) {
+                writeOp(compiler, OP_U32_TO_I32);
+            } else if (from == TYPE_F64 && to == TYPE_I32) {
+                writeOp(compiler, OP_F64_TO_I32);
+            } else if (from == TYPE_F64 && to == TYPE_U32) {
+                writeOp(compiler, OP_F64_TO_U32);
             }
             break;
         }
