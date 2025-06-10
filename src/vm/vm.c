@@ -34,6 +34,7 @@ static bool checkValueAgainstType(Value value, Type* type) {
         case TYPE_F64: return IS_F64(value);
         case TYPE_BOOL: return IS_BOOL(value);
         case TYPE_STRING: return IS_STRING(value);
+        case TYPE_VOID: return false; // void has no runtime value
         case TYPE_NIL: return IS_NIL(value);
         case TYPE_ARRAY: return IS_ARRAY(value);
         default: return true;
@@ -637,11 +638,8 @@ static InterpretResult run() {
             }
             case OP_RETURN: {
                 Value returnValue;
-
-                // If the stack is empty, use NIL_VAL as a default return value
-                if (vm.stackTop <= vm.stack) {
-                    returnValue = NIL_VAL;
-                } else {
+                bool hasValue = vm.stackTop > vm.stack;
+                if (hasValue) {
                     returnValue = vmPop(&vm);
                 }
 
@@ -658,11 +656,11 @@ static InterpretResult run() {
                     // Make sure we don't set stackTop to an invalid position
                     if (frame->stackOffset >= 0 && frame->stackOffset < STACK_MAX) {
                         vm.stackTop = vm.stack + frame->stackOffset;
-                        vmPush(&vm, returnValue);
+                        if (hasValue) vmPush(&vm, returnValue);
                     } else {
-                        // Invalid stack offset, just push the return value
+                        // Invalid stack offset, just push the return value if present
                         vm.stackTop = vm.stack;
-                        vmPush(&vm, returnValue);
+                        if (hasValue) vmPush(&vm, returnValue);
                     }
 
                     if (vm.trace) {
@@ -674,8 +672,8 @@ static InterpretResult run() {
 #endif
                     }
                 } else {
-                    // If we're not in a function call, just push the return value back
-                    vmPush(&vm, returnValue);
+                    // If we're not in a function call, optionally push the return value back
+                    if (hasValue) vmPush(&vm, returnValue);
 
                     return INTERPRET_OK;
                 }

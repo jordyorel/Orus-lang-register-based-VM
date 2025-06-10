@@ -42,7 +42,8 @@ fn demo() {
 - `f64` – double precision floating point
 - `bool` – boolean (`true` or `false`)
 - `string` – UTF‑8 text
-- `nil` – absence of a value (returned from functions without `return`)
+- `void` – absence of a return value
+- `nil` – explicit nil literal
 
 ```orus
 let flag: bool = true
@@ -183,7 +184,7 @@ fn add(a: i32, b: i32) -> i32 {
     return a + b
 }
 
-fn greet(name: string) {    // returns nil implicitly
+fn greet(name: string) {    // no return value
     print("Hello, {}!", name)
 }
 ```
