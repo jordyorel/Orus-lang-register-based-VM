@@ -115,3 +115,16 @@ The parser expects specific tokens at each point in the grammar. When a token do
 - **Missing `main` function** – projects executed in project mode must define exactly one `main` entry point.
 
 These messages capture the common diagnostics currently emitted by the Orus tools. Each error includes a source span and optional notes to help pinpoint the offending code.
+
+## Runtime errors
+
+Runtime errors produced by the interpreter now follow the same diagnostic style as compile-time errors. In addition to the error message, a helpful suggestion and note are printed to aid debugging.
+
+Some typical runtime diagnostics are:
+
+- **Stack underflow** – an operation was executed without enough values on the stack. *Suggestion:* ensure all operands are pushed before the operator. *Note:* this usually means a value was omitted or an expression was removed.
+- **Module `path` not found** – the interpreter could not locate an imported module. *Suggestion:* verify the import path or set the `ORUS_STD_PATH` environment variable. *Note:* module paths are resolved relative to the current file or the standard library directory.
+- **Import cycle detected** – two modules depend on each other. *Suggestion:* restructure your modules to break the cycle. *Note:* each module's top-level code runs only once.
+- **Too few arguments for string interpolation** – the number of `{}` placeholders does not match the provided values. *Suggestion:* add or remove placeholders or arguments so they match. *Note:* every `{}` corresponds to one argument after the format string.
+
+These runtime messages provide clear guidance on how to resolve common mistakes when running Orus programs.
