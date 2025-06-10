@@ -2115,12 +2115,18 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 emitConstant(compiler, I32_VAL(node->data.print.argCount));
 
                 // 4. Emit formatted print instruction
-                writeOp(compiler, OP_FORMAT_PRINT);
+                if (node->data.print.newline)
+                    writeOp(compiler, OP_FORMAT_PRINT);
+                else
+                    writeOp(compiler, OP_FORMAT_PRINT_NO_NL);
             } else {
                 // This is a simple print without interpolation
                 generateCode(compiler, node->data.print.format);
                 if (compiler->hadError) return;
-                writeOp(compiler, OP_PRINT);
+                if (node->data.print.newline)
+                    writeOp(compiler, OP_PRINT);
+                else
+                    writeOp(compiler, OP_PRINT_NO_NL);
             }
             break;
         }

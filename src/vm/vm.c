@@ -368,6 +368,18 @@ static InterpretResult run() {
                 break;
             }
 
+            case OP_PRINT_NO_NL: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in PRINT operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                Value value = vmPop(&vm);
+                printValue(value);
+                fflush(stdout);
+                break;
+            }
+
             case OP_CONSTANT: {
                 Value constant = READ_CONSTANT();
                 vmPush(&vm, constant);
@@ -1294,6 +1306,160 @@ static InterpretResult run() {
                 fflush(stdout);
 
                 // Clean up: pop args + format + count
+                for (int i = 0; i < argCount + 2; i++) {
+                    vmPop(&vm);
+                }
+
+                free(resultBuffer);
+                break;
+            }
+
+            case OP_FORMAT_PRINT_NO_NL: {
+                if (vm.stackTop - vm.stack < 2) {
+                    RUNTIME_ERROR("FORMAT_PRINT expects format string and argument count on stack.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Value countValue = vm.stackTop[-1];
+                Value formatValue = vm.stackTop[-2];
+                if (!IS_I32(countValue)) {
+                    RUNTIME_ERROR("Argument count must be an integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                if (!IS_STRING(formatValue)) {
+                    RUNTIME_ERROR("Format string must be a string.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int argCount = AS_I32(countValue);
+                ObjString* formatStr = AS_STRING(formatValue);
+                if (vm.stackTop - vm.stack < 2 + argCount) {
+                    RUNTIME_ERROR("Not enough arguments for string interpolation: missing argument values for format string.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int resultCapacity = formatStr->length * 2;
+                char* resultBuffer = (char*)malloc(resultCapacity);
+                if (!resultBuffer) {
+                    RUNTIME_ERROR("Memory allocation failed for print buffer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int resultLength = 0;
+                int formatIndex = 0;
+                int argIndex = 0;
+                while (formatIndex < formatStr->length) {
+                    if (formatIndex + 1 < formatStr->length &&
+                        formatStr->chars[formatIndex] == '{' &&
+                        formatStr->chars[formatIndex + 1] == '}') {
+                        if (argIndex >= argCount) {
+                            SrcLocation location = {vm.filePath, vm.currentLine, vm.currentColumn};
+                            runtimeError(ERROR_TYPE, location,
+                                "Too few arguments for string interpolation: format string has %d placeholder%s but only %d argument%s provided",
+                                argIndex + 1, argIndex + 1 == 1 ? "" : "s",
+                                argCount, argCount == 1 ? "" : "s");
+                            free(resultBuffer);
+                            return INTERPRET_RUNTIME_ERROR;
+                        }
+
+                        Value arg = vm.stack[(int)(vm.stackTop - vm.stack) - argCount - 2 + argIndex];
+
+                        char valueStr[100];
+                        int valueLen = 0;
+
+                        switch (arg.type) {
+                            case VAL_I32:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%d", AS_I32(arg));
+                                break;
+                            case VAL_U32:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%u", AS_U32(arg));
+                                break;
+                            case VAL_F64:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%g", AS_F64(arg));
+                                break;
+                            case VAL_BOOL:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%s", AS_BOOL(arg) ? "true" : "false");
+                                break;
+                            case VAL_NIL:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "nil");
+                                break;
+                            case VAL_STRING: {
+                                valueLen = AS_STRING(arg)->length;
+                                if (resultLength + valueLen >= resultCapacity) {
+                                    resultCapacity = (resultLength + valueLen) * 2;
+                                    resultBuffer = (char*)realloc(resultBuffer, resultCapacity);
+                                    if (!resultBuffer) {
+                                        RUNTIME_ERROR("Memory reallocation failed for string argument.");
+                                        return INTERPRET_RUNTIME_ERROR;
+                                    }
+                                }
+                                memcpy(resultBuffer + resultLength, AS_STRING(arg)->chars, valueLen);
+                                resultLength += valueLen;
+                                valueLen = 0;
+                                break;
+                            }
+                            case VAL_ARRAY: {
+                                if (!appendValueString(arg, &resultBuffer, &resultLength, &resultCapacity)) {
+                                    free(resultBuffer);
+                                    return INTERPRET_RUNTIME_ERROR;
+                                }
+                                valueLen = 0;
+                                break;
+                            }
+                            case VAL_ERROR:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "Error(%d): %s", AS_ERROR(arg)->type, AS_ERROR(arg)->message->chars);
+                                break;
+                        }
+
+                        if (valueLen > 0) {
+                            if (resultLength + valueLen >= resultCapacity) {
+                                resultCapacity = (resultLength + valueLen) * 2;
+                                resultBuffer = (char*)realloc(resultBuffer, resultCapacity);
+                                if (!resultBuffer) {
+                                    RUNTIME_ERROR("Memory reallocation failed for value conversion.");
+                                    return INTERPRET_RUNTIME_ERROR;
+                                }
+                            }
+                            memcpy(resultBuffer + resultLength, valueStr, valueLen);
+                            resultLength += valueLen;
+                        }
+
+                        formatIndex += 2;
+                        argIndex++;
+
+                    } else {
+                        if (resultLength + 1 >= resultCapacity) {
+                            resultCapacity = (resultLength + 1) * 2;
+                            resultBuffer = (char*)realloc(resultBuffer, resultCapacity);
+                            if (!resultBuffer) {
+                                RUNTIME_ERROR("Memory reallocation failed while copying character.");
+                                return INTERPRET_RUNTIME_ERROR;
+                            }
+                        }
+                        resultBuffer[resultLength++] = formatStr->chars[formatIndex++];
+                    }
+                }
+
+                if (argIndex < argCount) {
+                    SrcLocation location = {vm.filePath, vm.currentLine, vm.currentColumn};
+                    runtimeError(ERROR_TYPE, location,
+                        "Too many arguments for string interpolation: format string has %d placeholder%s but %d argument%s provided",
+                        argIndex, argIndex == 1 ? "" : "s",
+                        argCount, argCount == 1 ? "" : "s");
+
+                    free(resultBuffer);
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                if (resultLength + 1 >= resultCapacity) {
+                    resultCapacity = (resultLength + 1) * 2;
+                    resultBuffer = (char*)realloc(resultBuffer, resultCapacity);
+                    if (!resultBuffer) {
+                        RUNTIME_ERROR("Memory reallocation failed during final null-termination.");
+                        return INTERPRET_RUNTIME_ERROR;
+                    }
+                }
+                resultBuffer[resultLength] = '\0';
+
+                printf("%s", resultBuffer);
+                fflush(stdout);
+
                 for (int i = 0; i < argCount + 2; i++) {
                     vmPop(&vm);
                 }
