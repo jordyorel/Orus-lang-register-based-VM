@@ -1041,37 +1041,9 @@ static void useStatement(Parser* parser, ASTNode** ast) {
         consume(parser, TOKEN_IDENTIFIER, "Expect alias after 'as'.");
         alias = allocateString(parser->previous.start, parser->previous.length);
     } else if (match(parser, TOKEN_DOUBLE_COLON)) {
-        if (match(parser, TOKEN_STAR)) {
-            if (match(parser, TOKEN_AS)) {
-                consume(parser, TOKEN_IDENTIFIER, "Expect alias name.");
-                alias = allocateString(parser->previous.start, parser->previous.length);
-            }
-        } else if (match(parser, TOKEN_LEFT_BRACE)) {
-            if (!check(parser, TOKEN_RIGHT_BRACE)) {
-                do {
-                    consume(parser, TOKEN_IDENTIFIER, "Expect symbol name.");
-                    Token st = parser->previous;
-                    symbols = realloc(symbols, sizeof(ObjString*) * (symbolCount + 1));
-                    aliases = realloc(aliases, sizeof(ObjString*) * (symbolCount + 1));
-                    symbols[symbolCount] = allocateString(st.start, st.length);
-                    aliases[symbolCount] = NULL;
-                    symbolCount++;
-                } while (match(parser, TOKEN_COMMA));
-            }
-            consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after symbol list.");
-        } else {
-            consume(parser, TOKEN_IDENTIFIER, "Expect symbol name after '::'.");
-            Token st = parser->previous;
-            symbols = realloc(symbols, sizeof(ObjString*) * 1);
-            aliases = realloc(aliases, sizeof(ObjString*) * 1);
-            symbols[0] = allocateString(st.start, st.length);
-            aliases[0] = NULL;
-            symbolCount = 1;
-            if (match(parser, TOKEN_AS)) {
-                consume(parser, TOKEN_IDENTIFIER, "Expect alias name.");
-                aliases[0] = allocateString(parser->previous.start, parser->previous.length);
-            }
-        }
+        error(parser, "Only whole modules may be imported.");
+        // Consume the rest of the line for error recovery
+        while (!check(parser, TOKEN_NEWLINE) && !check(parser, TOKEN_EOF)) advance(parser);
     }
 
     // Build path string

@@ -897,15 +897,35 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             break;
         }
 
-       case AST_CALL: {
+        case AST_CALL: {
             compiler->currentColumn = tokenColumn(compiler, &node->data.call.name);
+
+            bool fromModule = false;
+            Module* mod = NULL;
+            if (node->data.call.staticType == NULL &&
+                node->data.call.arguments != NULL &&
+                node->data.call.arguments->type == AST_VARIABLE) {
+                ASTNode* recv = node->data.call.arguments;
+                char tempName[recv->data.variable.name.length + 1];
+                memcpy(tempName, recv->data.variable.name.start,
+                       recv->data.variable.name.length);
+                tempName[recv->data.variable.name.length] = '\0';
+                Symbol* sym = findSymbol(&compiler->symbols, tempName);
+                if (sym && sym->isModule) {
+                    fromModule = true;
+                    mod = sym->module;
+                    node->data.call.arguments = recv->next;
+                    node->data.call.argCount--;
+                }
+            }
+
             // Attempt to resolve the function name
             ObjString* nameObj = allocateString(node->data.call.name.start,
                                                node->data.call.name.length);
             int nativeIdx = findNative(nameObj);
             node->data.call.nativeIndex = nativeIdx;
             // Built-in functions
-            if (tokenEquals(node->data.call.name, "len")) {
+            if (!fromModule && tokenEquals(node->data.call.name, "len")) {
                 if (node->data.call.argCount != 1) {
                     emitBuiltinArgCountError(compiler, &node->data.call.name,
                                             "len", 1, node->data.call.argCount);
@@ -923,7 +943,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 node->valueType = getPrimitiveType(TYPE_I32);
                 break;
-            } else if (tokenEquals(node->data.call.name, "substring")) {
+            } else if (!fromModule && tokenEquals(node->data.call.name, "substring")) {
                 if (node->data.call.argCount != 3) {
                     emitBuiltinArgCountError(compiler, &node->data.call.name,
                                             "substring", 3, node->data.call.argCount);
@@ -950,7 +970,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 node->valueType = getPrimitiveType(TYPE_STRING);
                 break;
-            } else if (tokenEquals(node->data.call.name, "type_of")) {
+            } else if (!fromModule && tokenEquals(node->data.call.name, "type_of")) {
                 if (node->data.call.argCount != 1) {
                     // Special handling for zero arguments to ensure the error message is consistent
                     emitBuiltinArgCountError(compiler, &node->data.call.name,
@@ -962,7 +982,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 if (compiler->hadError) return;
                 node->valueType = getPrimitiveType(TYPE_STRING);
                 break;
-            } else if (tokenEquals(node->data.call.name, "is_type")) {
+            } else if (!fromModule && tokenEquals(node->data.call.name, "is_type")) {
                 if (node->data.call.argCount != 2) {
                     emitBuiltinArgCountError(compiler, &node->data.call.name,
                                             "is_type", 2, node->data.call.argCount);
@@ -980,7 +1000,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 node->valueType = getPrimitiveType(TYPE_BOOL);
                 break;
-            } else if (tokenEquals(node->data.call.name, "input")) {
+            } else if (!fromModule && tokenEquals(node->data.call.name, "input")) {
                 if (node->data.call.argCount != 1) {
                     emitBuiltinArgCountError(compiler, &node->data.call.name,
                                             "input", 1, node->data.call.argCount);
@@ -995,7 +1015,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 node->valueType = getPrimitiveType(TYPE_STRING);
                 break;
-            } else if (tokenEquals(node->data.call.name, "int")) {
+            } else if (!fromModule && tokenEquals(node->data.call.name, "int")) {
                 if (node->data.call.argCount != 1) {
                     emitBuiltinArgCountError(compiler, &node->data.call.name,
                                             "int", 1, node->data.call.argCount);
@@ -1010,7 +1030,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 node->valueType = getPrimitiveType(TYPE_I32);
                 break;
-            } else if (tokenEquals(node->data.call.name, "float")) {
+            } else if (!fromModule && tokenEquals(node->data.call.name, "float")) {
                 if (node->data.call.argCount != 1) {
                     emitBuiltinArgCountError(compiler, &node->data.call.name,
                                             "float", 1, node->data.call.argCount);
@@ -1025,7 +1045,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 node->valueType = getPrimitiveType(TYPE_F64);
                 break;
-            } else if (tokenEquals(node->data.call.name, "push")) {
+            } else if (!fromModule && tokenEquals(node->data.call.name, "push")) {
                 if (node->data.call.argCount != 2) {
                     emitBuiltinArgCountError(compiler, &node->data.call.name,
                                             "push", 2, node->data.call.argCount);
@@ -1054,7 +1074,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     break;
                 }
                 // Not an array: likely a method call, fall through
-            } else if (tokenEquals(node->data.call.name, "pop")) {
+            } else if (!fromModule && tokenEquals(node->data.call.name, "pop")) {
                 if (node->data.call.argCount != 1) {
                     emitBuiltinArgCountError(compiler, &node->data.call.name,
                                             "pop", 1, node->data.call.argCount);
@@ -1069,7 +1089,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     break;
                 }
                 // Not an array: treat as normal call
-            } else if (tokenEquals(node->data.call.name, "sorted")) {
+            } else if (!fromModule && tokenEquals(node->data.call.name, "sorted")) {
                 if (node->data.call.argCount < 1 || node->data.call.argCount > 3) {
                     error(compiler, "sorted() takes between 1 and 3 arguments.");
                     return;
@@ -1118,7 +1138,21 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 break;
             }
 
-            uint8_t index = resolveVariable(compiler, node->data.call.name);
+            uint8_t index;
+            if (fromModule) {
+                char fname[node->data.call.name.length + 1];
+                memcpy(fname, node->data.call.name.start, node->data.call.name.length);
+                fname[node->data.call.name.length] = '\0';
+                Export* ex = get_export(mod, fname);
+                if (!ex) {
+                    errorFmt(compiler, "Symbol `%s` not found in module `%s`",
+                            fname, mod->module_name);
+                    return;
+                }
+                index = ex->index;
+            } else {
+                index = resolveVariable(compiler, node->data.call.name);
+            }
 
             // If the function name matches a built-in but wasn't defined in
             // the current scope, provide a helpful argument count error instead
@@ -1377,6 +1411,34 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
         case AST_FIELD: {
             compiler->currentColumn = tokenColumn(compiler, &node->data.field.fieldName);
+
+            // Support module.field access
+            if (node->left->type == AST_VARIABLE) {
+                char tempName[node->left->data.variable.name.length + 1];
+                memcpy(tempName, node->left->data.variable.name.start,
+                       node->left->data.variable.name.length);
+                tempName[node->left->data.variable.name.length] = '\0';
+                Symbol* sym = findSymbol(&compiler->symbols, tempName);
+                if (sym && sym->isModule) {
+                    char fieldName[node->data.field.fieldName.length + 1];
+                    memcpy(fieldName, node->data.field.fieldName.start,
+                           node->data.field.fieldName.length);
+                    fieldName[node->data.field.fieldName.length] = '\0';
+                    Export* ex = get_export(sym->module, fieldName);
+                    if (!ex) {
+                        errorFmt(compiler, "Symbol `%s` not found in module `%s`",
+                                fieldName, sym->module->module_name);
+                        return;
+                    }
+                    node->type = AST_VARIABLE;
+                    node->data.variable.name = node->data.field.fieldName;
+                    node->data.variable.index = ex->index;
+                    node->left = NULL;
+                    node->valueType = variableTypes[ex->index];
+                    break;
+                }
+            }
+
             typeCheckNode(compiler, node->left);
             if (compiler->hadError) return;
             Type* structType = node->left->valueType;
@@ -1532,7 +1594,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             break;
         }
         case AST_USE: {
-            // Ensure module is loaded and bind its exports into the symbol table
+            // Load the module and bind a module alias symbol
             const char* path = node->data.useStmt.path->chars;
             InterpretResult r = compile_module_only(path);
             if (r != INTERPRET_OK) {
@@ -1553,35 +1615,15 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 break;
             }
 
-            if (node->data.useStmt.symbolCount > 0) {
-                for (int i = 0; i < node->data.useStmt.symbolCount; i++) {
-                    const char* symName = node->data.useStmt.symbols[i]->chars;
-                    Export* ex = get_export(mod, symName);
-                    if (!ex) {
-                        errorFmt(compiler, "Symbol `%s` not found in module `%s`",
-                                symName, path);
-                        continue;
-                    }
-                    const char* bindName = symName;
-                    if (node->data.useStmt.symbolAliases && node->data.useStmt.symbolAliases[i]) {
-                        bindName = node->data.useStmt.symbolAliases[i]->chars;
-                    }
-                    Token t;
-                    t.start = bindName;
-                    t.length = (int)strlen(bindName);
-                    t.line = node->line;
-                    addSymbol(&compiler->symbols, bindName, t, variableTypes[ex->index], compiler->scopeDepth, ex->index, true);
-                }
-            } else {
-                for (int i = 0; i < mod->export_count; i++) {
-                    Export* ex = &mod->exports[i];
-                    Token t;
-                    t.start = ex->name;
-                    t.length = (int)strlen(ex->name);
-                    t.line = node->line;
-                    addSymbol(&compiler->symbols, ex->name, t, variableTypes[ex->index], compiler->scopeDepth, ex->index, true);
-                }
-            }
+            const char* aliasName = node->data.useStmt.alias ?
+                                       node->data.useStmt.alias->chars :
+                                       mod->name;
+            Token t;
+            t.start = aliasName;
+            t.length = (int)strlen(aliasName);
+            t.line = node->line;
+            addSymbol(&compiler->symbols, aliasName, t, NULL,
+                      compiler->scopeDepth, UINT8_MAX, false, true, mod);
 
             node->valueType = NULL;
             break;
@@ -2740,7 +2782,8 @@ uint8_t addLocal(Compiler* compiler, Token name, Type* type, bool isMutable) {
     vm.globals[index] = NIL_VAL;
     vm.publicGlobals[index] = false;
 
-    addSymbol(&compiler->symbols, nameObj->chars, name, type, compiler->scopeDepth, index, isMutable);
+    addSymbol(&compiler->symbols, nameObj->chars, name, type,
+              compiler->scopeDepth, index, isMutable, false, NULL);
 
     return index;
 }

@@ -5,7 +5,8 @@ This roadmap outlines the detailed steps to make the `use` import system in Orus
 
 ## ✅ Goals
 
-* Support `use math`, `use random::{rand}`, `use datetime as dt`, etc.
+* Support `use math`, `use datetime as dt` style imports.
+* Modules are imported as a whole and referenced through the module name.
 * Ensure imported files execute once and expose usable functions, types, and constants.
 * Maintain a clean, professional structure aligned with the current codebase.
 
@@ -68,11 +69,9 @@ Module* get_module(const char* name);
 
   ```orus
   use math
-  use random::{rand, rand_int}
   use datetime as dt
   use tests::modules::hello_module
   use tests::modules::hello_module as hm
-  use tests::modules::hello_module::{greet}
   ```
 * Output an `ImportNode` in AST with:
 
@@ -104,13 +103,8 @@ Module* get_module(const char* name);
 
 ### Step 5: Bind Imports to Symbol Table ✅
 
-* When compiling the main file, inject the imported symbols into its scope.
-* If selective import: only bind those.
-
-  ```orus
-  use math::{clamp, round}  // Only these are exposed
-  use tests::modules::hello_module::{greet}
-  ```
+* When compiling the main file, register the module under its name or alias.
+* Access all public members through that module name.
 
 ### Step 6: Handle Aliasing
 
@@ -134,16 +128,16 @@ Module* get_module(const char* name);
 
 ---
 
-## ✅ Example Flow: `use math::{clamp}`
+## ✅ Example Flow: `use math`
 
-1. Parser reads and stores use statement
-2. Compiler resolves file path
+1. Parser reads and stores the `use` statement
+2. Compiler resolves the file path
 3. File content is read
 4. Parsed into AST
-5. Compiled to chunk
-6. Public symbols are registered in module export table
-7. `clamp` is added to the current file’s symbol table
-8. Later function calls to `clamp(...)` are resolved
+5. Compiled to bytecode
+6. Public symbols are registered in the module export table
+7. The module is bound under the name `math`
+8. Later calls use `math.clamp(...)`
 
 ---
 
