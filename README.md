@@ -44,7 +44,7 @@ make clean
 
 ### Platform notes
 
-* **Linux** and **macOS** – Install `gcc`, `make` and `python3` with your
+* **Linux** and **macOS** – Install `gcc` and `make` with your
   package manager (for macOS you may first need the Xcode command line tools).
   Then run the commands above from a terminal.
 
@@ -53,7 +53,7 @@ make clean
   tools, build from the provided shell just like on Linux.
 
 
-The build process places the final executable in `./orus` and also keeps a copy in `build/release/clox`.
+The build process places the final executable in `./orusc` and also keeps a copy in `build/release/clox`.
 
 ## Running
 
@@ -61,13 +61,13 @@ After building, run the interpreter in two ways:
 
 ```sh
 # Start an interactive REPL
-./orus
+./orusc
 
 # Execute a script file
-./orus path/to/script.orus
+./orusc path/to/script.orus
 
 # Execute a project directory
-./orus --project path/to/project
+./orusc --project path/to/project
 
 ```
 
@@ -76,7 +76,7 @@ When run in project mode the interpreter searches all `.orus` files for a
 contain exactly one such function.
 
 # Display the current interpreter version
-./orus --version
+./orusc --version
 ```
 
 ## Running the test suite
@@ -103,27 +103,6 @@ bash benchmarks/run_benchmarks.sh
 
 The script executes each benchmark program and prints the time spent running it.
 
-## Development tools
-
-A basic package manager is provided to help build and distribute Orus
-projects. The `tools/oruspm.py` script can initialise a new project,
-compile the interpreter, run the entry file and create a distributable
-archive.
-
-```sh
-# Create a new project in the current directory
-python3 tools/oruspm.py init my_project
-
-# Compile the interpreter
-python3 tools/oruspm.py build
-
-# Build and run the entrypoint
-python3 tools/oruspm.py run
-
-# Create `dist/<name>-<version>.tar.gz`
-python3 tools/oruspm.py pack
-```
-
 ## Repository layout
 
 - `src/` – C source for the interpreter.
@@ -147,7 +126,7 @@ python3 tools/oruspm.py pack
   - `LANGUAGE.md` – Overview of the language syntax
   - `GENERICS.md` – Notes on the generic programming capabilities
   - `COMPILATION_ROADMAP.md` – Planning for future compilation features
-- `tools/` – Utility scripts including the `oruspm.py` package manager.
+- `tools/` – Utility scripts.
 
 ## Future Development
 

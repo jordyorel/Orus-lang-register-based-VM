@@ -336,14 +336,14 @@ int main(int argc, const char* argv[]) {
             traceImportsFlag = true;
         } else if (strcmp(argv[i], "--project") == 0) {
             if (i + 1 >= argc) {
-                fprintf(stderr, "Usage: orus --project <dir>\n");
+                fprintf(stderr, "Usage: orusc --project <dir>\n");
                 return 64;
             }
             projectDir = argv[++i];
         } else if (!path) {
             path = argv[i];
         } else {
-            fprintf(stderr, "Usage: orus [--trace] [--trace-imports] [--project dir] [path]\n");
+            fprintf(stderr, "Usage: orusc [--trace] [--trace-imports] [--project dir] [path]\n");
             return 64;
         }
     }

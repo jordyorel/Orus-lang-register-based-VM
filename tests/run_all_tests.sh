@@ -9,7 +9,7 @@ NC='\033[0m' # No Color
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Fix the path to the Orus executable
-ORUS_EXECUTABLE="$(cd "$SCRIPT_DIR/.." && pwd)/orus"
+ORUS_EXECUTABLE="$(cd "$SCRIPT_DIR/.." && pwd)/orusc"
 
 # Overall counters
 passed=0
