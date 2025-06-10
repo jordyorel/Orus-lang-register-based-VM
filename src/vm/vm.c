@@ -649,7 +649,7 @@ static InterpretResult run() {
                 break;
             }
             case OP_RETURN: {
-                Value returnValue;
+                Value returnValue = NIL_VAL;
                 bool hasValue = vm.stackTop > vm.stack;
                 if (hasValue) {
                     returnValue = vmPop(&vm);
@@ -668,11 +668,11 @@ static InterpretResult run() {
                     // Make sure we don't set stackTop to an invalid position
                     if (frame->stackOffset >= 0 && frame->stackOffset < STACK_MAX) {
                         vm.stackTop = vm.stack + frame->stackOffset;
-                        if (hasValue) vmPush(&vm, returnValue);
+                        vmPush(&vm, returnValue);
                     } else {
                         // Invalid stack offset, just push the return value if present
                         vm.stackTop = vm.stack;
-                        if (hasValue) vmPush(&vm, returnValue);
+                        vmPush(&vm, returnValue);
                     }
 
                     if (vm.trace) {
@@ -685,7 +685,7 @@ static InterpretResult run() {
                     }
                 } else {
                     // If we're not in a function call, optionally push the return value back
-                    if (hasValue) vmPush(&vm, returnValue);
+                    vmPush(&vm, returnValue);
 
                     return INTERPRET_OK;
                 }
