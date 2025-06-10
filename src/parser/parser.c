@@ -357,16 +357,34 @@ static ASTNode* parseCall(Parser* parser, ASTNode* left) {
 
 static ASTNode* parseIndex(Parser* parser, ASTNode* left) {
     Token bracket = parser->previous; // '[' token
+
     ASTNode* startExpr = NULL;
-    expression(parser, &startExpr);
+    ASTNode* endExpr = NULL;
+
     if (match(parser, TOKEN_DOT_DOT)) {
-        ASTNode* endExpr = NULL;
-        expression(parser, &endExpr);
+        // slice with omitted start
+        if (!check(parser, TOKEN_RIGHT_BRACKET)) {
+            expression(parser, &endExpr);
+        }
+        consume(parser, TOKEN_RIGHT_BRACKET, "Expect ']' after slice expression.");
+        ASTNode* node = createSliceNode(left, NULL, endExpr);
+        node->line = bracket.line;
+        return node;
+    }
+
+    expression(parser, &startExpr);
+
+    if (match(parser, TOKEN_DOT_DOT)) {
+        // slice with explicit start and optional end
+        if (!check(parser, TOKEN_RIGHT_BRACKET)) {
+            expression(parser, &endExpr);
+        }
         consume(parser, TOKEN_RIGHT_BRACKET, "Expect ']' after slice expression.");
         ASTNode* node = createSliceNode(left, startExpr, endExpr);
         node->line = bracket.line;
         return node;
     }
+
     consume(parser, TOKEN_RIGHT_BRACKET, "Expect ']' after index expression.");
     ASTNode* node = createBinaryNode(bracket, left, startExpr);
     node->line = bracket.line;
