@@ -18,7 +18,7 @@ This document consolidates the development roadmaps for the Orus language, track
 |------------------------|---------------------------------------------------|--------------------|
 | ✅ Garbage Collection   | Mark-sweep GC replacing manual memory management | 0.3.0 → 0.4.0      |
 | ✅ Generic Types (Basic)| Generic functions and structs with type parameters| 0.2.0 → 0.3.0      |
-| ✅ Module System        | Modules and import statements                    | 0.1.0 → 0.2.0      |
+| ✅ Module System        | Modules and `use` statements                     | 0.1.0 → 0.2.0      |
 | ✅ Error Handling       | Try/catch blocks for exception handling          | 0.4.0 → 0.5.0      |
 | ✅ Dynamic Arrays       | Arrays with push, pop, and len operations        | Minor feature      |
 | ✅ User Input           | input() builtin for reading from stdin           | 0.5.0 → 0.5.1      |
@@ -90,10 +90,10 @@ The following built-in functions are implemented in the Orus runtime and availab
 
 ### 📦 Standard Library Modules (To be written in Orus)
 
-Orus will include a set of standard library modules located in a `std/` directory. These will be imported using the module system:
+Orus will include a set of standard library modules located in a `std/` directory. These will be loaded using the `use` statement:
 
 ```orus
-import "std/math.orus"
+use std::math
 ```
 
 | Module         | Description                                     | Target Version   |
