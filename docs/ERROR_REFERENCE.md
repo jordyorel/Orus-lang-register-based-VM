@@ -28,6 +28,7 @@ The parser expects specific tokens at each point in the grammar. When a token do
 - `Expect '>' after generic arguments.`
 - `Expect ']' after array elements.`
 - `Expect field name.`
+  *Empty structs must be written with no newline between `{` and `}`:* `struct Foo {}`.
 - `Expect ':' after field name.`
 - `Expect '}' after struct literal.`
 - `Expect iterator variable name.`
