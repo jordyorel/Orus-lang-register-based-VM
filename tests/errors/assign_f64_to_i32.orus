@@ -1,0 +1,4 @@
+fn main() {
+    let a: f64 = 3.14
+    let b: i32 = a
+}

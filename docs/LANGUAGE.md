@@ -116,7 +116,7 @@ Variables are introduced with the `let` keyword and follow these rules:
 
 - All variables must be explicitly declared before use
 - Type annotations are optional when the type can be inferred
-- Variables are immutable by default and can only be reassigned when declared with `let mut`. See [MUTABILITY.md](MUTABILITY.md) for a deep dive.
+- Variables are immutable by default and can only be reassigned when declared with `let mut`. See the [Mutability](#mutability) section below for details.
 - A variable's type is fixed after its declaration or first assignment
 - Variable scope is block-based
 - Variables cannot be declared outside functions
@@ -138,6 +138,78 @@ count += 2                    // Compound assignment
 }
 // local is not accessible here
 ```
+
+### Mutability
+
+Orus embraces immutability by default. Attempting to reassign a variable
+declared with `let` results in a compile-time error.
+
+```orus
+fn main() {
+    let x: i32 = 5
+    x = 6  // ❌ Error
+}
+```
+
+The compiler reports:
+
+```
+Error: cannot assign to immutable variable `x`
+```
+
+To allow reassignment, declare the variable with `let mut`:
+
+```orus
+fn main() {
+    let mut count: i32 = 0
+    count = 10        // ✅ OK
+    count += 2        // ✅ OK
+}
+```
+
+A mutable variable may change value but not type:
+
+```orus
+fn main() {
+    let mut value: i32 = 1
+    value = 2         // OK
+    value = 3.0       // ❌ Error: type mismatch
+}
+```
+
+Mutability controls the binding, not the contents of data structures:
+
+```orus
+fn main() {
+    let numbers: [i32; 1] = [0]  // binding is immutable
+    push(numbers, 42)            // allowed: array contents updated
+    // numbers = [1]            // Error: cannot reassign `numbers`
+}
+```
+
+For struct fields, the variable itself must be `mut` to modify its fields:
+
+```orus
+struct Point { x: i32, y: i32 }
+
+fn main() {
+    let mut p = Point{ x: 0, y: 0 }
+    p.x = 3        // ✅ allowed
+    p.y = 4
+}
+```
+
+If `p` were immutable, assigning to `p.x` or `p.y` would fail.
+
+In summary:
+
+- Variables are **immutable by default**.
+- Use **`let mut`** to create a mutable binding.
+- Mutable bindings keep the **same type** for their lifetime.
+- Mutability of a binding is separate from the mutability of the data it references.
+
+See `tests/errors/immutable_assignment.orus` for a compiler test that
+rejects reassignment of an immutable variable.
 
 ## Operators
 
