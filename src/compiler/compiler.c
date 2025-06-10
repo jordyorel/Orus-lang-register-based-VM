@@ -400,6 +400,42 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             break;
         }
 
+
+
+
+        case AST_CAST: {
+            typeCheckNode(compiler, node->left);
+            if (compiler->hadError) return;
+            Type* src = node->left->valueType;
+            Type* dst = node->data.cast.type;
+            if (!src || !dst) {
+                error(compiler, "Invalid cast types.");
+                return;
+            }
+            if (node->left->type == AST_LITERAL) {
+                if (src->kind == TYPE_I32 && dst->kind == TYPE_U32) {
+                    if (IS_I32(node->left->data.literal) && AS_I32(node->left->data.literal) >= 0) {
+                        int32_t v = AS_I32(node->left->data.literal);
+                        node->left->data.literal = U32_VAL((uint32_t)v);
+                        node->left->valueType = dst;
+                    }
+                } else if ((src->kind == TYPE_I32 || src->kind == TYPE_U32) && dst->kind == TYPE_F64) {
+                    double v = (src->kind == TYPE_I32) ? (double)AS_I32(node->left->data.literal)
+                                                      : (double)AS_U32(node->left->data.literal);
+                    node->left->data.literal = F64_VAL(v);
+                    node->left->valueType = dst;
+                } else if (src->kind == TYPE_F64 && dst->kind == TYPE_I32) {
+                    node->left->data.literal = I32_VAL((int32_t)AS_F64(node->left->data.literal));
+                    node->left->valueType = dst;
+                } else if (src->kind == TYPE_F64 && dst->kind == TYPE_U32) {
+                    node->left->data.literal = U32_VAL((uint32_t)AS_F64(node->left->data.literal));
+                    node->left->valueType = dst;
+                }
+            }
+            node->valueType = dst;
+            break;
+        }
+
         case AST_VARIABLE: {
             compiler->currentColumn = tokenColumn(compiler, &node->data.variable.name);
             uint8_t index = resolveVariable(compiler, node->data.variable.name);
@@ -1944,6 +1980,22 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 default:
                     error(compiler, "Unsupported unary operator.");
                     return;
+            }
+            break;
+        }
+
+        case AST_CAST: {
+            generateCode(compiler, node->left);
+            if (compiler->hadError) return;
+            TypeKind from = node->left->valueType ? node->left->valueType->kind : TYPE_I32;
+            TypeKind to = node->data.cast.type->kind;
+            if (from == to) {
+                break;
+            }
+            if (from == TYPE_I32 && to == TYPE_F64) {
+                writeOp(compiler, OP_I32_TO_F64);
+            } else if (from == TYPE_U32 && to == TYPE_F64) {
+                writeOp(compiler, OP_U32_TO_F64);
             }
             break;
         }

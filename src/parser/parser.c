@@ -21,6 +21,7 @@ static ASTNode* parseLogical(Parser* parser, ASTNode* left);  // New logical ope
 static ASTNode* parseCall(Parser* parser, ASTNode* left);
 static ASTNode* parseIndex(Parser* parser, ASTNode* left);
 static ASTNode* parseDot(Parser* parser, ASTNode* left);
+static ASTNode* parseCast(Parser* parser, ASTNode* left);
 static ASTNode* parseStructLiteral(Parser* parser, Token structName,
                                    Type** genericArgs, int genericArgCount);
 static Type* findStructTypeToken(Token token);
@@ -277,6 +278,14 @@ static ASTNode* parseLogical(Parser* parser, ASTNode* left) {
     // since logical operations can be represented by binary operations
     ASTNode* node = createBinaryNode(operator, left, right);
     node->line = operator.line;
+    return node;
+}
+
+static ASTNode* parseCast(Parser* parser, ASTNode* left) {
+    Type* target = parseType(parser);
+    if (parser->hadError) return NULL;
+    ASTNode* node = createCastNode(left, target);
+    node->line = parser->previous.line;
     return node;
 }
 
@@ -1481,7 +1490,7 @@ ParseRule rules[] = {
     [TOKEN_NEWLINE] = {NULL, NULL, PREC_NONE}, // Add explicit rule for newlines
     [TOKEN_MATCH] = {NULL, NULL, PREC_NONE},
     [TOKEN_USE] = {NULL, NULL, PREC_NONE},
-    [TOKEN_AS] = {NULL, NULL, PREC_NONE},
+    [TOKEN_AS] = {NULL, parseCast, PREC_COMPARISON},
     [TOKEN_DOUBLE_COLON] = {NULL, NULL, PREC_NONE},
 };
 
