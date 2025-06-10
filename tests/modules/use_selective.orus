@@ -1,5 +1,5 @@
-use tests::modules::hello_module::{greet}
+use tests::modules::hello_module
 
 fn main() {
-    greet()
+    hello_module.greet()
 }

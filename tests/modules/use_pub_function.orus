@@ -1,6 +1,6 @@
-use tests::modules::pub_module::{public_fn}
+use tests::modules::pub_module
 
 fn main() {
-    public_fn()
+    pub_module.public_fn()
 }
 
