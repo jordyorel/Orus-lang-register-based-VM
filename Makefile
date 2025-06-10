@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-I./include -Wall -g
 SRC=$(shell find src -name '*.c')
 OBJ=$(patsubst src/%.c, build/debug/clox/%.o, $(SRC))
-TARGET=orus
+TARGET=orusc
 RELEASE_TARGET=build/release/clox
 
 debug: $(OBJ)
@@ -10,7 +10,7 @@ debug: $(OBJ)
 	$(CC) -o $(RELEASE_TARGET) $^
 	cp $(RELEASE_TARGET) $(TARGET)
 
-orus: debug
+orusc: debug
 
 # Rule to build the final binary
 $(RELEASE_TARGET): $(OBJ)

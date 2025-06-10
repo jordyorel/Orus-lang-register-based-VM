@@ -2,7 +2,7 @@
 
 # Determine script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ORUS_EXEC="$SCRIPT_DIR/../orus"
+ORUS_EXEC="$SCRIPT_DIR/../orusc"
 
 # Build interpreter if not present
 if [ ! -f "$ORUS_EXEC" ]; then
