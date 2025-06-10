@@ -241,18 +241,30 @@ Forward declarations for generic functions are not yet supported, so generic fun
 
 ## Modules
 
-Code can be split into multiple files. Use `use` to import another module at the top level of a file.
+Code can be split into multiple files. Use `use` to load an entire module. Only whole modules may be imported; individual items cannot be pulled in directly. After importing, reference functions or types through the module name.
 
 ```orus
 use math::utils
 use datetime as dt
+
+fn main() {
+    utils.helper()
+    dt.now()
+}
 ```
 
-Modules are only loaded once. Importing the same file twice triggers a runtime error. Each module may define structs, functions and `impl` blocks. Only the entry file needs a `main` function.
+Modules are executed once. Importing the same file twice causes a runtime error. Each module may define structs, functions and `impl` blocks. Only the entry file needs a `main` function.
+
+An alias can shorten the module name:
+
+```orus
+use math::utils as mu
+mu.helper()
+```
 
 ### Public functions
 
-Use the `pub` keyword before a top-level function to export it from a module. Only items marked `pub` can be imported with `use`.
+Use the `pub` keyword before a top-level function to export it from a module.
 
 ```orus
 // utils.orus
@@ -261,10 +273,10 @@ pub fn helper() {
 }
 
 // main.orus
-use utils::{helper}
+use utils
 
 fn main() {
-    helper()
+    utils.helper()
 }
 ```
 
