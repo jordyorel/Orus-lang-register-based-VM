@@ -166,6 +166,35 @@ static bool convertLiteralForDecl(ASTNode* init, Type* src, Type* dst) {
     return false;
 }
 
+static Value convertLiteralToString(Value value) {
+    char buffer[64];
+    int length = 0;
+    switch (value.type) {
+        case VAL_I32:
+            length = snprintf(buffer, sizeof(buffer), "%d", AS_I32(value));
+            break;
+        case VAL_U32:
+            length = snprintf(buffer, sizeof(buffer), "%u", AS_U32(value));
+            break;
+        case VAL_F64:
+            length = snprintf(buffer, sizeof(buffer), "%g", AS_F64(value));
+            break;
+        case VAL_BOOL:
+            length = snprintf(buffer, sizeof(buffer), "%s", AS_BOOL(value) ? "true" : "false");
+            break;
+        case VAL_NIL:
+            length = snprintf(buffer, sizeof(buffer), "nil");
+            break;
+        case VAL_STRING:
+            return value;
+        default:
+            length = snprintf(buffer, sizeof(buffer), "<obj>");
+            break;
+    }
+    ObjString* obj = allocateString(buffer, length);
+    return STRING_VAL(obj);
+}
+
 
 
 
@@ -394,10 +423,12 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             }
 
             bool allowed = false;
-            if ((src->kind == TYPE_I32 && (dst->kind == TYPE_U32 || dst->kind == TYPE_F64)) ||
-                (src->kind == TYPE_U32 && (dst->kind == TYPE_I32 || dst->kind == TYPE_F64)) ||
-                (src->kind == TYPE_F64 && (dst->kind == TYPE_I32 || dst->kind == TYPE_U32)) ||
-                (src->kind == dst->kind)) {
+            if (dst->kind == TYPE_STRING) {
+                allowed = true;
+            } else if ((src->kind == TYPE_I32 && (dst->kind == TYPE_U32 || dst->kind == TYPE_F64)) ||
+                       (src->kind == TYPE_U32 && (dst->kind == TYPE_I32 || dst->kind == TYPE_F64)) ||
+                       (src->kind == TYPE_F64 && (dst->kind == TYPE_I32 || dst->kind == TYPE_U32)) ||
+                       (src->kind == dst->kind)) {
                 allowed = true;
             }
 
@@ -420,7 +451,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     }
                 } else if ((src->kind == TYPE_I32 || src->kind == TYPE_U32) && dst->kind == TYPE_F64) {
                     double v = (src->kind == TYPE_I32) ? (double)AS_I32(node->left->data.literal)
-                                                      : (double)AS_U32(node->left->data.literal);
+                                                     : (double)AS_U32(node->left->data.literal);
                     node->left->data.literal = F64_VAL(v);
                     node->left->valueType = dst;
                 } else if (src->kind == TYPE_F64 && dst->kind == TYPE_I32) {
@@ -428,6 +459,9 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     node->left->valueType = dst;
                 } else if (src->kind == TYPE_F64 && dst->kind == TYPE_U32) {
                     node->left->data.literal = U32_VAL((uint32_t)AS_F64(node->left->data.literal));
+                    node->left->valueType = dst;
+                } else if (dst->kind == TYPE_STRING) {
+                    node->left->data.literal = convertLiteralToString(node->left->data.literal);
                     node->left->valueType = dst;
                 }
             }
@@ -1967,6 +2001,31 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 writeOp(compiler, OP_F64_TO_I32);
             } else if (from == TYPE_F64 && to == TYPE_U32) {
                 writeOp(compiler, OP_F64_TO_U32);
+            } else if (from == TYPE_NIL && to == TYPE_STRING) {
+                writeOp(compiler, OP_POP);
+                emitConstant(compiler, convertLiteralToString(NIL_VAL));
+            } else if (to == TYPE_STRING) {
+                switch (from) {
+                    case TYPE_I32:
+                        writeOp(compiler, OP_I32_TO_STRING);
+                        break;
+                    case TYPE_U32:
+                        writeOp(compiler, OP_U32_TO_STRING);
+                        break;
+                    case TYPE_F64:
+                        writeOp(compiler, OP_F64_TO_STRING);
+                        break;
+                    case TYPE_BOOL:
+                        writeOp(compiler, OP_BOOL_TO_STRING);
+                        break;
+                    case TYPE_ARRAY:
+                    case TYPE_STRUCT:
+                        writeOp(compiler, OP_ARRAY_TO_STRING);
+                        break;
+                    default:
+                        /* nil or unknown values are converted at compile time */
+                        break;
+                }
             }
             break;
         }
