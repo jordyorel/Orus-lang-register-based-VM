@@ -3,13 +3,13 @@ struct Sorter {}
 impl Sorter {
     fn bubble_sort(arr: [i32; 8]) -> [i32; 8] {
         let n: i32 = 8
-        let i: i32 = 0
-        let j: i32 = 0
-        let temp: i32 = 0
-        let swapped: bool = false
+        let mut i: i32 = 0
+        let mut j: i32 = 0
+        let mut temp: i32 = 0
+        let mut swapped: bool = false
         
         // Create a copy to maintain immutability of original array
-        let sorted: [i32; 8] = [0, 0, 0, 0, 0, 0, 0, 0]
+        let mut sorted: [i32; 8] = [0, 0, 0, 0, 0, 0, 0, 0]
         for i in 0..n {
             sorted[i] = arr[i]
         }
@@ -38,13 +38,13 @@ impl Sorter {
     
     fn selection_sort(arr: [i32; 8]) -> [i32; 8] {
         let n: i32 = 8
-        let i: i32 = 0
-        let j: i32 = 0
-        let min_idx: i32 = 0
-        let temp: i32 = 0
+        let mut i: i32 = 0
+        let mut j: i32 = 0
+        let mut min_idx: i32 = 0
+        let mut temp: i32 = 0
         
         // Create a copy to maintain immutability of original array
-        let sorted: [i32; 8] = [0, 0, 0, 0, 0, 0, 0, 0]
+        let mut sorted: [i32; 8] = [0, 0, 0, 0, 0, 0, 0, 0]
         for i in 0..n {
             sorted[i] = arr[i]
         }
@@ -71,7 +71,7 @@ impl Sorter {
     }
     
     fn is_sorted(arr: [i32; 8]) -> bool {
-        let i: i32 = 1
+        let mut i: i32 = 1
         while i < 8 {
             if arr[i-1] > arr[i] {
                 return false
@@ -82,7 +82,7 @@ impl Sorter {
     }
     
     fn array_to_string(arr: [i32; 8]) -> string {
-        let result: string = "["
+        let mut result: string = "["
         for i in 0..8 {
             result = result + arr[i]
             if i < 7 {

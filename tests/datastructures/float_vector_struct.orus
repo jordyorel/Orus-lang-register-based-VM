@@ -92,7 +92,7 @@ impl FloatVector {
         if self.length >= len(self.data) {
             self.data.push(0.0)
         }
-        let i = self.length
+        let mut i = self.length
         while i > index {
             self.data[i] = self.data[i - 1]
             i = i - 1

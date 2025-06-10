@@ -28,7 +28,7 @@ struct Pair<A, B> {
 // Function with multiple type parameters
 fn zip<A, B>(arrA: [A], arrB: [B]) -> [Pair<A, B>] {
     let result = []
-    let length = len(arrA)
+    let mut length = len(arrA)
     if (len(arrB) < length) {
         length = len(arrB)
     }

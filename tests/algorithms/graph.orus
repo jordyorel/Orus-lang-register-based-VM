@@ -40,8 +40,8 @@ impl Graph {
     
     // Get all adjacent vertices to vertex v
     fn get_adjacent(self, v: i32, result: [i32; 6]) -> i32 {
-        let count: i32 = 0
-        let i: i32 = 0
+        let mut count: i32 = 0
+        let mut i: i32 = 0
         
         // Find all vertices that are connected to v
         while i < self.vertices {
@@ -63,15 +63,15 @@ impl Graph {
         }
         
         // Array to track visited vertices
-        let visited: [i32; 6] = [0, 0, 0, 0, 0, 0]
+        let mut visited: [i32; 6] = [0, 0, 0, 0, 0, 0]
         
         // Queue for BFS (simplistic implementation with arrays)
-        let queue: [i32; 6] = [0, 0, 0, 0, 0, 0]
-        let front: i32 = 0
-        let rear: i32 = 0
+        let mut queue: [i32; 6] = [0, 0, 0, 0, 0, 0]
+        let mut front: i32 = 0
+        let mut rear: i32 = 0
         
         // Result string to track traversal order
-        let result: string = ""
+        let mut result: string = ""
         
         // Mark the current vertex as visited and enqueue it
         visited[start] = 1
@@ -86,11 +86,11 @@ impl Graph {
             result = result + current + " "
             
             // Get all adjacent vertices
-            let adj: [i32; 6] = [0, 0, 0, 0, 0, 0]
+            let mut adj: [i32; 6] = [0, 0, 0, 0, 0, 0]
             let adj_count: i32 = self.get_adjacent(current, adj)
             
             // Process all adjacent vertices
-            let j: i32 = 0
+            let mut j: i32 = 0
             while j < adj_count {
                 let adj_vertex: i32 = adj[j]
                 
@@ -113,14 +113,14 @@ impl Graph {
         visited[v] = 1
         
         // Start with the current vertex
-        let result: string = v + " "
+        let mut result: string = v + " "
         
         // Get all adjacent vertices
-        let adj: [i32; 6] = [0, 0, 0, 0, 0, 0]
+        let mut adj: [i32; 6] = [0, 0, 0, 0, 0, 0]
         let adj_count: i32 = self.get_adjacent(v, adj)
         
         // Process all adjacent vertices
-        let i: i32 = 0
+        let mut i: i32 = 0
         while i < adj_count {
             let adj_vertex: i32 = adj[i]
             
@@ -140,7 +140,7 @@ impl Graph {
         }
         
         // Array to track visited vertices
-        let visited: [i32; 6] = [0, 0, 0, 0, 0, 0]
+        let mut visited: [i32; 6] = [0, 0, 0, 0, 0, 0]
         
         return self.dfs_util(start, visited)
     }

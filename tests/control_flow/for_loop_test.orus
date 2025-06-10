@@ -1,6 +1,6 @@
 // Test for loop control flow
 fn main() {
-    let sum = 0
+    let mut sum = 0
 
     print("For Loop Test:")
 

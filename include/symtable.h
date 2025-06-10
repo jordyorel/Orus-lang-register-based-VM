@@ -12,6 +12,7 @@ typedef struct {
     int scope;
     uint8_t index;
     bool active;
+    bool isMutable;
     Token token;
 } Symbol;
 
@@ -23,7 +24,7 @@ typedef struct {
 
 void initSymbolTable(SymbolTable* table);
 void freeSymbolTable(SymbolTable* table);
-bool addSymbol(SymbolTable* table, const char* name, Token token, Type* type, int scope, uint8_t index);
+bool addSymbol(SymbolTable* table, const char* name, Token token, Type* type, int scope, uint8_t index, bool isMutable);
 Symbol* findSymbol(SymbolTable* table, const char* name);
 Symbol* findAnySymbol(SymbolTable* table, const char* name);
 void removeSymbolsFromScope(SymbolTable* table, int scope);

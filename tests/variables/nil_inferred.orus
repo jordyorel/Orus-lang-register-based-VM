@@ -1,5 +1,5 @@
 fn main() {
-    let x = nil
+    let mut x = nil
     x = 42
     print(x)
 }

@@ -1,6 +1,6 @@
 // Test nested loops with break using logical operators
 fn main() {
-    let sum = 0
+    let mut sum = 0
 
     print("Nested Loops Test with Logical Operators:")
 

@@ -2,7 +2,7 @@
 fn main() {
     let x = 10
     let y = 20
-    let result = 0
+    let mut result = 0
 
     print("If-Else Test:")
 
