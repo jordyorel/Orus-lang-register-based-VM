@@ -464,6 +464,8 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 return;
             }
             node->data.variable.index = index;
+
+
             node->valueType = variableTypes[index];
             if (!node->valueType) {
                 error(compiler, "Variable has no type defined.");
@@ -563,7 +565,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             }
 
             // Add the variable to the symbol table
-            uint8_t index = addLocal(compiler, node->data.let.name, node->valueType);
+            uint8_t index = addLocal(compiler, node->data.let.name, node->valueType, node->data.let.isMutable);
             node->data.let.index = index;
             break;
         }
@@ -627,6 +629,16 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 return;
             }
             node->data.variable.index = index;
+
+            char tempName[node->data.variable.name.length + 1];
+            memcpy(tempName, node->data.variable.name.start,
+                   node->data.variable.name.length);
+            tempName[node->data.variable.name.length] = '\0';
+            Symbol* sym = findSymbol(&compiler->symbols, tempName);
+            if (sym && !sym->isMutable) {
+                emitImmutableAssignmentError(compiler, &node->data.variable.name, tempName);
+                return;
+            }
 
             // Check that the types are compatible
             Type* varType = variableTypes[index];
@@ -1569,7 +1581,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     t.start = bindName;
                     t.length = (int)strlen(bindName);
                     t.line = node->line;
-                    addSymbol(&compiler->symbols, bindName, t, variableTypes[ex->index], compiler->scopeDepth, ex->index);
+                    addSymbol(&compiler->symbols, bindName, t, variableTypes[ex->index], compiler->scopeDepth, ex->index, true);
                 }
             } else {
                 for (int i = 0; i < mod->export_count; i++) {
@@ -1578,7 +1590,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     t.start = ex->name;
                     t.length = (int)strlen(ex->name);
                     t.line = node->line;
-                    addSymbol(&compiler->symbols, ex->name, t, variableTypes[ex->index], compiler->scopeDepth, ex->index);
+                    addSymbol(&compiler->symbols, ex->name, t, variableTypes[ex->index], compiler->scopeDepth, ex->index, true);
                 }
             }
 
@@ -1589,7 +1601,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         case AST_TRY: {
             beginScope(compiler);
             Type* strType = getPrimitiveType(TYPE_STRING);
-            uint8_t idx = addLocal(compiler, node->data.tryStmt.errorName, strType);
+            uint8_t idx = addLocal(compiler, node->data.tryStmt.errorName, strType, true);
             node->data.tryStmt.errorIndex = idx;
             typeCheckNode(compiler, node->data.tryStmt.tryBlock);
             if (compiler->hadError) { endScope(compiler); return; }
@@ -2667,10 +2679,10 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
 }
 
 uint8_t defineVariable(Compiler* compiler, Token name, Type* type) {
-    return addLocal(compiler, name, type);
+    return addLocal(compiler, name, type, false);
 }
 
-uint8_t addLocal(Compiler* compiler, Token name, Type* type) {
+uint8_t addLocal(Compiler* compiler, Token name, Type* type, bool isMutable) {
     char tempName[name.length + 1];
     memcpy(tempName, name.start, name.length);
     tempName[name.length] = '\0';
@@ -2698,7 +2710,7 @@ uint8_t addLocal(Compiler* compiler, Token name, Type* type) {
     vm.globals[index] = NIL_VAL;
     vm.publicGlobals[index] = false;
 
-    addSymbol(&compiler->symbols, nameObj->chars, name, type, compiler->scopeDepth, index);
+    addSymbol(&compiler->symbols, nameObj->chars, name, type, compiler->scopeDepth, index, isMutable);
 
     return index;
 }

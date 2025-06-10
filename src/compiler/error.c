@@ -421,6 +421,35 @@ void emitPrivateVariableError(Compiler* compiler, Token* token) {
     compiler->hadError = true;
 }
 
+void emitImmutableAssignmentError(Compiler* compiler, Token* token, const char* name) {
+    if (compiler->panicMode) return;
+    compiler->panicMode = true;
+
+    Diagnostic diagnostic;
+    memset(&diagnostic, 0, sizeof(Diagnostic));
+
+    diagnostic.code = ERROR_IMMUTABLE_ASSIGNMENT;
+    diagnostic.primarySpan.line = token->line;
+    const char* lineStart = token->start;
+    while (lineStart > compiler->sourceCode && lineStart[-1] != '\n') lineStart--;
+    diagnostic.primarySpan.column = (int)(token->start - lineStart) + 1;
+    diagnostic.primarySpan.length = token->length;
+    diagnostic.primarySpan.filePath = compiler->filePath;
+
+    char msgBuffer[128];
+    snprintf(msgBuffer, sizeof(msgBuffer),
+             "cannot assign to immutable variable `%s`", name);
+    diagnostic.text.message = msgBuffer;
+    diagnostic.text.help = strdup("use `let mut` to declare the variable as mutable");
+    const char* note = "variables are immutable by default";
+    diagnostic.text.notes = (char**)&note;
+    diagnostic.text.noteCount = 1;
+
+    emitDiagnostic(&diagnostic);
+    if (diagnostic.text.help) free(diagnostic.text.help);
+    compiler->hadError = true;
+}
+
 void emitStructFieldTypeMismatchError(Compiler* compiler, Token* token, const char* structName, const char* fieldName, const char* expectedType, const char* actualType) {
     if (compiler->panicMode) return;
     compiler->panicMode = true;

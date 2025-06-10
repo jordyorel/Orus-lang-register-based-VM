@@ -64,7 +64,7 @@ ASTNode* createVariableNode(Token name, uint8_t index) {
     return node;
 }
 
-ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer) {
+ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer, bool isMutable) {
     ASTNode* node = allocateASTNode();
     node->type = AST_LET;
     node->left = NULL;
@@ -74,6 +74,7 @@ ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer) {
     node->data.let.type = type;
     node->data.let.initializer = initializer;
     node->data.let.index = 0;
+    node->data.let.isMutable = isMutable;
     node->valueType = NULL;
     return node;
 }
