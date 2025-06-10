@@ -133,7 +133,7 @@ The following advanced Rust features will **not** be implemented:
 | Feature            | Description                                 |
 |--------------------|---------------------------------------------|
 | `as bool`          | Allow casting integers or floats to boolean |
-| `as string`        | Allow converting any value to a string      |
+| `as string`        | ✅ Allow converting any value to a string |
 | Overflow checking  | Validate casts like `-1 as u8` at runtime   |
 | `const` support    | Introduce constant values for compile-time  |
 
