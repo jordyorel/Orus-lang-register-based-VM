@@ -2,7 +2,7 @@
 
 fn main() {
     let i32_val: i32 = 42
-    let u32_val: u32 = 100 as u32
+    let u32_val: u32 = 100
     let f64_val: f64 = 3.14
 
     print("Type Conversion Test:")

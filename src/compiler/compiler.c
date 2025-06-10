@@ -8,6 +8,7 @@
 #include "../../include/memory.h"
 #include "../../include/chunk.h"
 #include "../../include/value.h"
+#include "../../include/ast.h"
 #include "../../include/vm.h"
 #include "../../include/modules.h"
 #include "../../include/debug.h"
@@ -127,6 +128,42 @@ static void errorFmt(Compiler* compiler, const char* format, ...) {
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
     emitSimpleError(compiler, ERROR_GENERAL, buffer);
+}
+
+static bool convertLiteralForDecl(ASTNode* init, Type* src, Type* dst) {
+    if (!init || init->type != AST_LITERAL || !src || !dst) return false;
+
+    if (src->kind == TYPE_I32 && dst->kind == TYPE_U32) {
+        if (IS_I32(init->data.literal)) {
+            int32_t v = AS_I32(init->data.literal);
+            init->data.literal = U32_VAL((uint32_t)v);
+            init->valueType = dst;
+            return true;
+        }
+    } else if (src->kind == TYPE_U32 && dst->kind == TYPE_I32) {
+        if (IS_U32(init->data.literal)) {
+            uint32_t v = AS_U32(init->data.literal);
+            init->data.literal = I32_VAL((int32_t)v);
+            init->valueType = dst;
+            return true;
+        }
+    } else if ((src->kind == TYPE_I32 || src->kind == TYPE_U32) &&
+               dst->kind == TYPE_F64) {
+        double v = (src->kind == TYPE_I32) ? (double)AS_I32(init->data.literal)
+                                           : (double)AS_U32(init->data.literal);
+        init->data.literal = F64_VAL(v);
+        init->valueType = dst;
+        return true;
+    } else if (src->kind == TYPE_F64 && dst->kind == TYPE_I32) {
+        init->data.literal = I32_VAL((int32_t)AS_F64(init->data.literal));
+        init->valueType = dst;
+        return true;
+    } else if (src->kind == TYPE_F64 && dst->kind == TYPE_U32) {
+        init->data.literal = U32_VAL((uint32_t)AS_F64(init->data.literal));
+        init->valueType = dst;
+        return true;
+    }
+    return false;
 }
 
 
@@ -461,6 +498,24 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                             initType->info.array.elementType->kind == TYPE_NIL &&
                             declType->kind == TYPE_ARRAY) {
                             node->data.let.initializer->valueType = declType;
+                            initType = declType;
+                        } else if (node->data.let.initializer->type == AST_ARRAY &&
+                                   declType->kind == TYPE_ARRAY) {
+                            ASTNode* el = node->data.let.initializer->data.array.elements;
+                            while (el) {
+                                convertLiteralForDecl(el, el->valueType,
+                                                     declType->info.array.elementType);
+                                if (!typesEqual(el->valueType,
+                                                declType->info.array.elementType)) {
+                                    error(compiler, "Type mismatch in let declaration.");
+                                    return;
+                                }
+                                el = el->next;
+                            }
+                            node->data.let.initializer->valueType = declType;
+                            initType = declType;
+                        } else if (convertLiteralForDecl(node->data.let.initializer,
+                                                      initType, declType)) {
                             initType = declType;
                         } else {
                             error(compiler, "Type mismatch in let declaration.");

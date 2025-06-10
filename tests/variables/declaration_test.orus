@@ -1,7 +1,7 @@
 // Tests variable declarations with different types
 fn main() {
     let i32_var: i32 = 42
-    let u32_var: u32 = 100 as u32
+    let u32_var: u32 = 100
     let f64_var: f64 = 3.14
     let bool_var: bool = true
     let inferred_i32 = 24
