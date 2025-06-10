@@ -17,9 +17,9 @@ This roadmap outlines the planned evolution of the **Orus type system** to adopt
 
 ### ✔️ Tasks
 
-- [x] Introduce `let mut` syntax for declaring mutable variables
-- [x] Disallow reassignment to immutable variables at compile time
-- [x] Implement clear error messages for mutability violations
+- [] Introduce `let mut` syntax for declaring mutable variables
+- [] Disallow reassignment to immutable variables at compile time
+- [] Implement clear error messages for mutability violations
 
 ### 🔍 Examples
 
@@ -46,11 +46,11 @@ name = "world"
 
 ### ✔️ Tasks
 
-- [x] Implement `as` keyword for type casting
-- [x] Support casting between `i32`, `u32`, and `f64`
-- [x] Enforce truncation behavior for float → int conversions
-- [x] Disallow implicit coercion
-- [x] Add parser/compiler support for syntax: `value as Type`
+- [] Implement `as` keyword for type casting
+- [] Support casting between `i32`, `u32`, and `f64`
+- [] Enforce truncation behavior for float → int conversions
+- [] Disallow implicit coercion
+- [] Add parser/compiler support for syntax: `value as Type`
 
 ---
 
@@ -97,9 +97,9 @@ let f2: f64 = i as f64
 
 ### ✔️ Tasks
 
-- [x] Block implicit assignment from `f64` to `i32`, `i32` to `u32`, etc.
-- [x] Block mixed-type arithmetic without `as` casting
-- [x] Validate types statically at compile time
+- [] Block implicit assignment from `f64` to `i32`, `i32` to `u32`, etc.
+- [] Block mixed-type arithmetic without `as` casting
+- [] Validate types statically at compile time
 
 ### 🔍 Invalid Examples
 
