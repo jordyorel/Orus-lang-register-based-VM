@@ -1477,23 +1477,27 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
         case AST_SLICE: {
             typeCheckNode(compiler, node->left); // array
-            typeCheckNode(compiler, node->data.slice.start);
-            typeCheckNode(compiler, node->data.slice.end);
+            if (node->data.slice.start) typeCheckNode(compiler, node->data.slice.start);
+            if (node->data.slice.end) typeCheckNode(compiler, node->data.slice.end);
             if (compiler->hadError) return;
             Type* arrayType = node->left->valueType;
-            Type* startType = node->data.slice.start->valueType;
-            Type* endType = node->data.slice.end->valueType;
             if (!arrayType || arrayType->kind != TYPE_ARRAY) {
                 error(compiler, "Can only slice arrays.");
                 return;
             }
-            if (!startType || (startType->kind != TYPE_I32 && startType->kind != TYPE_U32)) {
-                error(compiler, "Slice start index must be an integer.");
-                return;
+            if (node->data.slice.start) {
+                Type* startType = node->data.slice.start->valueType;
+                if (!startType || (startType->kind != TYPE_I32 && startType->kind != TYPE_U32)) {
+                    error(compiler, "Slice start index must be an integer.");
+                    return;
+                }
             }
-            if (!endType || (endType->kind != TYPE_I32 && endType->kind != TYPE_U32)) {
-                error(compiler, "Slice end index must be an integer.");
-                return;
+            if (node->data.slice.end) {
+                Type* endType = node->data.slice.end->valueType;
+                if (!endType || (endType->kind != TYPE_I32 && endType->kind != TYPE_U32)) {
+                    error(compiler, "Slice end index must be an integer.");
+                    return;
+                }
             }
             node->valueType = node->left->valueType;
             break;
@@ -2101,9 +2105,17 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         case AST_SLICE: {
             generateCode(compiler, node->left);
             if (compiler->hadError) return;
-            generateCode(compiler, node->data.slice.start);
+            if (node->data.slice.start) {
+                generateCode(compiler, node->data.slice.start);
+            } else {
+                emitConstant(compiler, NIL_VAL);
+            }
             if (compiler->hadError) return;
-            generateCode(compiler, node->data.slice.end);
+            if (node->data.slice.end) {
+                generateCode(compiler, node->data.slice.end);
+            } else {
+                emitConstant(compiler, NIL_VAL);
+            }
             if (compiler->hadError) return;
             writeOp(compiler, OP_SLICE);
             break;

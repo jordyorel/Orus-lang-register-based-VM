@@ -1005,15 +1005,21 @@ static InterpretResult run() {
                 Value arrayVal = vmPop(&vm);
 
                 if (!IS_ARRAY(arrayVal) ||
-                    !(IS_I32(startVal) || IS_U32(startVal)) ||
-                    !(IS_I32(endVal) || IS_U32(endVal))) {
-                    RUNTIME_ERROR("slice expects (array, i32, i32).");
+                    !(IS_I32(startVal) || IS_U32(startVal) || IS_NIL(startVal)) ||
+                    !(IS_I32(endVal) || IS_U32(endVal) || IS_NIL(endVal))) {
+                    RUNTIME_ERROR("slice expects (array, i32?, i32?).");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
                 ObjArray* src = AS_ARRAY(arrayVal);
-                int start = IS_I32(startVal) ? AS_I32(startVal) : (int)AS_U32(startVal);
-                int end = IS_I32(endVal) ? AS_I32(endVal) : (int)AS_U32(endVal);
+                int start = 0;
+                int end = src->length;
+                if (!IS_NIL(startVal)) {
+                    start = IS_I32(startVal) ? AS_I32(startVal) : (int)AS_U32(startVal);
+                }
+                if (!IS_NIL(endVal)) {
+                    end = IS_I32(endVal) ? AS_I32(endVal) : (int)AS_U32(endVal);
+                }
                 if (start < 0) start = 0;
                 if (end > src->length) end = src->length;
                 if (start > end) start = end;

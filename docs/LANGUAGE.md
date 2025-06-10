@@ -126,10 +126,14 @@ print(len(values))  // 2
 
 ### Slicing
 
-Subarrays are created with `[start..end]` (end exclusive).
+Subarrays are created with `[start..end]` (end exclusive). The start or end may
+be omitted to slice from the beginning or to the end of the array.
 
 ```orus
-let part = nums[0..2]  // [1, 2]
+let part = nums[0..2]  // first to 3rd element
+let part = nums[..2]   // first to 3rd element
+let part = nums[0..]   // first to last element
+let part = nums[..]    // entire array
 ```
 
 ## Structs
