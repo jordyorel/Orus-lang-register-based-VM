@@ -16,4 +16,13 @@ fn main() {
     print(inferred_i32)
     print(inferred_u32)
     print(inferred_f64)
+
+    print("Types of vars: ")
+    print(type_of(i32_var))
+    print(type_of(u32_var))
+    print(type_of(f64_var))
+    print(type_of(bool_var))
+    print(type_of(inferred_i32))
+    print(type_of(inferred_u32))
+    print(type_of(inferred_f64))
 }
