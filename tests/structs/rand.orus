@@ -2,13 +2,7 @@ struct SeedBox {
     value: u32
 }
 
-fn seed_storage() -> [SeedBox; 1] {
-    let store: [SeedBox; 1] = [SeedBox{ value: 123456789 }]
-    return store
-}
-
-fn rand() -> f64 {
-    let store = seed_storage()
+fn rand(store: [SeedBox; 1]) -> f64 {
 
     let a: u32 = 1664525
     let c: u32 = 1013904223
@@ -22,17 +16,26 @@ fn rand() -> f64 {
     return numerator / 4294967296.0
 }
 
-fn rand_int(min: i32, max: i32) -> i32 {
+fn seed_random(store: [SeedBox; 1], new_seed: u32) {
+    store[0].value = new_seed
+}
+
+fn rand_int(store: [SeedBox; 1], min: i32, max: i32) -> i32 {
     let range: f64 = (max - min + 1) * 1.0
-    return min + (rand() * range) / 1
+    return min + (rand(store) * range) / 1
 }
 
 fn main() {
-    print("Random float: {}", rand())
+    let store: [SeedBox; 1] = [SeedBox{ value: 123456789 }]
 
-    let a = rand_int(1, 10)
-    let b = rand_int(1, 10)
-    let c = rand_int(1, 10)
+    print("Random float: {}", rand(store))
+
+    let a = rand_int(store, 1, 10)
+    let b = rand_int(store, 1, 10)
+    let c = rand_int(store, 1, 10)
 
     print("Random ints: {}, {}, {}", a, b, c)
+
+    seed_random(store, 42 as u32)
+    print("Seeded float: {}", rand(store))
 }

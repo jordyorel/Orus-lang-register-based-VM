@@ -166,7 +166,13 @@ Orus provides these operators with standard precedence rules:
 
 ### Type Conversion
 
-Type conversion must be performed explicitly, as Orus does not perform implicit type conversions between numeric types.
+Type conversion must be performed explicitly, as Orus does not perform implicit type conversions between numeric types. Use the `as` keyword to cast a value to another numeric type:
+
+```orus
+let a: i32 = -42
+let b: u32 = a as u32
+let c: f64 = b as f64
+```
 
 ## Modules and Imports
 
@@ -184,7 +190,17 @@ use path::to::module
 
 fn main() {
     // Call functions from the imported module
-    module_function()
+module_function()
+}
+```
+
+Modules can be imported under a different name using the `as` keyword:
+
+```orus
+use datetime as dt
+
+fn main() {
+    let now = dt.now()
 }
 ```
 
