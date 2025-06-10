@@ -250,6 +250,26 @@ use datetime as dt
 
 Modules are only loaded once. Importing the same file twice triggers a runtime error. Each module may define structs, functions and `impl` blocks. Only the entry file needs a `main` function.
 
+### Public functions
+
+Use the `pub` keyword before a top-level function to export it from a module. Only items marked `pub` can be imported with `use`.
+
+```orus
+// utils.orus
+pub fn helper() {
+    print("from helper")
+}
+
+// main.orus
+use utils::{helper}
+
+fn main() {
+    helper()
+}
+```
+
+Struct fields and methods cannot yet be declared `pub`.
+
 ## Built-in Functions
 
 Common utilities are always available. See `docs/BUILTINS.md` for full details.
