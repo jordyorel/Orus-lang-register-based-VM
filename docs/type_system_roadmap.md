@@ -91,15 +91,15 @@ let f2: f64 = i as f64
 
 ---
 
-## 🚫 Phase 3: Prevent Implicit Conversion
+## ✅ Phase 3: Prevent Implicit Conversion
 
 **Goal**: Ensure that no type coercion occurs automatically. All conversions must be explicitly defined using `as`.
 
 ### ✔️ Tasks
 
-- [] Block implicit assignment from `f64` to `i32`, `i32` to `u32`, etc.
-- [] Block mixed-type arithmetic without `as` casting
-- [] Validate types statically at compile time
+- [x] Block implicit assignment from `f64` to `i32`, `i32` to `u32`, etc.
+- [x] Block mixed-type arithmetic without `as` casting
+- [x] Validate types statically at compile time
 
 ### 🔍 Invalid Examples
 
