@@ -10,6 +10,7 @@ typedef enum {
     AST_LITERAL,
     AST_BINARY,
     AST_UNARY,
+    AST_CAST,
     AST_VARIABLE,
     AST_ASSIGNMENT,
     AST_CALL,
@@ -151,6 +152,10 @@ typedef struct {
     uint8_t errorIndex;
 } TryData;
 
+typedef struct {
+    Type* type;              // Target type for cast
+} CastData;
+
 typedef struct ASTNode {
     Obj obj;
     ASTNodeType type;
@@ -189,6 +194,7 @@ typedef struct ASTNode {
         ReturnData returnStmt;
         ImportData importStmt;
         UseData useStmt;
+        CastData cast;
     } data;
     Type* valueType;
     int line; // Source line number for diagnostics
@@ -223,6 +229,7 @@ ASTNode* createBreakNode();
 ASTNode* createContinueNode();
 ASTNode* createImportNode(Token path);
 ASTNode* createUseNode(UseData data);
+ASTNode* createCastNode(ASTNode* expr, Type* type);
 
 void freeASTNode(ASTNode* node);
 

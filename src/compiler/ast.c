@@ -335,6 +335,17 @@ ASTNode* createUseNode(UseData data) {
     return node;
 }
 
+ASTNode* createCastNode(ASTNode* expr, Type* type) {
+    ASTNode* node = allocateASTNode();
+    node->type = AST_CAST;
+    node->left = expr;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.cast.type = type;
+    node->valueType = NULL;
+    return node;
+}
+
 ASTNode* createTryNode(ASTNode* tryBlock, Token errorName, ASTNode* catchBlock) {
     ASTNode* node = allocateASTNode();
     node->type = AST_TRY;
