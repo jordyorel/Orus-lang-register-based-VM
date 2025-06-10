@@ -7,7 +7,7 @@ description.
 
 | Function | Description |
 |----------|-------------|
-| `print(values...)` | Output values to the console using `{}` placeholders for interpolation. |
+| `print(values...)` | Output values to the console using `{}` placeholders for interpolation. No newline is appended, matching Rust's `print!` macro. |
 | `len(value)` | Return the length of a string or array. |
 | `substring(str, start, len)` | Extract a portion of a string. |
 | `push(array, value)` | Append a value to a dynamic array. |

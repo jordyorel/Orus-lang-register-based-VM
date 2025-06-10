@@ -21,7 +21,8 @@ include:
 - Function calls can reference functions defined later in the file.
 - Arithmetic, comparison and logical (`and`/`or`/`not`) operators.
 - String concatenation with `+` and a `print` function supporting simple
-  interpolation using `{}` placeholders.
+  interpolation using `{}` placeholders. The `print` function behaves like
+  Rust's `print!` macro and does not append a newline automatically.
 - User input via `input(prompt)` for interactive programs.
 - Macro helpers for generic dynamic arrays.
 - Variables are immutable by default. Use `let mut` for reassignment.

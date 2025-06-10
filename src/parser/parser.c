@@ -1213,9 +1213,6 @@ static void statement(Parser* parser, ASTNode** ast) {
     if (match(parser, TOKEN_PRINT)) {
         didPrint = true;
         newline = false;
-    } else if (match(parser, TOKEN_PRINTLN)) {
-        didPrint = true;
-        newline = true;
     }
 
     if (didPrint) {
@@ -1764,7 +1761,6 @@ static void synchronize(Parser* parser) {
             case TOKEN_IF:
             case TOKEN_WHILE:
             case TOKEN_PRINT:
-            case TOKEN_PRINTLN:
             case TOKEN_RETURN:
                 return;
             default:
