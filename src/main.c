@@ -140,9 +140,10 @@ static void repl() {
             } else {
                 printf("Runtime error.\n");
             }
-        } else if (!isPrintStmt && vm.stackTop > vm.stack) {
+        } else if (!isPrintStmt && vm.stackTop > vm.stack &&
+                   !IS_NIL(*(vm.stackTop - 1))) {
             // Print the result of the expression if there's a value on the stack
-            // and it's not a print statement (which already outputs its value)
+            // that isn't nil and it's not a print statement (which already outputs its value)
             printValue(*(vm.stackTop - 1));  // Print the top value on the stack
             printf("\n");
         }
