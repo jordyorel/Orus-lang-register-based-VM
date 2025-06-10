@@ -17,6 +17,7 @@
 #include "../../include/parser.h"
 #include "../../include/vm_ops.h"
 #include "../../include/modules.h"
+#include "../../include/type.h"
 
 VM vm;
 
@@ -655,6 +656,22 @@ static InterpretResult run() {
                     returnValue = vmPop(&vm);
                 }
 
+                // Determine the declared return type of the current function
+                Type* declared = NULL;
+                if (vm.frameCount > 0) {
+                    uint8_t funcIndex = vm.frames[vm.frameCount - 1].functionIndex;
+                    if (funcIndex < UINT8_COUNT && vm.globalTypes[funcIndex] &&
+                        vm.globalTypes[funcIndex]->kind == TYPE_FUNCTION) {
+                        declared = vm.globalTypes[funcIndex]->info.function.returnType;
+                    }
+                }
+
+                // For functions declared with a void return type, ignore any
+                // leftover value and return nil instead.
+                if (declared == NULL || declared->kind == TYPE_VOID) {
+                    returnValue = NIL_VAL;
+                }
+
                 // If we're in a function call, restore the call frame
                 if (vm.frameCount > 0) {
                     // Restore the previous call frame
@@ -1201,8 +1218,9 @@ static InterpretResult run() {
                                              AS_BOOL(arg) ? "true" : "false");
                                 break;
                             case VAL_NIL:
-                                valueLen =
-                                    snprintf(valueStr, sizeof(valueStr), "nil");
+                                // Suppress printing of nil values in
+                                // formatted output.
+                                valueLen = 0;
                                 break;
                             case VAL_STRING: {
                                 valueLen = AS_STRING(arg)->length;
@@ -1375,7 +1393,8 @@ static InterpretResult run() {
                                 valueLen = snprintf(valueStr, sizeof(valueStr), "%s", AS_BOOL(arg) ? "true" : "false");
                                 break;
                             case VAL_NIL:
-                                valueLen = snprintf(valueStr, sizeof(valueStr), "nil");
+                                // Suppress printing of nil values in formatted output.
+                                valueLen = 0;
                                 break;
                             case VAL_STRING: {
                                 valueLen = AS_STRING(arg)->length;
