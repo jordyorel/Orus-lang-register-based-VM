@@ -17,6 +17,40 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+static void deriveRuntimeHelp(const char* message,
+                              char** helpOut,
+                              const char** noteOut) {
+    *helpOut = NULL;
+    *noteOut = NULL;
+
+    if (strstr(message, "string interpolation")) {
+        *helpOut = strdup("ensure the number of '{}' placeholders matches the number of arguments");
+        *noteOut = "each '{}' in the format string corresponds to one argument provided after the format string";
+    } else if (strstr(message, "Stack underflow")) {
+        *helpOut = strdup("check that every operator has enough input values");
+        *noteOut = "this usually means a value was not pushed before the operation";
+    } else if (strstr(message, "Operand must") || strstr(message, "Operands must")) {
+        *helpOut = strdup("verify the value types or use explicit casts like 'as i32'");
+        *noteOut = "the operation expected a different type";
+    } else if (strstr(message, "Module") && strstr(message, "not found")) {
+        *helpOut = strdup("check the module path or adjust the ORUS_STD_PATH environment variable");
+        *noteOut = "imports are resolved relative to the current file or the standard library path";
+    } else if (strstr(message, "Import cycle")) {
+        *helpOut = strdup("restructure your modules to remove circular dependencies");
+        *noteOut = "module A importing B while B imports A causes an import cycle";
+    } else if (strstr(message, "already executed")) {
+        *helpOut = strdup("import each module only once or use 'use' for reexports");
+        *noteOut = "module code runs only on its first import";
+    }
+
+    if (!*helpOut) {
+        *helpOut = strdup("refer to the runtime error message for more details");
+    }
+    if (!*noteOut) {
+        *noteOut = "a runtime error occurred";
+    }
+}
+
 static void printError(ObjError* err) {
     Diagnostic diag;
     memset(&diag, 0, sizeof(Diagnostic));
@@ -29,17 +63,7 @@ static void printError(ObjError* err) {
 
     char* help = NULL;
     const char* note = NULL;
-    if (strstr(err->message->chars, "string interpolation")) {
-        help = strdup("ensure the number of '{}' placeholders matches the number of arguments");
-        note = "each '{}' in the format string corresponds to one argument provided after the format string";
-    }
-
-    if (!help) {
-        help = strdup("refer to the runtime error message for more details");
-    }
-    if (!note) {
-        note = "a runtime error occurred";
-    }
+    deriveRuntimeHelp(err->message->chars, &help, &note);
 
     diag.text.help = help;
     diag.text.notes = (char**)&note;
