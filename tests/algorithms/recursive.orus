@@ -29,10 +29,10 @@ impl Recursive {
             return 1
         }
         
-        let a: i32 = 0
-        let b: i32 = 1
-        let c: i32 = 0
-        let i: i32 = 2
+        let mut a: i32 = 0
+        let mut b: i32 = 1
+        let mut c: i32 = 0
+        let mut i: i32 = 2
         
         while i <= n {
             c = a + b
@@ -61,8 +61,8 @@ fn main() {
     
     // Test fibonacci functions
     print("\nFibonacci sequence (recursive):")
-    let i: i32 = 0
-    let result1: string = "["
+    let mut i: i32 = 0
+    let mut result1: string = "["
     while i <= 10 {
         result1 = result1 + Recursive.fibonacci(i)
         if i < 10 {
@@ -75,7 +75,7 @@ fn main() {
     
     print("\nFibonacci sequence (iterative):")
     i = 0
-    let result2: string = "["
+    let mut result2: string = "["
     while i <= 15 {
         result2 = result2 + Recursive.fibonacci_iter(i)
         if i < 15 {

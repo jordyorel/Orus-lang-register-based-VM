@@ -17,9 +17,9 @@ This roadmap outlines the planned evolution of the **Orus type system** to adopt
 
 ### ✔️ Tasks
 
-- [] Introduce `let mut` syntax for declaring mutable variables
-- [] Disallow reassignment to immutable variables at compile time
-- [] Implement clear error messages for mutability violations
+- [x] Introduce `let mut` syntax for declaring mutable variables
+- [x] Disallow reassignment to immutable variables at compile time
+- [x] Implement clear error messages for mutability violations
 
 ### 🔍 Examples
 

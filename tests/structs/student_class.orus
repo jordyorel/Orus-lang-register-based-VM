@@ -20,7 +20,7 @@ impl Student {
     }
     
     fn average(self) -> i32 {
-        let sum: i32 = 0
+        let mut sum: i32 = 0
         for i in 0..5 {
             sum = sum + self.grades[i]
         }
@@ -28,7 +28,7 @@ impl Student {
     }
     
     fn highest(self) -> i32 {
-        let max: i32 = self.grades[0]
+        let mut max: i32 = self.grades[0]
         for i in 1..5 {
             if self.grades[i] > max {
                 max = self.grades[i]
@@ -71,7 +71,7 @@ impl Class {
             return 0
         }
         
-        let sum: i32 = 0
+        let mut sum: i32 = 0
         for i in 0..self.count {
             sum = sum + self.students[i].average()
         }

@@ -911,7 +911,7 @@ static void functionDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
             }
 
             // Create parameter node (using let node for now)
-            ASTNode* param = createLetNode(paramName, paramType, NULL);
+            ASTNode* param = createLetNode(paramName, paramType, NULL, false);
             param->line = paramName.line;
 
             // Add to parameter list
@@ -1148,7 +1148,7 @@ static void structDeclaration(Parser* parser, ASTNode** ast) {
     parser->genericCount = prevGenericCount;
 
     // Create a dummy global variable for the struct name to allow method calls
-    *ast = createLetNode(nameTok, structType, NULL);
+    *ast = createLetNode(nameTok, structType, NULL, false);
     (*ast)->line = nameTok.line;
 }
 
@@ -1346,6 +1346,7 @@ static void statement(Parser* parser, ASTNode** ast) {
         if (parser->functionDepth == 0) {
             error(parser, "'let' declarations must be inside a function.");
         }
+        bool isMutable = match(parser, TOKEN_MUT);
         consume(parser, TOKEN_IDENTIFIER, "Expect variable name.");
         Token name = parser->previous;
         Type* type = NULL;
@@ -1360,7 +1361,7 @@ static void statement(Parser* parser, ASTNode** ast) {
         expression(parser, &initializer);
         consumeStatementEnd(parser);
 
-        *ast = createLetNode(name, type, initializer);
+        *ast = createLetNode(name, type, initializer, isMutable);
         (*ast)->line = name.line;
 
     } else {

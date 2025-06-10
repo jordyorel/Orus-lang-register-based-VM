@@ -47,6 +47,7 @@ typedef struct {
     Type* type;
     struct ASTNode* initializer;
     uint8_t index;
+    bool isMutable;
 } LetData;
 
 typedef struct {
@@ -204,7 +205,7 @@ ASTNode* createLiteralNode(Value value);
 ASTNode* createBinaryNode(Token operator, ASTNode * left, ASTNode* right);
 ASTNode* createUnaryNode(Token operator, ASTNode * operand);
 ASTNode* createVariableNode(Token name, uint8_t index);
-ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer);
+ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer, bool isMutable);
 ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount, int line);
 ASTNode* createAssignmentNode(Token name, ASTNode* value);
 ASTNode* createIfNode(ASTNode* condition, ASTNode* thenBranch, ASTNode* elifConditions, ASTNode* elifBranches, ASTNode* elseBranch);

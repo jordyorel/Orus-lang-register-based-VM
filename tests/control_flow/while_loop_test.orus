@@ -1,8 +1,8 @@
 // Test while loop control flow
 
 fn main() {
-    let count = 0
-    let sum = 0
+    let mut count = 0
+    let mut sum = 0
 
     print("While Loop Test:")
 

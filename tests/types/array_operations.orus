@@ -7,14 +7,14 @@ fn main() {
     let mixed: [bool; 3] = [true, false, true]
 
     // Sum array elements
-    let sum: i32 = 0
+    let mut sum: i32 = 0
     for idx in 0..5 {
         sum = sum + numbers[idx]
     }
     print("Sum of numbers: {}", sum)
 
     // Find maximum value
-    let max: i32 = numbers[0]
+    let mut max: i32 = numbers[0]
     for j in 1..5 {
         if numbers[j] > max {
             max = numbers[j]
@@ -23,7 +23,7 @@ fn main() {
     print("Maximum value: {}", max)
 
     // Create a new array from an existing one
-    let doubled: [i32; 5] = [0, 0, 0, 0, 0]
+    let mut doubled: [i32; 5] = [0, 0, 0, 0, 0]
     for k in 0..5 {
         doubled[k] = numbers[k] * 2
     }

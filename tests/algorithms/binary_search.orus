@@ -2,9 +2,9 @@ struct BinarySearch {}
 
 impl BinarySearch {
     fn binary_search(arr: [i32; 8], target: i32) -> i32 {
-        let left: i32 = 0
-        let right: i32 = 7
-        let mid: i32 = 0
+        let mut left: i32 = 0
+        let mut right: i32 = 7
+        let mut mid: i32 = 0
 
         while left <= right {
             mid = left + (right - left) / 2
@@ -24,7 +24,7 @@ impl BinarySearch {
     }
     
     fn array_to_string(arr: [i32; 8]) -> string {
-        let result: string = "["
+        let mut result: string = "["
         for i in 0..8 {
             result = result + arr[i]
             if i < 7 {

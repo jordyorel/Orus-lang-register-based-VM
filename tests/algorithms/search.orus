@@ -3,7 +3,7 @@ struct Search {}
 impl Search {
     // Linear search algorithm
     fn linear_search(arr: [i32; 10], target: i32) -> i32 {
-        let i: i32 = 0
+        let mut i: i32 = 0
         while i < 10 {
             if arr[i] == target {
                 return i  // Return index where target was found
@@ -15,9 +15,9 @@ impl Search {
     
     // Binary search algorithm (requires sorted array)
     fn binary_search(arr: [i32; 10], target: i32) -> i32 {
-        let left: i32 = 0
-        let right: i32 = 9
-        let mid: i32 = 0
+        let mut left: i32 = 0
+        let mut right: i32 = 9
+        let mut mid: i32 = 0
         
         while left <= right {
             mid = left + (right - left) / 2

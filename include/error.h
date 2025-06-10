@@ -92,6 +92,7 @@ void emitGenericTypeError(Compiler* compiler,
 void emitUndefinedFunctionError(Compiler* compiler, Token* token);
 void emitPrivateFunctionError(Compiler* compiler, Token* token);
 void emitPrivateVariableError(Compiler* compiler, Token* token);
+void emitImmutableAssignmentError(Compiler* compiler, Token* token, const char* name);
 void emitStructFieldTypeMismatchError(Compiler* compiler, Token* token, const char* structName, const char* fieldName, const char* expectedType, const char* actualType);
 void emitFieldAccessNonStructError(Compiler* compiler, Token* token, const char* actualType);
 void emitIsTypeSecondArgError(Compiler* compiler, Token* token, const char* actualType);

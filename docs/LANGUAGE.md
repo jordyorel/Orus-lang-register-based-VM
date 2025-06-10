@@ -116,7 +116,7 @@ Variables are introduced with the `let` keyword and follow these rules:
 
 - All variables must be explicitly declared before use
 - Type annotations are optional when the type can be inferred
-- Variables can be reassigned with a compatible value
+- Variables are immutable by default and can only be reassigned when declared with `let mut`
 - A variable's type is fixed after its declaration or first assignment
 - Variable scope is block-based
 - Variables cannot be declared outside functions
@@ -124,11 +124,11 @@ Variables are introduced with the `let` keyword and follow these rules:
 
 Examples:
 ```orus
-let count = 0                 // Type inference (i32)
+let mut count = 0             // Mutable variable (i32)
 let text: string = "hello"    // Explicit type annotation
 let flag = true               // Type inference (bool)
 
-// Reassignment 
+// Reassignment only works on `count`
 count = 10                    // Simple reassignment
 count += 2                    // Compound assignment
 

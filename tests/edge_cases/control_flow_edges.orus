@@ -6,7 +6,7 @@ fn main() {
     }
 
     // While loop that never executes
-    let count: i32 = 0
+    let mut count: i32 = 0
     while count > 0 {
         print(count)
         count = count - 1

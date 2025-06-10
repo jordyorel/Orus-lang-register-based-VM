@@ -3,8 +3,8 @@ struct StringAlgorithms {}
 impl StringAlgorithms {
     // Check if a string is a palindrome
     fn is_palindrome(s: string) -> bool {
-        let left: i32 = 0
-        let right: i32 = len(s) - 1
+        let mut left: i32 = 0
+        let mut right: i32 = len(s) - 1
 
         while left < right {
             if substring(s, left, 1) != substring(s, right, 1) {
@@ -19,8 +19,8 @@ impl StringAlgorithms {
     
     // Count occurrences of a character in a string
     fn count_char(s: string, c: string) -> i32 {
-        let count: i32 = 0
-        let i: i32 = 0
+        let mut count: i32 = 0
+        let mut i: i32 = 0
         let n: i32 = len(s)
 
         while i < n {
@@ -46,7 +46,7 @@ impl StringAlgorithms {
             return 0
         }
 
-        let i: i32 = 0
+        let mut i: i32 = 0
         while i <= text_len - pat_len {
             if substring(text, i, pat_len) == pattern {
                 return 1
@@ -59,8 +59,8 @@ impl StringAlgorithms {
     
     // Reverse a string
     fn reverse_string(s: string) -> string {
-        let result: string = ""
-        let i: i32 = len(s) - 1
+        let mut result: string = ""
+        let mut i: i32 = len(s) - 1
 
         while i >= 0 {
             result = result + substring(s, i, 1)

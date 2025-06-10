@@ -1,6 +1,6 @@
 // Build up a large string through repeated concatenation
 fn main() {
-    let text: string = ""
+    let mut text: string = ""
     for i in 0..500 {
         text = text + "a"
     }
