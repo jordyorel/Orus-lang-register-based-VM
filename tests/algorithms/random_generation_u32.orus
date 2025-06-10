@@ -1,39 +1,33 @@
 // Linear congruential generator example using u32 seed
-fn get_seed() -> [u32; 1] {
-    // Create once, reuse each time
-    let state: [u32; 1] = [123456789]
-    return state
-}
-
-// Generate the next pseudorandom u32 value
-fn rand_u32() -> u32 {
-    let state = get_seed()
+fn rand_u32(seed: [u32; 1]) -> u32 {
     let a: u32 = 1664525
     let c: u32 = 1013904223
-    let next: u32 = a * state[0] + c
-    state[0] = next
+    let next: u32 = a * seed[0] + c
+    seed[0] = next
     return next
 }
 
-fn rand() -> f64 {
-    return rand_u32() / 4294967296.0
+fn rand(seed: [u32; 1]) -> f64 {
+    return rand_u32(seed) / 4294967296.0
 }
 
 // Returns an unsigned integer in [min, max]
-fn rand_uint(min: u32, max: u32) -> u32 {
+fn rand_uint(seed: [u32; 1], min: u32, max: u32) -> u32 {
     let range: u32 = max - min + 1
-    return min + (rand_u32() % range)
+    return min + (rand_u32(seed) % range)
 }
 
 fn main() {
-    print("Random float between 0 and 1: {}", rand())
+    let seed: [u32; 1] = [123456789]
+
+    print("Random float between 0 and 1: {}", rand(seed))
 
     let min: u32 = 1
     let max: u32 = 10
 
-    let a = rand_uint(min, max)
-    let b = rand_uint(min, max)
-    let c = rand_uint(min, max)
+    let a = rand_uint(seed, min, max)
+    let b = rand_uint(seed, min, max)
+    let c = rand_uint(seed, min, max)
 
     print("Random uints between 1 and 10: {}, {}, {}", a, b, c)
 }

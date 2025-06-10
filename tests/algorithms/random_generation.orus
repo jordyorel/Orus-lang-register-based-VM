@@ -1,36 +1,30 @@
 // Linear congruential generator example
-fn get_seed() -> [i32; 1] {
-    // Create once, reuse each time
-    let state: [i32; 1] = [123456789]
-    return state
-}
-
-// Generate the next pseudorandom i32 value
-fn rand_i32() -> i32 {
-    let state = get_seed()
+fn rand_i32(seed: [i32; 1]) -> i32 {
     let a: i32 = 1664525
     let c: i32 = 1013904223
-    let next: i32 = a * state[0] + c
-    state[0] = next
+    let next: i32 = a * seed[0] + c
+    seed[0] = next
     return next
 }
 
-fn rand() -> f64 {
-    return rand_i32() / 4294967296.0
+fn rand(seed: [i32; 1]) -> f64 {
+    return rand_i32(seed) / 4294967296.0
 }
 
 // Returns an integer in [min, max]
-fn rand_int(min: i32, max: i32) -> i32 {
+fn rand_int(seed: [i32; 1], min: i32, max: i32) -> i32 {
     let range: i32 = max - min + 1
-    return min + (rand_i32() % range)
+    return min + (rand_i32(seed) % range)
 }
 
 fn main() {
-    print("Random float between 0 and 1: {}", rand())
+    let seed: [i32; 1] = [123456789]
 
-    let a = rand_int(1, 10)
-    let b = rand_int(1, 10)
-    let c = rand_int(1, 10)
+    print("Random float between 0 and 1: {}", rand(seed))
+
+    let a = rand_int(seed, 1, 10)
+    let b = rand_int(seed, 1, 10)
+    let c = rand_int(seed, 1, 10)
 
     print("Random ints between 1 and 10: {}, {}, {}", a, b, c)
 }
