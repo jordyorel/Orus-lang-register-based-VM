@@ -2413,6 +2413,12 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             // Patch all break jumps to jump to the current position
             patchBreakJumps(compiler);
 
+            // When the loop exits via the jump-if-false above, the condition
+            // value remains on the stack because the OP_POP immediately after
+            // the jump is skipped. Emit a pop here so that the stack is
+            // balanced on loop exit.
+            writeOp(compiler, OP_POP);
+
             // Restore the enclosing loop context
             compiler->loopStart = enclosingLoopStart;
             compiler->loopEnd = enclosingLoopEnd;
@@ -2746,6 +2752,11 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     
     // Patch all break jumps to jump to the current position
     patchBreakJumps(compiler);
+
+    // Like while loops, the condition value remains on the stack when the loop
+    // exits via the jump-if-false above because the OP_POP directly after the
+    // jump is skipped. Emit a pop here to keep the stack balanced on exit.
+    writeOp(compiler, OP_POP);
 
     endScope(compiler);
 
