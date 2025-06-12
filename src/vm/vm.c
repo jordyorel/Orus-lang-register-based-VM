@@ -1146,26 +1146,25 @@ static InterpretResult run() {
                 }
 
                 Value countValue = vm.stackTop[-1];
-                Value formatValue = vm.stackTop[-2];
-
-                // Type checks
                 if (!IS_I32(countValue)) {
                     RUNTIME_ERROR("Argument count must be an integer.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
+                int argCount = AS_I32(countValue);
+
+                if (vm.stackTop - vm.stack < argCount + 2) {
+                    RUNTIME_ERROR("Not enough arguments for string interpolation: missing argument values for format string.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                Value formatValue = vm.stackTop[-argCount-2];
+
                 if (!IS_STRING(formatValue)) {
                     RUNTIME_ERROR("Format string must be a string.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
-                int argCount = AS_I32(countValue);
                 ObjString* formatStr = AS_STRING(formatValue);
-
-                // Check that we have enough arguments below the format string
-                if (vm.stackTop - vm.stack < 2 + argCount) {
-                    RUNTIME_ERROR("Not enough arguments for string interpolation: missing argument values for format string.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
 
                 // Allocate buffer
                 int resultCapacity = formatStr->length * 2;
@@ -1194,7 +1193,7 @@ static InterpretResult run() {
                         }
 
                         Value arg = vm.stack[(int)(vm.stackTop - vm.stack) -
-                                             argCount - 2 + argIndex];
+                                             argCount - 1 + argIndex];
 
                         char valueStr[100];
                         int valueLen = 0;
@@ -1336,21 +1335,21 @@ static InterpretResult run() {
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 Value countValue = vm.stackTop[-1];
-                Value formatValue = vm.stackTop[-2];
                 if (!IS_I32(countValue)) {
                     RUNTIME_ERROR("Argument count must be an integer.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
+                int argCount = AS_I32(countValue);
+                if (vm.stackTop - vm.stack < argCount + 2) {
+                    RUNTIME_ERROR("Not enough arguments for string interpolation: missing argument values for format string.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Value formatValue = vm.stackTop[-argCount-2];
                 if (!IS_STRING(formatValue)) {
                     RUNTIME_ERROR("Format string must be a string.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                int argCount = AS_I32(countValue);
                 ObjString* formatStr = AS_STRING(formatValue);
-                if (vm.stackTop - vm.stack < 2 + argCount) {
-                    RUNTIME_ERROR("Not enough arguments for string interpolation: missing argument values for format string.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 int resultCapacity = formatStr->length * 2;
                 char* resultBuffer = (char*)malloc(resultCapacity);
                 if (!resultBuffer) {
@@ -1374,7 +1373,7 @@ static InterpretResult run() {
                             return INTERPRET_RUNTIME_ERROR;
                         }
 
-                        Value arg = vm.stack[(int)(vm.stackTop - vm.stack) - argCount - 2 + argIndex];
+                        Value arg = vm.stack[(int)(vm.stackTop - vm.stack) - argCount - 1 + argIndex];
 
                         char valueStr[100];
                         int valueLen = 0;

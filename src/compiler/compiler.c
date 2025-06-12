@@ -2096,10 +2096,34 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_PRINT: {
-            if (node->data.print.arguments != NULL) {
-                // This is a formatted print with interpolation
-                
-                // 1. Generate code for each argument (in order)
+            if (node->data.print.arguments != NULL &&
+                node->data.print.format->type == AST_LITERAL &&
+                IS_STRING(node->data.print.format->data.literal)) {
+                // Constant format string with arguments. Print the prefix before
+                // evaluating arguments so side effects occur after it.
+
+                ObjString* fmt = AS_STRING(node->data.print.format->data.literal);
+                const char* chars = fmt->chars;
+                int length = fmt->length;
+
+                int prefixIndex = -1;
+                for (int i = 0; i < length - 1; i++) {
+                    if (chars[i] == '{' && chars[i + 1] == '}') { prefixIndex = i; break; }
+                }
+
+                if (prefixIndex > 0) {
+                    ObjString* prefix = allocateString(chars, prefixIndex);
+                    emitConstant(compiler, STRING_VAL(prefix));
+                    writeOp(compiler, OP_PRINT_NO_NL);
+                }
+
+                ObjString* rest = allocateString(chars + (prefixIndex >= 0 ? prefixIndex : 0),
+                                                length - (prefixIndex >= 0 ? prefixIndex : 0));
+
+                // Push the remaining format string
+                emitConstant(compiler, STRING_VAL(rest));
+
+                // Generate arguments after the prefix
                 ASTNode* arg = node->data.print.arguments;
                 while (arg != NULL) {
                     generateCode(compiler, arg);
@@ -2107,9 +2131,26 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                     arg = arg->next;
                 }
 
-                // 2. Then generate code for the format string
+                emitConstant(compiler, I32_VAL(node->data.print.argCount));
+
+                if (node->data.print.newline)
+                    writeOp(compiler, OP_FORMAT_PRINT);
+                else
+                    writeOp(compiler, OP_FORMAT_PRINT_NO_NL);
+            } else if (node->data.print.arguments != NULL) {
+                // Generic formatted print with interpolation
+
+                // 1. Generate code for the format string first
                 generateCode(compiler, node->data.print.format);
                 if (compiler->hadError) return;
+
+                // 2. Then generate code for each argument (in order)
+                ASTNode* arg = node->data.print.arguments;
+                while (arg != NULL) {
+                    generateCode(compiler, arg);
+                    if (compiler->hadError) return;
+                    arg = arg->next;
+                }
 
                 // 3. Push the argument count as constant
                 emitConstant(compiler, I32_VAL(node->data.print.argCount));
