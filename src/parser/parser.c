@@ -1212,7 +1212,7 @@ static void statement(Parser* parser, ASTNode** ast) {
     bool newline = false;
     if (match(parser, TOKEN_PRINT)) {
         didPrint = true;
-        newline = false;
+        newline = true; // Always append a newline after print statements
     }
 
     if (didPrint) {
