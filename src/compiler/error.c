@@ -61,7 +61,11 @@ void emitDiagnostic(Diagnostic* diagnostic) {
                diagnostic->primarySpan.line, COLOR_RESET, sourceLine);
         printf("      | ");
         for (int i = 0; i < diagnostic->primarySpan.column - 1; i++) {
-            putchar(' ');
+            char c = sourceLine[i];
+            if (c == '\t')
+                putchar('\t');
+            else
+                putchar(' ');
         }
         printf("%s", COLOR_RED);
         for (int i = 0; i < diagnostic->primarySpan.length; i++) {
@@ -77,7 +81,13 @@ void emitDiagnostic(Diagnostic* diagnostic) {
         if (sourceLine) {
             printf(" %s%4d |%s %s\n", COLOR_BLUE, span->line, COLOR_RESET, sourceLine);
             printf("      | ");
-            for (int j = 0; j < span->column - 1; j++) putchar(' ');
+            for (int j = 0; j < span->column - 1; j++) {
+                char c = sourceLine[j];
+                if (c == '\t')
+                    putchar('\t');
+                else
+                    putchar(' ');
+            }
             printf("%s", COLOR_CYAN);
             for (int j = 0; j < span->length; j++) putchar('^');
             printf("%s\n", COLOR_RESET);
