@@ -37,6 +37,8 @@ typedef struct {
     // Line/column of the AST node currently being compiled
     int currentLine;
     int currentColumn;
+    Type* currentReturnType;
+    bool currentFunctionHasGenerics;
 } Compiler;
 
 void initCompiler(Compiler* compiler, Chunk* chunk,

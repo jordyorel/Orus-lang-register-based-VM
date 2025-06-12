@@ -130,6 +130,77 @@ static void errorFmt(Compiler* compiler, const char* format, ...) {
     emitSimpleError(compiler, ERROR_GENERAL, buffer);
 }
 
+// Check if any return statement exists within a node tree
+static bool containsReturn(ASTNode* node) {
+    if (!node) return false;
+    switch (node->type) {
+        case AST_RETURN:
+            return true;
+        case AST_BLOCK: {
+            ASTNode* stmt = node->data.block.statements;
+            while (stmt) {
+                if (containsReturn(stmt)) return true;
+                stmt = stmt->next;
+            }
+            return false;
+        }
+        case AST_IF: {
+            if (containsReturn(node->data.ifStmt.thenBranch)) return true;
+            ASTNode* cond = node->data.ifStmt.elifBranches;
+            while (cond) {
+                if (containsReturn(cond)) return true;
+                cond = cond->next;
+            }
+            if (node->data.ifStmt.elseBranch &&
+                containsReturn(node->data.ifStmt.elseBranch)) return true;
+            return false;
+        }
+        case AST_WHILE:
+            return containsReturn(node->data.whileStmt.body);
+        case AST_FOR:
+            return containsReturn(node->data.forStmt.body);
+        default:
+            if (node->left && containsReturn(node->left)) return true;
+            if (node->right && containsReturn(node->right)) return true;
+            return false;
+    }
+}
+
+// Determine if all code paths within the statement list return
+static bool statementsAlwaysReturn(ASTNode* stmt);
+
+static bool statementAlwaysReturns(ASTNode* node) {
+    if (!node) return false;
+    switch (node->type) {
+        case AST_RETURN:
+            return true;
+        case AST_BLOCK:
+            return statementsAlwaysReturn(node->data.block.statements);
+        case AST_IF: {
+            bool thenR = statementsAlwaysReturn(node->data.ifStmt.thenBranch);
+            bool allElifR = true;
+            ASTNode* branch = node->data.ifStmt.elifBranches;
+            while (branch) {
+                if (!statementsAlwaysReturn(branch)) allElifR = false;
+                branch = branch->next;
+            }
+            bool elseR = node->data.ifStmt.elseBranch &&
+                          statementsAlwaysReturn(node->data.ifStmt.elseBranch);
+            return thenR && allElifR && elseR;
+        }
+        default:
+            return false;
+    }
+}
+
+static bool statementsAlwaysReturn(ASTNode* stmt) {
+    while (stmt) {
+        if (statementAlwaysReturns(stmt)) return true;
+        stmt = stmt->next;
+    }
+    return false;
+}
+
 static bool convertLiteralForDecl(ASTNode* init, Type* src, Type* dst) {
     if (!init || init->type != AST_LITERAL || !src || !dst) return false;
 
@@ -872,6 +943,11 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 index = node->data.function.index;
             }
 
+            Type* prevReturn = compiler->currentReturnType;
+            bool prevGenericFlag = compiler->currentFunctionHasGenerics;
+            compiler->currentReturnType = node->data.function.returnType;
+            compiler->currentFunctionHasGenerics = node->data.function.genericCount > 0;
+
             beginScope(compiler);
             // Type check parameters
             ASTNode* param = node->data.function.parameters;
@@ -879,6 +955,8 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 typeCheckNode(compiler, param);
                 if (compiler->hadError) {
                     endScope(compiler);
+                    compiler->currentReturnType = prevReturn;
+                    compiler->currentFunctionHasGenerics = prevGenericFlag;
                     return;
                 }
                 param = param->next;
@@ -888,9 +966,38 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             typeCheckNode(compiler, node->data.function.body);
             if (compiler->hadError) {
                 endScope(compiler);
+                compiler->currentReturnType = prevReturn;
+                compiler->currentFunctionHasGenerics = prevGenericFlag;
                 return;
             }
             endScope(compiler);
+
+            if (node->data.function.genericCount == 0 &&
+                node->data.function.returnType &&
+                node->data.function.returnType->kind != TYPE_VOID) {
+                bool hasRet = containsReturn(node->data.function.body);
+                bool allRet = statementsAlwaysReturn(
+                    node->data.function.body->data.block.statements);
+                if (!hasRet) {
+                    char msg[128];
+                    snprintf(msg, sizeof(msg),
+                             "Error: Missing return statement in function '%.*s', expected return type '%s'.",
+                             node->data.function.name.length,
+                             node->data.function.name.start,
+                             getTypeName(node->data.function.returnType->kind));
+                    emitSimpleError(compiler, ERROR_GENERAL, msg);
+                } else if (!allRet) {
+                    char msg[128];
+                    snprintf(msg, sizeof(msg),
+                             "Error: Not all code paths return a value in function '%.*s'.",
+                             node->data.function.name.length,
+                             node->data.function.name.start);
+                    emitSimpleError(compiler, ERROR_GENERAL, msg);
+                }
+            }
+
+            compiler->currentReturnType = prevReturn;
+            compiler->currentFunctionHasGenerics = prevGenericFlag;
 
             // Function declarations don't have a value type
             node->valueType = NULL;
@@ -1566,13 +1673,34 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         }
 
         case AST_RETURN: {
-            // Type check the return value if present
+            Type* expected = compiler->currentReturnType;
             if (node->data.returnStmt.value != NULL) {
                 typeCheckNode(compiler, node->data.returnStmt.value);
                 if (compiler->hadError) return;
+                if (!expected || expected->kind == TYPE_VOID) {
+                    error(compiler, "Return value provided in void function.");
+                } else if (!compiler->currentFunctionHasGenerics &&
+                           expected->kind != TYPE_GENERIC &&
+                           node->data.returnStmt.value->valueType &&
+                           node->data.returnStmt.value->valueType->kind != TYPE_GENERIC &&
+                           !typesEqual(expected, node->data.returnStmt.value->valueType)) {
+                    const char* expName = getTypeName(expected->kind);
+                    const char* actName = node->data.returnStmt.value->valueType ?
+                        getTypeName(node->data.returnStmt.value->valueType->kind) : "unknown";
+                    char msg[128];
+                    snprintf(msg, sizeof(msg),
+                             "Error: Return type mismatch in function. Expected '%s', found '%s'.",
+                             expName, actName);
+                    emitSimpleError(compiler, ERROR_GENERAL, msg);
+                }
+            } else if (expected && expected->kind != TYPE_VOID) {
+                char msg[128];
+                snprintf(msg, sizeof(msg),
+                         "Error: Expected return value of type '%s', but found empty return.",
+                         getTypeName(expected->kind));
+                emitSimpleError(compiler, ERROR_GENERAL, msg);
             }
 
-            // Return statements don't have a value type
             node->valueType = NULL;
             break;
         }
@@ -3006,6 +3134,8 @@ void initCompiler(Compiler* compiler, Chunk* chunk,
     compiler->sourceCode = sourceCode;
     compiler->currentLine = 0;
     compiler->currentColumn = 1;
+    compiler->currentReturnType = NULL;
+    compiler->currentFunctionHasGenerics = false;
 
     // Count lines in sourceCode and record start pointers for each line
     if (sourceCode) {
