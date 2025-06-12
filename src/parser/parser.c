@@ -966,9 +966,11 @@ static void functionDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
         name.length = structLen + 1 + funcLen;
     }
 
-    // Parse function body
-    consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after function return type.");
-    parser->current = parser->previous; // Rewind to the left brace so block() can consume it
+    // Parse function body. block() expects the current token to be '{'
+    if (!check(parser, TOKEN_LEFT_BRACE)) {
+        error(parser, "Expect '{' after function return type.");
+        return;
+    }
     ASTNode* body;
     block(parser, &body);
 
