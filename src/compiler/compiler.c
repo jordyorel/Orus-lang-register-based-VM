@@ -2239,21 +2239,10 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                     if (chars[i] == '{' && chars[i + 1] == '}') { prefixIndex = i; break; }
                 }
 
-                bool placeholderAtEnd = prefixIndex >= 0 && prefixIndex + 2 == length;
-
                 if (prefixIndex > 0) {
                     ObjString* prefix = allocateString(chars, prefixIndex);
                     emitConstant(compiler, STRING_VAL(prefix));
-
-                    if (placeholderAtEnd && node->data.print.argCount == 1) {
-                        // When the single placeholder appears at the end of the
-                        // string, print the prefix with a newline so that any
-                        // output produced while evaluating the argument starts
-                        // on the next line.
-                        writeOp(compiler, OP_PRINT);
-                    } else {
-                        writeOp(compiler, OP_PRINT_NO_NL);
-                    }
+                    writeOp(compiler, OP_PRINT_NO_NL);
                 }
 
                 ObjString* rest = allocateString(chars + (prefixIndex >= 0 ? prefixIndex : 0),
@@ -2272,16 +2261,10 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
                 emitConstant(compiler, I32_VAL(node->data.print.argCount));
 
-                if (placeholderAtEnd && node->data.print.argCount == 1) {
-                    // Avoid an extra newline when the argument already
-                    // printed output and the placeholder is at the end.
+                if (node->data.print.newline)
+                    writeOp(compiler, OP_FORMAT_PRINT);
+                else
                     writeOp(compiler, OP_FORMAT_PRINT_NO_NL);
-                } else {
-                    if (node->data.print.newline)
-                        writeOp(compiler, OP_FORMAT_PRINT);
-                    else
-                        writeOp(compiler, OP_FORMAT_PRINT_NO_NL);
-                }
             } else if (node->data.print.arguments != NULL) {
                 // Generic formatted print with interpolation
 
