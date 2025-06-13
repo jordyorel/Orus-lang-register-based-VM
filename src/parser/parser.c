@@ -190,22 +190,27 @@ static ASTNode* parseString(Parser* parser) {
 static ASTNode* parseNumber(Parser* parser) {
     const char* start = parser->previous.start;
     int length = parser->previous.length;
-    char* endptr;
     bool isFloat = false;
-    
-    // Check if the number contains a decimal point
+
     for (int i = 0; i < length; i++) {
-        if (start[i] == '.') {
+        if (start[i] == '.' || start[i] == 'e' || start[i] == 'E') {
             isFloat = true;
             break;
         }
     }
-    
-    // Create a null-terminated copy of the token text for conversion
-    char* numStr = (char*)malloc(length + 1);
-    memcpy(numStr, start, length);
-    numStr[length] = '\0';
-    
+
+    bool hasSuffix = (start[length - 1] == 'u' || start[length - 1] == 'U');
+    int copyLen = hasSuffix ? length - 1 : length;
+
+    char* numStr = (char*)malloc(copyLen + 1);
+    int j = 0;
+    for (int i = 0; i < copyLen; i++) {
+        if (start[i] != '_') {
+            numStr[j++] = start[i];
+        }
+    }
+    numStr[j] = '\0';
+
     ASTNode* node;
     if (isFloat) {
         char* endptr;
@@ -213,13 +218,24 @@ static ASTNode* parseNumber(Parser* parser) {
         node = createLiteralNode(F64_VAL(value));
         node->valueType = createPrimitiveType(TYPE_F64);
     } else {
-        long long value = strtoll(numStr, &endptr, 10);
-        bool isUnsigned = (*endptr == 'u' || *endptr == 'U');
-        if (isUnsigned) {
-            node = createLiteralNode(U32_VAL((uint32_t)value));
-            node->valueType = createPrimitiveType(TYPE_U32);
-        } else if (value >= INT32_MIN && value <= INT32_MAX) {
-            node = createLiteralNode(I32_VAL((int32_t)value));
+        int base = 10;
+        if (j > 2 && numStr[0] == '0' && (numStr[1] == 'x' || numStr[1] == 'X')) {
+            base = 16;
+        }
+
+        char* endptr;
+        uint64_t uval = strtoull(numStr, &endptr, base);
+
+        if (hasSuffix) {
+            if (uval <= UINT32_MAX) {
+                node = createLiteralNode(U32_VAL((uint32_t)uval));
+                node->valueType = createPrimitiveType(TYPE_U32);
+            } else {
+                node = createLiteralNode(U64_VAL(uval));
+                node->valueType = createPrimitiveType(TYPE_U64);
+            }
+        } else if (uval <= INT32_MAX) {
+            node = createLiteralNode(I32_VAL((int32_t)uval));
             node->valueType = createPrimitiveType(TYPE_I32);
         } else if (uval <= INT64_MAX) {
             node = createLiteralNode(I64_VAL((int64_t)uval));
