@@ -85,6 +85,7 @@ typedef struct {
 
     const char* stdPath;
     bool devMode;
+    bool suppressWarnings;
 
     // Garbage collector state
     Obj* objects;
