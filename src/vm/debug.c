@@ -118,8 +118,6 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_MODULO_I64", offset);
         case OP_MODULO_U32:
             return simpleInstruction("OP_MODULO_U32", offset);
-        case OP_MODULO_U64:
-            return simpleInstruction("OP_MODULO_U64", offset);
 
         // Comparison operations
         case OP_EQUAL:

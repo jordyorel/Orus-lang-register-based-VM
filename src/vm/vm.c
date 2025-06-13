@@ -451,9 +451,6 @@ static InterpretResult run() {
             case OP_MODULO_U32:
                 moduloOpU32(&vm, &result);
                 break;
-            case OP_MODULO_U64:
-                moduloOpU64(&vm, &result);
-                break;
 
             // Comparison operations
             case OP_EQUAL:

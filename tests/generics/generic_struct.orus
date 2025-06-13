@@ -25,6 +25,6 @@ fn main() {
     print("Updated int box: " + intBox.item)
     
     // Test nested generic structures
-    let nestedBox = Box<Box<i32>>{item: intBox}
+    let nestedBox = Box<Box<i32> >{item: intBox}
     print("Nested box contains: " + nestedBox.item.item)
 }

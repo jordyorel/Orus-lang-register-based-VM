@@ -1,0 +1,6 @@
+fn main() {
+    let val = 0xff
+    print("0xff = {}", val)
+    let unsigned: u32 = 0x10u
+    print("0x10u = {}", unsigned)
+}

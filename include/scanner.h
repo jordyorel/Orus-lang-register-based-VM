@@ -37,6 +37,14 @@ typedef enum {
   TOKEN_U64,  // Add this
   TOKEN_F64,  // Add this
 
+  // Bitwise operators
+  TOKEN_BIT_AND,
+  TOKEN_BIT_OR,
+  TOKEN_BIT_XOR,
+  TOKEN_BIT_NOT,
+  TOKEN_SHIFT_LEFT,
+  TOKEN_SHIFT_RIGHT,
+
   TOKEN_ERROR, TOKEN_EOF,
 
   TOKEN_NEWLINE,

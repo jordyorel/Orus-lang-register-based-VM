@@ -77,6 +77,13 @@ static bool is_digit(char c) {
     return c >= '0' && c <= '9';
 }
 
+// Check if a character is a hexadecimal digit
+static bool is_hex_digit(char c) {
+    return (c >= '0' && c <= '9') ||
+           (c >= 'a' && c <= 'f') ||
+           (c >= 'A' && c <= 'F');
+}
+
 // Check if the scanner has reached the end of the source
 static bool is_at_end() {
     return *scanner.current == '\0';
@@ -206,7 +213,30 @@ static Token identifier() {
 
 // Scan a number literal
 static Token number() {
-    // Process the integer part
+    // Check for hexadecimal prefix 0x or 0X
+    if (scanner.start[0] == '0' && (peek() == 'x' || peek() == 'X')) {
+        advance(); // consume 'x' or 'X'
+        if (!is_hex_digit(peek())) {
+            return error_token("Invalid hexadecimal literal.");
+        }
+        while (is_hex_digit(peek()) || peek() == '_') {
+            if (peek() == '_') {
+                advance();
+                if (!is_hex_digit(peek())) {
+                    return error_token(
+                        "Invalid underscore placement in number.");
+                }
+            } else {
+                advance();
+            }
+        }
+        if (peek() == 'u' || peek() == 'U') {
+            advance();
+        }
+        return make_token(TOKEN_NUMBER);
+    }
+
+    // Process the integer part for decimal numbers
     while (is_digit(peek()) || peek() == '_') {
         if (peek() == '_') {
             advance();
@@ -357,16 +387,25 @@ Token scan_token() {
             if (match('=')) {
                 return make_token(TOKEN_BANG_EQUAL);
             }
-            return error_token("Unexpected character.");
+            return make_token(TOKEN_BIT_NOT);
         case '=':
             return make_token(
                 match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
         case '<':
-            return make_token(
-                match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
+            if (match('<')) return make_token(TOKEN_SHIFT_LEFT);
+            return make_token(match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
         case '>':
-            return make_token(
-                match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+            if (peek() == '>' && peek_next() != '{' && peek_next() != '>') {
+                advance();
+                return make_token(TOKEN_SHIFT_RIGHT);
+            }
+            return make_token(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+        case '&':
+            return make_token(TOKEN_BIT_AND);
+        case '|':
+            return make_token(TOKEN_BIT_OR);
+        case '^':
+            return make_token(TOKEN_BIT_XOR);
         case '"': return string();
         case ':':
             if (match(':')) return make_token(TOKEN_DOUBLE_COLON);

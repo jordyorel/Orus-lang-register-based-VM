@@ -190,27 +190,22 @@ static ASTNode* parseString(Parser* parser) {
 static ASTNode* parseNumber(Parser* parser) {
     const char* start = parser->previous.start;
     int length = parser->previous.length;
+    char* endptr;
     bool isFloat = false;
-
+    
+    // Check if the number contains a decimal point
     for (int i = 0; i < length; i++) {
-        if (start[i] == '.' || start[i] == 'e' || start[i] == 'E') {
+        if (start[i] == '.') {
             isFloat = true;
             break;
         }
     }
-
-    bool hasSuffix = (start[length - 1] == 'u' || start[length - 1] == 'U');
-    int copyLen = hasSuffix ? length - 1 : length;
-
-    char* numStr = (char*)malloc(copyLen + 1);
-    int j = 0;
-    for (int i = 0; i < copyLen; i++) {
-        if (start[i] != '_') {
-            numStr[j++] = start[i];
-        }
-    }
-    numStr[j] = '\0';
-
+    
+    // Create a null-terminated copy of the token text for conversion
+    char* numStr = (char*)malloc(length + 1);
+    memcpy(numStr, start, length);
+    numStr[length] = '\0';
+    
     ASTNode* node;
     if (isFloat) {
         char* endptr;
@@ -218,18 +213,13 @@ static ASTNode* parseNumber(Parser* parser) {
         node = createLiteralNode(F64_VAL(value));
         node->valueType = createPrimitiveType(TYPE_F64);
     } else {
-        char* endptr;
-        uint64_t uval = strtoull(numStr, &endptr, 10);
-        if (hasSuffix) {
-            if (uval <= UINT32_MAX) {
-                node = createLiteralNode(U32_VAL((uint32_t)uval));
-                node->valueType = createPrimitiveType(TYPE_U32);
-            } else {
-                node = createLiteralNode(U64_VAL(uval));
-                node->valueType = createPrimitiveType(TYPE_U64);
-            }
-        } else if (uval <= INT32_MAX) {
-            node = createLiteralNode(I32_VAL((int32_t)uval));
+        long long value = strtoll(numStr, &endptr, 10);
+        bool isUnsigned = (*endptr == 'u' || *endptr == 'U');
+        if (isUnsigned) {
+            node = createLiteralNode(U32_VAL((uint32_t)value));
+            node->valueType = createPrimitiveType(TYPE_U32);
+        } else if (value >= INT32_MIN && value <= INT32_MAX) {
+            node = createLiteralNode(I32_VAL((int32_t)value));
             node->valueType = createPrimitiveType(TYPE_I32);
         } else if (uval <= INT64_MAX) {
             node = createLiteralNode(I64_VAL((int64_t)uval));
@@ -1468,6 +1458,11 @@ ParseRule rules[] = {
     [TOKEN_SLASH] = {NULL, parseBinary, PREC_FACTOR},
     [TOKEN_STAR] = {NULL, parseBinary, PREC_FACTOR},
     [TOKEN_MODULO] = {NULL, parseBinary, PREC_FACTOR},
+    [TOKEN_SHIFT_LEFT] = {NULL, parseBinary, PREC_SHIFT},
+    [TOKEN_SHIFT_RIGHT] = {NULL, parseBinary, PREC_SHIFT},
+    [TOKEN_BIT_AND] = {NULL, parseBinary, PREC_BIT_AND},
+    [TOKEN_BIT_OR] = {NULL, parseBinary, PREC_BIT_OR},
+    [TOKEN_BIT_XOR] = {NULL, parseBinary, PREC_BIT_XOR},
     [TOKEN_PLUS_EQUAL] = {NULL, NULL, PREC_NONE},
     [TOKEN_MINUS_EQUAL] = {NULL, NULL, PREC_NONE},
     [TOKEN_STAR_EQUAL] = {NULL, NULL, PREC_NONE},
@@ -1480,6 +1475,7 @@ ParseRule rules[] = {
     [TOKEN_FALSE] = {parseBoolean, NULL, PREC_NONE},
     [TOKEN_NIL] = {parseNil, NULL, PREC_NONE},
     [TOKEN_NOT] = {parseUnary, NULL, PREC_UNARY},
+    [TOKEN_BIT_NOT] = {parseUnary, NULL, PREC_UNARY},
     // Logical operators
     [TOKEN_AND] = {NULL, parseLogical, PREC_AND},
     [TOKEN_OR] = {NULL, parseLogical, PREC_OR},
