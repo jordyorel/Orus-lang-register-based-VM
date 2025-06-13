@@ -27,3 +27,26 @@ char* readFile(const char* path) {
     fclose(file);
     return buffer;
 }
+
+char* readFileSilent(const char* path) {
+    FILE* file = fopen(path, "rb");
+    if (file == NULL) {
+        return NULL;
+    }
+
+    fseek(file, 0L, SEEK_END);
+    size_t fileSize = ftell(file);
+    rewind(file);
+
+    char* buffer = (char*)malloc(fileSize + 1);
+    if (buffer == NULL) {
+        fclose(file);
+        return NULL;
+    }
+
+    size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
+    buffer[bytesRead] = '\0';
+
+    fclose(file);
+    return buffer;
+}
