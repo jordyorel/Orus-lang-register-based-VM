@@ -56,7 +56,7 @@ fn main() {
     print("Swapped pair: {}, {}", swapped.first, swapped.second)
     
     // Test nested generic types using simple values
-    let nestedPair: Pair<GenericTest<i32>, GenericTest<string>> = createPair<GenericTest<i32>, GenericTest<string>>(createGenericInstance(1), createGenericInstance("a"))
+    let nestedPair: Pair<GenericTest<i32>, GenericTest<string> > = createPair<GenericTest<i32>, GenericTest<string> >(createGenericInstance(1), createGenericInstance("a"))
 
     print("Nested first: {}", nestedPair.first.array[0])
     print("Nested second: {}", nestedPair.second.array[0])

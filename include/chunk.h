@@ -46,6 +46,26 @@ typedef enum {
     OP_MODULO_I64,
     OP_MODULO_U32,
 
+    // Bitwise operations
+    OP_BIT_AND_I32,
+    OP_BIT_AND_I64,
+    OP_BIT_AND_U32,
+    OP_BIT_OR_I32,
+    OP_BIT_OR_I64,
+    OP_BIT_OR_U32,
+    OP_BIT_XOR_I32,
+    OP_BIT_XOR_I64,
+    OP_BIT_XOR_U32,
+    OP_BIT_NOT_I32,
+    OP_BIT_NOT_I64,
+    OP_BIT_NOT_U32,
+    OP_SHIFT_LEFT_I32,
+    OP_SHIFT_LEFT_I64,
+    OP_SHIFT_LEFT_U32,
+    OP_SHIFT_RIGHT_I32,
+    OP_SHIFT_RIGHT_I64,
+    OP_SHIFT_RIGHT_U32,
+
     // Comparison operations
     OP_EQUAL,
     OP_NOT_EQUAL,

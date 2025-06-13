@@ -108,6 +108,42 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_MODULO_I64", offset);
         case OP_MODULO_U32:
             return simpleInstruction("OP_MODULO_U32", offset);
+        case OP_BIT_AND_I32:
+            return simpleInstruction("OP_BIT_AND_I32", offset);
+        case OP_BIT_AND_I64:
+            return simpleInstruction("OP_BIT_AND_I64", offset);
+        case OP_BIT_AND_U32:
+            return simpleInstruction("OP_BIT_AND_U32", offset);
+        case OP_BIT_OR_I32:
+            return simpleInstruction("OP_BIT_OR_I32", offset);
+        case OP_BIT_OR_I64:
+            return simpleInstruction("OP_BIT_OR_I64", offset);
+        case OP_BIT_OR_U32:
+            return simpleInstruction("OP_BIT_OR_U32", offset);
+        case OP_BIT_XOR_I32:
+            return simpleInstruction("OP_BIT_XOR_I32", offset);
+        case OP_BIT_XOR_I64:
+            return simpleInstruction("OP_BIT_XOR_I64", offset);
+        case OP_BIT_XOR_U32:
+            return simpleInstruction("OP_BIT_XOR_U32", offset);
+        case OP_BIT_NOT_I32:
+            return simpleInstruction("OP_BIT_NOT_I32", offset);
+        case OP_BIT_NOT_I64:
+            return simpleInstruction("OP_BIT_NOT_I64", offset);
+        case OP_BIT_NOT_U32:
+            return simpleInstruction("OP_BIT_NOT_U32", offset);
+        case OP_SHIFT_LEFT_I32:
+            return simpleInstruction("OP_SHIFT_LEFT_I32", offset);
+        case OP_SHIFT_LEFT_I64:
+            return simpleInstruction("OP_SHIFT_LEFT_I64", offset);
+        case OP_SHIFT_LEFT_U32:
+            return simpleInstruction("OP_SHIFT_LEFT_U32", offset);
+        case OP_SHIFT_RIGHT_I32:
+            return simpleInstruction("OP_SHIFT_RIGHT_I32", offset);
+        case OP_SHIFT_RIGHT_I64:
+            return simpleInstruction("OP_SHIFT_RIGHT_I64", offset);
+        case OP_SHIFT_RIGHT_U32:
+            return simpleInstruction("OP_SHIFT_RIGHT_U32", offset);
 
         // Comparison operations
         case OP_EQUAL:

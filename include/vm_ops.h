@@ -272,6 +272,115 @@ static inline void moduloOpI64(VM* vm, InterpretResult* result) {
     vmPush(vm, I64_VAL(a % b));
 }
 
+// Bitwise operations for i32
+static inline void bitwiseOpI32(VM* vm, char op, InterpretResult* result) {
+    if (!IS_I32(vmPeek(vm, 0)) || !IS_I32(vmPeek(vm, 1))) {
+        fprintf(stderr, "Operands must be integers.\n");
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+    int32_t b = AS_I32(vmPop(vm));
+    int32_t a = AS_I32(vmPop(vm));
+    switch (op) {
+        case '&': vmPush(vm, I32_VAL(a & b)); break;
+        case '|': vmPush(vm, I32_VAL(a | b)); break;
+        case '^': vmPush(vm, I32_VAL(a ^ b)); break;
+        default: fprintf(stderr, "Unknown bitwise op\n"); *result = INTERPRET_RUNTIME_ERROR; return;
+    }
+}
+
+static inline void bitwiseOpI64(VM* vm, char op, InterpretResult* result) {
+    if (!IS_I64(vmPeek(vm, 0)) || !IS_I64(vmPeek(vm, 1))) {
+        fprintf(stderr, "Operands must be 64-bit integers.\n");
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+    int64_t b = AS_I64(vmPop(vm));
+    int64_t a = AS_I64(vmPop(vm));
+    switch (op) {
+        case '&': vmPush(vm, I64_VAL(a & b)); break;
+        case '|': vmPush(vm, I64_VAL(a | b)); break;
+        case '^': vmPush(vm, I64_VAL(a ^ b)); break;
+        default: fprintf(stderr, "Unknown bitwise op\n"); *result = INTERPRET_RUNTIME_ERROR; return;
+    }
+}
+
+static inline void bitwiseOpU32(VM* vm, char op, InterpretResult* result) {
+    if (!IS_U32(vmPeek(vm, 0)) || !IS_U32(vmPeek(vm, 1))) {
+        fprintf(stderr, "Operands must be unsigned integers.\n");
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+    uint32_t b = AS_U32(vmPop(vm));
+    uint32_t a = AS_U32(vmPop(vm));
+    switch (op) {
+        case '&': vmPush(vm, U32_VAL(a & b)); break;
+        case '|': vmPush(vm, U32_VAL(a | b)); break;
+        case '^': vmPush(vm, U32_VAL(a ^ b)); break;
+        default: fprintf(stderr, "Unknown bitwise op\n"); *result = INTERPRET_RUNTIME_ERROR; return;
+    }
+}
+
+static inline void bitwiseNotI32(VM* vm, InterpretResult* result) {
+    if (!IS_I32(vmPeek(vm, 0))) { *result = INTERPRET_RUNTIME_ERROR; return; }
+    int32_t a = AS_I32(vmPop(vm));
+    vmPush(vm, I32_VAL(~a));
+}
+
+static inline void bitwiseNotI64(VM* vm, InterpretResult* result) {
+    if (!IS_I64(vmPeek(vm, 0))) { *result = INTERPRET_RUNTIME_ERROR; return; }
+    int64_t a = AS_I64(vmPop(vm));
+    vmPush(vm, I64_VAL(~a));
+}
+
+static inline void bitwiseNotU32(VM* vm, InterpretResult* result) {
+    if (!IS_U32(vmPeek(vm, 0))) { *result = INTERPRET_RUNTIME_ERROR; return; }
+    uint32_t a = AS_U32(vmPop(vm));
+    vmPush(vm, U32_VAL(~a));
+}
+
+static inline void shiftLeftI32(VM* vm, InterpretResult* result) {
+    if (!IS_I32(vmPeek(vm,0)) || !IS_I32(vmPeek(vm,1))) { *result = INTERPRET_RUNTIME_ERROR; return; }
+    int32_t b = AS_I32(vmPop(vm));
+    int32_t a = AS_I32(vmPop(vm));
+    vmPush(vm, I32_VAL(a << b));
+}
+
+static inline void shiftRightI32(VM* vm, InterpretResult* result) {
+    if (!IS_I32(vmPeek(vm,0)) || !IS_I32(vmPeek(vm,1))) { *result = INTERPRET_RUNTIME_ERROR; return; }
+    int32_t b = AS_I32(vmPop(vm));
+    int32_t a = AS_I32(vmPop(vm));
+    vmPush(vm, I32_VAL(a >> b));
+}
+
+static inline void shiftLeftI64(VM* vm, InterpretResult* result) {
+    if (!IS_I64(vmPeek(vm,0)) || !IS_I64(vmPeek(vm,1))) { *result = INTERPRET_RUNTIME_ERROR; return; }
+    int64_t b = AS_I64(vmPop(vm));
+    int64_t a = AS_I64(vmPop(vm));
+    vmPush(vm, I64_VAL(a << b));
+}
+
+static inline void shiftRightI64(VM* vm, InterpretResult* result) {
+    if (!IS_I64(vmPeek(vm,0)) || !IS_I64(vmPeek(vm,1))) { *result = INTERPRET_RUNTIME_ERROR; return; }
+    int64_t b = AS_I64(vmPop(vm));
+    int64_t a = AS_I64(vmPop(vm));
+    vmPush(vm, I64_VAL(a >> b));
+}
+
+static inline void shiftLeftU32(VM* vm, InterpretResult* result) {
+    if (!IS_U32(vmPeek(vm,0)) || !IS_U32(vmPeek(vm,1))) { *result = INTERPRET_RUNTIME_ERROR; return; }
+    uint32_t b = AS_U32(vmPop(vm));
+    uint32_t a = AS_U32(vmPop(vm));
+    vmPush(vm, U32_VAL(a << b));
+}
+
+static inline void shiftRightU32(VM* vm, InterpretResult* result) {
+    if (!IS_U32(vmPeek(vm,0)) || !IS_U32(vmPeek(vm,1))) { *result = INTERPRET_RUNTIME_ERROR; return; }
+    uint32_t b = AS_U32(vmPop(vm));
+    uint32_t a = AS_U32(vmPop(vm));
+    vmPush(vm, U32_VAL(a >> b));
+}
+
 // Comparison operations for i32
 static inline void compareOpI32(VM* vm, char op, InterpretResult* result) {
     // First check if we have two values on the stack
