@@ -1,0 +1,17 @@
+fn main() {
+    let a: i32 = -3
+    let b: i64 = a as i64
+    let c: u32 = a as u32
+    let d: u64 = b as u64
+    let e: i64 = d as i64
+    let f: f64 = c as f64
+    let g: bool = f as bool
+    let h: i32 = g as i32
+    let i: f64 = g as f64
+    let s1: string = a as string
+    let s2: string = g as string
+    let s3: string = d as string
+    let s4: string = f as string
+    print("done")
+}
+

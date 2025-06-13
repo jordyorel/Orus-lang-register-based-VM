@@ -316,9 +316,6 @@ static Value convertLiteralToString(Value value) {
         case VAL_BOOL:
             length = snprintf(buffer, sizeof(buffer), "%s", AS_BOOL(value) ? "true" : "false");
             break;
-        case VAL_NIL:
-            length = snprintf(buffer, sizeof(buffer), "nil");
-            break;
         case VAL_STRING:
             return value;
         default:
@@ -605,6 +602,15 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 return;
             }
 
+            if (src->kind == TYPE_NIL || src->kind == TYPE_VOID) {
+                error(compiler, "Cannot cast from nil or void.");
+                return;
+            }
+            if (src->kind == TYPE_STRING && dst->kind != TYPE_STRING) {
+                error(compiler, "Cannot cast a string to other types.");
+                return;
+            }
+
             bool allowed = false;
             if (dst->kind == TYPE_STRING) {
                 allowed = true;
@@ -613,7 +619,12 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                        (src->kind == TYPE_U32 && (dst->kind == TYPE_I32 || dst->kind == TYPE_F64 || dst->kind == TYPE_U64)) ||
                        (src->kind == TYPE_I64 && dst->kind == TYPE_I32) ||
                        (src->kind == TYPE_U64 && (dst->kind == TYPE_I32 || dst->kind == TYPE_U32 || dst->kind == TYPE_F64)) ||
-                       (src->kind == TYPE_F64 && (dst->kind == TYPE_I32 || dst->kind == TYPE_U32 || dst->kind == TYPE_U64)) ||
+                       (src->kind == TYPE_F64 && (dst->kind == TYPE_I32 || dst->kind == TYPE_U32 || dst->kind == TYPE_U64 || dst->kind == TYPE_I64)) ||
+                       (src->kind == TYPE_I64 && (dst->kind == TYPE_U64 || dst->kind == TYPE_F64)) ||
+                       (src->kind == TYPE_U64 && dst->kind == TYPE_I64) ||
+                       ((src->kind == TYPE_I32 || src->kind == TYPE_U32 || src->kind == TYPE_I64 || src->kind == TYPE_U64) && dst->kind == TYPE_BOOL) ||
+                       (src->kind == TYPE_F64 && dst->kind == TYPE_BOOL) ||
+                       (src->kind == TYPE_BOOL && (dst->kind == TYPE_I32 || dst->kind == TYPE_U32 || dst->kind == TYPE_I64 || dst->kind == TYPE_U64 || dst->kind == TYPE_F64)) ||
                        (src->kind == dst->kind)) {
                 allowed = true;
             }
@@ -2483,13 +2494,38 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 writeOp(compiler, OP_U64_TO_F64);
             } else if (from == TYPE_F64 && to == TYPE_U64) {
                 writeOp(compiler, OP_F64_TO_U64);
+            } else if (from == TYPE_I64 && to == TYPE_U64) {
+                writeOp(compiler, OP_I64_TO_U64);
+            } else if (from == TYPE_U64 && to == TYPE_I64) {
+                writeOp(compiler, OP_U64_TO_I64);
+            } else if (from == TYPE_I64 && to == TYPE_F64) {
+                writeOp(compiler, OP_I64_TO_F64);
+            } else if (from == TYPE_F64 && to == TYPE_I64) {
+                writeOp(compiler, OP_F64_TO_I64);
+            } else if (from == TYPE_I32 && to == TYPE_BOOL) {
+                writeOp(compiler, OP_I32_TO_BOOL);
+            } else if (from == TYPE_U32 && to == TYPE_BOOL) {
+                writeOp(compiler, OP_U32_TO_BOOL);
+            } else if (from == TYPE_I64 && to == TYPE_BOOL) {
+                writeOp(compiler, OP_I64_TO_BOOL);
+            } else if (from == TYPE_U64 && to == TYPE_BOOL) {
+                writeOp(compiler, OP_U64_TO_BOOL);
+            } else if (from == TYPE_BOOL && to == TYPE_I32) {
+                writeOp(compiler, OP_BOOL_TO_I32);
+            } else if (from == TYPE_BOOL && to == TYPE_U32) {
+                writeOp(compiler, OP_BOOL_TO_U32);
+            } else if (from == TYPE_BOOL && to == TYPE_I64) {
+                writeOp(compiler, OP_BOOL_TO_I64);
+            } else if (from == TYPE_BOOL && to == TYPE_U64) {
+                writeOp(compiler, OP_BOOL_TO_U64);
+            } else if (from == TYPE_BOOL && to == TYPE_F64) {
+                writeOp(compiler, OP_BOOL_TO_F64);
+            } else if (from == TYPE_F64 && to == TYPE_BOOL) {
+                writeOp(compiler, OP_F64_TO_BOOL);
             } else if (from == TYPE_F64 && to == TYPE_I32) {
                 writeOp(compiler, OP_F64_TO_I32);
             } else if (from == TYPE_F64 && to == TYPE_U32) {
                 writeOp(compiler, OP_F64_TO_U32);
-            } else if (from == TYPE_NIL && to == TYPE_STRING) {
-                writeOp(compiler, OP_POP);
-                emitConstant(compiler, convertLiteralToString(NIL_VAL));
             } else if (to == TYPE_STRING) {
                 switch (from) {
                     case TYPE_I32:
@@ -2497,6 +2533,12 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         break;
                     case TYPE_U32:
                         writeOp(compiler, OP_U32_TO_STRING);
+                        break;
+                    case TYPE_I64:
+                        writeOp(compiler, OP_I64_TO_STRING);
+                        break;
+                    case TYPE_U64:
+                        writeOp(compiler, OP_U64_TO_STRING);
                         break;
                     case TYPE_F64:
                         writeOp(compiler, OP_F64_TO_STRING);
@@ -2509,7 +2551,6 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         writeOp(compiler, OP_ARRAY_TO_STRING);
                         break;
                     default:
-                        /* nil or unknown values are converted at compile time */
                         break;
                 }
             }

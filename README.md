@@ -28,6 +28,10 @@ include:
 - Variables are immutable by default. Use `let mut` for reassignment.
   See [docs/MUTABILITY.md](docs/MUTABILITY.md) for a detailed explanation.
 - Explicit numeric casting with the `as` keyword; no implicit conversions.
+- Booleans convert to numbers as `1` or `0` and any numeric type may be cast
+  to `bool`.
+- All primitive values can be converted to `string` with `as string`. Casting
+  from `string` or `nil` to numeric types is disallowed.
 - Integer literals automatically use `i32`, `i64` or `u64` based on value. A
   trailing `u` suffix forces an unsigned type.
 
