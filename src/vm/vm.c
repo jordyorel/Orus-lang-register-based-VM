@@ -18,6 +18,8 @@
 #include "../../include/vm_ops.h"
 #include "../../include/modules.h"
 #include "../../include/type.h"
+#include "../../include/builtin_stdlib.h"
+#include <sys/stat.h>
 
 VM vm;
 
@@ -63,6 +65,10 @@ void initVM() {
     vm.nativeFunctionCount = 0;
     const char* envTrace = getenv("ORUS_TRACE");
     vm.trace = envTrace && envTrace[0] != '\0';
+    const char* envPath = getenv("ORUS_PATH");
+    vm.stdPath = envPath && envPath[0] != '\0' ? envPath : "std";
+    const char* envDev = getenv("ORUS_DEV_MODE");
+    vm.devMode = envDev && envDev[0] != '\0';
     for (int i = 0; i < UINT8_COUNT; i++) {
         vm.loadedModules[i] = NULL;
     }
@@ -249,6 +255,23 @@ static InterpretResult interpretModule(const char* path) {
 
     Module* cached = get_module(path);
     if (cached) {
+        if (vm.devMode && !cached->from_embedded && cached->disk_path) {
+            struct stat st;
+            if (stat(cached->disk_path, &st) == 0 && st.st_mtime != cached->mtime) {
+                char* src = load_module_source(cached->disk_path);
+                if (src) {
+                    ASTNode* ast = parse_module_source(src, path);
+                    if (ast) {
+                        freeChunk(cached->bytecode);
+                        cached->bytecode = compile_module_ast(ast, path);
+                        cached->mtime = st.st_mtime;
+                        cached->executed = false;
+                    }
+                    free(src);
+                }
+            }
+        }
+
         if (cached->executed) {
             RUNTIME_ERROR("Module '%s' already executed.", path);
             runtimeStackCount--;
@@ -270,18 +293,14 @@ static InterpretResult interpretModule(const char* path) {
         return res;
     }
 
-    char* source = load_module_source(path);
+    char* diskPath = NULL;
+    long mtime = 0;
+    bool fromEmbedded = false;
+    char* source = load_module_with_fallback(path, &diskPath, &mtime, &fromEmbedded);
     if (!source) {
-        const char* stdPath = getenv("ORUS_STD_PATH");
-        if (!stdPath) stdPath = "std";
-        char full[256];
-        snprintf(full, sizeof(full), "%s/%s", stdPath, path);
-        source = load_module_source(full);
-        if (!source) {
-            RUNTIME_ERROR("Module '%s' not found", path);
-            runtimeStackCount--;
-            return INTERPRET_RUNTIME_ERROR;
-        }
+        RUNTIME_ERROR("Module '%s' not found", path);
+        runtimeStackCount--;
+        return INTERPRET_RUNTIME_ERROR;
     }
 
     int startGlobals = vm.variableCount;
@@ -314,6 +333,9 @@ static InterpretResult interpretModule(const char* path) {
     mod.bytecode = chunk;
     mod.export_count = 0;
     mod.executed = true;
+    mod.disk_path = diskPath;
+    mod.mtime = mtime;
+    mod.from_embedded = fromEmbedded;
 
     Chunk* prevChunk = vm.chunk;
     uint8_t* prevIp = vm.ip;

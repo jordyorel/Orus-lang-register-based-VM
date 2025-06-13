@@ -83,6 +83,9 @@ typedef struct {
     NativeFunction nativeFunctions[MAX_NATIVES];
     int nativeFunctionCount;
 
+    const char* stdPath;
+    bool devMode;
+
     // Garbage collector state
     Obj* objects;
     size_t bytesAllocated;

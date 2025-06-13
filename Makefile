@@ -1,6 +1,11 @@
 CC=gcc
+all: debug
 CFLAGS=-I./include -Wall -g
 SRC=$(shell find src -name '*.c')
+STDLIBC=src/vm/builtin_stdlib.c
+STDLIBH=include/builtin_stdlib.h
+$(STDLIBC) $(STDLIBH): tools/gen_stdlib.py $(wildcard std/*.orus)
+	python3 tools/gen_stdlib.py std $(STDLIBC) $(STDLIBH)
 OBJ=$(patsubst src/%.c, build/debug/clox/%.o, $(SRC))
 TARGET=orusc
 RELEASE_TARGET=build/release/clox
