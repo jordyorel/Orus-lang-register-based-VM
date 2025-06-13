@@ -6,6 +6,7 @@
 #include "value.h"
 #include "vm.h"
 #include <stdbool.h>
+#include <time.h>
 
 typedef struct {
     char* name;
@@ -20,11 +21,16 @@ typedef struct {
     Export exports[UINT8_COUNT];
     uint8_t export_count;
     bool executed;
+    char* disk_path;   // path on disk if loaded from file
+    long mtime;        // modification time
+    bool from_embedded; // true if loaded from embedded table
 } Module;
 
 Export* get_export(Module* module, const char* name);
 
 char* load_module_source(const char* resolved_path);
+char* load_module_with_fallback(const char* path, char** disk_path, long* mtime,
+                                bool* from_embedded);
 ASTNode* parse_module_source(const char* source_code, const char* module_name);
 Chunk* compile_module_ast(ASTNode* ast, const char* module_name);
 bool register_module(Module* module);
