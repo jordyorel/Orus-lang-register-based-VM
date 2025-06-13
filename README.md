@@ -4,7 +4,7 @@ Orus is an experimental interpreted programming language implemented in C. It
 features a syntax inspired by modern scripting languages. Supported features
 include:
 
-- Static type annotations for integers (`i32`/`u32`), floating point numbers
+- Static type annotations for integers (`i32`/`u32`/`i64`/`u64`), floating point numbers
   (`f64`), booleans and strings with local type inference using `let`.
 - Arrays with fixed lengths (including multidimensional arrays) and
   dynamic arrays using `push`, `pop`, `len`, `sum`, `min` and `max`.
@@ -28,6 +28,8 @@ include:
 - Variables are immutable by default. Use `let mut` for reassignment.
   See [docs/MUTABILITY.md](docs/MUTABILITY.md) for a detailed explanation.
 - Explicit numeric casting with the `as` keyword; no implicit conversions.
+- Integer literals automatically use `i32`, `i64` or `u64` based on value. A
+  trailing `u` suffix forces an unsigned type.
 
 The repository contains the source code for the interpreter and a collection of sample programs used as tests. For a quick tour of the language syntax see [`docs/LANGUAGE.md`](docs/LANGUAGE.md). Additional notes on the generics and array helper are available in [`docs/GENERICS.md`](docs/GENERICS.md). A future compilation roadmap is outlined in [`docs/COMPILATION_ROADMAP.md`](docs/COMPILATION_ROADMAP.md). For a summary of built-in functions consult [`docs/BUILTINS.md`](docs/BUILTINS.md).
 

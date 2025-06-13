@@ -188,53 +188,55 @@ static ASTNode* parseString(Parser* parser) {
 }
 
 static ASTNode* parseNumber(Parser* parser) {
-    // Comment out debug output
-    // fprintf(stderr, "DEBUG: parseNumber processing token: type=%d, '%.*s'\n",
-    //        parser->previous.type, parser->previous.length, parser->previous.start);
-
     const char* start = parser->previous.start;
     int length = parser->previous.length;
-    char* endptr;
     bool isFloat = false;
-    
-    // Check if the number contains a decimal point
+
     for (int i = 0; i < length; i++) {
-        if (start[i] == '.') {
+        if (start[i] == '.' || start[i] == 'e' || start[i] == 'E') {
             isFloat = true;
             break;
         }
     }
-    
-    // Create a null-terminated copy of the token text for conversion
-    char* numStr = (char*)malloc(length + 1);
-    memcpy(numStr, start, length);
-    numStr[length] = '\0';
-    
+
+    bool hasSuffix = (start[length - 1] == 'u' || start[length - 1] == 'U');
+    int copyLen = hasSuffix ? length - 1 : length;
+
+    char* numStr = (char*)malloc(copyLen + 1);
+    int j = 0;
+    for (int i = 0; i < copyLen; i++) {
+        if (start[i] != '_') {
+            numStr[j++] = start[i];
+        }
+    }
+    numStr[j] = '\0';
+
     ASTNode* node;
     if (isFloat) {
+        char* endptr;
         double value = strtod(numStr, &endptr);
-        // fprintf(stderr, "DEBUG: Created F64 literal with value: %f\n", value);
         node = createLiteralNode(F64_VAL(value));
         node->valueType = createPrimitiveType(TYPE_F64);
     } else {
-        long long value = strtoll(numStr, &endptr, 10);
-        bool isUnsigned = (*endptr == 'u' || *endptr == 'U');
-        if (isUnsigned) {
-            node = createLiteralNode(U32_VAL((uint32_t)value));
-            node->valueType = createPrimitiveType(TYPE_U32);
-        } else if (value >= INT32_MIN && value <= INT32_MAX) {
-            node = createLiteralNode(I32_VAL((int32_t)value));
+        char* endptr;
+        uint64_t uval = strtoull(numStr, &endptr, 10);
+        if (hasSuffix) {
+            if (uval <= UINT32_MAX) {
+                node = createLiteralNode(U32_VAL((uint32_t)uval));
+                node->valueType = createPrimitiveType(TYPE_U32);
+            } else {
+                node = createLiteralNode(U64_VAL(uval));
+                node->valueType = createPrimitiveType(TYPE_U64);
+            }
+        } else if (uval <= INT32_MAX) {
+            node = createLiteralNode(I32_VAL((int32_t)uval));
             node->valueType = createPrimitiveType(TYPE_I32);
-        } else if (value >= INT64_MIN && value <= INT64_MAX) {
-            node = createLiteralNode(I64_VAL((int64_t)value));
+        } else if (uval <= INT64_MAX) {
+            node = createLiteralNode(I64_VAL((int64_t)uval));
             node->valueType = createPrimitiveType(TYPE_I64);
-        } else if (value >= 0 && value <= UINT32_MAX) {
-            node = createLiteralNode(U32_VAL((uint32_t)value));
-            node->valueType = createPrimitiveType(TYPE_U32);
         } else {
-            double dvalue = strtod(numStr, &endptr);
-            node = createLiteralNode(F64_VAL(dvalue));
-            node->valueType = createPrimitiveType(TYPE_F64);
+            node = createLiteralNode(U64_VAL(uval));
+            node->valueType = createPrimitiveType(TYPE_U64);
         }
     }
 
@@ -1597,6 +1599,8 @@ static Type* parseType(Parser* parser) {
         type = getPrimitiveType(TYPE_I64);
     } else if (match(parser, TOKEN_U32)) {
         type = getPrimitiveType(TYPE_U32);
+    } else if (match(parser, TOKEN_U64)) {
+        type = getPrimitiveType(TYPE_U64);
     } else if (match(parser, TOKEN_F64)) {
         type = getPrimitiveType(TYPE_F64);
     } else if (match(parser, TOKEN_BOOL)) {

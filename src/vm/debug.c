@@ -90,6 +90,16 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_DIVIDE_U32", offset);
         case OP_NEGATE_U32:
             return simpleInstruction("OP_NEGATE_U32", offset);
+        case OP_ADD_U64:
+            return simpleInstruction("OP_ADD_U64", offset);
+        case OP_SUBTRACT_U64:
+            return simpleInstruction("OP_SUBTRACT_U64", offset);
+        case OP_MULTIPLY_U64:
+            return simpleInstruction("OP_MULTIPLY_U64", offset);
+        case OP_DIVIDE_U64:
+            return simpleInstruction("OP_DIVIDE_U64", offset);
+        case OP_NEGATE_U64:
+            return simpleInstruction("OP_NEGATE_U64", offset);
 
         // Floating point operations
         case OP_ADD_F64:
@@ -108,6 +118,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_MODULO_I64", offset);
         case OP_MODULO_U32:
             return simpleInstruction("OP_MODULO_U32", offset);
+        case OP_MODULO_U64:
+            return simpleInstruction("OP_MODULO_U64", offset);
 
         // Comparison operations
         case OP_EQUAL:
@@ -120,6 +132,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_LESS_I64", offset);
         case OP_LESS_U32:
             return simpleInstruction("OP_LESS_U32", offset);
+        case OP_LESS_U64:
+            return simpleInstruction("OP_LESS_U64", offset);
         case OP_LESS_F64:
             return simpleInstruction("OP_LESS_F64", offset);
         case OP_LESS_EQUAL_I32:
@@ -128,6 +142,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_LESS_EQUAL_I64", offset);
         case OP_LESS_EQUAL_U32:
             return simpleInstruction("OP_LESS_EQUAL_U32", offset);
+        case OP_LESS_EQUAL_U64:
+            return simpleInstruction("OP_LESS_EQUAL_U64", offset);
         case OP_LESS_EQUAL_F64:
             return simpleInstruction("OP_LESS_EQUAL_F64", offset);
         case OP_GREATER_I32:
@@ -136,6 +152,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_GREATER_I64", offset);
         case OP_GREATER_U32:
             return simpleInstruction("OP_GREATER_U32", offset);
+        case OP_GREATER_U64:
+            return simpleInstruction("OP_GREATER_U64", offset);
         case OP_GREATER_F64:
             return simpleInstruction("OP_GREATER_F64", offset);
         case OP_GREATER_EQUAL_I32:
@@ -144,6 +162,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_GREATER_EQUAL_I64", offset);
         case OP_GREATER_EQUAL_U32:
             return simpleInstruction("OP_GREATER_EQUAL_U32", offset);
+        case OP_GREATER_EQUAL_U64:
+            return simpleInstruction("OP_GREATER_EQUAL_U64", offset);
         case OP_GREATER_EQUAL_F64:
             return simpleInstruction("OP_GREATER_EQUAL_F64", offset);
             
@@ -216,6 +236,18 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_U32_TO_I64", offset);
         case OP_I64_TO_I32:
             return simpleInstruction("OP_I64_TO_I32", offset);
+        case OP_I32_TO_U64:
+            return simpleInstruction("OP_I32_TO_U64", offset);
+        case OP_U32_TO_U64:
+            return simpleInstruction("OP_U32_TO_U64", offset);
+        case OP_U64_TO_I32:
+            return simpleInstruction("OP_U64_TO_I32", offset);
+        case OP_U64_TO_U32:
+            return simpleInstruction("OP_U64_TO_U32", offset);
+        case OP_U64_TO_F64:
+            return simpleInstruction("OP_U64_TO_F64", offset);
+        case OP_F64_TO_U64:
+            return simpleInstruction("OP_F64_TO_U64", offset);
         case OP_F64_TO_I32:
             return simpleInstruction("OP_F64_TO_I32", offset);
         case OP_F64_TO_U32:

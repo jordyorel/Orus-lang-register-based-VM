@@ -32,6 +32,7 @@ typedef enum {
     VAL_I32,
     VAL_I64,
     VAL_U32,
+    VAL_U64,
     VAL_F64,
     VAL_BOOL,
     VAL_NIL,
@@ -68,6 +69,7 @@ typedef struct Value {
         int32_t i32;
         int64_t i64;
         uint32_t u32;
+        uint64_t u64;
         double f64;
         bool boolean;
         ObjString* string;
@@ -80,6 +82,7 @@ typedef struct Value {
 #define I32_VAL(value)   ((Value){VAL_I32, {.i32 = value}})
 #define I64_VAL(value)   ((Value){VAL_I64, {.i64 = value}})
 #define U32_VAL(value)   ((Value){VAL_U32, {.u32 = value}})
+#define U64_VAL(value)   ((Value){VAL_U64, {.u64 = value}})
 #define F64_VAL(value)   ((Value){VAL_F64, {.f64 = value}})
 #define BOOL_VAL(value)  ((Value){VAL_BOOL, {.boolean = value}})
 #define NIL_VAL          ((Value){VAL_NIL, {.i32 = 0}})
@@ -91,6 +94,7 @@ typedef struct Value {
 #define IS_I32(value)    ((value).type == VAL_I32)
 #define IS_I64(value)    ((value).type == VAL_I64)
 #define IS_U32(value)    ((value).type == VAL_U32)
+#define IS_U64(value)    ((value).type == VAL_U64)
 #define IS_F64(value)    ((value).type == VAL_F64)
 #define IS_BOOL(value)   ((value).type == VAL_BOOL)
 #define IS_NIL(value)    ((value).type == VAL_NIL)
@@ -102,6 +106,7 @@ typedef struct Value {
 #define AS_I32(value)    ((value).as.i32)
 #define AS_I64(value)    ((value).as.i64)
 #define AS_U32(value)    ((value).as.u32)
+#define AS_U64(value)    ((value).as.u64)
 #define AS_F64(value)    ((value).as.f64)
 #define AS_BOOL(value)   ((value).as.boolean)
 #define AS_STRING(value) ((value).as.string)
