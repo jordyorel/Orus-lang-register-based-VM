@@ -3,7 +3,7 @@
 
 This document consolidates the development roadmaps for the Orus language, tracking progress and version increments across multiple development streams.
 
-**Current Version: 0.5.3**
+**Current Version: 0.5.4**
 
 ## Version History
 
@@ -12,6 +12,7 @@ This document consolidates the development roadmaps for the Orus language, track
 - **0.5.1**: Added `input()` builtin for basic user input
 - **0.5.2**: Improved diagnostics for repeated module imports
 - **0.5.3**: Introduced `std/math` library with core math utilities
+- **0.5.4**: Added `const` declarations, embedded standard library and enhanced casting rules
 
 ## Completed Major Features
 
