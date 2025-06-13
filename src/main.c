@@ -328,6 +328,7 @@ int main(int argc, const char* argv[]) {
     bool devFlag = false;
     bool dumpStdlib = false;
     const char* cliStdPath = NULL;
+    char defaultStdPath[PATH_MAX];
     const char* path = NULL;
     const char* projectDir = NULL;
 
@@ -360,6 +361,20 @@ int main(int argc, const char* argv[]) {
         } else {
             fprintf(stderr, "Usage: orusc [--trace] [--trace-imports] [--std-path dir] [--dump-stdlib] [--dev] [--project dir] [path]\n");
             return 64;
+        }
+    }
+
+    if (!cliStdPath) {
+        const char* envPath = getenv("ORUS_PATH");
+        if (!envPath || envPath[0] == '\0') {
+            if (realpath(argv[0], defaultStdPath)) {
+                char* slash = strrchr(defaultStdPath, '/');
+                if (slash) {
+                    *slash = '\0';
+                    strncat(defaultStdPath, "/std", sizeof(defaultStdPath) - strlen(defaultStdPath) - 1);
+                    cliStdPath = defaultStdPath;
+                }
+            }
         }
     }
 

@@ -66,7 +66,7 @@ void initVM() {
     const char* envTrace = getenv("ORUS_TRACE");
     vm.trace = envTrace && envTrace[0] != '\0';
     const char* envPath = getenv("ORUS_PATH");
-    vm.stdPath = envPath && envPath[0] != '\0' ? envPath : "std";
+    vm.stdPath = envPath && envPath[0] != '\0' ? envPath : NULL;
     const char* envDev = getenv("ORUS_DEV_MODE");
     vm.devMode = envDev && envDev[0] != '\0';
     for (int i = 0; i < UINT8_COUNT; i++) {

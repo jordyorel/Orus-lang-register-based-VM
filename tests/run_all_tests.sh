@@ -11,6 +11,10 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Fix the path to the Orus executable
 ORUS_EXECUTABLE="$(cd "$SCRIPT_DIR/.." && pwd)/orusc"
 
+# Ensure the interpreter can locate the standard library even when
+# this script is executed from within the tests directory.
+export ORUS_PATH="$(cd "$SCRIPT_DIR/.." && pwd)/std"
+
 # Overall counters
 passed=0
 failed=0
