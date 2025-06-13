@@ -797,6 +797,150 @@ static InterpretResult run() {
                 vmPush(&vm, U32_VAL((uint32_t)value));
                 break;
             }
+            case OP_I64_TO_U64: {
+                if (!IS_I64(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a 64-bit integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int64_t value = AS_I64(vmPop(&vm));
+                vmPush(&vm, U64_VAL((uint64_t)value));
+                break;
+            }
+            case OP_U64_TO_I64: {
+                if (!IS_U64(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a 64-bit unsigned integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                uint64_t value = AS_U64(vmPop(&vm));
+                vmPush(&vm, I64_VAL((int64_t)value));
+                break;
+            }
+            case OP_I64_TO_F64: {
+                if (!IS_I64(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a 64-bit integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int64_t value = AS_I64(vmPop(&vm));
+                vmPush(&vm, F64_VAL((double)value));
+                break;
+            }
+            case OP_F64_TO_I64: {
+                if (!IS_F64(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a floating point number.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                double value = AS_F64(vmPop(&vm));
+                vmPush(&vm, I64_VAL((int64_t)value));
+                break;
+            }
+            case OP_I32_TO_BOOL: {
+                if (!IS_I32(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be an integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int32_t value = AS_I32(vmPop(&vm));
+                vmPush(&vm, BOOL_VAL(value != 0));
+                break;
+            }
+            case OP_U32_TO_BOOL: {
+                if (!IS_U32(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be an unsigned integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                uint32_t value = AS_U32(vmPop(&vm));
+                vmPush(&vm, BOOL_VAL(value != 0));
+                break;
+            }
+            case OP_I64_TO_BOOL: {
+                if (!IS_I64(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a 64-bit integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int64_t value = AS_I64(vmPop(&vm));
+                vmPush(&vm, BOOL_VAL(value != 0));
+                break;
+            }
+            case OP_U64_TO_BOOL: {
+                if (!IS_U64(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a 64-bit unsigned integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                uint64_t value = AS_U64(vmPop(&vm));
+                vmPush(&vm, BOOL_VAL(value != 0));
+                break;
+            }
+            case OP_BOOL_TO_I32: {
+                if (!IS_BOOL(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a boolean.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                bool value = AS_BOOL(vmPop(&vm));
+                vmPush(&vm, I32_VAL(value ? 1 : 0));
+                break;
+            }
+            case OP_BOOL_TO_U32: {
+                if (!IS_BOOL(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a boolean.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                bool value = AS_BOOL(vmPop(&vm));
+                vmPush(&vm, U32_VAL(value ? 1 : 0));
+                break;
+            }
+            case OP_BOOL_TO_I64: {
+                if (!IS_BOOL(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a boolean.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                bool value = AS_BOOL(vmPop(&vm));
+                vmPush(&vm, I64_VAL(value ? 1 : 0));
+                break;
+            }
+            case OP_BOOL_TO_U64: {
+                if (!IS_BOOL(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a boolean.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                bool value = AS_BOOL(vmPop(&vm));
+                vmPush(&vm, U64_VAL(value ? 1 : 0));
+                break;
+            }
+            case OP_BOOL_TO_F64: {
+                if (!IS_BOOL(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a boolean.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                bool value = AS_BOOL(vmPop(&vm));
+                vmPush(&vm, F64_VAL(value ? 1.0 : 0.0));
+                break;
+            }
+            case OP_F64_TO_BOOL: {
+                if (!IS_F64(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a floating point number.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                double value = AS_F64(vmPop(&vm));
+                vmPush(&vm, BOOL_VAL(value != 0.0));
+                break;
+            }
+            case OP_I64_TO_STRING: {
+                if (!IS_I64(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a 64-bit integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Value v = vmPop(&vm);
+                vmPush(&vm, convertToString(v));
+                break;
+            }
+            case OP_U64_TO_STRING: {
+                if (!IS_U64(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a 64-bit unsigned integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Value v = vmPop(&vm);
+                vmPush(&vm, convertToString(v));
+                break;
+            }
             case OP_I32_TO_STRING: {
                 if (!IS_I32(vmPeek(&vm, 0))) {
                     RUNTIME_ERROR("Operand must be an integer.");

@@ -68,6 +68,17 @@ let c: i32 = big as i32
 ```
 `u64` values can be cast to `i32`, `u32` or `f64` and vice versa using `as`.
 
+### Casting rules
+
+* Casting between integers of different widths truncates on overflow.
+* Integers and floats can be converted back and forth. Floating point casts to
+  integers round toward zero and may lose precision.
+* Any numeric type may be cast to `bool`. Zero becomes `false`; any other value
+  becomes `true`. Booleans cast back to numbers use `1` for `true` and `0` for
+  `false`.
+* All primitive values can be converted to `string` using `as string`.
+* Casting from `string`, `nil` or `void` to numeric types is not allowed.
+
 ### Numeric literals
 
 Integer literals are written in decimal by default. Use `0x` to specify a
