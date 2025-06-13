@@ -6,11 +6,11 @@ This document consolidates the development roadmaps for the Orus language, track
 
 ## Version History
 
-* **0.1.0**: Initial release with basic language features
-* **0.5.0**: Generics, modules, error handling, and garbage collection
-* **0.5.1**: Added `input()` builtin for basic user input
-* **0.5.2**: Improved diagnostics for repeated module imports
-* **0.5.3**: Added `const` declarations for top-level immutable bindings
+- **0.1.0**: Initial release with basic language features  
+- **0.5.0**: Current version with generics, modules, error handling, and garbage collection  
+- **0.5.1**: Added `input()` builtin for basic user input
+- **0.5.2**: Improved diagnostics for repeated module imports
+- **0.5.3**: Added `const` declarations and introduced `std/math` library
 
 ## ✅ Completed Major Features
 
@@ -59,10 +59,10 @@ This document consolidates the development roadmaps for the Orus language, track
 
 ### 3. Standard Library Modules (std/)
 
-| Module           | Description                                     | Target Version                       |
-| ---------------- | ----------------------------------------------- | ------------------------------------ |
-| `std/math`       | `clamp`, `sqrt`, `average`, constants like `PI` | 0.6.0                                |
-| `std/random`     | LCG `rand`, `rand_int`, `choice`, `shuffle`     | 0.6.0                                |
+| Module         | Description                                     | Target Version   |
+|----------------|-------------------------------------------------|------------------|
+| `std/math`       | `clamp`, `sqrt`, `average`, constants like `PI` | 0.5.3            |
+| `std/random`     | LCG `rand`, `rand_int`, `choice`, `shuffle`     | 0.6.0            |
 | `std/functional` | `map`, `filter`, `reduce`                       | 0.6.0+ (depends on function support) |
 | `std/datetime`   | `now()`, `timestamp()`, formatting              | 0.6.0+ (needs runtime `_timestamp`)  |
 | `std/os`         | `cwd()`, file I/O, environment info             | 0.6.0+                               |
@@ -120,13 +120,12 @@ This document consolidates the development roadmaps for the Orus language, track
 
 ## Development Priorities
 
-### Short-Term 
+### Short-Term (0–3 months)
+- Finalize generic forward declarations
+- Add remaining built-ins: `abs`, `round`, `any`, `all`  
+- Expand standard library with modules like `random` and `functional`
 
-* Finalize generic forward declarations
-* Add remaining built-ins: `abs`, `round`, `any`, `all`
-* Begin core standard library: `math`, `random`, `functional`
-
-### Medium-Term&#x20;
+### Medium-Term
 
 * Generic constraints and arithmetic
 * Build out I/O, date/time, strings, and collections
