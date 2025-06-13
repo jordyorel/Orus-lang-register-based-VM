@@ -3,11 +3,13 @@
 #include "../../include/parser.h"
 #include "../../include/compiler.h"
 #include "../../include/vm.h"
+#include "../../include/builtin_stdlib.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <limits.h>
+#include <sys/stat.h>
 
 static Module module_cache[UINT8_COUNT];
 static uint8_t module_cache_count = 0;
@@ -23,6 +25,41 @@ extern VM vm;
 
 char* load_module_source(const char* resolved_path) {
     return readFile(resolved_path);
+}
+
+char* load_module_with_fallback(const char* path, char** disk_path, long* mtime,
+                                bool* from_embedded) {
+    if (disk_path) *disk_path = NULL;
+    if (mtime) *mtime = 0;
+    if (from_embedded) *from_embedded = false;
+
+    char* source = load_module_source(path);
+    if (source) {
+        if (disk_path) *disk_path = strdup(path);
+        if (mtime) {
+            struct stat st;
+            if (stat(path, &st) == 0) *mtime = st.st_mtime;
+        }
+        return source;
+    }
+    char full[256];
+    snprintf(full, sizeof(full), "%s/%s", vm.stdPath ? vm.stdPath : "std", path);
+    source = load_module_source(full);
+    if (source) {
+        if (disk_path) *disk_path = strdup(full);
+        if (mtime) {
+            struct stat st;
+            if (stat(full, &st) == 0) *mtime = st.st_mtime;
+        }
+        return source;
+    }
+    const char* embedded = getEmbeddedModule(path);
+    if (embedded) {
+        if (from_embedded) *from_embedded = true;
+        fprintf(stderr, "[warning] Falling back to embedded module %s\n", path);
+        return strdup(embedded);
+    }
+    return NULL;
 }
 
 ASTNode* parse_module_source(const char* source_code, const char* module_name) {
@@ -91,20 +128,16 @@ InterpretResult compile_module_only(const char* path) {
         return INTERPRET_OK;
     }
 
-    char* source = load_module_source(path);
+    char* diskPath = NULL;
+    long mtime = 0;
+    bool fromEmbedded = false;
+    char* source = load_module_with_fallback(path, &diskPath, &mtime, &fromEmbedded);
     if (!source) {
-        const char* stdPath = getenv("ORUS_STD_PATH");
-        if (!stdPath) stdPath = "std";
-        char full[256];
-        snprintf(full, sizeof(full), "%s/%s", stdPath, path);
-        source = load_module_source(full);
-        if (!source) {
-            snprintf(module_error_buffer, sizeof(module_error_buffer),
-                     "Module `%s` not found", path);
-            moduleError = module_error_buffer;
-            loading_stack_count--;
-            return INTERPRET_RUNTIME_ERROR;
-        }
+        snprintf(module_error_buffer, sizeof(module_error_buffer),
+                 "Module `%s` not found", path);
+        moduleError = module_error_buffer;
+        loading_stack_count--;
+        return INTERPRET_RUNTIME_ERROR;
     }
 
     ASTNode* ast = parse_module_source(source, path);
@@ -135,6 +168,9 @@ InterpretResult compile_module_only(const char* path) {
     mod.bytecode = chunk;
     mod.export_count = 0;
     mod.executed = false;
+    mod.disk_path = diskPath;
+    mod.mtime = mtime;
+    mod.from_embedded = fromEmbedded;
 
     for (int i = startGlobals; i < vm.variableCount && mod.export_count < UINT8_MAX; i++) {
         Export ex;

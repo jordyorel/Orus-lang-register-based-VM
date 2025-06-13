@@ -10,6 +10,7 @@
 #include "../include/file_utils.h"
 #include "../include/vm.h"
 #include "../include/modules.h"
+#include "../include/builtin_stdlib.h"
 #include "../include/error.h"
 #include "../include/version.h"
 #include <limits.h>
@@ -324,6 +325,9 @@ static void runProject(const char* dir) {
 int main(int argc, const char* argv[]) {
     bool traceFlag = false;
     bool traceImportsFlag = false;
+    bool devFlag = false;
+    bool dumpStdlib = false;
+    const char* cliStdPath = NULL;
     const char* path = NULL;
     const char* projectDir = NULL;
 
@@ -335,6 +339,16 @@ int main(int argc, const char* argv[]) {
             traceFlag = true;
         } else if (strcmp(argv[i], "--trace-imports") == 0) {
             traceImportsFlag = true;
+        } else if (strcmp(argv[i], "--std-path") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "Usage: --std-path <dir>\n");
+                return 64;
+            }
+            cliStdPath = argv[++i];
+        } else if (strcmp(argv[i], "--dump-stdlib") == 0) {
+            dumpStdlib = true;
+        } else if (strcmp(argv[i], "--dev") == 0) {
+            devFlag = true;
         } else if (strcmp(argv[i], "--project") == 0) {
             if (i + 1 >= argc) {
                 fprintf(stderr, "Usage: orusc --project <dir>\n");
@@ -344,14 +358,23 @@ int main(int argc, const char* argv[]) {
         } else if (!path) {
             path = argv[i];
         } else {
-            fprintf(stderr, "Usage: orusc [--trace] [--trace-imports] [--project dir] [path]\n");
+            fprintf(stderr, "Usage: orusc [--trace] [--trace-imports] [--std-path dir] [--dump-stdlib] [--dev] [--project dir] [path]\n");
             return 64;
         }
     }
 
     initVM();
+    if (cliStdPath) vm.stdPath = cliStdPath;
+    if (devFlag) vm.devMode = true;
     if (traceFlag) vm.trace = true;
     if (traceImportsFlag) traceImports = true;
+
+    if (dumpStdlib) {
+        dumpEmbeddedStdlib(vm.stdPath);
+        freeVM();
+        freeTypeSystem();
+        return 0;
+    }
 
     if (projectDir) {
         runProject(projectDir);
