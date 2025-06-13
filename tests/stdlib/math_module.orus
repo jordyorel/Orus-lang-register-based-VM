@@ -1,0 +1,20 @@
+use std::math
+
+fn main() {
+    print(math.abs(-5.0))
+    print(math.clamp(15.0, 0.0, 10.0))
+    print(math.pow(2.0, 8))
+    print(math.sqrt(9.0))
+    print(math.round(3.6))
+    print(math.floor(3.9))
+    print(math.ceil(3.1))
+    print(math.sign(-2.0))
+    let vals = [1.0, 2.0, 3.0]
+    print(math.average(vals))
+    let mids = [3.0, 1.0, 2.0]
+    print(math.median(mids))
+    print(math.mod(-3, 5))
+    print(math.PI)
+    print(math.E)
+    print(math.TAU)
+}
