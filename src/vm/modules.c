@@ -24,7 +24,7 @@ static char module_error_buffer[256];
 extern VM vm;
 
 char* load_module_source(const char* resolved_path) {
-    return readFile(resolved_path);
+    return readFileSilent(resolved_path);
 }
 
 char* load_module_with_fallback(const char* path, char** disk_path, long* mtime,
@@ -43,7 +43,10 @@ char* load_module_with_fallback(const char* path, char** disk_path, long* mtime,
         return source;
     }
     char full[256];
-    snprintf(full, sizeof(full), "%s/%s", vm.stdPath ? vm.stdPath : "std", path);
+    const char* base = vm.stdPath ? vm.stdPath : "std";
+    const char* sub = path;
+    if (strncmp(path, "std/", 4) == 0) sub = path + 4;
+    snprintf(full, sizeof(full), "%s/%s", base, sub);
     source = load_module_source(full);
     if (source) {
         if (disk_path) *disk_path = strdup(full);
