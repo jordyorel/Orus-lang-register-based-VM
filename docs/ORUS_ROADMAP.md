@@ -3,7 +3,7 @@
 
 This document consolidates the development roadmaps for the Orus language, tracking progress and version increments across multiple development streams.
 
-**Current Version: 0.5.2**
+**Current Version: 0.5.3**
 
 ## Version History
 
@@ -11,6 +11,7 @@ This document consolidates the development roadmaps for the Orus language, track
 - **0.5.0**: Current version with generics, modules, error handling, and garbage collection  
 - **0.5.1**: Added `input()` builtin for basic user input
 - **0.5.2**: Improved diagnostics for repeated module imports
+- **0.5.3**: Introduced `std/math` library with core math utilities
 
 ## Completed Major Features
 
@@ -98,7 +99,7 @@ use std::math
 
 | Module         | Description                                     | Target Version   |
 |----------------|-------------------------------------------------|------------------|
-| `std/math`       | `clamp`, `sqrt`, `average`, constants like `PI` | 0.6.0            |
+| `std/math`       | `clamp`, `sqrt`, `average`, constants like `PI` | 0.5.3            |
 | `std/random`     | LCG `rand`, `rand_int`, `choice`, `shuffle`     | 0.6.0            |
 | `std/functional` | `map`, `filter`, `reduce`                       | 0.6.0+ (depends on function support) |
 | `std/datetime`   | `now()`, `timestamp()`, formatting              | 0.6.0+ (needs runtime `_timestamp`) |
@@ -130,9 +131,9 @@ use std::math
 ## Development Priorities
 
 ### Short-Term (0–3 months)
-- Complete generic forward declarations  
-- Add remaining built-ins: `abs`, `round`, `any`, `all`  
-- Begin core standard library: `math`, `random`, `functional`
+- Complete generic forward declarations
+- Add remaining built-ins: `any`, `all`
+- Expand standard library with modules like `random` and `functional`
 
 ### Medium-Term (3–12 months)
 - Generic constraints and arithmetic  

@@ -368,4 +368,5 @@ print(len(arr))
 - Modules, pattern matching, error handling and `impl` blocks are **fully implemented**.
 - Generics work for basic use cases but lack forward declarations and constraints.
 - The standard library is minimal; more built-ins are planned.
+- Initial modules are available under `std/` such as `std/math` for math helpers.
 

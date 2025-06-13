@@ -128,7 +128,7 @@ The script executes each benchmark program and prints the time spent running it.
   - `errors/` - Error handling tests
   - `generics/` - Tests for generic functionality
 - `include/` - Header files for language components
-- `std/` - Standard library components
+  - `std/` - Standard library modules such as `std/math`
 - `docs/` - Documentation
   - `LANGUAGE.md` – Overview of the language syntax
   - `GENERICS.md` – Notes on the generic programming capabilities
