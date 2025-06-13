@@ -621,6 +621,15 @@ static InterpretResult run() {
                 vmPush(&vm, I64_VAL((int64_t)value));
                 break;
             }
+            case OP_I64_TO_I32: {
+                if (!IS_I64(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be an integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int64_t value = AS_I64(vmPop(&vm));
+                vmPush(&vm, I32_VAL((int32_t)value));
+                break;
+            }
             case OP_F64_TO_I32: {
                 if (!IS_F64(vmPeek(&vm, 0))) {
                     RUNTIME_ERROR("Operand must be a floating point number.");
