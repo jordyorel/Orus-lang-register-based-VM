@@ -1318,8 +1318,28 @@ static void statement(Parser* parser, ASTNode** ast) {
     } else if (match(parser, TOKEN_PUB)) {
         if (match(parser, TOKEN_FN)) {
             functionDeclaration(parser, ast, true);
+        } else if (match(parser, TOKEN_CONST)) {
+            if (parser->functionDepth > 0) {
+                error(parser, "'const' declarations must be at top level.");
+            }
+            consume(parser, TOKEN_IDENTIFIER, "Expect constant name.");
+            Token name = parser->previous;
+            Type* type = NULL;
+            if (match(parser, TOKEN_COLON)) {
+                type = parseType(parser);
+                if (parser->hadError) return;
+            }
+            consume(parser, TOKEN_EQUAL, "Expect '=' after constant name.");
+            ASTNode* initializer; expression(parser, &initializer);
+            consumeStatementEnd(parser);
+            if (!initializer || initializer->type != AST_LITERAL) {
+                error(parser, "Constant expressions must be literals.");
+                return;
+            }
+            *ast = createConstNode(name, type, initializer, true);
+            (*ast)->line = name.line;
         } else {
-            error(parser, "Expected 'fn' after 'pub'.");
+            error(parser, "Expected 'fn' or 'const' after 'pub'.");
         }
 
     } else if (match(parser, TOKEN_RETURN)) {
@@ -1351,6 +1371,27 @@ static void statement(Parser* parser, ASTNode** ast) {
         // Rewind to the left brace so block() can consume it
         parser->current = parser->previous;
         block(parser, ast);
+
+    } else if (match(parser, TOKEN_CONST)) {
+        if (parser->functionDepth > 0) {
+            error(parser, "'const' declarations must be at top level.");
+        }
+        consume(parser, TOKEN_IDENTIFIER, "Expect constant name.");
+        Token name = parser->previous;
+        Type* type = NULL;
+        if (match(parser, TOKEN_COLON)) {
+            type = parseType(parser);
+            if (parser->hadError) return;
+        }
+        consume(parser, TOKEN_EQUAL, "Expect '=' after constant name.");
+        ASTNode* initializer; expression(parser, &initializer);
+        consumeStatementEnd(parser);
+        if (!initializer || initializer->type != AST_LITERAL) {
+            error(parser, "Constant expressions must be literals.");
+            return;
+        }
+        *ast = createConstNode(name, type, initializer, false);
+        (*ast)->line = name.line;
 
     } else if (match(parser, TOKEN_LET)) {
         if (parser->functionDepth == 0) {

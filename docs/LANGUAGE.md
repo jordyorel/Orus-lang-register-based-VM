@@ -35,6 +35,22 @@ fn demo() {
 }
 ```
 
+## Constants
+
+Compile-time constants are declared at the top level using `const` and may be
+marked `pub` for use in other modules. By convention constant names are written
+in uppercase.
+
+```orus
+pub const LIMIT: i32 = 10
+
+fn main() {
+    for i in 0..LIMIT {
+        print(i)
+    }
+}
+```
+
 ## Primitive Types
 
 - `i32` – 32‑bit signed integer

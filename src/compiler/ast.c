@@ -79,6 +79,21 @@ ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer, bool isMuta
     return node;
 }
 
+ASTNode* createConstNode(Token name, Type* type, ASTNode* initializer, bool isPublic) {
+    ASTNode* node = allocateASTNode();
+    node->type = AST_CONST;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.constant.name = name;
+    node->data.constant.type = type;
+    node->data.constant.initializer = initializer;
+    node->data.constant.index = 0;
+    node->data.constant.isPublic = isPublic;
+    node->valueType = NULL;
+    return node;
+}
+
 ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount, bool newline, int line) {
     ASTNode* node = allocateASTNode();
     node->type = AST_PRINT;
