@@ -103,6 +103,7 @@ static Value native_range(int argCount, Value* args) {
 static const char* getValueTypeName(Value val) {
     switch (val.type) {
         case VAL_I32:   return "i32";
+        case VAL_I64:   return "i64";
         case VAL_U32:   return "u32";
         case VAL_F64:   return "f64";
         case VAL_BOOL:  return "bool";
@@ -222,6 +223,8 @@ static Value native_sum(int argCount, Value* args) {
         Value v = arr->elements[i];
         if (IS_I32(v)) {
             total += AS_I32(v);
+        } else if (IS_I64(v)) {
+            total += AS_I64(v);
         } else if (IS_U32(v)) {
             total += AS_U32(v);
         } else if (IS_F64(v)) {
@@ -255,6 +258,8 @@ static Value native_min(int argCount, Value* args) {
     bool asFloat = false;
     if (IS_I32(first)) {
         best = AS_I32(first);
+    } else if (IS_I64(first)) {
+        best = AS_I64(first);
     } else if (IS_U32(first)) {
         best = AS_U32(first);
     } else if (IS_F64(first)) {
@@ -270,6 +275,8 @@ static Value native_min(int argCount, Value* args) {
         double val;
         if (IS_I32(v)) {
             val = AS_I32(v);
+        } else if (IS_I64(v)) {
+            val = AS_I64(v);
         } else if (IS_U32(v)) {
             val = AS_U32(v);
         } else if (IS_F64(v)) {
@@ -305,6 +312,8 @@ static Value native_max(int argCount, Value* args) {
     bool asFloat = false;
     if (IS_I32(first)) {
         best = AS_I32(first);
+    } else if (IS_I64(first)) {
+        best = AS_I64(first);
     } else if (IS_U32(first)) {
         best = AS_U32(first);
     } else if (IS_F64(first)) {
@@ -320,6 +329,8 @@ static Value native_max(int argCount, Value* args) {
         double val;
         if (IS_I32(v)) {
             val = AS_I32(v);
+        } else if (IS_I64(v)) {
+            val = AS_I64(v);
         } else if (IS_U32(v)) {
             val = AS_U32(v);
         } else if (IS_F64(v)) {

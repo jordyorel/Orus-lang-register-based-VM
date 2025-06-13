@@ -6,6 +6,7 @@
 
 typedef enum {
     TYPE_I32,
+    TYPE_I64,
     TYPE_U32,
     TYPE_F64,
     TYPE_BOOL,

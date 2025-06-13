@@ -38,6 +38,7 @@ fn demo() {
 ## Primitive Types
 
 - `i32` – 32‑bit signed integer
+- `i64` – 64‑bit signed integer
 - `u32` – 32‑bit unsigned integer
 - `f64` – double precision floating point
 - `bool` – boolean (`true` or `false`)

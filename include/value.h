@@ -30,6 +30,7 @@ struct Obj {
 
 typedef enum {
     VAL_I32,
+    VAL_I64,
     VAL_U32,
     VAL_F64,
     VAL_BOOL,
@@ -65,6 +66,7 @@ typedef struct Value {
     ValueType type;
     union {
         int32_t i32;
+        int64_t i64;
         uint32_t u32;
         double f64;
         bool boolean;
@@ -76,6 +78,7 @@ typedef struct Value {
 
 // Value creation macros
 #define I32_VAL(value)   ((Value){VAL_I32, {.i32 = value}})
+#define I64_VAL(value)   ((Value){VAL_I64, {.i64 = value}})
 #define U32_VAL(value)   ((Value){VAL_U32, {.u32 = value}})
 #define F64_VAL(value)   ((Value){VAL_F64, {.f64 = value}})
 #define BOOL_VAL(value)  ((Value){VAL_BOOL, {.boolean = value}})
@@ -86,6 +89,7 @@ typedef struct Value {
 
 // Value checking macros
 #define IS_I32(value)    ((value).type == VAL_I32)
+#define IS_I64(value)    ((value).type == VAL_I64)
 #define IS_U32(value)    ((value).type == VAL_U32)
 #define IS_F64(value)    ((value).type == VAL_F64)
 #define IS_BOOL(value)   ((value).type == VAL_BOOL)
@@ -96,6 +100,7 @@ typedef struct Value {
 
 // Value extraction macros
 #define AS_I32(value)    ((value).as.i32)
+#define AS_I64(value)    ((value).as.i64)
 #define AS_U32(value)    ((value).as.u32)
 #define AS_F64(value)    ((value).as.f64)
 #define AS_BOOL(value)   ((value).as.boolean)
