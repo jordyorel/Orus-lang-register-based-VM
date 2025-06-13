@@ -24,7 +24,7 @@ static char module_error_buffer[256];
 extern VM vm;
 
 char* load_module_source(const char* resolved_path) {
-    return readFile(resolved_path);
+    return readFileSilent(resolved_path);
 }
 
 char* load_module_with_fallback(const char* path, char** disk_path, long* mtime,
