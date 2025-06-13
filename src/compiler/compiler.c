@@ -239,11 +239,43 @@ static bool convertLiteralForDecl(ASTNode* init, Type* src, Type* dst) {
             init->valueType = dst;
             return true;
         }
+    } else if (src->kind == TYPE_I32 && dst->kind == TYPE_U64) {
+        if (IS_I32(init->data.literal)) {
+            int32_t v = AS_I32(init->data.literal);
+            init->data.literal = U64_VAL((uint64_t)v);
+            init->valueType = dst;
+            return true;
+        }
+    } else if (src->kind == TYPE_U32 && dst->kind == TYPE_U64) {
+        if (IS_U32(init->data.literal)) {
+            uint32_t v = AS_U32(init->data.literal);
+            init->data.literal = U64_VAL((uint64_t)v);
+            init->valueType = dst;
+            return true;
+        }
+    } else if (src->kind == TYPE_U64 && dst->kind == TYPE_I32) {
+        if (IS_U64(init->data.literal)) {
+            uint64_t v = AS_U64(init->data.literal);
+            init->data.literal = I32_VAL((int32_t)v);
+            init->valueType = dst;
+            return true;
+        }
+    } else if (src->kind == TYPE_U64 && dst->kind == TYPE_U32) {
+        if (IS_U64(init->data.literal)) {
+            uint64_t v = AS_U64(init->data.literal);
+            init->data.literal = U32_VAL((uint32_t)v);
+            init->valueType = dst;
+            return true;
+        }
     } else if ((src->kind == TYPE_I32 || src->kind == TYPE_U32) &&
                dst->kind == TYPE_F64) {
         double v = (src->kind == TYPE_I32) ? (double)AS_I32(init->data.literal)
                                            : (double)AS_U32(init->data.literal);
         init->data.literal = F64_VAL(v);
+        init->valueType = dst;
+        return true;
+    } else if (src->kind == TYPE_U64 && dst->kind == TYPE_F64) {
+        init->data.literal = F64_VAL((double)AS_U64(init->data.literal));
         init->valueType = dst;
         return true;
     } else if (src->kind == TYPE_F64 && dst->kind == TYPE_I32) {
@@ -252,6 +284,10 @@ static bool convertLiteralForDecl(ASTNode* init, Type* src, Type* dst) {
         return true;
     } else if (src->kind == TYPE_F64 && dst->kind == TYPE_U32) {
         init->data.literal = U32_VAL((uint32_t)AS_F64(init->data.literal));
+        init->valueType = dst;
+        return true;
+    } else if (src->kind == TYPE_F64 && dst->kind == TYPE_U64) {
+        init->data.literal = U64_VAL((uint64_t)AS_F64(init->data.literal));
         init->valueType = dst;
         return true;
     }
@@ -270,6 +306,9 @@ static Value convertLiteralToString(Value value) {
             break;
         case VAL_U32:
             length = snprintf(buffer, sizeof(buffer), "%u", AS_U32(value));
+            break;
+        case VAL_U64:
+            length = snprintf(buffer, sizeof(buffer), "%llu", (unsigned long long)AS_U64(value));
             break;
         case VAL_F64:
             length = snprintf(buffer, sizeof(buffer), "%g", AS_F64(value));
@@ -310,7 +349,7 @@ static int makeConstant(Compiler* compiler, ObjString* string) {
 static void emitConstant(Compiler* compiler, Value value) {
     // Ensure constants are emitted with valid values
     // Allow VAL_STRING for now to fix compilation, may need VM changes later.
-    if (IS_I32(value) || IS_I64(value) || IS_U32(value) || IS_F64(value) || IS_BOOL(value) || IS_NIL(value) || IS_STRING(value)) {
+    if (IS_I32(value) || IS_I64(value) || IS_U32(value) || IS_U64(value) || IS_F64(value) || IS_BOOL(value) || IS_NIL(value) || IS_STRING(value)) {
         if (IS_STRING(value)) {
             ObjString* copy = allocateString(value.as.string->chars,
                                             value.as.string->length);
@@ -570,10 +609,11 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             if (dst->kind == TYPE_STRING) {
                 allowed = true;
             } else if ((src->kind == TYPE_I32 &&
-                        (dst->kind == TYPE_U32 || dst->kind == TYPE_I64 || dst->kind == TYPE_F64)) ||
+                        (dst->kind == TYPE_U32 || dst->kind == TYPE_I64 || dst->kind == TYPE_F64 || dst->kind == TYPE_U64)) ||
+                       (src->kind == TYPE_U32 && (dst->kind == TYPE_I32 || dst->kind == TYPE_F64 || dst->kind == TYPE_U64)) ||
                        (src->kind == TYPE_I64 && dst->kind == TYPE_I32) ||
-                       (src->kind == TYPE_U32 && (dst->kind == TYPE_I32 || dst->kind == TYPE_F64)) ||
-                       (src->kind == TYPE_F64 && (dst->kind == TYPE_I32 || dst->kind == TYPE_U32)) ||
+                       (src->kind == TYPE_U64 && (dst->kind == TYPE_I32 || dst->kind == TYPE_U32 || dst->kind == TYPE_F64)) ||
+                       (src->kind == TYPE_F64 && (dst->kind == TYPE_I32 || dst->kind == TYPE_U32 || dst->kind == TYPE_U64)) ||
                        (src->kind == dst->kind)) {
                 allowed = true;
             }
@@ -607,6 +647,38 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                         node->left->data.literal = I32_VAL((int32_t)v);
                         node->left->valueType = dst;
                     }
+                } else if (src->kind == TYPE_I32 && dst->kind == TYPE_U64) {
+                    if (IS_I32(node->left->data.literal)) {
+                        int32_t v = AS_I32(node->left->data.literal);
+                        node->left->data.literal = U64_VAL((uint64_t)v);
+                        node->left->valueType = dst;
+                    }
+                } else if (src->kind == TYPE_U32 && dst->kind == TYPE_U64) {
+                    if (IS_U32(node->left->data.literal)) {
+                        uint32_t v = AS_U32(node->left->data.literal);
+                        node->left->data.literal = U64_VAL((uint64_t)v);
+                        node->left->valueType = dst;
+                    }
+                } else if (src->kind == TYPE_U64 && dst->kind == TYPE_I32) {
+                    if (IS_U64(node->left->data.literal)) {
+                        uint64_t v = AS_U64(node->left->data.literal);
+                        node->left->data.literal = I32_VAL((int32_t)v);
+                        node->left->valueType = dst;
+                    }
+                } else if (src->kind == TYPE_U64 && dst->kind == TYPE_U32) {
+                    if (IS_U64(node->left->data.literal)) {
+                        uint64_t v = AS_U64(node->left->data.literal);
+                        node->left->data.literal = U32_VAL((uint32_t)v);
+                        node->left->valueType = dst;
+                    }
+                } else if (src->kind == TYPE_U64 && dst->kind == TYPE_F64) {
+                    if (IS_U64(node->left->data.literal)) {
+                        node->left->data.literal = F64_VAL((double)AS_U64(node->left->data.literal));
+                        node->left->valueType = dst;
+                    }
+                } else if (src->kind == TYPE_F64 && dst->kind == TYPE_U64) {
+                    node->left->data.literal = U64_VAL((uint64_t)AS_F64(node->left->data.literal));
+                    node->left->valueType = dst;
                 } else if ((src->kind == TYPE_I32 || src->kind == TYPE_U32) && dst->kind == TYPE_F64) {
                     double v = (src->kind == TYPE_I32) ? (double)AS_I32(node->left->data.literal)
                                                      : (double)AS_U32(node->left->data.literal);
@@ -2036,6 +2108,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_U32:
                             writeOp(compiler, OP_ADD_U32);
                             break;
+                        case TYPE_U64:
+                            writeOp(compiler, OP_ADD_U64);
+                            break;
                         case TYPE_F64:
                             writeOp(compiler, OP_ADD_F64);
                             break;
@@ -2054,8 +2129,11 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_I64:
                             writeOp(compiler, OP_SUBTRACT_I64);
                             break;
-                        case TYPE_U32:
-                            writeOp(compiler, OP_SUBTRACT_U32);
+                       case TYPE_U32:
+                           writeOp(compiler, OP_SUBTRACT_U32);
+                           break;
+                        case TYPE_U64:
+                            writeOp(compiler, OP_SUBTRACT_U64);
                             break;
                         case TYPE_F64:
                             writeOp(compiler, OP_SUBTRACT_F64);
@@ -2078,6 +2156,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_U32:
                             writeOp(compiler, OP_MULTIPLY_U32);
                             break;
+                        case TYPE_U64:
+                            writeOp(compiler, OP_MULTIPLY_U64);
+                            break;
                         case TYPE_F64:
                             writeOp(compiler, OP_MULTIPLY_F64);
                             break;
@@ -2099,6 +2180,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_U32:
                             writeOp(compiler, OP_DIVIDE_U32);
                             break;
+                        case TYPE_U64:
+                            writeOp(compiler, OP_DIVIDE_U64);
+                            break;
                         case TYPE_F64:
                             writeOp(compiler, OP_DIVIDE_F64);
                             break;
@@ -2118,6 +2202,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             break;
                         case TYPE_U32:
                             writeOp(compiler, OP_MODULO_U32);
+                            break;
+                        case TYPE_U64:
+                            writeOp(compiler, OP_MODULO_U64);
                             break;
                         default:
                             error(compiler,
@@ -2193,6 +2280,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_U32:
                             writeOp(compiler, OP_LESS_U32);
                             break;
+                        case TYPE_U64:
+                            writeOp(compiler, OP_LESS_U64);
+                            break;
                         case TYPE_F64:
                             writeOp(compiler, OP_LESS_F64);
                             break;
@@ -2217,6 +2307,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_U32:
                             writeOp(compiler, OP_LESS_EQUAL_U32);
                             break;
+                        case TYPE_U64:
+                            writeOp(compiler, OP_LESS_EQUAL_U64);
+                            break;
                         case TYPE_F64:
                             writeOp(compiler, OP_LESS_EQUAL_F64);
                             break;
@@ -2240,6 +2333,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_U32:
                             writeOp(compiler, OP_GREATER_U32);
                             break;
+                        case TYPE_U64:
+                            writeOp(compiler, OP_GREATER_U64);
+                            break;
                         case TYPE_F64:
                             writeOp(compiler, OP_GREATER_F64);
                             break;
@@ -2262,6 +2358,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             break;
                         case TYPE_U32:
                             writeOp(compiler, OP_GREATER_EQUAL_U32);
+                            break;
+                        case TYPE_U64:
+                            writeOp(compiler, OP_GREATER_EQUAL_U64);
                             break;
                         case TYPE_F64:
                             writeOp(compiler, OP_GREATER_EQUAL_F64);
@@ -2318,6 +2417,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_U32:
                             writeOp(compiler, OP_NEGATE_U32);
                             break;
+                        case TYPE_U64:
+                            writeOp(compiler, OP_NEGATE_U64);
+                            break;
                         case TYPE_F64:
                             writeOp(compiler, OP_NEGATE_F64);
                             break;
@@ -2369,6 +2471,18 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 writeOp(compiler, OP_U32_TO_I64);
             } else if (from == TYPE_I64 && to == TYPE_I32) {
                 writeOp(compiler, OP_I64_TO_I32);
+            } else if (from == TYPE_I32 && to == TYPE_U64) {
+                writeOp(compiler, OP_I32_TO_U64);
+            } else if (from == TYPE_U32 && to == TYPE_U64) {
+                writeOp(compiler, OP_U32_TO_U64);
+            } else if (from == TYPE_U64 && to == TYPE_I32) {
+                writeOp(compiler, OP_U64_TO_I32);
+            } else if (from == TYPE_U64 && to == TYPE_U32) {
+                writeOp(compiler, OP_U64_TO_U32);
+            } else if (from == TYPE_U64 && to == TYPE_F64) {
+                writeOp(compiler, OP_U64_TO_F64);
+            } else if (from == TYPE_F64 && to == TYPE_U64) {
+                writeOp(compiler, OP_F64_TO_U64);
             } else if (from == TYPE_F64 && to == TYPE_I32) {
                 writeOp(compiler, OP_F64_TO_I32);
             } else if (from == TYPE_F64 && to == TYPE_U32) {

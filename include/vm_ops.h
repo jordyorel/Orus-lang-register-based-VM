@@ -125,6 +125,33 @@ static inline void binaryOpU32(VM* vm, char op, InterpretResult* result) {
     }
 }
 
+// Binary operations for u64
+static inline void binaryOpU64(VM* vm, char op, InterpretResult* result) {
+    if (!IS_U64(vmPeek(vm, 0)) || !IS_U64(vmPeek(vm, 1))) {
+        fprintf(stderr, "Operands must be 64-bit unsigned integers.\n");
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+    uint64_t b = AS_U64(vmPop(vm));
+    uint64_t a = AS_U64(vmPop(vm));
+    switch (op) {
+        case '+': vmPush(vm, U64_VAL(a + b)); break;
+        case '-': vmPush(vm, U64_VAL(a - b)); break;
+        case '*': vmPush(vm, U64_VAL(a * b)); break;
+        case '/':
+            if (b == 0) {
+                vmRuntimeError("Division by zero.");
+                *result = INTERPRET_RUNTIME_ERROR;
+                return;
+            }
+            vmPush(vm, U64_VAL(a / b));
+            break;
+        default:
+            fprintf(stderr, "Unknown operator: %c\n", op);
+            *result = INTERPRET_RUNTIME_ERROR;
+    }
+}
+
 // Convert a value to f64 if needed
 static inline double convertToF64(VM* vm, Value value, InterpretResult* result) {
     if (IS_F64(value)) {
@@ -135,6 +162,8 @@ static inline double convertToF64(VM* vm, Value value, InterpretResult* result) 
         return (double)AS_I64(value);
     } else if (IS_U32(value)) {
         return (double)AS_U32(value);
+    } else if (IS_U64(value)) {
+        return (double)AS_U64(value);
     } else {
         fprintf(stderr, "Cannot convert value to float.\n");
         *result = INTERPRET_RUNTIME_ERROR;
@@ -154,6 +183,9 @@ static inline Value convertToString(Value value) {
             break;
         case VAL_U32:
             length = snprintf(buffer, sizeof(buffer), "%u", AS_U32(value));
+            break;
+        case VAL_U64:
+            length = snprintf(buffer, sizeof(buffer), "%llu", (unsigned long long)AS_U64(value));
             break;
         case VAL_F64:
             length = snprintf(buffer, sizeof(buffer), "%g", AS_F64(value));
@@ -381,6 +413,22 @@ static inline void shiftRightU32(VM* vm, InterpretResult* result) {
     vmPush(vm, U32_VAL(a >> b));
 }
 
+static inline void moduloOpU64(VM* vm, InterpretResult* result) {
+    if (!IS_U64(vmPeek(vm, 0)) || !IS_U64(vmPeek(vm, 1))) {
+        fprintf(stderr, "Operands must be 64-bit unsigned integers.\n");
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+    uint64_t b = AS_U64(vmPop(vm));
+    uint64_t a = AS_U64(vmPop(vm));
+    if (b == 0) {
+        fprintf(stderr, "Modulo by zero.\n");
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+    vmPush(vm, U64_VAL(a % b));
+}
+
 // Comparison operations for i32
 static inline void compareOpI32(VM* vm, char op, InterpretResult* result) {
     // First check if we have two values on the stack
@@ -503,6 +551,45 @@ static inline void compareOpU32(VM* vm, char op, InterpretResult* result) {
             return;
     }
     
+    vmPush(vm, BOOL_VAL(value));
+}
+
+// Comparison operations for u64
+static inline void compareOpU64(VM* vm, char op, InterpretResult* result) {
+    if (vm->stackTop - vm->stack < 2) {
+        fprintf(stderr, "Error: Not enough values on stack for comparison\n");
+        vmPush(vm, BOOL_VAL(false));
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+
+    if (!IS_U64(vmPeek(vm, 0)) || !IS_U64(vmPeek(vm, 1))) {
+        fprintf(stderr, "Operands must be unsigned integers for comparison.\n");
+        vmPop(vm);
+        vmPop(vm);
+        vmPush(vm, BOOL_VAL(false));
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+
+    uint64_t b = AS_U64(vmPop(vm));
+    uint64_t a = AS_U64(vmPop(vm));
+    bool value = false;
+
+    switch (op) {
+        case '<': value = a < b; break;
+        case '>': value = a > b; break;
+        case 'L': value = a <= b; break;
+        case 'G': value = a >= b; break;
+        case '=': value = a == b; break;
+        case '!': value = a != b; break;
+        default:
+            fprintf(stderr, "Unknown comparison operator: %c\n", op);
+            *result = INTERPRET_RUNTIME_ERROR;
+            vmPush(vm, BOOL_VAL(false));
+            return;
+    }
+
     vmPush(vm, BOOL_VAL(value));
 }
 

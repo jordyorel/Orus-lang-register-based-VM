@@ -34,6 +34,7 @@ typedef enum {
 
   // Add type tokens
   TOKEN_U32,  // Add this
+  TOKEN_U64,  // Add this
   TOKEN_F64,  // Add this
 
   // Bitwise operators

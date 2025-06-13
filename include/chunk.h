@@ -35,6 +35,13 @@ typedef enum {
     OP_DIVIDE_U32,
     OP_NEGATE_U32,
 
+    // Unsigned 64-bit integer operations
+    OP_ADD_U64,
+    OP_SUBTRACT_U64,
+    OP_MULTIPLY_U64,
+    OP_DIVIDE_U64,
+    OP_NEGATE_U64,
+
     // Floating point (f64) operations
     OP_ADD_F64,
     OP_SUBTRACT_F64,
@@ -45,6 +52,7 @@ typedef enum {
     OP_MODULO_I32,
     OP_MODULO_I64,
     OP_MODULO_U32,
+    OP_MODULO_U64,
 
     // Bitwise operations
     OP_BIT_AND_I32,
@@ -72,18 +80,22 @@ typedef enum {
     OP_LESS_I32,
     OP_LESS_I64,
     OP_LESS_U32,
+    OP_LESS_U64,
     OP_LESS_F64,
     OP_LESS_EQUAL_I32,
     OP_LESS_EQUAL_I64,
     OP_LESS_EQUAL_U32,
+    OP_LESS_EQUAL_U64,
     OP_LESS_EQUAL_F64,
     OP_GREATER_I32,
     OP_GREATER_I64,
     OP_GREATER_U32,
+    OP_GREATER_U64,
     OP_GREATER_F64,
     OP_GREATER_EQUAL_I32,
     OP_GREATER_EQUAL_I64,
     OP_GREATER_EQUAL_U32,
+    OP_GREATER_EQUAL_U64,
     OP_GREATER_EQUAL_F64,
 
     // Type conversion opcodes
@@ -94,6 +106,12 @@ typedef enum {
     OP_I32_TO_I64,
     OP_U32_TO_I64,
     OP_I64_TO_I32,
+    OP_I32_TO_U64,
+    OP_U32_TO_U64,
+    OP_U64_TO_I32,
+    OP_U64_TO_U32,
+    OP_U64_TO_F64,
+    OP_F64_TO_U64,
     OP_F64_TO_I32,
     OP_F64_TO_U32,
     OP_I32_TO_STRING,

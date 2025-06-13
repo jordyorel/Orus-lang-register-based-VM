@@ -1,0 +1,22 @@
+// Test basic 64-bit unsigned integer arithmetic operations
+fn main() {
+    print("u64 Operations:")
+
+    // Addition
+    print("10 + 5 = {} ", 10 + 5)
+
+    // Subtraction
+    print("10 - 5 = {} ", 10 - 5)
+
+    // Multiplication
+    print("10 * 5 = {} ", 10 * 5)
+
+    // Division
+    print("10 / 5 = {} ", 10 / 5)
+
+    // Modulo
+    print("10 % 4 = {} ", 10 % 4)
+
+    // Negation
+    print("-10 = {} ", -10)
+}

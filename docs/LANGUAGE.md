@@ -40,11 +40,18 @@ fn demo() {
 - `i32` – 32‑bit signed integer
 - `i64` – 64‑bit signed integer
 - `u32` – 32‑bit unsigned integer
+- `u64` – 64‑bit unsigned integer
 - `f64` – double precision floating point
 - `bool` – boolean (`true` or `false`)
 - `string` – UTF‑8 text
 - `void` – absence of a return value
 - `nil` – explicit nil literal
+
+Integer literals are typed automatically based on their value. Numbers
+that fit within the 32‑bit signed range become `i32`. Larger values up
+to the 64‑bit signed limit become `i64`. Values beyond that are treated
+as `u64`. Append a trailing `u` to force an unsigned type
+(`u32` or `u64`).
 
 ```orus
 let flag: bool = true
@@ -56,7 +63,10 @@ Numeric types never convert implicitly. Use `as` to cast:
 ```orus
 let a: i32 = -5
 let b: u32 = a as u32
+let big: u64 = a as u64
+let c: i32 = big as i32
 ```
+`u64` values can be cast to `i32`, `u32` or `f64` and vice versa using `as`.
 
 ### Numeric literals
 
@@ -251,6 +261,14 @@ Type arguments can often be inferred:
 ```orus
 let a = id<i32>(5)
 let b: Box<string> = Box { value: "hi" }
+```
+
+When using nested generics, place a space between the closing angle brackets so
+the scanner doesn't interpret them as the `>>` shift-right operator. For
+example:
+
+```orus
+let nested: Box<Box<i32> > = Box { value: Box { value: 1 } }
 ```
 
 Forward declarations for generic functions are not yet supported, so generic functions must appear before they are used. Constraint syntax is planned for a future version.

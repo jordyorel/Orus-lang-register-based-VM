@@ -105,6 +105,7 @@ static const char* getValueTypeName(Value val) {
         case VAL_I32:   return "i32";
         case VAL_I64:   return "i64";
         case VAL_U32:   return "u32";
+        case VAL_U64:   return "u64";
         case VAL_F64:   return "f64";
         case VAL_BOOL:  return "bool";
         case VAL_NIL:   return "nil";
