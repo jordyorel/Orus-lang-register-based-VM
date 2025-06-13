@@ -1,0 +1,7 @@
+const LIMIT = 5
+
+fn main() {
+    for i in 0..LIMIT {
+        print(i)
+    }
+}

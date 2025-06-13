@@ -29,7 +29,7 @@ static void growCapacity(SymbolTable* table) {
 }
 
 bool addSymbol(SymbolTable* table, const char* name, Token token, Type* type,
-               int scope, uint8_t index, bool isMutable,
+               int scope, uint8_t index, bool isMutable, bool isConst,
                bool isModule, Module* module) {
     for (int i = 0; i < table->count; i++) {
         if (table->symbols[i].scope == scope && table->symbols[i].active &&
@@ -49,6 +49,7 @@ bool addSymbol(SymbolTable* table, const char* name, Token token, Type* type,
     table->symbols[table->count].index = index;
     table->symbols[table->count].active = true;
     table->symbols[table->count].isMutable = isMutable;
+    table->symbols[table->count].isConst = isConst;
     table->symbols[table->count].isModule = isModule;
     table->symbols[table->count].module = module;
     table->symbols[table->count].token = token;

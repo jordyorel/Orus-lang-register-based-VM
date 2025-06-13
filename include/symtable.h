@@ -14,6 +14,7 @@ typedef struct {
     uint8_t index;
     bool active;
     bool isMutable;
+    bool isConst;
     bool isModule;           // True if this symbol represents a module alias
     Module* module;          // Module associated with the alias
     Token token;
@@ -28,7 +29,7 @@ typedef struct {
 void initSymbolTable(SymbolTable* table);
 void freeSymbolTable(SymbolTable* table);
 bool addSymbol(SymbolTable* table, const char* name, Token token, Type* type,
-               int scope, uint8_t index, bool isMutable,
+               int scope, uint8_t index, bool isMutable, bool isConst,
                bool isModule, Module* module);
 Symbol* findSymbol(SymbolTable* table, const char* name);
 Symbol* findAnySymbol(SymbolTable* table, const char* name);

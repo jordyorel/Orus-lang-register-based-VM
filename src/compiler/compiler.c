@@ -807,8 +807,45 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             }
 
             // Add the variable to the symbol table
-            uint8_t index = addLocal(compiler, node->data.let.name, node->valueType, node->data.let.isMutable);
+            uint8_t index = addLocal(compiler, node->data.let.name, node->valueType, node->data.let.isMutable, false);
             node->data.let.index = index;
+            break;
+        }
+
+        case AST_CONST: {
+            if (node->data.constant.initializer) {
+                typeCheckNode(compiler, node->data.constant.initializer);
+                if (compiler->hadError) return;
+            }
+
+            if (!node->data.constant.initializer || node->data.constant.initializer->type != AST_LITERAL) {
+                error(compiler, "Constant expressions must be literals.");
+                return;
+            }
+
+            Type* initType = node->data.constant.initializer->valueType;
+            Type* declType = node->data.constant.type;
+
+            if (declType) {
+                if (initType && !typesEqual(declType, initType)) {
+                    if (!convertLiteralForDecl(node->data.constant.initializer, initType, declType)) {
+                        error(compiler, "Type mismatch in const declaration.");
+                        return;
+                    }
+                }
+                node->valueType = declType;
+            } else if (initType) {
+                node->valueType = initType;
+            } else {
+                error(compiler, "Cannot determine constant type");
+                return;
+            }
+
+            uint8_t index = addLocal(compiler, node->data.constant.name, node->valueType, false, true);
+            node->data.constant.index = index;
+            vm.globals[index] = node->data.constant.initializer->data.literal;
+            vm.globalTypes[index] = node->valueType;
+            vm.publicGlobals[index] = node->data.constant.isPublic;
             break;
         }
 
@@ -1921,7 +1958,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             t.length = (int)strlen(aliasName);
             t.line = node->line;
             addSymbol(&compiler->symbols, aliasName, t, NULL,
-                      compiler->scopeDepth, UINT8_MAX, false, true, mod);
+                      compiler->scopeDepth, UINT8_MAX, false, false, true, mod);
 
             node->valueType = NULL;
             break;
@@ -1930,7 +1967,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
         case AST_TRY: {
             beginScope(compiler);
             Type* strType = getPrimitiveType(TYPE_STRING);
-            uint8_t idx = addLocal(compiler, node->data.tryStmt.errorName, strType, true);
+            uint8_t idx = addLocal(compiler, node->data.tryStmt.errorName, strType, true, false);
             node->data.tryStmt.errorIndex = idx;
             typeCheckNode(compiler, node->data.tryStmt.tryBlock);
             if (compiler->hadError) { endScope(compiler); return; }
@@ -2573,6 +2610,11 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
             writeOp(compiler, OP_DEFINE_GLOBAL);
             writeByte(compiler, node->data.let.index);  // correct index
+            break;
+        }
+
+        case AST_CONST: {
+            // constants are evaluated at compile time and already stored
             break;
         }
 
@@ -3305,17 +3347,23 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
 }
 
 uint8_t defineVariable(Compiler* compiler, Token name, Type* type) {
-    return addLocal(compiler, name, type, false);
+    return addLocal(compiler, name, type, false, false);
 }
 
-uint8_t addLocal(Compiler* compiler, Token name, Type* type, bool isMutable) {
+uint8_t addLocal(Compiler* compiler, Token name, Type* type, bool isMutable, bool isConst) {
     char tempName[name.length + 1];
     memcpy(tempName, name.start, name.length);
     tempName[name.length] = '\0';
     Symbol* existing = findSymbol(&compiler->symbols, tempName);
-    if (existing && existing->scope == compiler->scopeDepth) {
-        emitRedeclarationError(compiler, &name, tempName);
-        return UINT8_MAX;
+    if (existing) {
+        if (existing->isConst) {
+            emitRedeclarationError(compiler, &name, tempName);
+            return UINT8_MAX;
+        }
+        if (existing->scope == compiler->scopeDepth) {
+            emitRedeclarationError(compiler, &name, tempName);
+            return UINT8_MAX;
+        }
     }
 
     if (vm.variableCount >= UINT8_COUNT) {
@@ -3337,7 +3385,7 @@ uint8_t addLocal(Compiler* compiler, Token name, Type* type, bool isMutable) {
     vm.publicGlobals[index] = false;
 
     addSymbol(&compiler->symbols, nameObj->chars, name, type,
-              compiler->scopeDepth, index, isMutable, false, NULL);
+              compiler->scopeDepth, index, isMutable, isConst, false, NULL);
 
     return index;
 }
