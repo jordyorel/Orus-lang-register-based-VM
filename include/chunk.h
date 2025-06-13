@@ -73,6 +73,7 @@ typedef enum {
     OP_U32_TO_I32,
     OP_I32_TO_I64,
     OP_U32_TO_I64,
+    OP_I64_TO_I32,
     OP_F64_TO_I32,
     OP_F64_TO_U32,
     OP_I32_TO_STRING,

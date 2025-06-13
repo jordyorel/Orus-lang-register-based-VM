@@ -2283,6 +2283,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 writeOp(compiler, OP_I32_TO_I64);
             } else if (from == TYPE_U32 && to == TYPE_I64) {
                 writeOp(compiler, OP_U32_TO_I64);
+            } else if (from == TYPE_I64 && to == TYPE_I32) {
+                writeOp(compiler, OP_I64_TO_I32);
             } else if (from == TYPE_F64 && to == TYPE_I32) {
                 writeOp(compiler, OP_F64_TO_I32);
             } else if (from == TYPE_F64 && to == TYPE_U32) {
