@@ -58,6 +58,18 @@ let a: i32 = -5
 let b: u32 = a as u32
 ```
 
+### Numeric literals
+
+Integer literals are written in decimal by default. Use `0x` to specify a
+hexadecimal value. Underscores may separate digits for readability and an
+optional trailing `u` marks an unsigned literal.
+
+```orus
+let dec = 42
+let hex = 0x2A
+let big = 1_000_000u
+```
+
 ## Comments
 
 `//` starts a line comment. Block comments use `/* ... */`.
@@ -74,6 +86,8 @@ This is a block comment.
 ## Operators
 
 Orus supports common arithmetic (`+`, `-`, `*`, `/`, `%`), comparison (`==`, `!=`, `<`, `>`, `<=`, `>=`), and logical operators (`and`, `or`, `not`). Compound assignments like `+=` and `-=` are also available.
+
+Bitwise operators work on integers: `&`, `|`, `^`, `!`, `<<`, and `>>`. The shift right operator performs arithmetic shifting for signed types and logical shifting for `u32`. Operands must be the same integer type.
 
 Casting between numeric types must be explicit with `as`.
 

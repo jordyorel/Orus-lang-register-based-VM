@@ -436,6 +436,60 @@ static InterpretResult run() {
             case OP_MODULO_U32:
                 moduloOpU32(&vm, &result);
                 break;
+            case OP_BIT_AND_I32:
+                bitwiseOpI32(&vm, '&', &result);
+                break;
+            case OP_BIT_AND_I64:
+                bitwiseOpI64(&vm, '&', &result);
+                break;
+            case OP_BIT_AND_U32:
+                bitwiseOpU32(&vm, '&', &result);
+                break;
+            case OP_BIT_OR_I32:
+                bitwiseOpI32(&vm, '|', &result);
+                break;
+            case OP_BIT_OR_I64:
+                bitwiseOpI64(&vm, '|', &result);
+                break;
+            case OP_BIT_OR_U32:
+                bitwiseOpU32(&vm, '|', &result);
+                break;
+            case OP_BIT_XOR_I32:
+                bitwiseOpI32(&vm, '^', &result);
+                break;
+            case OP_BIT_XOR_I64:
+                bitwiseOpI64(&vm, '^', &result);
+                break;
+            case OP_BIT_XOR_U32:
+                bitwiseOpU32(&vm, '^', &result);
+                break;
+            case OP_BIT_NOT_I32:
+                bitwiseNotI32(&vm, &result);
+                break;
+            case OP_BIT_NOT_I64:
+                bitwiseNotI64(&vm, &result);
+                break;
+            case OP_BIT_NOT_U32:
+                bitwiseNotU32(&vm, &result);
+                break;
+            case OP_SHIFT_LEFT_I32:
+                shiftLeftI32(&vm, &result);
+                break;
+            case OP_SHIFT_LEFT_I64:
+                shiftLeftI64(&vm, &result);
+                break;
+            case OP_SHIFT_LEFT_U32:
+                shiftLeftU32(&vm, &result);
+                break;
+            case OP_SHIFT_RIGHT_I32:
+                shiftRightI32(&vm, &result);
+                break;
+            case OP_SHIFT_RIGHT_I64:
+                shiftRightI64(&vm, &result);
+                break;
+            case OP_SHIFT_RIGHT_U32:
+                shiftRightU32(&vm, &result);
+                break;
 
             // Comparison operations
             case OP_EQUAL:

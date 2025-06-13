@@ -429,6 +429,22 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     break;
                 }
 
+                case TOKEN_BIT_AND:
+                case TOKEN_BIT_OR:
+                case TOKEN_BIT_XOR:
+                case TOKEN_SHIFT_LEFT:
+                case TOKEN_SHIFT_RIGHT: {
+                    if (!typesEqual(leftType, rightType) ||
+                        !(leftType->kind == TYPE_I32 || leftType->kind == TYPE_I64 || leftType->kind == TYPE_U32)) {
+                        error(compiler, "Bitwise operands must be the same integer type.");
+                        return;
+                    }
+                    node->valueType = leftType;
+                    node->data.operation.convertLeft = false;
+                    node->data.operation.convertRight = false;
+                    break;
+                }
+
                 case TOKEN_LEFT_BRACKET: {
                     if (leftType->kind != TYPE_ARRAY) {
                         emitTokenError(compiler,
@@ -521,6 +537,13 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                         return;
                     }
                     node->valueType = getPrimitiveType(TYPE_BOOL);
+                    break;
+                case TOKEN_BIT_NOT:
+                    if (operandType->kind != TYPE_I32 && operandType->kind != TYPE_I64 && operandType->kind != TYPE_U32) {
+                        error(compiler, "Bitwise not operand must be an integer.");
+                        return;
+                    }
+                    node->valueType = operandType;
                     break;
 
                 default:
@@ -2103,6 +2126,57 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                     }
                     break;
 
+                case TOKEN_BIT_AND:
+                    switch (resultType) {
+                        case TYPE_I32: writeOp(compiler, OP_BIT_AND_I32); break;
+                        case TYPE_I64: writeOp(compiler, OP_BIT_AND_I64); break;
+                        case TYPE_U32: writeOp(compiler, OP_BIT_AND_U32); break;
+                        default:
+                            error(compiler, "Bitwise AND not supported for this type.");
+                            return;
+                    }
+                    break;
+                case TOKEN_BIT_OR:
+                    switch (resultType) {
+                        case TYPE_I32: writeOp(compiler, OP_BIT_OR_I32); break;
+                        case TYPE_I64: writeOp(compiler, OP_BIT_OR_I64); break;
+                        case TYPE_U32: writeOp(compiler, OP_BIT_OR_U32); break;
+                        default:
+                            error(compiler, "Bitwise OR not supported for this type.");
+                            return;
+                    }
+                    break;
+                case TOKEN_BIT_XOR:
+                    switch (resultType) {
+                        case TYPE_I32: writeOp(compiler, OP_BIT_XOR_I32); break;
+                        case TYPE_I64: writeOp(compiler, OP_BIT_XOR_I64); break;
+                        case TYPE_U32: writeOp(compiler, OP_BIT_XOR_U32); break;
+                        default:
+                            error(compiler, "Bitwise XOR not supported for this type.");
+                            return;
+                    }
+                    break;
+                case TOKEN_SHIFT_LEFT:
+                    switch (resultType) {
+                        case TYPE_I32: writeOp(compiler, OP_SHIFT_LEFT_I32); break;
+                        case TYPE_I64: writeOp(compiler, OP_SHIFT_LEFT_I64); break;
+                        case TYPE_U32: writeOp(compiler, OP_SHIFT_LEFT_U32); break;
+                        default:
+                            error(compiler, "Left shift not supported for this type.");
+                            return;
+                    }
+                    break;
+                case TOKEN_SHIFT_RIGHT:
+                    switch (resultType) {
+                        case TYPE_I32: writeOp(compiler, OP_SHIFT_RIGHT_I32); break;
+                        case TYPE_I64: writeOp(compiler, OP_SHIFT_RIGHT_I64); break;
+                        case TYPE_U32: writeOp(compiler, OP_SHIFT_RIGHT_U32); break;
+                        default:
+                            error(compiler, "Right shift not supported for this type.");
+                            return;
+                    }
+                    break;
+
                 case TOKEN_LEFT_BRACKET:
                     writeOp(compiler, OP_ARRAY_GET);
                     break;
@@ -2255,6 +2329,16 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                     break;
                 case TOKEN_NOT:
                     writeOp(compiler, OP_NOT);
+                    break;
+                case TOKEN_BIT_NOT:
+                    switch (operandType) {
+                        case TYPE_I32: writeOp(compiler, OP_BIT_NOT_I32); break;
+                        case TYPE_I64: writeOp(compiler, OP_BIT_NOT_I64); break;
+                        case TYPE_U32: writeOp(compiler, OP_BIT_NOT_U32); break;
+                        default:
+                            error(compiler, "Bitwise not not supported for this type.");
+                            return;
+                    }
                     break;
                 default:
                     error(compiler, "Unsupported unary operator.");

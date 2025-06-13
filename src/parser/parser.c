@@ -195,20 +195,29 @@ static ASTNode* parseNumber(Parser* parser) {
     const char* start = parser->previous.start;
     int length = parser->previous.length;
     char* endptr;
-    bool isFloat = false;
-    
-    // Check if the number contains a decimal point
+
+    // Build a sanitized string without underscores and without a trailing 'u/U'
+    char* numStr = (char*)malloc(length + 1);
+    int j = 0;
+    bool isUnsigned = false;
     for (int i = 0; i < length; i++) {
-        if (start[i] == '.') {
+        char c = start[i];
+        if (c == '_') continue;
+        if ((c == 'u' || c == 'U') && i == length - 1) {
+            isUnsigned = true;
+            continue;
+        }
+        numStr[j++] = c;
+    }
+    numStr[j] = '\0';
+
+    bool isFloat = false;
+    for (int i = 0; i < j; i++) {
+        if (numStr[i] == '.' || numStr[i] == 'e' || numStr[i] == 'E') {
             isFloat = true;
             break;
         }
     }
-    
-    // Create a null-terminated copy of the token text for conversion
-    char* numStr = (char*)malloc(length + 1);
-    memcpy(numStr, start, length);
-    numStr[length] = '\0';
     
     ASTNode* node;
     if (isFloat) {
@@ -217,8 +226,11 @@ static ASTNode* parseNumber(Parser* parser) {
         node = createLiteralNode(F64_VAL(value));
         node->valueType = createPrimitiveType(TYPE_F64);
     } else {
-        long long value = strtoll(numStr, &endptr, 10);
-        bool isUnsigned = (*endptr == 'u' || *endptr == 'U');
+        int base = 10;
+        if (j > 2 && numStr[0] == '0' && (numStr[1] == 'x' || numStr[1] == 'X')) {
+            base = 16;
+        }
+        long long value = strtoll(numStr, &endptr, base);
         if (isUnsigned) {
             node = createLiteralNode(U32_VAL((uint32_t)value));
             node->valueType = createPrimitiveType(TYPE_U32);
@@ -1466,6 +1478,11 @@ ParseRule rules[] = {
     [TOKEN_SLASH] = {NULL, parseBinary, PREC_FACTOR},
     [TOKEN_STAR] = {NULL, parseBinary, PREC_FACTOR},
     [TOKEN_MODULO] = {NULL, parseBinary, PREC_FACTOR},
+    [TOKEN_SHIFT_LEFT] = {NULL, parseBinary, PREC_SHIFT},
+    [TOKEN_SHIFT_RIGHT] = {NULL, parseBinary, PREC_SHIFT},
+    [TOKEN_BIT_AND] = {NULL, parseBinary, PREC_BIT_AND},
+    [TOKEN_BIT_OR] = {NULL, parseBinary, PREC_BIT_OR},
+    [TOKEN_BIT_XOR] = {NULL, parseBinary, PREC_BIT_XOR},
     [TOKEN_PLUS_EQUAL] = {NULL, NULL, PREC_NONE},
     [TOKEN_MINUS_EQUAL] = {NULL, NULL, PREC_NONE},
     [TOKEN_STAR_EQUAL] = {NULL, NULL, PREC_NONE},
@@ -1478,6 +1495,7 @@ ParseRule rules[] = {
     [TOKEN_FALSE] = {parseBoolean, NULL, PREC_NONE},
     [TOKEN_NIL] = {parseNil, NULL, PREC_NONE},
     [TOKEN_NOT] = {parseUnary, NULL, PREC_UNARY},
+    [TOKEN_BIT_NOT] = {parseUnary, NULL, PREC_UNARY},
     // Logical operators
     [TOKEN_AND] = {NULL, parseLogical, PREC_AND},
     [TOKEN_OR] = {NULL, parseLogical, PREC_OR},
