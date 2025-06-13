@@ -218,6 +218,27 @@ static bool convertLiteralForDecl(ASTNode* init, Type* src, Type* dst) {
             init->valueType = dst;
             return true;
         }
+    } else if (src->kind == TYPE_I32 && dst->kind == TYPE_I64) {
+        if (IS_I32(init->data.literal)) {
+            int32_t v = AS_I32(init->data.literal);
+            init->data.literal = I64_VAL((int64_t)v);
+            init->valueType = dst;
+            return true;
+        }
+    } else if (src->kind == TYPE_I64 && dst->kind == TYPE_I32) {
+        if (IS_I64(init->data.literal)) {
+            int64_t v = AS_I64(init->data.literal);
+            init->data.literal = I32_VAL((int32_t)v);
+            init->valueType = dst;
+            return true;
+        }
+    } else if (src->kind == TYPE_I64 && dst->kind == TYPE_U32) {
+        if (IS_I64(init->data.literal)) {
+            int64_t v = AS_I64(init->data.literal);
+            init->data.literal = U32_VAL((uint32_t)v);
+            init->valueType = dst;
+            return true;
+        }
     } else if ((src->kind == TYPE_I32 || src->kind == TYPE_U32) &&
                dst->kind == TYPE_F64) {
         double v = (src->kind == TYPE_I32) ? (double)AS_I32(init->data.literal)
@@ -243,6 +264,9 @@ static Value convertLiteralToString(Value value) {
     switch (value.type) {
         case VAL_I32:
             length = snprintf(buffer, sizeof(buffer), "%d", AS_I32(value));
+            break;
+        case VAL_I64:
+            length = snprintf(buffer, sizeof(buffer), "%lld", (long long)AS_I64(value));
             break;
         case VAL_U32:
             length = snprintf(buffer, sizeof(buffer), "%u", AS_U32(value));
@@ -286,7 +310,7 @@ static int makeConstant(Compiler* compiler, ObjString* string) {
 static void emitConstant(Compiler* compiler, Value value) {
     // Ensure constants are emitted with valid values
     // Allow VAL_STRING for now to fix compilation, may need VM changes later.
-    if (IS_I32(value) || IS_U32(value) || IS_F64(value) || IS_BOOL(value) || IS_NIL(value) || IS_STRING(value)) {
+    if (IS_I32(value) || IS_I64(value) || IS_U32(value) || IS_F64(value) || IS_BOOL(value) || IS_NIL(value) || IS_STRING(value)) {
         if (IS_STRING(value)) {
             ObjString* copy = allocateString(value.as.string->chars,
                                             value.as.string->length);
@@ -345,10 +369,16 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                         node->data.operation.convertLeft = leftType->kind != TYPE_STRING && leftType->kind != TYPE_NIL;
                         node->data.operation.convertRight = rightType->kind != TYPE_STRING && rightType->kind != TYPE_NIL;
                     } else if (typesEqual(leftType, rightType) &&
-                               (leftType->kind == TYPE_I32 || leftType->kind == TYPE_U32 || leftType->kind == TYPE_F64)) {
+                               (leftType->kind == TYPE_I32 || leftType->kind == TYPE_I64 ||
+                                leftType->kind == TYPE_U32 || leftType->kind == TYPE_F64)) {
                         node->valueType = leftType;
                         node->data.operation.convertLeft = false;
                         node->data.operation.convertRight = false;
+                    } else if ((leftType->kind == TYPE_I64 && (rightType->kind == TYPE_I32 || rightType->kind == TYPE_U32)) ||
+                               (rightType->kind == TYPE_I64 && (leftType->kind == TYPE_I32 || leftType->kind == TYPE_U32))) {
+                        node->valueType = getPrimitiveType(TYPE_I64);
+                        node->data.operation.convertLeft = leftType->kind != TYPE_I64;
+                        node->data.operation.convertRight = rightType->kind != TYPE_I64;
                     } else {
                         emitTokenError(compiler,
                                        &node->data.operation.operator,
@@ -362,10 +392,16 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 case TOKEN_STAR:
                 case TOKEN_SLASH: {
                     if (typesEqual(leftType, rightType) &&
-                        (leftType->kind == TYPE_I32 || leftType->kind == TYPE_U32 || leftType->kind == TYPE_F64)) {
+                        (leftType->kind == TYPE_I32 || leftType->kind == TYPE_I64 ||
+                         leftType->kind == TYPE_U32 || leftType->kind == TYPE_F64)) {
                         node->valueType = leftType;
                         node->data.operation.convertLeft = false;
                         node->data.operation.convertRight = false;
+                    } else if ((leftType->kind == TYPE_I64 && (rightType->kind == TYPE_I32 || rightType->kind == TYPE_U32)) ||
+                               (rightType->kind == TYPE_I64 && (leftType->kind == TYPE_I32 || leftType->kind == TYPE_U32))) {
+                        node->valueType = getPrimitiveType(TYPE_I64);
+                        node->data.operation.convertLeft = leftType->kind != TYPE_I64;
+                        node->data.operation.convertRight = rightType->kind != TYPE_I64;
                     } else {
                         error(compiler,
                               "Type mismatch in arithmetic operation. Use explicit 'as' casts.");
@@ -375,13 +411,21 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
 
                 case TOKEN_MODULO: {
-                    if (!typesEqual(leftType, rightType) ||
-                        (leftType->kind != TYPE_I32 && leftType->kind != TYPE_U32)) {
+                    if (typesEqual(leftType, rightType) &&
+                        (leftType->kind == TYPE_I32 || leftType->kind == TYPE_I64 || leftType->kind == TYPE_U32)) {
+                        node->valueType = leftType;
+                        node->data.operation.convertLeft = false;
+                        node->data.operation.convertRight = false;
+                    } else if ((leftType->kind == TYPE_I64 && (rightType->kind == TYPE_I32 || rightType->kind == TYPE_U32)) ||
+                               (rightType->kind == TYPE_I64 && (leftType->kind == TYPE_I32 || leftType->kind == TYPE_U32))) {
+                        node->valueType = getPrimitiveType(TYPE_I64);
+                        node->data.operation.convertLeft = leftType->kind != TYPE_I64;
+                        node->data.operation.convertRight = rightType->kind != TYPE_I64;
+                    } else {
                         error(compiler,
-                              "Modulo operands must both be i32 or u32.");
+                              "Modulo operands must both be i32, i64 or u32.");
                         return;
                     }
-                    node->valueType = leftType;
                     break;
                 }
 
@@ -430,6 +474,11 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 case TOKEN_BANG_EQUAL: {
                     // Comparison operators always return a boolean
                     node->valueType = getPrimitiveType(TYPE_BOOL);
+                    if ((leftType->kind == TYPE_I64 && (rightType->kind == TYPE_I32 || rightType->kind == TYPE_U32)) ||
+                        (rightType->kind == TYPE_I64 && (leftType->kind == TYPE_I32 || leftType->kind == TYPE_U32))) {
+                        node->data.operation.convertLeft = leftType->kind != TYPE_I64;
+                        node->data.operation.convertRight = rightType->kind != TYPE_I64;
+                    }
                     break;
                 }
 
@@ -456,6 +505,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             switch (operator) {
                 case TOKEN_MINUS:
                     if (operandType->kind != TYPE_I32 &&
+                        operandType->kind != TYPE_I64 &&
                         operandType->kind != TYPE_U32 &&
                         operandType->kind != TYPE_F64) {
                         error(compiler,
@@ -496,7 +546,9 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             bool allowed = false;
             if (dst->kind == TYPE_STRING) {
                 allowed = true;
-            } else if ((src->kind == TYPE_I32 && (dst->kind == TYPE_U32 || dst->kind == TYPE_F64)) ||
+            } else if ((src->kind == TYPE_I32 &&
+                        (dst->kind == TYPE_U32 || dst->kind == TYPE_I64 || dst->kind == TYPE_F64)) ||
+                       (src->kind == TYPE_I64 && dst->kind == TYPE_I32) ||
                        (src->kind == TYPE_U32 && (dst->kind == TYPE_I32 || dst->kind == TYPE_F64)) ||
                        (src->kind == TYPE_F64 && (dst->kind == TYPE_I32 || dst->kind == TYPE_U32)) ||
                        (src->kind == dst->kind)) {
@@ -517,6 +569,18 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 } else if (src->kind == TYPE_U32 && dst->kind == TYPE_I32) {
                     if (IS_U32(node->left->data.literal)) {
                         uint32_t v = AS_U32(node->left->data.literal);
+                        node->left->data.literal = I32_VAL((int32_t)v);
+                        node->left->valueType = dst;
+                    }
+                } else if (src->kind == TYPE_I32 && dst->kind == TYPE_I64) {
+                    if (IS_I32(node->left->data.literal)) {
+                        int32_t v = AS_I32(node->left->data.literal);
+                        node->left->data.literal = I64_VAL((int64_t)v);
+                        node->left->valueType = dst;
+                    }
+                } else if (src->kind == TYPE_I64 && dst->kind == TYPE_I32) {
+                    if (IS_I64(node->left->data.literal)) {
+                        int64_t v = AS_I64(node->left->data.literal);
                         node->left->data.literal = I32_VAL((int32_t)v);
                         node->left->valueType = dst;
                     }
@@ -1814,15 +1878,23 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             writeOp(compiler, OP_I32_TO_F64);
                         else if (leftType->kind == TYPE_U32)
                             writeOp(compiler, OP_U32_TO_F64);
+                        else if (leftType->kind == TYPE_I64)
+                            ; /* already i64 -> f64 handled later if needed */
                         else {
                             char msgBuffer[256];
                             const char* leftTypeName = getTypeName(leftType->kind);
                             snprintf(msgBuffer, sizeof(msgBuffer),
-                                "Unsupported left operand conversion for binary operation. Left type: '%s', operation at line %d",
-                                leftTypeName, node->data.operation.operator.line);
+                                    "Unsupported left operand conversion for binary operation. Left type: '%s', operation at line %d",
+                                    leftTypeName, node->data.operation.operator.line);
                             error(compiler, msgBuffer);
                             return;
                         }
+                        break;
+                    case TYPE_I64:
+                        if (leftType->kind == TYPE_I32)
+                            writeOp(compiler, OP_I32_TO_I64);
+                        else if (leftType->kind == TYPE_U32)
+                            writeOp(compiler, OP_U32_TO_I64);
                         break;
                     case TYPE_STRING:
                         switch (leftType->kind) {
@@ -1867,6 +1939,12 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                                   "Unsupported right operand conversion for binary operation.");
                             return;
                         }
+                        break;
+                    case TYPE_I64:
+                        if (rightType->kind == TYPE_I32)
+                            writeOp(compiler, OP_I32_TO_I64);
+                        else if (rightType->kind == TYPE_U32)
+                            writeOp(compiler, OP_U32_TO_I64);
                         break;
                     case TYPE_STRING:
                         switch (rightType->kind) {
@@ -1929,6 +2007,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_I32:
                             writeOp(compiler, OP_ADD_I32);
                             break;
+                        case TYPE_I64:
+                            writeOp(compiler, OP_ADD_I64);
+                            break;
                         case TYPE_U32:
                             writeOp(compiler, OP_ADD_U32);
                             break;
@@ -1946,6 +2027,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                     switch (resultType) {
                         case TYPE_I32:
                             writeOp(compiler, OP_SUBTRACT_I32);
+                            break;
+                        case TYPE_I64:
+                            writeOp(compiler, OP_SUBTRACT_I64);
                             break;
                         case TYPE_U32:
                             writeOp(compiler, OP_SUBTRACT_U32);
@@ -1965,6 +2049,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_I32:
                             writeOp(compiler, OP_MULTIPLY_I32);
                             break;
+                        case TYPE_I64:
+                            writeOp(compiler, OP_MULTIPLY_I64);
+                            break;
                         case TYPE_U32:
                             writeOp(compiler, OP_MULTIPLY_U32);
                             break;
@@ -1983,6 +2070,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_I32:
                             writeOp(compiler, OP_DIVIDE_I32);
                             break;
+                        case TYPE_I64:
+                            writeOp(compiler, OP_DIVIDE_I64);
+                            break;
                         case TYPE_U32:
                             writeOp(compiler, OP_DIVIDE_U32);
                             break;
@@ -1999,6 +2089,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                     switch (resultType) {
                         case TYPE_I32:
                             writeOp(compiler, OP_MODULO_I32);
+                            break;
+                        case TYPE_I64:
+                            writeOp(compiler, OP_MODULO_I64);
                             break;
                         case TYPE_U32:
                             writeOp(compiler, OP_MODULO_U32);
@@ -2019,6 +2112,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                     switch (leftType->kind) {
                         case TYPE_I32:
                             writeOp(compiler, OP_LESS_I32);
+                            break;
+                        case TYPE_I64:
+                            writeOp(compiler, OP_LESS_I64);
                             break;
                         case TYPE_U32:
                             writeOp(compiler, OP_LESS_U32);
@@ -2041,6 +2137,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_I32:
                             writeOp(compiler, OP_LESS_EQUAL_I32);
                             break;
+                        case TYPE_I64:
+                            writeOp(compiler, OP_LESS_EQUAL_I64);
+                            break;
                         case TYPE_U32:
                             writeOp(compiler, OP_LESS_EQUAL_U32);
                             break;
@@ -2061,6 +2160,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_I32:
                             writeOp(compiler, OP_GREATER_I32);
                             break;
+                        case TYPE_I64:
+                            writeOp(compiler, OP_GREATER_I64);
+                            break;
                         case TYPE_U32:
                             writeOp(compiler, OP_GREATER_U32);
                             break;
@@ -2080,6 +2182,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                     switch (leftType->kind) {
                         case TYPE_I32:
                             writeOp(compiler, OP_GREATER_EQUAL_I32);
+                            break;
+                        case TYPE_I64:
+                            writeOp(compiler, OP_GREATER_EQUAL_I64);
                             break;
                         case TYPE_U32:
                             writeOp(compiler, OP_GREATER_EQUAL_U32);
@@ -2133,6 +2238,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_I32:
                             writeOp(compiler, OP_NEGATE_I32);
                             break;
+                        case TYPE_I64:
+                            writeOp(compiler, OP_NEGATE_I64);
+                            break;
                         case TYPE_U32:
                             writeOp(compiler, OP_NEGATE_U32);
                             break;
@@ -2171,6 +2279,10 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 writeOp(compiler, OP_I32_TO_U32);
             } else if (from == TYPE_U32 && to == TYPE_I32) {
                 writeOp(compiler, OP_U32_TO_I32);
+            } else if (from == TYPE_I32 && to == TYPE_I64) {
+                writeOp(compiler, OP_I32_TO_I64);
+            } else if (from == TYPE_U32 && to == TYPE_I64) {
+                writeOp(compiler, OP_U32_TO_I64);
             } else if (from == TYPE_F64 && to == TYPE_I32) {
                 writeOp(compiler, OP_F64_TO_I32);
             } else if (from == TYPE_F64 && to == TYPE_U32) {

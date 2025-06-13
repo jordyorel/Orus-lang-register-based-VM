@@ -10,6 +10,9 @@ void printValue(Value value) {
         case VAL_I32:
             printf("%d", AS_I32(value));
             break;
+        case VAL_I64:
+            printf("%lld", (long long)AS_I64(value));
+            break;
         case VAL_U32:
             printf("%u", AS_U32(value));
             break;
@@ -51,6 +54,7 @@ bool valuesEqual(Value a, Value b) {
     
     switch (a.type) {
         case VAL_I32: return a.as.i32 == b.as.i32;
+        case VAL_I64: return a.as.i64 == b.as.i64;
         case VAL_U32: return a.as.u32 == b.as.u32;
         case VAL_F64: return a.as.f64 == b.as.f64;
         case VAL_BOOL: return a.as.boolean == b.as.boolean;

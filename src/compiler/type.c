@@ -19,6 +19,7 @@ void initTypeSystem(void) {
     }
     
     primitiveTypes[TYPE_I32] = createPrimitiveType(TYPE_I32);
+    primitiveTypes[TYPE_I64] = createPrimitiveType(TYPE_I64);
     primitiveTypes[TYPE_U32] = createPrimitiveType(TYPE_U32);
     primitiveTypes[TYPE_F64] = createPrimitiveType(TYPE_F64);
     primitiveTypes[TYPE_BOOL] = createPrimitiveType(TYPE_BOOL);
@@ -110,6 +111,7 @@ bool typesEqual(Type* a, Type* b) {
     
     switch (a->kind) {
         case TYPE_I32:
+        case TYPE_I64:
         case TYPE_U32:
         case TYPE_F64:
         case TYPE_BOOL:
@@ -154,6 +156,7 @@ bool typesEqual(Type* a, Type* b) {
 const char* getTypeName(TypeKind kind) {
     switch (kind) {
         case TYPE_I32: return "i32";
+        case TYPE_I64: return "i64";
         case TYPE_U32: return "u32";
         case TYPE_F64: return "f64";
         case TYPE_BOOL: return "bool";

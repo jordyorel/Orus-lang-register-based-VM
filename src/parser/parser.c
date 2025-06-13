@@ -217,7 +217,7 @@ static ASTNode* parseNumber(Parser* parser) {
         node = createLiteralNode(F64_VAL(value));
         node->valueType = createPrimitiveType(TYPE_F64);
     } else {
-        long value = strtol(numStr, &endptr, 10);
+        long long value = strtoll(numStr, &endptr, 10);
         bool isUnsigned = (*endptr == 'u' || *endptr == 'U');
         if (isUnsigned) {
             node = createLiteralNode(U32_VAL((uint32_t)value));
@@ -225,6 +225,9 @@ static ASTNode* parseNumber(Parser* parser) {
         } else if (value >= INT32_MIN && value <= INT32_MAX) {
             node = createLiteralNode(I32_VAL((int32_t)value));
             node->valueType = createPrimitiveType(TYPE_I32);
+        } else if (value >= INT64_MIN && value <= INT64_MAX) {
+            node = createLiteralNode(I64_VAL((int64_t)value));
+            node->valueType = createPrimitiveType(TYPE_I64);
         } else if (value >= 0 && value <= UINT32_MAX) {
             node = createLiteralNode(U32_VAL((uint32_t)value));
             node->valueType = createPrimitiveType(TYPE_U32);
@@ -1590,6 +1593,8 @@ static Type* parseType(Parser* parser) {
         type = createArrayType(elementType);
     } else if (match(parser, TOKEN_INT)) {
         type = getPrimitiveType(TYPE_I32);
+    } else if (match(parser, TOKEN_I64)) {
+        type = getPrimitiveType(TYPE_I64);
     } else if (match(parser, TOKEN_U32)) {
         type = getPrimitiveType(TYPE_U32);
     } else if (match(parser, TOKEN_F64)) {

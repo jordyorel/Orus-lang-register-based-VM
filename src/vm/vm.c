@@ -161,6 +161,9 @@ static bool appendValueString(Value value, char** buffer, int* length,
         case VAL_I32:
             snprintf(tmp, sizeof(tmp), "%d", AS_I32(value));
             return appendStringDynamic(tmp, buffer, length, capacity);
+        case VAL_I64:
+            snprintf(tmp, sizeof(tmp), "%lld", (long long)AS_I64(value));
+            return appendStringDynamic(tmp, buffer, length, capacity);
         case VAL_U32:
             snprintf(tmp, sizeof(tmp), "%u", AS_U32(value));
             return appendStringDynamic(tmp, buffer, length, capacity);
@@ -400,6 +403,18 @@ static InterpretResult run() {
             case OP_DIVIDE_I32:
                 binaryOpI32(&vm, '/', &result);
                 break;
+            case OP_ADD_I64:
+                binaryOpI64(&vm, '+', &result);
+                break;
+            case OP_SUBTRACT_I64:
+                binaryOpI64(&vm, '-', &result);
+                break;
+            case OP_MULTIPLY_I64:
+                binaryOpI64(&vm, '*', &result);
+                break;
+            case OP_DIVIDE_I64:
+                binaryOpI64(&vm, '/', &result);
+                break;
             case OP_ADD_U32:
                 binaryOpU32(&vm, '+', &result);
                 break;
@@ -414,6 +429,9 @@ static InterpretResult run() {
                 break;
             case OP_MODULO_I32:
                 moduloOpI32(&vm, &result);
+                break;
+            case OP_MODULO_I64:
+                moduloOpI64(&vm, &result);
                 break;
             case OP_MODULO_U32:
                 moduloOpU32(&vm, &result);
@@ -451,6 +469,9 @@ static InterpretResult run() {
 
                 break;
             }
+            case OP_LESS_I64:
+                compareOpI64(&vm, '<', &result);
+                break;
             case OP_LESS_U32:
                 compareOpU32(&vm, '<', &result);
 
@@ -461,6 +482,9 @@ static InterpretResult run() {
             case OP_LESS_EQUAL_I32:
                 compareOpI32(&vm, 'L', &result);
                 break;
+            case OP_LESS_EQUAL_I64:
+                compareOpI64(&vm, 'L', &result);
+                break;
             case OP_LESS_EQUAL_U32:
                 compareOpU32(&vm, 'L', &result);
                 break;
@@ -470,6 +494,9 @@ static InterpretResult run() {
             case OP_GREATER_I32:
                 compareOpI32(&vm, '>', &result);
                 break;
+            case OP_GREATER_I64:
+                compareOpI64(&vm, '>', &result);
+                break;
             case OP_GREATER_U32:
                 compareOpU32(&vm, '>', &result);
                 break;
@@ -478,6 +505,9 @@ static InterpretResult run() {
                 break;
             case OP_GREATER_EQUAL_I32:
                 compareOpI32(&vm, 'G', &result);
+                break;
+            case OP_GREATER_EQUAL_I64:
+                compareOpI64(&vm, 'G', &result);
                 break;
             case OP_GREATER_EQUAL_U32:
                 compareOpU32(&vm, 'G', &result);
@@ -504,6 +534,15 @@ static InterpretResult run() {
                 }
                 int32_t value = AS_I32(vmPop(&vm));
                 vmPush(&vm, I32_VAL(-value));
+                break;
+            }
+            case OP_NEGATE_I64: {
+                if (!IS_I64(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a 64-bit integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int64_t value = AS_I64(vmPop(&vm));
+                vmPush(&vm, I64_VAL(-value));
                 break;
             }
             case OP_NEGATE_U32: {
@@ -562,6 +601,24 @@ static InterpretResult run() {
                 }
                 uint32_t value = AS_U32(vmPop(&vm));
                 vmPush(&vm, I32_VAL((int32_t)value));
+                break;
+            }
+            case OP_I32_TO_I64: {
+                if (!IS_I32(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be an integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int32_t value = AS_I32(vmPop(&vm));
+                vmPush(&vm, I64_VAL((int64_t)value));
+                break;
+            }
+            case OP_U32_TO_I64: {
+                if (!IS_U32(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be an unsigned integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                uint32_t value = AS_U32(vmPop(&vm));
+                vmPush(&vm, I64_VAL((int64_t)value));
                 break;
             }
             case OP_F64_TO_I32: {
@@ -1203,6 +1260,10 @@ static InterpretResult run() {
                                 valueLen = snprintf(valueStr, sizeof(valueStr),
                                                     "%d", AS_I32(arg));
                                 break;
+                            case VAL_I64:
+                                valueLen = snprintf(valueStr, sizeof(valueStr),
+                                                    "%lld", (long long)AS_I64(arg));
+                                break;
                             case VAL_U32:
                                 valueLen = snprintf(valueStr, sizeof(valueStr),
                                                     "%u", AS_U32(arg));
@@ -1381,6 +1442,9 @@ static InterpretResult run() {
                         switch (arg.type) {
                             case VAL_I32:
                                 valueLen = snprintf(valueStr, sizeof(valueStr), "%d", AS_I32(arg));
+                                break;
+                            case VAL_I64:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%lld", (long long)AS_I64(arg));
                                 break;
                             case VAL_U32:
                                 valueLen = snprintf(valueStr, sizeof(valueStr), "%u", AS_U32(arg));
