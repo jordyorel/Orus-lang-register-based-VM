@@ -2,7 +2,7 @@
 
 This document consolidates the development roadmaps for the Orus language, tracking progress and version increments across multiple development streams.
 
-**Current Version: 0.5.3**
+**Current Version: 0.5.4**
 
 ## Version History
 
@@ -10,7 +10,8 @@ This document consolidates the development roadmaps for the Orus language, track
 - **0.5.0**: Current version with generics, modules, error handling, and garbage collection  
 - **0.5.1**: Added `input()` builtin for basic user input
 - **0.5.2**: Improved diagnostics for repeated module imports
-- **0.5.3**: Added `const` declarations and introduced `std/math` library
+- **0.5.3**: Introduced `std/math` library with core math utilities
+- **0.5.4**: Added `const` declarations, embedded standard library and enhanced casting rules
 
 ## ✅ Completed Major Features
 
@@ -23,7 +24,7 @@ This document consolidates the development roadmaps for the Orus language, track
 | ✅ Dynamic Arrays        | Arrays with push, pop, and len operations          | Minor feature  |
 | ✅ User Input            | input() builtin for reading from stdin             | 0.5.0 → 0.5.1  |
 | ✅ Core Built-ins        | print, len, push, pop, range, sum, sorted, etc.    | 0.5.0+         |
-| ✅ Const Declarations    | Top-level immutable values via `const`             | 0.5.2 → 0.5.3  |
+| ✅ Const Declarations    | Top-level immutable values via `const`             | 0.5.2 → 0.5.4  |
 
 ---
 
