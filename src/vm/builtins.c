@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "../../include/builtins.h"
 #include "../../include/error.h"
@@ -492,6 +493,14 @@ static Value native_module_name(int argCount, Value* args) {
     return STRING_VAL(s);
 }
 
+static Value native_timestamp(int argCount, Value* args) {
+    if (argCount != 0) {
+        vmRuntimeError("timestamp() takes no arguments.");
+        return NIL_VAL;
+    }
+    return I64_VAL((int64_t)time(NULL));
+}
+
 static Value native_module_path(int argCount, Value* args) {
     if (argCount != 1 || !IS_STRING(args[0])) {
         vmRuntimeError("module_path() expects module path string.");
@@ -527,6 +536,7 @@ static BuiltinEntry builtinTable[] = {
     {"input", native_input, 1, TYPE_STRING},
     {"int", native_int, 1, TYPE_I32},
     {"float", native_float, 1, TYPE_F64},
+    {"timestamp", native_timestamp, 0, TYPE_I64},
     {"sorted", native_sorted, -1, TYPE_ARRAY},
     {"module_name", native_module_name, 1, TYPE_STRING},
     {"module_path", native_module_path, 1, TYPE_STRING},

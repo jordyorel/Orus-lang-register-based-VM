@@ -1421,6 +1421,14 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 node->valueType = getPrimitiveType(TYPE_F64);
                 break;
+            } else if (!fromModule && tokenEquals(node->data.call.name, "timestamp")) {
+                if (node->data.call.argCount != 0) {
+                    emitBuiltinArgCountError(compiler, &node->data.call.name,
+                                            "timestamp", 0, node->data.call.argCount);
+                    return;
+                }
+                node->valueType = getPrimitiveType(TYPE_I64);
+                break;
             } else if (!fromModule && tokenEquals(node->data.call.name, "push")) {
                 if (node->data.call.argCount != 2) {
                     emitBuiltinArgCountError(compiler, &node->data.call.name,
