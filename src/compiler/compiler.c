@@ -2790,6 +2790,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             if (compiler->hadError) return;
             writeOp(compiler, OP_SET_GLOBAL);
             writeOp(compiler, node->data.variable.index);
+            // Discard the assigned value to keep the stack balanced
+            writeOp(compiler, OP_POP);
             break;
         }
 
