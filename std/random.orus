@@ -1,6 +1,11 @@
-static mut STATE: i64 = 1
+use std::datetime
+
+static mut STATE: i64 = 0
 
 fn next_i64() -> i64 {
+    if STATE == 0 as i64 {
+        STATE = datetime.now() as i64
+    }
     // ANSI C LCG parameters
     let a: i64 = 1103515245
     let c: i64 = 12345
