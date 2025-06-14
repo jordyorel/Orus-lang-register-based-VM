@@ -1,7 +1,7 @@
 # Orus Language
 
 Orus is an experimental interpreted programming language implemented in C. It
-features a syntax inspired by modern scripting languages. Supported features
+features a syntax inspired by modern languages such as Python and Rust. Supported features
 include:
 
 - Static type annotations for integers (`i32`/`u32`/`i64`/`u64`), floating point numbers
