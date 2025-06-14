@@ -124,7 +124,7 @@ This document consolidates the development roadmaps for the Orus language, track
 ### Short-Term (0–3 months)
 - Finalize generic forward declarations
 - Add remaining built-ins: `abs`, `round`, `any`, `all`  
-- Expand standard library with modules like `random` and `functional`
+- Expand standard library with modules like `functional` and `random`.
 
 ### Medium-Term
 

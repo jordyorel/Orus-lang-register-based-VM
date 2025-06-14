@@ -51,6 +51,18 @@ fn main() {
 }
 ```
 
+## Static Variables
+
+Use `static` to define global variables. Add `mut` to make them mutable. These declarations must appear at the top level.
+
+```orus
+static mut COUNTER: u64 = 0u
+
+fn increment() {
+    COUNTER = COUNTER + 1u
+}
+```
+
 ## Primitive Types
 
 - `i32` – 32‑bit signed integer

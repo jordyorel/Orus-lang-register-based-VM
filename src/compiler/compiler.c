@@ -812,6 +812,68 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             break;
         }
 
+        case AST_STATIC: {
+            if (node->data.staticVar.initializer) {
+                typeCheckNode(compiler, node->data.staticVar.initializer);
+                if (compiler->hadError) return;
+            }
+
+            Type* initType = NULL;
+            Type* declType = node->data.staticVar.type;
+
+            if (node->data.staticVar.initializer) {
+                initType = node->data.staticVar.initializer->valueType;
+                if (!initType) {
+                    error(compiler, "Could not determine initializer type");
+                    return;
+                }
+            }
+
+            if (declType) {
+                if (initType) {
+                    if (!typesEqual(declType, initType)) {
+                        if (initType->kind == TYPE_ARRAY &&
+                            initType->info.array.elementType->kind == TYPE_NIL &&
+                            declType->kind == TYPE_ARRAY) {
+                            node->data.staticVar.initializer->valueType = declType;
+                            initType = declType;
+                        } else if (node->data.staticVar.initializer->type == AST_ARRAY &&
+                                   declType->kind == TYPE_ARRAY) {
+                            ASTNode* el = node->data.staticVar.initializer->data.array.elements;
+                            while (el) {
+                                convertLiteralForDecl(el, el->valueType,
+                                                     declType->info.array.elementType);
+                                if (!typesEqual(el->valueType,
+                                                declType->info.array.elementType)) {
+                                    error(compiler, "Type mismatch in static declaration.");
+                                    return;
+                                }
+                                el = el->next;
+                            }
+                            node->data.staticVar.initializer->valueType = declType;
+                            initType = declType;
+                        } else if (convertLiteralForDecl(node->data.staticVar.initializer,
+                                                      initType, declType)) {
+                            initType = declType;
+                        } else {
+                            error(compiler, "Type mismatch in static declaration.");
+                            return;
+                        }
+                    }
+                }
+                node->valueType = declType;
+            } else if (initType) {
+                node->valueType = initType;
+            } else {
+                error(compiler, "Cannot determine variable type");
+                return;
+            }
+
+            uint8_t index = addLocal(compiler, node->data.staticVar.name, node->valueType, node->data.staticVar.isMutable, false);
+            node->data.staticVar.index = index;
+            break;
+        }
+
         case AST_CONST: {
             if (node->data.constant.initializer) {
                 typeCheckNode(compiler, node->data.constant.initializer);
@@ -2610,6 +2672,19 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
             writeOp(compiler, OP_DEFINE_GLOBAL);
             writeByte(compiler, node->data.let.index);  // correct index
+            break;
+        }
+
+        case AST_STATIC: {
+            if (node->data.staticVar.initializer) {
+                generateCode(compiler,
+                             node->data.staticVar.initializer);  // push value
+            } else {
+                writeOp(compiler, OP_NIL);
+            }
+
+            writeOp(compiler, OP_DEFINE_GLOBAL);
+            writeByte(compiler, node->data.staticVar.index);
             break;
         }
 
