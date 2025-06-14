@@ -1,0 +1,15 @@
+use std::random
+
+fn main() {
+    print(random.rand_int(1, 10))
+    print(random.rand_int(1, 10))
+    print(random.rand_int(1, 10))
+    let colors = ["red", "green", "blue"]
+    print(random.choice(colors))
+    let nums = [1, 2, 3, 4]
+    random.shuffle(nums)
+    print(nums[0])
+    print(nums[1])
+    print(nums[2])
+    print(nums[3])
+}

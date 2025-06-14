@@ -21,6 +21,7 @@ typedef enum {
     AST_FIELD,
     AST_FIELD_SET,
     AST_LET,
+    AST_STATIC,
     AST_CONST,
     AST_PRINT,
     AST_IF,
@@ -183,6 +184,7 @@ typedef struct ASTNode {
         } operation;
         VariableData variable;
         LetData let;
+        LetData staticVar;
         ConstData constant;
         PrintData print;
         IfData ifStmt;
@@ -217,6 +219,7 @@ ASTNode* createBinaryNode(Token operator, ASTNode * left, ASTNode* right);
 ASTNode* createUnaryNode(Token operator, ASTNode * operand);
 ASTNode* createVariableNode(Token name, uint8_t index);
 ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer, bool isMutable);
+ASTNode* createStaticNode(Token name, Type* type, ASTNode* initializer, bool isMutable);
 ASTNode* createConstNode(Token name, Type* type, ASTNode* initializer, bool isPublic);
 ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount, bool newline, int line);
 ASTNode* createAssignmentNode(Token name, ASTNode* value);
