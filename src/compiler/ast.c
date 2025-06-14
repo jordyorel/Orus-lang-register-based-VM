@@ -79,6 +79,21 @@ ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer, bool isMuta
     return node;
 }
 
+ASTNode* createStaticNode(Token name, Type* type, ASTNode* initializer, bool isMutable) {
+    ASTNode* node = allocateASTNode();
+    node->type = AST_STATIC;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.staticVar.name = name;
+    node->data.staticVar.type = type;
+    node->data.staticVar.initializer = initializer;
+    node->data.staticVar.index = 0;
+    node->data.staticVar.isMutable = isMutable;
+    node->valueType = NULL;
+    return node;
+}
+
 ASTNode* createConstNode(Token name, Type* type, ASTNode* initializer, bool isPublic) {
     ASTNode* node = allocateASTNode();
     node->type = AST_CONST;

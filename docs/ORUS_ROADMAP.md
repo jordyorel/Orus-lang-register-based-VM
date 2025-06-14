@@ -134,7 +134,7 @@ use std::math
 ### Short-Term (0–3 months)
 - Complete generic forward declarations
 - Add remaining built-ins: `any`, `all`
-- Expand standard library with modules like `random` and `functional`
+- Expand standard library with modules like `functional` and `random`.
 
 ### Medium-Term (3–12 months)
 - Generic constraints and arithmetic  

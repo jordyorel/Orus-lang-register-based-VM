@@ -1,0 +1,35 @@
+static mut STATE: i64 = 1
+
+fn next_i64() -> i64 {
+    // ANSI C LCG parameters
+    let a: i64 = 1103515245
+    let c: i64 = 12345
+    let m: i64 = 2147483648
+    STATE = (STATE * a + c) % m
+    return STATE
+}
+
+pub fn rand() -> f64 {
+    return (next_i64() as f64) / 2147483648.0
+}
+
+pub fn rand_int(min: i32, max: i32) -> i32 {
+    let range: i64 = (max - min + 1) as i64
+    return min + (next_i64() % range) as i32
+}
+
+pub fn choice<T>(items: [T]) -> T {
+    let idx: i32 = rand_int(0, len(items) - 1)
+    return items[idx]
+}
+
+pub fn shuffle<T>(items: [T]) {
+    let mut i: i32 = len(items) - 1
+    while i > 0 {
+        let j: i32 = rand_int(0, i)
+        let temp = items[i]
+        items[i] = items[j]
+        items[j] = temp
+        i = i - 1
+    }
+}

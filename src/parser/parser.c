@@ -1372,6 +1372,24 @@ static void statement(Parser* parser, ASTNode** ast) {
         parser->current = parser->previous;
         block(parser, ast);
 
+    } else if (match(parser, TOKEN_STATIC)) {
+        if (parser->functionDepth > 0) {
+            error(parser, "'static' declarations must be at top level.");
+        }
+        bool isMutable = match(parser, TOKEN_MUT);
+        consume(parser, TOKEN_IDENTIFIER, "Expect variable name.");
+        Token name = parser->previous;
+        Type* type = NULL;
+        if (match(parser, TOKEN_COLON)) {
+            type = parseType(parser);
+            if (parser->hadError) return;
+        }
+        consume(parser, TOKEN_EQUAL, "Expect '=' after variable name.");
+        ASTNode* initializer; expression(parser, &initializer);
+        consumeStatementEnd(parser);
+        *ast = createStaticNode(name, type, initializer, isMutable);
+        (*ast)->line = name.line;
+
     } else if (match(parser, TOKEN_CONST)) {
         if (parser->functionDepth > 0) {
             error(parser, "'const' declarations must be at top level.");
