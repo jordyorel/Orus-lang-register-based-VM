@@ -21,6 +21,7 @@ description.
 | `input(prompt)` | Display a prompt and return a line of user input. |
 | `int(text)` | Convert a string to an `i32`, raising an error on failure. |
 | `float(text)` | Convert a string to an `f64`, raising an error on failure. |
+| `timestamp()` | Return the current UNIX timestamp as an `i64`. |
 | `sorted(array, key, reverse)` | Return a new array with the elements sorted. The `key` argument is optional and reserved for future use. `reverse` may be passed as the second argument when no key is provided. |
 
 ### `sorted`

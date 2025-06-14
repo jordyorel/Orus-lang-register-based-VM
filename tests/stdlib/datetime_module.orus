@@ -1,0 +1,5 @@
+use std::datetime
+
+fn main() {
+    print(datetime.now())
+}
