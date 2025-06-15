@@ -254,98 +254,144 @@ static inline void binaryOpF64(VM* vm, char op, InterpretResult* result) {
     }
 }
 
-// Generic numeric binary operations (operands must be same numeric type)
-static inline void binaryOpGeneric(VM* vm, char op, InterpretResult* result) {
+// Generic numeric binary operation preserving operand type
+static inline void binaryOpNumeric(VM* vm, char op, InterpretResult* result) {
     Value b = vmPop(vm);
     Value a = vmPop(vm);
-    if (IS_I32(a) && IS_I32(b)) {
-        vmPush(vm, I32_VAL(op == '+' ? AS_I32(a) + AS_I32(b)
-                                     : op == '-' ? AS_I32(a) - AS_I32(b)
-                                                  : op == '*' ? AS_I32(a) * AS_I32(b)
-                                                             : (AS_I32(b) == 0 ? (vmRuntimeError("Division by zero."), *result = INTERPRET_RUNTIME_ERROR,0) : AS_I32(a) / AS_I32(b))));
-    } else if (IS_I64(a) && IS_I64(b)) {
-        vmPush(vm, I64_VAL(op == '+' ? AS_I64(a) + AS_I64(b)
-                                     : op == '-' ? AS_I64(a) - AS_I64(b)
-                                                  : op == '*' ? AS_I64(a) * AS_I64(b)
-                                                             : (AS_I64(b) == 0 ? (vmRuntimeError("Division by zero."), *result = INTERPRET_RUNTIME_ERROR,0) : AS_I64(a) / AS_I64(b))));
-    } else if (IS_U32(a) && IS_U32(b)) {
-        vmPush(vm, U32_VAL(op == '+' ? AS_U32(a) + AS_U32(b)
-                                     : op == '-' ? AS_U32(a) - AS_U32(b)
-                                                  : op == '*' ? AS_U32(a) * AS_U32(b)
-                                                             : (AS_U32(b) == 0 ? (vmRuntimeError("Division by zero."), *result = INTERPRET_RUNTIME_ERROR,0) : AS_U32(a) / AS_U32(b))));
-    } else if (IS_U64(a) && IS_U64(b)) {
-        vmPush(vm, U64_VAL(op == '+' ? AS_U64(a) + AS_U64(b)
-                                     : op == '-' ? AS_U64(a) - AS_U64(b)
-                                                  : op == '*' ? AS_U64(a) * AS_U64(b)
-                                                             : (AS_U64(b) == 0 ? (vmRuntimeError("Division by zero."), *result = INTERPRET_RUNTIME_ERROR,0) : AS_U64(a) / AS_U64(b))));
-    } else if (IS_F64(a) && IS_F64(b)) {
-        double bv = AS_F64(b); double av = AS_F64(a);
-        if (op == '/' && bv == 0.0) { vmRuntimeError("Division by zero."); *result = INTERPRET_RUNTIME_ERROR; return; }
-        switch(op){
-            case '+': vmPush(vm, F64_VAL(av + bv)); break;
-            case '-': vmPush(vm, F64_VAL(av - bv)); break;
-            case '*': vmPush(vm, F64_VAL(av * bv)); break;
-            case '/': vmPush(vm, F64_VAL(av / bv)); break;
-        }
-    } else {
-        vmRuntimeError("Operands must be numbers of the same type.");
+    if (a.type != b.type) {
+        fprintf(stderr, "Operands must be the same numeric type.\n");
         *result = INTERPRET_RUNTIME_ERROR;
-    }
-}
-
-static inline void moduloOpGeneric(VM* vm, InterpretResult* result) {
-    Value b = vmPop(vm);
-    Value a = vmPop(vm);
-    if ((IS_I32(a) && IS_I32(b))) {
-        int32_t bv = AS_I32(b); if (bv==0){vmRuntimeError("Modulo by zero."); *result = INTERPRET_RUNTIME_ERROR; return;} vmPush(vm, I32_VAL(AS_I32(a)%bv));
-    } else if (IS_I64(a) && IS_I64(b)) {
-        int64_t bv = AS_I64(b); if (bv==0){vmRuntimeError("Modulo by zero."); *result = INTERPRET_RUNTIME_ERROR; return;} vmPush(vm, I64_VAL(AS_I64(a)%bv));
-    } else if (IS_U32(a) && IS_U32(b)) {
-        uint32_t bv = AS_U32(b); if (bv==0){vmRuntimeError("Modulo by zero."); *result = INTERPRET_RUNTIME_ERROR; return;} vmPush(vm, U32_VAL(AS_U32(a)%bv));
-    } else if (IS_U64(a) && IS_U64(b)) {
-        uint64_t bv = AS_U64(b); if (bv==0){vmRuntimeError("Modulo by zero."); *result = INTERPRET_RUNTIME_ERROR; return;} vmPush(vm, U64_VAL(AS_U64(a)%bv));
-    } else {
-        vmRuntimeError("Operands must be integers of the same type.");
-        *result = INTERPRET_RUNTIME_ERROR;
-    }
-}
-
-static inline void negateGeneric(VM* vm, InterpretResult* result) {
-    Value a = vmPop(vm);
-    if (IS_I32(a)) vmPush(vm, I32_VAL(-AS_I32(a)));
-    else if (IS_I64(a)) vmPush(vm, I64_VAL(-AS_I64(a)));
-    else if (IS_U32(a)) vmPush(vm, U32_VAL(-AS_U32(a)));
-    else if (IS_U64(a)) vmPush(vm, U64_VAL(-AS_U64(a)));
-    else if (IS_F64(a)) vmPush(vm, F64_VAL(-AS_F64(a)));
-    else { vmRuntimeError("Operand must be numeric."); *result = INTERPRET_RUNTIME_ERROR; }
-}
-
-static inline void compareOpGeneric(VM* vm, char op, InterpretResult* result) {
-    Value b = vmPop(vm);
-    Value a = vmPop(vm);
-    bool value = false;
-    if (IS_I32(a) && IS_I32(b)) {
-        int32_t av=AS_I32(a), bv=AS_I32(b);
-        switch(op){case '<': value=av<bv; break; case '>': value=av>bv; break; case 'L': value=av<=bv; break; case 'G': value=av>=bv; break;}
-    } else if (IS_I64(a) && IS_I64(b)) {
-        int64_t av=AS_I64(a), bv=AS_I64(b);
-        switch(op){case '<': value=av<bv; break; case '>': value=av>bv; break; case 'L': value=av<=bv; break; case 'G': value=av>=bv; break;}
-    } else if (IS_U32(a) && IS_U32(b)) {
-        uint32_t av=AS_U32(a), bv=AS_U32(b);
-        switch(op){case '<': value=av<bv; break; case '>': value=av>bv; break; case 'L': value=av<=bv; break; case 'G': value=av>=bv; break;}
-    } else if (IS_U64(a) && IS_U64(b)) {
-        uint64_t av=AS_U64(a), bv=AS_U64(b);
-        switch(op){case '<': value=av<bv; break; case '>': value=av>bv; break; case 'L': value=av<=bv; break; case 'G': value=av>=bv; break;}
-    } else if (IS_F64(a) && IS_F64(b)) {
-        double av=AS_F64(a), bv=AS_F64(b);
-        switch(op){case '<': value=av<bv; break; case '>': value=av>bv; break; case 'L': value=av<=bv; break; case 'G': value=av>=bv; break;}
-    } else {
-        vmRuntimeError("Operands must be numbers of the same type.");
-        *result = INTERPRET_RUNTIME_ERROR;
-        vmPush(vm, BOOL_VAL(false));
         return;
     }
-    vmPush(vm, BOOL_VAL(value));
+    switch (a.type) {
+        case VAL_I32: {
+            int32_t av = AS_I32(a);
+            int32_t bv = AS_I32(b);
+            switch (op) {
+                case '+': vmPush(vm, I32_VAL(av + bv)); break;
+                case '-': vmPush(vm, I32_VAL(av - bv)); break;
+                case '*': vmPush(vm, I32_VAL(av * bv)); break;
+                case '/':
+                    if (bv == 0) { fprintf(stderr, "Division by zero.\n"); *result = INTERPRET_RUNTIME_ERROR; return; }
+                    vmPush(vm, I32_VAL(av / bv));
+                    break;
+                default: fprintf(stderr, "Unknown op\n"); *result = INTERPRET_RUNTIME_ERROR; return;
+            }
+            break;
+        }
+        case VAL_I64: {
+            int64_t av = AS_I64(a);
+            int64_t bv = AS_I64(b);
+            switch (op) {
+                case '+': vmPush(vm, I64_VAL(av + bv)); break;
+                case '-': vmPush(vm, I64_VAL(av - bv)); break;
+                case '*': vmPush(vm, I64_VAL(av * bv)); break;
+                case '/':
+                    if (bv == 0) { fprintf(stderr, "Division by zero.\n"); *result = INTERPRET_RUNTIME_ERROR; return; }
+                    vmPush(vm, I64_VAL(av / bv));
+                    break;
+                default: fprintf(stderr, "Unknown op\n"); *result = INTERPRET_RUNTIME_ERROR; return;
+            }
+            break;
+        }
+        case VAL_U32: {
+            uint32_t av = AS_U32(a);
+            uint32_t bv = AS_U32(b);
+            switch (op) {
+                case '+': vmPush(vm, U32_VAL(av + bv)); break;
+                case '-': vmPush(vm, U32_VAL(av - bv)); break;
+                case '*': vmPush(vm, U32_VAL(av * bv)); break;
+                case '/':
+                    if (bv == 0) { fprintf(stderr, "Division by zero.\n"); *result = INTERPRET_RUNTIME_ERROR; return; }
+                    vmPush(vm, U32_VAL(av / bv));
+                    break;
+                default: fprintf(stderr, "Unknown op\n"); *result = INTERPRET_RUNTIME_ERROR; return;
+            }
+            break;
+        }
+        case VAL_U64: {
+            uint64_t av = AS_U64(a);
+            uint64_t bv = AS_U64(b);
+            switch (op) {
+                case '+': vmPush(vm, U64_VAL(av + bv)); break;
+                case '-': vmPush(vm, U64_VAL(av - bv)); break;
+                case '*': vmPush(vm, U64_VAL(av * bv)); break;
+                case '/':
+                    if (bv == 0) { fprintf(stderr, "Division by zero.\n"); *result = INTERPRET_RUNTIME_ERROR; return; }
+                    vmPush(vm, U64_VAL(av / bv));
+                    break;
+                default: fprintf(stderr, "Unknown op\n"); *result = INTERPRET_RUNTIME_ERROR; return;
+            }
+            break;
+        }
+        case VAL_F64: {
+            double av = AS_F64(a);
+            double bv = AS_F64(b);
+            switch (op) {
+                case '+': vmPush(vm, F64_VAL(av + bv)); break;
+                case '-': vmPush(vm, F64_VAL(av - bv)); break;
+                case '*': vmPush(vm, F64_VAL(av * bv)); break;
+                case '/':
+                    if (bv == 0.0) { fprintf(stderr, "Division by zero.\n"); *result = INTERPRET_RUNTIME_ERROR; return; }
+                    vmPush(vm, F64_VAL(av / bv));
+                    break;
+                default: fprintf(stderr, "Unknown op\n"); *result = INTERPRET_RUNTIME_ERROR; return;
+            }
+            break;
+        }
+        default:
+            fprintf(stderr, "Operands must be numbers.\n");
+            *result = INTERPRET_RUNTIME_ERROR;
+    }
+}
+
+static inline void moduloOpNumeric(VM* vm, InterpretResult* result) {
+    Value b = vmPop(vm);
+    Value a = vmPop(vm);
+    if (a.type != b.type) {
+        fprintf(stderr, "Operands must be same integer type.\n");
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+    switch (a.type) {
+        case VAL_I32: {
+            int32_t bv = AS_I32(b); if (bv == 0) { fprintf(stderr, "Modulo by zero.\n"); *result = INTERPRET_RUNTIME_ERROR; return; }
+            vmPush(vm, I32_VAL(AS_I32(a) % bv));
+            break;
+        }
+        case VAL_I64: {
+            int64_t bv = AS_I64(b); if (bv == 0) { fprintf(stderr, "Modulo by zero.\n"); *result = INTERPRET_RUNTIME_ERROR; return; }
+            vmPush(vm, I64_VAL(AS_I64(a) % bv));
+            break;
+        }
+        case VAL_U32: {
+            uint32_t bv = AS_U32(b); if (bv == 0) { fprintf(stderr, "Modulo by zero.\n"); *result = INTERPRET_RUNTIME_ERROR; return; }
+            vmPush(vm, U32_VAL(AS_U32(a) % bv));
+            break;
+        }
+        case VAL_U64: {
+            uint64_t bv = AS_U64(b); if (bv == 0) { fprintf(stderr, "Modulo by zero.\n"); *result = INTERPRET_RUNTIME_ERROR; return; }
+            vmPush(vm, U64_VAL(AS_U64(a) % bv));
+            break;
+        }
+        default:
+            fprintf(stderr, "Modulo operands must be integers.\n");
+            *result = INTERPRET_RUNTIME_ERROR;
+    }
+}
+
+static inline void negateNumeric(VM* vm, InterpretResult* result) {
+    Value a = vmPop(vm);
+    switch (a.type) {
+        case VAL_I32: vmPush(vm, I32_VAL(-AS_I32(a))); break;
+        case VAL_I64: vmPush(vm, I64_VAL(-AS_I64(a))); break;
+        case VAL_U32: vmPush(vm, U32_VAL(-AS_U32(a))); break;
+        case VAL_U64: vmPush(vm, U64_VAL(-AS_U64(a))); break;
+        case VAL_F64: vmPush(vm, F64_VAL(-AS_F64(a))); break;
+        default:
+            fprintf(stderr, "Operand must be numeric.\n");
+            *result = INTERPRET_RUNTIME_ERROR;
+    }
 }
 
 // Modulo operation for i32

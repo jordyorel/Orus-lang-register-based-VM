@@ -462,6 +462,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 case TOKEN_MINUS:
                 case TOKEN_STAR:
                 case TOKEN_SLASH: {
+                    if ((typesEqual(leftType, rightType) && leftType->kind == TYPE_GENERIC) ||
+                        (typesEqual(leftType, rightType) &&
+                         (leftType->kind == TYPE_I32 || leftType->kind == TYPE_I64 ||
+                          leftType->kind == TYPE_U32 || leftType->kind == TYPE_F64))) {
                     if ((leftType->kind == TYPE_GENERIC &&
                          findConstraint(compiler, leftType->info.generic.name) != CONSTRAINT_NUMERIC) ||
                         (rightType->kind == TYPE_GENERIC &&
@@ -500,8 +504,9 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
 
                 case TOKEN_MODULO: {
-                    if (typesEqual(leftType, rightType) &&
-                        (leftType->kind == TYPE_I32 || leftType->kind == TYPE_I64 || leftType->kind == TYPE_U32)) {
+                    if ((typesEqual(leftType, rightType) && leftType->kind == TYPE_GENERIC) ||
+                        (typesEqual(leftType, rightType) &&
+                         (leftType->kind == TYPE_I32 || leftType->kind == TYPE_I64 || leftType->kind == TYPE_U32))) {
                         node->valueType = leftType;
                         node->data.operation.convertLeft = false;
                         node->data.operation.convertRight = false;
@@ -624,6 +629,8 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     if (operandType->kind != TYPE_I32 &&
                         operandType->kind != TYPE_I64 &&
                         operandType->kind != TYPE_U32 &&
+                        operandType->kind != TYPE_F64 &&
+                        operandType->kind != TYPE_GENERIC) {
                         operandType->kind != TYPE_F64 &&
                         operandType->kind != TYPE_GENERIC) {
                         error(compiler,
@@ -2339,6 +2346,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_F64:
                             writeOp(compiler, OP_ADD_F64);
                             break;
+                        case TYPE_GENERIC:
+                            writeOp(compiler, OP_ADD_NUMERIC);
+                            break;
                         default:
                             error(compiler,
                                   "Addition not supported for this type.");
@@ -2362,6 +2372,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             break;
                         case TYPE_F64:
                             writeOp(compiler, OP_SUBTRACT_F64);
+                            break;
+                        case TYPE_GENERIC:
+                            writeOp(compiler, OP_SUBTRACT_NUMERIC);
                             break;
                         default:
                             error(compiler,
@@ -2387,6 +2400,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_F64:
                             writeOp(compiler, OP_MULTIPLY_F64);
                             break;
+                        case TYPE_GENERIC:
+                            writeOp(compiler, OP_MULTIPLY_NUMERIC);
+                            break;
                         default:
                             error(
                                 compiler,
@@ -2411,6 +2427,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_F64:
                             writeOp(compiler, OP_DIVIDE_F64);
                             break;
+                        case TYPE_GENERIC:
+                            writeOp(compiler, OP_DIVIDE_NUMERIC);
+                            break;
                         default:
                             error(compiler,
                                   "Division not supported for this type.");
@@ -2430,6 +2449,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             break;
                         case TYPE_U64:
                             writeOp(compiler, OP_MODULO_U64);
+                            break;
+                        case TYPE_GENERIC:
+                            writeOp(compiler, OP_MODULO_NUMERIC);
                             break;
                         default:
                             error(compiler,
@@ -2646,6 +2668,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             break;
                         case TYPE_F64:
                             writeOp(compiler, OP_NEGATE_F64);
+                            break;
+                        case TYPE_GENERIC:
+                            writeOp(compiler, OP_NEGATE_NUMERIC);
                             break;
                         default:
                             error(compiler,
