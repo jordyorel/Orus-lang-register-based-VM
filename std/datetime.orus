@@ -127,6 +127,25 @@ fn pad4(n: i32) -> string {
     return "" + n
 }
 
+fn pad6(n: i32) -> string {
+    if n < 10 {
+        return "00000" + n
+    }
+    if n < 100 {
+        return "0000" + n
+    }
+    if n < 1000 {
+        return "000" + n
+    }
+    if n < 10000 {
+        return "00" + n
+    }
+    if n < 100000 {
+        return "0" + n
+    }
+    return "" + n
+}
+
 // Basic strftime style formatting supporting %Y %m %d %H %M %S
 pub fn format(dt: DateTime, fmt: string) -> string {
     let mut out = ""
@@ -153,7 +172,11 @@ pub fn format(dt: DateTime, fmt: string) -> string {
                                 if code == "S" {
                                     out = out + pad2(dt.time.second)
                                 } else {
-                                    out = out + code
+                                    if code == "f" {
+                                        out = out + pad6(dt.time.microsecond)
+                                    } else {
+                                        out = out + code
+                                    }
                                 }
                             }
                         }
@@ -177,6 +200,7 @@ pub fn parse(text: string, fmt: string) -> DateTime {
     let mut hour: i32 = 0
     let mut minute: i32 = 0
     let mut second: i32 = 0
+    let mut micro: i32 = 0
     let mut i_fmt: i32 = 0
     let mut i_txt: i32 = 0
     while i_fmt < len(fmt) {
@@ -213,7 +237,13 @@ pub fn parse(text: string, fmt: string) -> DateTime {
                                     second = int(part)
                                     i_txt = i_txt + 2
                                 } else {
-                                    i_txt = i_txt + 1
+                                    if code == "f" {
+                                        let part = substring(text, i_txt, 6)
+                                        micro = int(part)
+                                        i_txt = i_txt + 6
+                                    } else {
+                                        i_txt = i_txt + 1
+                                    }
                                 }
                             }
                         }
@@ -228,7 +258,7 @@ pub fn parse(text: string, fmt: string) -> DateTime {
     }
     return DateTime{
         date: Date{ year: year, month: month, day: day },
-        time: Time{ hour: hour, minute: minute, second: second, microsecond: 0 },
+        time: Time{ hour: hour, minute: minute, second: second, microsecond: micro },
     }
 }
 
@@ -240,9 +270,21 @@ pub fn time(dt: DateTime) -> Time {
     return dt.time
 }
 
+pub fn to_string(dt: DateTime) -> string {
+    let base = format(dt, "%Y-%m-%d %H:%M:%S")
+    if dt.time.microsecond != 0 {
+        return base + "." + pad6(dt.time.microsecond)
+    }
+    return base
+}
+
+pub fn DateTime_to_string(dt: DateTime) -> string {
+    return to_string(dt)
+}
+
 impl DateTime {
     fn to_string(self) -> string {
-        return format(self, "%Y-%m-%d %H:%M:%S")
+        return to_string(self)
     }
 }
 
