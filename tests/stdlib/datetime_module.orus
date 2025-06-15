@@ -1,9 +1,9 @@
 use std::datetime
 
 fn main() {
-    let epoch = datetime.from_timestamp(0 as i64)
+    let epoch = datetime.from_timestamp(0.0)
     print(epoch)
-    print(datetime.to_timestamp(epoch))
+    print(datetime.timestamp(epoch))
     let current = datetime.now()
     print(current)
 }
