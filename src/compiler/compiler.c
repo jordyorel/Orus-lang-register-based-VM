@@ -2797,9 +2797,20 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                     memcpy(temp, structName, len);
                     memcpy(temp + len, suffix, strlen(suffix) + 1);
                     Symbol* sym = findSymbol(&compiler->symbols, temp);
+                    uint8_t callIndex = UINT8_MAX;
                     if (sym) {
+                        callIndex = sym->index;
+                    } else {
+                        for (int si = 0; si < compiler->symbols.count; si++) {
+                            Symbol* modSym = &compiler->symbols.symbols[si];
+                            if (!modSym->active || !modSym->isModule || !modSym->module) continue;
+                            Export* ex = get_export(modSym->module, temp);
+                            if (ex) { callIndex = ex->index; break; }
+                        }
+                    }
+                    if (callIndex != UINT8_MAX) {
                         writeOp(compiler, OP_CALL);
-                        writeOp(compiler, sym->index);
+                        writeOp(compiler, callIndex);
                         writeOp(compiler, 1);
                     }
                     free(temp);
