@@ -364,6 +364,8 @@ Token scan_token() {
                 return make_token(TOKEN_DOT_DOT);
             }
             return make_token(TOKEN_DOT);
+        case '?':
+            return make_token(TOKEN_QUESTION);
         case '-':
             if (peek() == '>') {
                 advance();

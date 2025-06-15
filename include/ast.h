@@ -25,6 +25,7 @@ typedef enum {
     AST_CONST,
     AST_PRINT,
     AST_IF,
+    AST_TERNARY,
     AST_BLOCK,
     AST_WHILE,
     AST_FOR,
@@ -50,6 +51,7 @@ typedef struct {
     struct ASTNode* initializer;
     uint8_t index;
     bool isMutable;
+    bool isPublic;
 } LetData;
 
 typedef struct {
@@ -74,6 +76,12 @@ typedef struct {
     struct ASTNode* elifBranches;    // Linked list of elif branches
     struct ASTNode* elseBranch;
 } IfData;
+
+typedef struct {
+    struct ASTNode* condition;
+    struct ASTNode* thenExpr;
+    struct ASTNode* elseExpr;
+} TernaryData;
 
 typedef struct {
     struct ASTNode* statements;  // Linked list of statements
@@ -188,6 +196,7 @@ typedef struct ASTNode {
         ConstData constant;
         PrintData print;
         IfData ifStmt;
+        TernaryData ternary;
         BlockData block;
         WhileData whileStmt;
         ForData forStmt;
@@ -218,12 +227,13 @@ ASTNode* createLiteralNode(Value value);
 ASTNode* createBinaryNode(Token operator, ASTNode * left, ASTNode* right);
 ASTNode* createUnaryNode(Token operator, ASTNode * operand);
 ASTNode* createVariableNode(Token name, uint8_t index);
-ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer, bool isMutable);
+ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer, bool isMutable, bool isPublic);
 ASTNode* createStaticNode(Token name, Type* type, ASTNode* initializer, bool isMutable);
 ASTNode* createConstNode(Token name, Type* type, ASTNode* initializer, bool isPublic);
 ASTNode* createPrintNode(ASTNode* format, ASTNode* arguments, int argCount, bool newline, int line);
 ASTNode* createAssignmentNode(Token name, ASTNode* value);
 ASTNode* createIfNode(ASTNode* condition, ASTNode* thenBranch, ASTNode* elifConditions, ASTNode* elifBranches, ASTNode* elseBranch);
+ASTNode* createTernaryNode(ASTNode* condition, ASTNode* thenExpr, ASTNode* elseExpr);
 ASTNode* createBlockNode(ASTNode* statements, bool scoped);
 ASTNode* createWhileNode(ASTNode* condition, ASTNode* body);
 ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr, ASTNode* stepExpr, ASTNode* body);

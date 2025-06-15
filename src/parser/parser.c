@@ -18,6 +18,7 @@ static ASTNode* parseGrouping(Parser* parser);
 static ASTNode* parseUnary(Parser* parser);
 static ASTNode* parseBinary(Parser* parser, ASTNode* left);
 static ASTNode* parseLogical(Parser* parser, ASTNode* left);  // New logical operator function
+static ASTNode* parseTernary(Parser* parser, ASTNode* left);
 static ASTNode* parseCall(Parser* parser, ASTNode* left);
 static ASTNode* parseIndex(Parser* parser, ASTNode* left);
 static ASTNode* parseDot(Parser* parser, ASTNode* left);
@@ -29,7 +30,7 @@ static ASTNode* parseBoolean(Parser* parser);
 static ASTNode* parseVariable(Parser* parser);
 static ASTNode* parseNil(Parser* parser);
 static ASTNode* parseArray(Parser* parser);
-static void structDeclaration(Parser* parser, ASTNode** ast);
+static void structDeclaration(Parser* parser, ASTNode** ast, bool isPublic);
 static void implBlock(Parser* parser, ASTNode** ast);
 static Type* parseType(Parser* parser);
 static void expression(Parser* parser, ASTNode** ast);
@@ -289,6 +290,15 @@ static ASTNode* parseLogical(Parser* parser, ASTNode* left) {
     // since logical operations can be represented by binary operations
     ASTNode* node = createBinaryNode(operator, left, right);
     node->line = operator.line;
+    return node;
+}
+
+static ASTNode* parseTernary(Parser* parser, ASTNode* left) {
+    ASTNode* thenExpr = parse_precedence(parser, PREC_CONDITIONAL);
+    consume(parser, TOKEN_COLON, "Expect ':' after '?' expression.");
+    ASTNode* elseExpr = parse_precedence(parser, PREC_CONDITIONAL);
+    ASTNode* node = createTernaryNode(left, thenExpr, elseExpr);
+    node->line = left->line;
     return node;
 }
 
@@ -940,7 +950,7 @@ static void functionDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
             }
 
             // Create parameter node (using let node for now)
-            ASTNode* param = createLetNode(paramName, paramType, NULL, false);
+            ASTNode* param = createLetNode(paramName, paramType, NULL, false, false);
             param->line = paramName.line;
 
             // Add to parameter list
@@ -1083,7 +1093,7 @@ static void useStatement(Parser* parser, ASTNode** ast) {
     (*ast)->line = nameTok.line;
 }
 
-static void structDeclaration(Parser* parser, ASTNode** ast) {
+static void structDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
     consume(parser, TOKEN_IDENTIFIER, "Expect struct name.");
     Token nameTok = parser->previous;
 
@@ -1151,7 +1161,7 @@ static void structDeclaration(Parser* parser, ASTNode** ast) {
     parser->genericCount = prevGenericCount;
 
     // Create a dummy global variable for the struct name to allow method calls
-    *ast = createLetNode(nameTok, structType, NULL, false);
+    *ast = createLetNode(nameTok, structType, NULL, false, isPublic);
     (*ast)->line = nameTok.line;
 }
 
@@ -1307,7 +1317,7 @@ static void statement(Parser* parser, ASTNode** ast) {
         tryStatement(parser, ast);
 
     } else if (match(parser, TOKEN_STRUCT)) {
-        structDeclaration(parser, ast);
+        structDeclaration(parser, ast, false);
 
     } else if (match(parser, TOKEN_IMPL)) {
         implBlock(parser, ast);
@@ -1338,6 +1348,8 @@ static void statement(Parser* parser, ASTNode** ast) {
             }
             *ast = createConstNode(name, type, initializer, true);
             (*ast)->line = name.line;
+        } else if (match(parser, TOKEN_STRUCT)) {
+            structDeclaration(parser, ast, true);
         } else {
             error(parser, "Expected 'fn' or 'const' after 'pub'.");
         }
@@ -1430,7 +1442,7 @@ static void statement(Parser* parser, ASTNode** ast) {
         expression(parser, &initializer);
         consumeStatementEnd(parser);
 
-        *ast = createLetNode(name, type, initializer, isMutable);
+        *ast = createLetNode(name, type, initializer, isMutable, false);
         (*ast)->line = name.line;
 
     } else {
@@ -1533,6 +1545,7 @@ ParseRule rules[] = {
     [TOKEN_SLASH] = {NULL, parseBinary, PREC_FACTOR},
     [TOKEN_STAR] = {NULL, parseBinary, PREC_FACTOR},
     [TOKEN_MODULO] = {NULL, parseBinary, PREC_FACTOR},
+    [TOKEN_QUESTION] = {NULL, parseTernary, PREC_CONDITIONAL},
     [TOKEN_SHIFT_LEFT] = {NULL, parseBinary, PREC_SHIFT},
     [TOKEN_SHIFT_RIGHT] = {NULL, parseBinary, PREC_SHIFT},
     [TOKEN_BIT_AND] = {NULL, parseBinary, PREC_BIT_AND},

@@ -155,6 +155,11 @@ static bool containsReturn(ASTNode* node) {
                 containsReturn(node->data.ifStmt.elseBranch)) return true;
             return false;
         }
+        case AST_TERNARY: {
+            if (containsReturn(node->data.ternary.thenExpr)) return true;
+            if (containsReturn(node->data.ternary.elseExpr)) return true;
+            return false;
+        }
         case AST_WHILE:
             return containsReturn(node->data.whileStmt.body);
         case AST_FOR:
@@ -188,6 +193,8 @@ static bool statementAlwaysReturns(ASTNode* node) {
                           statementsAlwaysReturn(node->data.ifStmt.elseBranch);
             return thenR && allElifR && elseR;
         }
+        case AST_TERNARY:
+            return false;
         default:
             return false;
     }
@@ -809,6 +816,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             // Add the variable to the symbol table
             uint8_t index = addLocal(compiler, node->data.let.name, node->valueType, node->data.let.isMutable, false);
             node->data.let.index = index;
+            vm.publicGlobals[index] = node->data.let.isPublic;
             break;
         }
 
@@ -1098,6 +1106,31 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
             // If statements don't have a value type
             node->valueType = NULL;
+            break;
+        }
+
+        case AST_TERNARY: {
+            typeCheckNode(compiler, node->data.ternary.condition);
+            if (compiler->hadError) return;
+
+            Type* condType = node->data.ternary.condition->valueType;
+            if (!condType || condType->kind != TYPE_BOOL) {
+                error(compiler, "Conditional expression must use a boolean condition.");
+                return;
+            }
+
+            typeCheckNode(compiler, node->data.ternary.thenExpr);
+            if (compiler->hadError) return;
+            typeCheckNode(compiler, node->data.ternary.elseExpr);
+            if (compiler->hadError) return;
+
+            Type* thenType = node->data.ternary.thenExpr->valueType;
+            Type* elseType = node->data.ternary.elseExpr->valueType;
+            if (!thenType || !elseType || !typesEqual(thenType, elseType)) {
+                error(compiler, "Both branches of ?: must have the same type.");
+                return;
+            }
+            node->valueType = thenType;
             break;
         }
 
@@ -3030,6 +3063,38 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
             (void)elifJumpsObj; // GC-managed
 
+            break;
+        }
+
+        case AST_TERNARY: {
+            generateCode(compiler, node->data.ternary.condition);
+            if (compiler->hadError) return;
+
+            int elseJump = compiler->chunk->count;
+            writeOp(compiler, OP_JUMP_IF_FALSE);
+            writeChunk(compiler->chunk, 0xFF, 0, 1);
+            writeChunk(compiler->chunk, 0xFF, 0, 1);
+
+            writeOp(compiler, OP_POP);
+            generateCode(compiler, node->data.ternary.thenExpr);
+            if (compiler->hadError) return;
+
+            int endJump = compiler->chunk->count;
+            writeOp(compiler, OP_JUMP);
+            writeChunk(compiler->chunk, 0xFF, 0, 1);
+            writeChunk(compiler->chunk, 0xFF, 0, 1);
+
+            int elseStart = compiler->chunk->count;
+            compiler->chunk->code[elseJump + 1] = (elseStart - elseJump - 3) >> 8;
+            compiler->chunk->code[elseJump + 2] = (elseStart - elseJump - 3) & 0xFF;
+
+            writeOp(compiler, OP_POP);
+            generateCode(compiler, node->data.ternary.elseExpr);
+            if (compiler->hadError) return;
+
+            int end = compiler->chunk->count;
+            compiler->chunk->code[endJump + 1] = (end - endJump - 3) >> 8;
+            compiler->chunk->code[endJump + 2] = (end - endJump - 3) & 0xFF;
             break;
         }
 

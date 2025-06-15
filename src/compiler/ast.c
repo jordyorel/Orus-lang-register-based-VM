@@ -64,7 +64,7 @@ ASTNode* createVariableNode(Token name, uint8_t index) {
     return node;
 }
 
-ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer, bool isMutable) {
+ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer, bool isMutable, bool isPublic) {
     ASTNode* node = allocateASTNode();
     node->type = AST_LET;
     node->left = NULL;
@@ -75,6 +75,7 @@ ASTNode* createLetNode(Token name, Type* type, ASTNode* initializer, bool isMuta
     node->data.let.initializer = initializer;
     node->data.let.index = 0;
     node->data.let.isMutable = isMutable;
+    node->data.let.isPublic = isPublic;
     node->valueType = NULL;
     return node;
 }
@@ -135,6 +136,19 @@ ASTNode* createIfNode(ASTNode* condition, ASTNode* thenBranch, ASTNode* elifCond
     node->data.ifStmt.elifConditions = elifConditions;
     node->data.ifStmt.elifBranches = elifBranches;
     node->data.ifStmt.elseBranch = elseBranch;
+    node->valueType = NULL;
+    return node;
+}
+
+ASTNode* createTernaryNode(ASTNode* condition, ASTNode* thenExpr, ASTNode* elseExpr) {
+    ASTNode* node = allocateASTNode();
+    node->type = AST_TERNARY;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.ternary.condition = condition;
+    node->data.ternary.thenExpr = thenExpr;
+    node->data.ternary.elseExpr = elseExpr;
     node->valueType = NULL;
     return node;
 }
