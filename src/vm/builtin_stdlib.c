@@ -21,7 +21,7 @@ static void ensure_dir(const char* path){
     char tmp[512];
     strncpy(tmp,path,sizeof(tmp)-1);
     tmp[sizeof(tmp)-1]=0;
-    for(char* p=tmp+1; *p; p++){ if(*p=="/"){ *p=0; mkdir(tmp,0755); *p="/"; } }
+    for(char* p=tmp+1; *p; p++){ if(*p=='/'){ *p=0; mkdir(tmp,0755); *p='/'; } }
     mkdir(tmp,0755);
 }
 
