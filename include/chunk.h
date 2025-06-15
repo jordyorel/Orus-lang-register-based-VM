@@ -106,6 +106,20 @@ typedef enum {
     OP_GREATER_EQUAL_U64,
     OP_GREATER_EQUAL_F64,
 
+    // Generic comparisons
+    OP_LESS_GENERIC,
+    OP_LESS_EQUAL_GENERIC,
+    OP_GREATER_GENERIC,
+    OP_GREATER_EQUAL_GENERIC,
+
+    // Generic arithmetic
+    OP_ADD_GENERIC,
+    OP_SUBTRACT_GENERIC,
+    OP_MULTIPLY_GENERIC,
+    OP_DIVIDE_GENERIC,
+    OP_MODULO_GENERIC,
+    OP_NEGATE_GENERIC,
+
     // Type conversion opcodes
     OP_I32_TO_F64,
     OP_U32_TO_F64,

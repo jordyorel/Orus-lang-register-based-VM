@@ -394,6 +394,92 @@ static inline void negateNumeric(VM* vm, InterpretResult* result) {
     }
 }
 
+// Generic arithmetic helpers -------------------------------------------------
+
+// Forward declarations for comparison helpers used by generic operations
+static inline void compareOpI32(VM* vm, char op, InterpretResult* result);
+static inline void compareOpI64(VM* vm, char op, InterpretResult* result);
+static inline void compareOpU32(VM* vm, char op, InterpretResult* result);
+static inline void compareOpU64(VM* vm, char op, InterpretResult* result);
+static inline void compareOpF64(VM* vm, char op, InterpretResult* result);
+
+static inline void binaryOpGeneric(VM* vm, char op, InterpretResult* result) {
+    // Reuse numeric implementation; operands must be of the same runtime type
+    binaryOpNumeric(vm, op, result);
+}
+
+static inline void moduloOpGeneric(VM* vm, InterpretResult* result) {
+    moduloOpNumeric(vm, result);
+}
+
+static inline void negateGeneric(VM* vm, InterpretResult* result) {
+    negateNumeric(vm, result);
+}
+
+static inline void compareOpGeneric(VM* vm, char op, InterpretResult* result) {
+    Value b = vmPop(vm);
+    Value a = vmPop(vm);
+    if (a.type != b.type) {
+        fprintf(stderr, "Operands must be the same type for comparison.\n");
+        vmPush(vm, BOOL_VAL(false));
+        *result = INTERPRET_RUNTIME_ERROR;
+        return;
+    }
+
+    switch (a.type) {
+        case VAL_I32:
+            vmPush(vm, a);
+            vmPush(vm, b);
+            compareOpI32(vm, op, result);
+            return;
+        case VAL_I64:
+            vmPush(vm, a);
+            vmPush(vm, b);
+            compareOpI64(vm, op, result);
+            return;
+        case VAL_U32:
+            vmPush(vm, a);
+            vmPush(vm, b);
+            compareOpU32(vm, op, result);
+            return;
+        case VAL_U64:
+            vmPush(vm, a);
+            vmPush(vm, b);
+            compareOpU64(vm, op, result);
+            return;
+        case VAL_F64:
+            vmPush(vm, a);
+            vmPush(vm, b);
+            compareOpF64(vm, op, result);
+            return;
+        case VAL_STRING: {
+            ObjString* as = AS_STRING(a);
+            ObjString* bs = AS_STRING(b);
+            int cmp = strncmp(as->chars, bs->chars, as->length < bs->length ? as->length : bs->length);
+            if (cmp == 0 && as->length != bs->length) cmp = as->length < bs->length ? -1 : 1;
+            bool value = false;
+            switch (op) {
+                case '<': value = cmp < 0; break;
+                case '>': value = cmp > 0; break;
+                case 'L': value = cmp <= 0; break;
+                case 'G': value = cmp >= 0; break;
+                default:
+                    fprintf(stderr, "Unknown comparison operator: %c\n", op);
+                    *result = INTERPRET_RUNTIME_ERROR;
+                    vmPush(vm, BOOL_VAL(false));
+                    return;
+            }
+            vmPush(vm, BOOL_VAL(value));
+            return;
+        }
+        default:
+            fprintf(stderr, "Unsupported type for generic comparison.\n");
+            vmPush(vm, BOOL_VAL(false));
+            *result = INTERPRET_RUNTIME_ERROR;
+            return;
+    }
+}
+
 // Modulo operation for i32
 static inline void moduloOpI32(VM* vm, InterpretResult* result) {
     if (!IS_I32(vmPeek(vm, 0)) || !IS_I32(vmPeek(vm, 1))) {
@@ -878,3 +964,4 @@ static inline Value arrayPop(ObjArray* array) {
 }
 
 #endif // VM_OPS_H
+

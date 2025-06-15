@@ -110,6 +110,17 @@ static void deduceGenerics(Type* expected, Type* actual,
     }
 }
 
+// Lookup the constraint for a generic parameter by name
+static GenericConstraint findConstraint(Compiler* compiler, ObjString* name) {
+    for (int i = 0; i < compiler->genericCount; i++) {
+        if (compiler->genericNames[i] &&
+            strcmp(compiler->genericNames[i]->chars, name->chars) == 0) {
+            return compiler->genericConstraints[i];
+        }
+    }
+    return CONSTRAINT_NONE;
+}
+
 static void beginScope(Compiler* compiler) { compiler->scopeDepth++; }
 
 static void endScope(Compiler* compiler) {
@@ -439,27 +450,6 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                         (typesEqual(leftType, rightType) &&
                          (leftType->kind == TYPE_I32 || leftType->kind == TYPE_I64 ||
                           leftType->kind == TYPE_U32 || leftType->kind == TYPE_F64))) {
-                    if ((leftType->kind == TYPE_GENERIC &&
-                         findConstraint(compiler, leftType->info.generic.name) != CONSTRAINT_NUMERIC) ||
-                        (rightType->kind == TYPE_GENERIC &&
-                         findConstraint(compiler, rightType->info.generic.name) != CONSTRAINT_NUMERIC)) {
-                        error(compiler, "Generic operands must satisfy Numeric constraint.");
-                        return;
-                    }
-                    if (leftType->kind == TYPE_GENERIC || rightType->kind == TYPE_GENERIC) {
-                        if (typesEqual(leftType, rightType)) {
-                            node->valueType = leftType;
-                            node->data.operation.convertLeft = false;
-                            node->data.operation.convertRight = false;
-                        } else {
-                            error(compiler, "Type mismatch in arithmetic operation. Use explicit 'as' casts.");
-                            return;
-                        }
-                        break;
-                    }
-                    if (typesEqual(leftType, rightType) &&
-                        (leftType->kind == TYPE_I32 || leftType->kind == TYPE_I64 ||
-                         leftType->kind == TYPE_U32 || leftType->kind == TYPE_F64)) {
                         node->valueType = leftType;
                         node->data.operation.convertLeft = false;
                         node->data.operation.convertRight = false;
@@ -590,8 +580,6 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     if (operandType->kind != TYPE_I32 &&
                         operandType->kind != TYPE_I64 &&
                         operandType->kind != TYPE_U32 &&
-                        operandType->kind != TYPE_F64 &&
-                        operandType->kind != TYPE_GENERIC) {
                         operandType->kind != TYPE_F64 &&
                         operandType->kind != TYPE_GENERIC) {
                         error(compiler,
