@@ -33,9 +33,9 @@
 
 ### Generic Arithmetic and Operators
 - [ ] Design trait-based system for numeric operations
-- [ ] Implement operator overloading for generic types
+- [x] Implement operator overloading for generic types
 - [ ] Replace specialized implementations (e.g., `sum` for `[i32]`) with generic versions
-- [ ] Create comprehensive tests for generic arithmetic
+- [x] Create comprehensive tests for generic arithmetic
 
 ### Collection and Iterator Support
 - [ ] Build generic Map implementation
