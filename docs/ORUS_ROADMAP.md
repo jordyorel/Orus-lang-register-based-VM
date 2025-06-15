@@ -36,7 +36,7 @@ This document consolidates the development roadmaps for the Orus language, track
 | Task                              | Status           | Priority | Version Impact   |
 |-----------------------------------|------------------|----------|------------------|
 | Generic Forward Declarations      | Partially done   | High     | 0.5.0 → 0.6.0    |
-| Generic Constraints               | Not started      | High     | 0.6.0 → 0.7.0    |
+| Generic Constraints               | ✅ Done          | High     | 0.6.0 → 0.7.0    |
 | Improved Type Inference           | Not started      | High     | Minor feature    |
 | Generic Arithmetic & Operators    | ✅ Done          | Medium   | Minor feature    |
 | Collection and Iterator Support   | Not started      | Medium   | Minor feature    |

@@ -18,10 +18,21 @@
 - [x] Document the prepass collection process
 
 ### Generic Constraints
-- [ ] Design constraint syntax (e.g., `T: Numeric`, `T: Comparable`)
-- [ ] Implement compile-time checks for constrained operations
-- [ ] Expand the `type_constraints.orus` test with more use cases
-- [ ] Document constraint system in language guide
+- [x] Design constraint syntax (e.g., `T: Numeric`, `T: Comparable`)
+- [x] Implement compile-time checks for constrained operations
+- [x] Expand the `type_constraints.orus` test with more use cases
+- [x] Document constraint system in language guide
+
+Generic parameters may declare constraints after the name:
+
+```
+fn min<T: Comparable>(a: T, b: T) -> T { ... }
+fn add<T: Numeric>(a: T, b: T) -> T { ... }
+```
+
+`Numeric` enables arithmetic, bitwise and negation operators. `Comparable`
+allows comparison and equality operations. Numeric types implicitly satisfy
+`Comparable`.
 
 ### Improved Type Inference
 - [ ] Enhance inference for arguments in generic functions

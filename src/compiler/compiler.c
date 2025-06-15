@@ -121,6 +121,24 @@ static GenericConstraint findConstraint(Compiler* compiler, ObjString* name) {
     return CONSTRAINT_NONE;
 }
 
+// Ensure a generic type meets the required constraint
+static bool requireConstraint(Compiler* compiler, Type* type,
+                             GenericConstraint needed, Token* token) {
+    if (type->kind != TYPE_GENERIC) return true;
+    GenericConstraint actual = findConstraint(compiler, type->info.generic.name);
+    if (needed == CONSTRAINT_COMPARABLE && actual == CONSTRAINT_NUMERIC) return true;
+    if (actual != needed) {
+        const char* label = needed == CONSTRAINT_NUMERIC ? "Numeric" : "Comparable";
+        char buf[96];
+        snprintf(buf, sizeof(buf),
+                 "Generic parameter '%s' must satisfy %s",
+                 type->info.generic.name->chars, label);
+        emitTokenError(compiler, token, ERROR_GENERAL, buf);
+        return false;
+    }
+    return true;
+}
+
 static void beginScope(Compiler* compiler) { compiler->scopeDepth++; }
 
 static void endScope(Compiler* compiler) {
@@ -418,6 +436,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             TokenType operator= node->data.operation.operator.type;
             switch (operator) {
                 case TOKEN_PLUS: {
+                    if (!requireConstraint(compiler, leftType, CONSTRAINT_NUMERIC, &node->data.operation.operator) ||
+                        !requireConstraint(compiler, rightType, CONSTRAINT_NUMERIC, &node->data.operation.operator)) {
+                        return;
+                    }
                     if (leftType->kind == TYPE_STRING || rightType->kind == TYPE_STRING) {
                         node->valueType = getPrimitiveType(TYPE_STRING);
                         node->data.operation.convertLeft = leftType->kind != TYPE_STRING && leftType->kind != TYPE_NIL;
@@ -446,6 +468,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 case TOKEN_MINUS:
                 case TOKEN_STAR:
                 case TOKEN_SLASH: {
+                    if (!requireConstraint(compiler, leftType, CONSTRAINT_NUMERIC, &node->data.operation.operator) ||
+                        !requireConstraint(compiler, rightType, CONSTRAINT_NUMERIC, &node->data.operation.operator)) {
+                        return;
+                    }
                     if ((typesEqual(leftType, rightType) && leftType->kind == TYPE_GENERIC) ||
                         (typesEqual(leftType, rightType) &&
                          (leftType->kind == TYPE_I32 || leftType->kind == TYPE_I64 ||
@@ -467,6 +493,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
 
                 case TOKEN_MODULO: {
+                    if (!requireConstraint(compiler, leftType, CONSTRAINT_NUMERIC, &node->data.operation.operator) ||
+                        !requireConstraint(compiler, rightType, CONSTRAINT_NUMERIC, &node->data.operation.operator)) {
+                        return;
+                    }
                     if ((typesEqual(leftType, rightType) && leftType->kind == TYPE_GENERIC) ||
                         (typesEqual(leftType, rightType) &&
                          (leftType->kind == TYPE_I32 || leftType->kind == TYPE_I64 || leftType->kind == TYPE_U32))) {
@@ -491,6 +521,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 case TOKEN_BIT_XOR:
                 case TOKEN_SHIFT_LEFT:
                 case TOKEN_SHIFT_RIGHT: {
+                    if (!requireConstraint(compiler, leftType, CONSTRAINT_NUMERIC, &node->data.operation.operator) ||
+                        !requireConstraint(compiler, rightType, CONSTRAINT_NUMERIC, &node->data.operation.operator)) {
+                        return;
+                    }
                     if (!typesEqual(leftType, rightType) ||
                         !(leftType->kind == TYPE_I32 || leftType->kind == TYPE_I64 || leftType->kind == TYPE_U32)) {
                         error(compiler, "Bitwise operands must be the same integer type.");
@@ -545,6 +579,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 case TOKEN_GREATER_EQUAL:
                 case TOKEN_EQUAL_EQUAL:
                 case TOKEN_BANG_EQUAL: {
+                    if (!requireConstraint(compiler, leftType, CONSTRAINT_COMPARABLE, &node->data.operation.operator) ||
+                        !requireConstraint(compiler, rightType, CONSTRAINT_COMPARABLE, &node->data.operation.operator)) {
+                        return;
+                    }
                     // Comparison operators always return a boolean
                     node->valueType = getPrimitiveType(TYPE_BOOL);
                     if ((leftType->kind == TYPE_I64 && (rightType->kind == TYPE_I32 || rightType->kind == TYPE_U32)) ||
@@ -577,6 +615,9 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             TokenType operator= node->data.operation.operator.type;
             switch (operator) {
                 case TOKEN_MINUS:
+                    if (!requireConstraint(compiler, operandType, CONSTRAINT_NUMERIC, &node->data.operation.operator)) {
+                        return;
+                    }
                     if (operandType->kind != TYPE_I32 &&
                         operandType->kind != TYPE_I64 &&
                         operandType->kind != TYPE_U32 &&
@@ -597,6 +638,9 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     node->valueType = getPrimitiveType(TYPE_BOOL);
                     break;
                 case TOKEN_BIT_NOT:
+                    if (!requireConstraint(compiler, operandType, CONSTRAINT_NUMERIC, &node->data.operation.operator)) {
+                        return;
+                    }
                     if (operandType->kind != TYPE_I32 && operandType->kind != TYPE_I64 && operandType->kind != TYPE_U32) {
                         error(compiler, "Bitwise not operand must be an integer.");
                         return;
@@ -1262,8 +1306,14 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
             Type* prevReturn = compiler->currentReturnType;
             bool prevGenericFlag = compiler->currentFunctionHasGenerics;
+            ObjString** prevNames = compiler->genericNames;
+            GenericConstraint* prevCons = compiler->genericConstraints;
+            int prevCount = compiler->genericCount;
             compiler->currentReturnType = node->data.function.returnType;
             compiler->currentFunctionHasGenerics = node->data.function.genericCount > 0;
+            compiler->genericNames = node->data.function.genericParams;
+            compiler->genericConstraints = node->data.function.genericConstraints;
+            compiler->genericCount = node->data.function.genericCount;
 
             beginScope(compiler);
             // Type check parameters
@@ -1315,6 +1365,9 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
             compiler->currentReturnType = prevReturn;
             compiler->currentFunctionHasGenerics = prevGenericFlag;
+            compiler->genericNames = prevNames;
+            compiler->genericConstraints = prevCons;
+            compiler->genericCount = prevCount;
 
             // Function declarations don't have a value type
             node->valueType = NULL;
@@ -3766,6 +3819,9 @@ void initCompiler(Compiler* compiler, Chunk* chunk,
     compiler->currentColumn = 1;
     compiler->currentReturnType = NULL;
     compiler->currentFunctionHasGenerics = false;
+    compiler->genericNames = NULL;
+    compiler->genericConstraints = NULL;
+    compiler->genericCount = 0;
 
     // Count lines in sourceCode and record start pointers for each line
     if (sourceCode) {
@@ -3802,6 +3858,10 @@ static void freeCompiler(Compiler* compiler) {
     compiler->continueJumpCapacity = 0;
 
     freeSymbolTable(&compiler->symbols);
+
+    compiler->genericNames = NULL;
+    compiler->genericConstraints = NULL;
+    compiler->genericCount = 0;
 
     if (compiler->lineStarts) {
         free((void*)compiler->lineStarts);
