@@ -106,11 +106,6 @@ typedef enum {
     OP_GREATER_EQUAL_U64,
     OP_GREATER_EQUAL_F64,
 
-    OP_GREATER_GENERIC,
-    OP_LESS_GENERIC,
-    OP_GREATER_EQUAL_GENERIC,
-    OP_LESS_EQUAL_GENERIC,
-
     // Type conversion opcodes
     OP_I32_TO_F64,
     OP_U32_TO_F64,

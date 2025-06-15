@@ -3,7 +3,7 @@
 
 This document consolidates the development roadmaps for the Orus language, tracking progress and version increments across multiple development streams.
 
-**Current Version: 0.6.0**
+**Current Version: 0.5.4**
 
 ## Version History
 
@@ -13,7 +13,6 @@ This document consolidates the development roadmaps for the Orus language, track
 - **0.5.2**: Improved diagnostics for repeated module imports
 - **0.5.3**: Introduced `std/math` library with core math utilities
 - **0.5.4**: Added `const` declarations, embedded standard library and enhanced casting rules
-- **0.6.0**: Added generic constraints and basic arithmetic support
 
 ## Completed Major Features
 
@@ -36,8 +35,8 @@ This document consolidates the development roadmaps for the Orus language, track
 
 | Task                              | Status           | Priority | Version Impact   |
 |-----------------------------------|------------------|----------|------------------|
-| Generic Forward Declarations      | ✅ Complete       | High     | 0.5.0 → 0.6.0    |
-| Generic Constraints               | ✅ Complete       | High     | 0.6.0 → 0.7.0    |
+| Generic Forward Declarations      | Partially done   | High     | 0.5.0 → 0.6.0    |
+| Generic Constraints               | Not started      | High     | 0.6.0 → 0.7.0    |
 | Improved Type Inference           | Not started      | High     | Minor feature    |
 | Generic Arithmetic & Operators    | ✅ Done          | Medium   | Minor feature    |
 | Collection and Iterator Support   | Not started      | Medium   | Minor feature    |
