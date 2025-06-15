@@ -69,8 +69,6 @@ void initVM() {
     vm.stdPath = envPath && envPath[0] != '\0' ? envPath : NULL;
     const char* envDev = getenv("ORUS_DEV_MODE");
     vm.devMode = envDev && envDev[0] != '\0';
-    const char* envSuppress = getenv("ORUS_SUPPRESS_WARNINGS");
-    vm.suppressWarnings = envSuppress && envSuppress[0] != '\0';
     for (int i = 0; i < UINT8_COUNT; i++) {
         vm.loadedModules[i] = NULL;
     }

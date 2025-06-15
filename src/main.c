@@ -327,7 +327,6 @@ int main(int argc, const char* argv[]) {
     bool traceImportsFlag = false;
     bool devFlag = false;
     bool dumpStdlib = false;
-    bool suppressWarningsFlag = false;
     const char* cliStdPath = NULL;
     char defaultStdPath[PATH_MAX];
     const char* path = NULL;
@@ -351,8 +350,6 @@ int main(int argc, const char* argv[]) {
             dumpStdlib = true;
         } else if (strcmp(argv[i], "--dev") == 0) {
             devFlag = true;
-        } else if (strcmp(argv[i], "--suppress-warnings") == 0) {
-            suppressWarningsFlag = true;
         } else if (strcmp(argv[i], "--project") == 0) {
             if (i + 1 >= argc) {
                 fprintf(stderr, "Usage: orusc --project <dir>\n");
@@ -362,7 +359,7 @@ int main(int argc, const char* argv[]) {
         } else if (!path) {
             path = argv[i];
         } else {
-            fprintf(stderr, "Usage: orusc [--trace] [--trace-imports] [--std-path dir] [--dump-stdlib] [--dev] [--suppress-warnings] [--project dir] [path]\n");
+            fprintf(stderr, "Usage: orusc [--trace] [--trace-imports] [--std-path dir] [--dump-stdlib] [--dev] [--project dir] [path]\n");
             return 64;
         }
     }
@@ -386,7 +383,6 @@ int main(int argc, const char* argv[]) {
     if (devFlag) vm.devMode = true;
     if (traceFlag) vm.trace = true;
     if (traceImportsFlag) traceImports = true;
-    if (suppressWarningsFlag) vm.suppressWarnings = true;
 
     if (dumpStdlib) {
         dumpEmbeddedStdlib(vm.stdPath);
