@@ -1,3 +1,101 @@
-pub fn now() -> i64 {
-    return timestamp()
+struct DateTime {
+    year: i32,
+    month: i32,
+    day: i32,
+    hour: i32,
+    minute: i32,
+    second: i32,
 }
+
+fn is_leap(year: i32) -> bool {
+    if (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0) {
+        return true
+    }
+    return false
+}
+
+fn days_in_month(year: i32, month: i32) -> i32 {
+    let days: [i32; 12] = [31,28,31,30,31,30,31,31,30,31,30,31]
+    let d = days[month - 1]
+    if month == 2 and is_leap(year) {
+        return 29
+    }
+    return d
+}
+
+pub fn from_timestamp(ts: i64) -> DateTime {
+    let mut seconds = ts
+    let minute: i32 = ((seconds / 60) % 60) as i32
+    let hour: i32 = ((seconds / 3600) % 24) as i32
+    let mut days: i64 = seconds / 86400
+    let mut year: i32 = 1970
+    while true {
+        let mut year_days: i64 = 365
+        if is_leap(year) {
+            year_days = 366 as i64
+        }
+        if days >= year_days {
+            days = days - year_days
+            year = year + 1
+        } else {
+            break
+        }
+    }
+    let mut month: i32 = 1
+    while true {
+        let dim: i64 = days_in_month(year, month) as i64
+        if days >= dim {
+            days = days - dim
+            month = month + 1
+        } else {
+            break
+        }
+    }
+    let day: i32 = (days + 1) as i32
+    let second: i32 = (ts % 60) as i32
+    return DateTime{year: year, month: month, day: day,
+                   hour: hour, minute: minute, second: second}
+}
+
+pub fn to_timestamp(dt: DateTime) -> i64 {
+    let mut days: i64 = 0
+    let mut y: i32 = 1970
+    while y < dt.year {
+        let mut year_days: i64 = 365
+        if is_leap(y) {
+            year_days = 366 as i64
+        }
+        days = days + year_days
+        y = y + 1
+    }
+    let mut m: i32 = 1
+    while m < dt.month {
+        days = days + (days_in_month(dt.year, m) as i64)
+        m = m + 1
+    }
+    days = days + (dt.day - 1)
+    return days * 86400 + (dt.hour as i64) * 3600 + (dt.minute as i64) * 60 + dt.second as i64
+}
+
+fn pad2(n: i32) -> string {
+    if n < 10 {
+        return "0" + n
+    }
+    return "" + n
+}
+
+pub fn format(dt: DateTime) -> string {
+    return dt.year + "-" + pad2(dt.month) + "-" + pad2(dt.day) +
+           " " + pad2(dt.hour) + ":" + pad2(dt.minute) + ":" + pad2(dt.second)
+}
+
+pub fn now() -> DateTime {
+    return from_timestamp(timestamp())
+}
+
+impl DateTime {
+    fn to_string(self) -> string {
+        return format(self)
+    }
+}
+

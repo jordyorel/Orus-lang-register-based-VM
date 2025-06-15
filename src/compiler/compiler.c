@@ -2785,6 +2785,26 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 // This is a simple print without interpolation
                 generateCode(compiler, node->data.print.format);
                 if (compiler->hadError) return;
+
+                // Automatically call `to_string` for struct values if available
+                if (node->data.print.format->valueType &&
+                    node->data.print.format->valueType->kind == TYPE_STRUCT) {
+                    const char* structName =
+                        node->data.print.format->valueType->info.structure.name->chars;
+                    size_t len = strlen(structName);
+                    const char* suffix = "_to_string";
+                    char* temp = (char*)malloc(len + strlen(suffix) + 1);
+                    memcpy(temp, structName, len);
+                    memcpy(temp + len, suffix, strlen(suffix) + 1);
+                    Symbol* sym = findSymbol(&compiler->symbols, temp);
+                    if (sym) {
+                        writeOp(compiler, OP_CALL);
+                        writeOp(compiler, sym->index);
+                        writeOp(compiler, 1);
+                    }
+                    free(temp);
+                }
+
                 if (node->data.print.newline)
                     writeOp(compiler, OP_PRINT);
                 else

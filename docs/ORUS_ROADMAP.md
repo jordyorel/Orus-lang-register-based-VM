@@ -103,7 +103,7 @@ use std::math
 | `std/math`       | `clamp`, `sqrt`, `average`, constants like `PI` | 0.5.3            |
 | `std/random`     | LCG `rand`, `rand_int`, `choice`, `shuffle`     | 0.6.0            |
 | `std/functional` | `map`, `filter`, `reduce`                       | 0.6.0+ (depends on function support) |
-| `std/datetime`   | `now()`, `timestamp()`, formatting              | 0.6.0+ |
+| `std/datetime`   | `DateTime` struct, `from_timestamp`, `to_timestamp`, `format`, auto `to_string` | 0.6.0+ |
 | `std/os`         | `cwd()`, file I/O, environment info             | 0.6.0+           |
 | `std/strings`    | `lowercase`, `trim`, `split`, `replace`         | 0.6.0+           |
 
