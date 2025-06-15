@@ -593,6 +593,12 @@ static InterpretResult run() {
             case OP_LESS_EQUAL_F64:
                 compareOpF64(&vm, 'L', &result);
                 break;
+            case OP_LESS_EQUAL_GENERIC:
+                compareOpGeneric(&vm, 'L', &result);
+                break;
+            case OP_LESS_GENERIC:
+                compareOpGeneric(&vm, '<', &result);
+                break;
             case OP_GREATER_I32:
                 compareOpI32(&vm, '>', &result);
                 break;
@@ -608,6 +614,9 @@ static InterpretResult run() {
             case OP_GREATER_F64:
                 compareOpF64(&vm, '>', &result);
                 break;
+            case OP_GREATER_GENERIC:
+                compareOpGeneric(&vm, '>', &result);
+                break;
             case OP_GREATER_EQUAL_I32:
                 compareOpI32(&vm, 'G', &result);
                 break;
@@ -622,6 +631,27 @@ static InterpretResult run() {
                 break;
             case OP_GREATER_EQUAL_F64:
                 compareOpF64(&vm, 'G', &result);
+                break;
+            case OP_GREATER_EQUAL_GENERIC:
+                compareOpGeneric(&vm, 'G', &result);
+                break;
+            case OP_ADD_GENERIC:
+                binaryOpGeneric(&vm, '+', &result);
+                break;
+            case OP_SUBTRACT_GENERIC:
+                binaryOpGeneric(&vm, '-', &result);
+                break;
+            case OP_MULTIPLY_GENERIC:
+                binaryOpGeneric(&vm, '*', &result);
+                break;
+            case OP_DIVIDE_GENERIC:
+                binaryOpGeneric(&vm, '/', &result);
+                break;
+            case OP_MODULO_GENERIC:
+                moduloOpGeneric(&vm, &result);
+                break;
+            case OP_NEGATE_GENERIC:
+                negateGeneric(&vm, &result);
                 break;
             case OP_ADD_F64:
                 binaryOpF64(&vm, '+', &result);

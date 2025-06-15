@@ -49,6 +49,14 @@ typedef enum {
     OP_DIVIDE_F64,
     OP_NEGATE_F64,
 
+    // Generic numeric operations
+    OP_ADD_GENERIC,
+    OP_SUBTRACT_GENERIC,
+    OP_MULTIPLY_GENERIC,
+    OP_DIVIDE_GENERIC,
+    OP_NEGATE_GENERIC,
+    OP_MODULO_GENERIC,
+
     OP_MODULO_I32,
     OP_MODULO_I64,
     OP_MODULO_U32,
@@ -97,6 +105,11 @@ typedef enum {
     OP_GREATER_EQUAL_U32,
     OP_GREATER_EQUAL_U64,
     OP_GREATER_EQUAL_F64,
+
+    OP_GREATER_GENERIC,
+    OP_LESS_GENERIC,
+    OP_GREATER_EQUAL_GENERIC,
+    OP_LESS_EQUAL_GENERIC,
 
     // Type conversion opcodes
     OP_I32_TO_F64,

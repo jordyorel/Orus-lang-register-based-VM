@@ -1,6 +1,6 @@
 # Orus Language Guide
 
-Orus is an experimental interpreted language influenced by modern scripting languages and Rust-like syntax. This guide covers the features available in version 0.5.3 and serves both as a tutorial and reference. All examples come from the `tests/` directory.
+Orus is an experimental interpreted language influenced by modern scripting languages and Rust-like syntax. This guide covers the features available in version 0.6.0 and serves both as a tutorial and reference. All examples come from the `tests/` directory.
 
 ## Getting Started
 
@@ -313,7 +313,7 @@ example:
 let nested: Box<Box<i32> > = Box { value: Box { value: 1 } }
 ```
 
-Generic functions can be referenced before their definitions thanks to a prepass that records all function signatures. Constraint syntax is planned for a future version.
+Generic functions can be referenced before their definitions thanks to a prepass that records all function signatures. Generics may specify constraints such as `T: Numeric` or `T: Comparable` to enable arithmetic and comparison operations.
 
 ## Modules
 

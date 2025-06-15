@@ -39,6 +39,9 @@ typedef struct {
     int currentColumn;
     Type* currentReturnType;
     bool currentFunctionHasGenerics;
+    ObjString** genericNames;
+    GenericConstraint* genericConstraints;
+    int genericCount;
 } Compiler;
 
 void initCompiler(Compiler* compiler, Chunk* chunk,
