@@ -35,9 +35,9 @@ This document consolidates the development roadmaps for the Orus language, track
 
 | Task                              | Status           | Priority | Version Impact   |
 |-----------------------------------|------------------|----------|------------------|
-| Generic Forward Declarations      | Partially done   | High     | 0.5.0 → 0.6.0    |
+| Generic Forward Declarations      | ✅ Done          | High     | 0.5.0 → 0.6.0    |
 | Generic Constraints               | ✅ Done          | High     | 0.6.0 → 0.7.0    |
-| Improved Type Inference           | Not started      | High     | Minor feature    |
+| Improved Type Inference           | ✅ Done          | High     | Minor feature    |
 | Generic Arithmetic & Operators    | ✅ Done          | Medium   | Minor feature    |
 | Collection and Iterator Support   | Not started      | Medium   | Minor feature    |
 | Enhanced Error Reporting          | Not started      | Medium   | Minor feature    |
@@ -131,8 +131,8 @@ use std::math
 
 ## Development Priorities
 
-### Short-Term (0–3 months)
-- Finish generic forward declarations
+-### Short-Term (0–3 months)
+- Finalize improved type inference
 - Add remaining built-ins: `any`, `all`
 - Expand standard library with modules like `functional` and `random`.
 

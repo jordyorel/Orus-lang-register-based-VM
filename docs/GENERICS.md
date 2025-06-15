@@ -35,8 +35,8 @@ allows comparison and equality operations. Numeric types implicitly satisfy
 `Comparable`.
 
 ### Improved Type Inference
-- [ ] Enhance inference for arguments in generic functions
-- [ ] Add support for nested generics inference
+- [x] Enhance inference for arguments in generic functions
+- [x] Add support for nested generics inference
 - [ ] Optimize inference for complex expressions
 - [ ] Write test cases for edge cases in type inference
 
@@ -75,8 +75,8 @@ allows comparison and equality operations. Numeric types implicitly satisfy
 - [ ] Update docs when new features are implemented
 
 ## Implementation Notes
-* Current progress: regular function forward declarations are supported
-* Current limitations: generic function order restrictions, limited arithmetic support
+* Current progress: generic functions and structs support forward declarations through a prepass.
+* Current limitations: cross-module specialization is incomplete and arithmetic support is still evolving.
 * Reference the `tests/generics/` directory for existing test cases
 * Prioritize improving developer experience with better error messages
 * Consider performance implications of specialization vs. type erasure
