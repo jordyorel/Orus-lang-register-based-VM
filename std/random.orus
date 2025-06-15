@@ -14,6 +14,9 @@ pub fn set_seed(seed: u64) {
     SEED = seed
 }
 
+// Automatically seed the generator when the module is loaded
+set_seed(timestamp() as u64)
+
 // Return a float in the range [0.0, 1.0)
 pub fn random() -> f64 {
     // Divide by 2^64-1 to map to [0,1)
