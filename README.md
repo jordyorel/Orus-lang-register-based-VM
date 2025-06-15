@@ -26,7 +26,8 @@ include:
 - User input via `input(prompt)` for interactive programs.
 - Macro helpers for generic dynamic arrays.
 - Compile-time constants defined with the `const` keyword.
-- Standard library modules under `std/` such as `std/math` for math utilities.
+- Standard library modules under `std/` such as `std/math` for math utilities and `std/datetime` for working with dates and times.
+- `DateTime` values automatically display in `YYYY-MM-DD HH:MM:SS` format when printed.
 - Variables are immutable by default. Use `let mut` for reassignment.
   See [docs/MUTABILITY.md](docs/MUTABILITY.md) for a detailed explanation.
 - Explicit numeric casting with the `as` keyword; no implicit conversions.
