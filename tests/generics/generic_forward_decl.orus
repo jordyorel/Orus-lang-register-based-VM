@@ -1,0 +1,9 @@
+// Test generic function defined after its use
+fn main() {
+    print(identity<string>("hi"))
+    print(identity<i32>(42))
+}
+
+fn identity<T>(val: T) -> T {
+    return val
+}
