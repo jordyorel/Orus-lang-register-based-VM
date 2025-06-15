@@ -1,3 +1,28 @@
+// Generic arithmetic operations test
+fn add<T>(a: T, b: T) -> T {
+    return a + b
+}
+
+fn subtract<T>(a: T, b: T) -> T {
+    return a - b
+}
+
+fn multiply<T>(a: T, b: T) -> T {
+    return a * b
+}
+
+fn divide<T>(a: T, b: T) -> T {
+    return a / b
+}
+
+fn main() {
+    print("add i32: {}", add(1, 2))
+    print("add f64: {}", add(1.5, 2.5))
+    print("sub i32: {}", subtract(5, 3))
+    print("mul i32: {}", multiply(2, 4))
+    print("div f64: {}", divide(5.0, 2.0))
+}
+
 // Test generic constraints and arithmetic
 fn add<T: Numeric>(a: T, b: T) -> T {
     return a + b
