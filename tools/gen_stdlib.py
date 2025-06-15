@@ -41,7 +41,7 @@ with open(out_c, 'w') as c:
     c.write('    }\n    return NULL;\n}\n')
     c.write('\nstatic void ensure_dir(const char* path){\n')
     c.write('    char tmp[512];\n    strncpy(tmp,path,sizeof(tmp)-1);\n    tmp[sizeof(tmp)-1]=0;\n')
-    c.write('    for(char* p=tmp+1; *p; p++){ if(*p=="/"){ *p=0; mkdir(tmp,0755); *p="/"; } }\n')
+    c.write('    for(char* p=tmp+1; *p; p++){ if(*p==\'/\'){ *p=0; mkdir(tmp,0755); *p=\'/\'; } }\n')
     c.write('    mkdir(tmp,0755);\n}\n')
     c.write('\nvoid dumpEmbeddedStdlib(const char* dir){\n    char full[512];\n    for(int i=0;i<embeddedStdlibCount;i++){\n')
     c.write('        snprintf(full,sizeof(full),"%s/%s",dir,embeddedStdlib[i].name);\n')
