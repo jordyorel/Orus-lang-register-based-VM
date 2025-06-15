@@ -31,11 +31,11 @@
 
 ## Medium Priority Tasks
 
-### Generic Arithmetic and Operators
-- [ ] Design trait-based system for numeric operations
-- [ ] Implement operator overloading for generic types
-- [ ] Replace specialized implementations (e.g., `sum` for `[i32]`) with generic versions
-- [ ] Create comprehensive tests for generic arithmetic
+-### Generic Arithmetic and Operators
+- [x] Design trait-based system for numeric operations
+- [x] Implement operator overloading for generic types
+- [x] Replace specialized implementations (e.g., `sum` for `[i32]`) with generic versions
+- [x] Create comprehensive tests for generic arithmetic
 
 ### Collection and Iterator Support
 - [ ] Build generic Map implementation
