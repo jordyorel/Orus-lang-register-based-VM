@@ -154,6 +154,9 @@ if n > 0 {
 }
 ```
 
+An inline form `condition ? expr1 : expr2` evaluates to `expr1` when the
+condition is true, otherwise `expr2`.
+
 ### Loops
 
 ```orus
@@ -354,6 +357,14 @@ fn main() {
 ```
 
 Struct fields and methods cannot yet be declared `pub`.
+
+### Public structs
+
+Use `pub struct` to export a type from a module.
+
+```orus
+pub struct Point { x: i32, y: i32 }
+```
 
 ## Built-in Functions
 

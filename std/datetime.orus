@@ -1,24 +1,24 @@
 // Standard datetime utilities inspired by Python
 
-struct Date {
+pub struct Date {
     year: i32,
     month: i32,
     day: i32,
 }
 
-struct Time {
+pub struct Time {
     hour: i32,
     minute: i32,
     second: i32,
     microsecond: i32,
 }
 
-struct DateTime {
+pub struct DateTime {
     date: Date,
     time: Time,
 }
 
-struct TimeDelta {
+pub struct TimeDelta {
     seconds: i64,
 }
 
@@ -108,42 +108,15 @@ pub fn utcnow() -> DateTime {
 }
 
 fn pad2(n: i32) -> string {
-    if n < 10 {
-        return "0" + n
-    }
-    return "" + n
+    return n < 10 ? "0" + n : "" + n
 }
 
 fn pad4(n: i32) -> string {
-    if n < 10 {
-        return "000" + n
-    }
-    if n < 100 {
-        return "00" + n
-    }
-    if n < 1000 {
-        return "0" + n
-    }
-    return "" + n
+    return n < 10 ? "000" + n : n < 100 ? "00" + n : n < 1000 ? "0" + n : "" + n
 }
 
 fn pad6(n: i32) -> string {
-    if n < 10 {
-        return "00000" + n
-    }
-    if n < 100 {
-        return "0000" + n
-    }
-    if n < 1000 {
-        return "000" + n
-    }
-    if n < 10000 {
-        return "00" + n
-    }
-    if n < 100000 {
-        return "0" + n
-    }
-    return "" + n
+    return n < 10 ? "00000" + n : n < 100 ? "0000" + n : n < 1000 ? "000" + n : n < 10000 ? "00" + n : n < 100000 ? "0" + n : "" + n
 }
 
 // Basic strftime style formatting supporting %Y %m %d %H %M %S
@@ -154,35 +127,16 @@ pub fn format(dt: DateTime, fmt: string) -> string {
         let ch = substring(fmt, i, 1)
         if ch == "%" {
             let code = substring(fmt, i + 1, 1)
-            if code == "Y" {
-                out = out + pad4(dt.date.year)
-            } else {
-                if code == "m" {
-                    out = out + pad2(dt.date.month)
-                } else {
-                    if code == "d" {
-                        out = out + pad2(dt.date.day)
-                    } else {
-                        if code == "H" {
-                            out = out + pad2(dt.time.hour)
-                        } else {
-                            if code == "M" {
-                                out = out + pad2(dt.time.minute)
-                            } else {
-                                if code == "S" {
-                                    out = out + pad2(dt.time.second)
-                                } else {
-                                    if code == "f" {
-                                        out = out + pad6(dt.time.microsecond)
-                                    } else {
-                                        out = out + code
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            out = out + (
+                code == "Y" ? pad4(dt.date.year)
+                : code == "m" ? pad2(dt.date.month)
+                : code == "d" ? pad2(dt.date.day)
+                : code == "H" ? pad2(dt.time.hour)
+                : code == "M" ? pad2(dt.time.minute)
+                : code == "S" ? pad2(dt.time.second)
+                : code == "f" ? pad6(dt.time.microsecond)
+                : code
+            )
             i = i + 2
         } else {
             out = out + ch
@@ -212,43 +166,23 @@ pub fn parse(text: string, fmt: string) -> DateTime {
                 year = int(part)
                 i_txt = i_txt + 4
             } else {
+                let len = code == "f" ? 6 : 2
+                let part = substring(text, i_txt, len)
+                let val = int(part)
                 if code == "m" {
-                    let part = substring(text, i_txt, 2)
-                    month = int(part)
-                    i_txt = i_txt + 2
-                } else {
-                    if code == "d" {
-                        let part = substring(text, i_txt, 2)
-                        day = int(part)
-                        i_txt = i_txt + 2
-                    } else {
-                        if code == "H" {
-                            let part = substring(text, i_txt, 2)
-                            hour = int(part)
-                            i_txt = i_txt + 2
-                        } else {
-                            if code == "M" {
-                                let part = substring(text, i_txt, 2)
-                                minute = int(part)
-                                i_txt = i_txt + 2
-                            } else {
-                                if code == "S" {
-                                    let part = substring(text, i_txt, 2)
-                                    second = int(part)
-                                    i_txt = i_txt + 2
-                                } else {
-                                    if code == "f" {
-                                        let part = substring(text, i_txt, 6)
-                                        micro = int(part)
-                                        i_txt = i_txt + 6
-                                    } else {
-                                        i_txt = i_txt + 1
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    month = val
+                } elif code == "d" {
+                    day = val
+                } elif code == "H" {
+                    hour = val
+                } elif code == "M" {
+                    minute = val
+                } elif code == "S" {
+                    second = val
+                } elif code == "f" {
+                    micro = val
                 }
+                i_txt = i_txt + len
             }
             i_fmt = i_fmt + 2
         } else {
@@ -272,10 +206,7 @@ pub fn time(dt: DateTime) -> Time {
 
 pub fn to_string(dt: DateTime) -> string {
     let base = format(dt, "%Y-%m-%d %H:%M:%S")
-    if dt.time.microsecond != 0 {
-        return base + "." + pad6(dt.time.microsecond)
-    }
-    return base
+    return dt.time.microsecond != 0 ? base + "." + pad6(dt.time.microsecond) : base
 }
 
 pub fn DateTime_to_string(dt: DateTime) -> string {

@@ -9,6 +9,7 @@ include:
 - Arrays with fixed lengths (including multidimensional arrays) and
   dynamic arrays using `push`, `pop`, `len`, `sum`, `min` and `max`.
 - User defined `struct` types and `impl` blocks for instance or static methods.
+- Public structs using `pub struct` to expose types from modules.
 - Generic functions and structs with type parameters.
 - Modules and `use` statements for splitting code across files.
 - Control flow with `if`/`elif`/`else`, `for` ranges and `while` loops as well
@@ -20,6 +21,7 @@ include:
 - Functions with parameters, recursion and optional return types.
 - Function calls can reference functions defined later in the file.
 - Arithmetic, comparison and logical (`and`/`or`/`not`) operators.
+- Inline if expressions with the `?:` operator.
 - String concatenation with `+` and a `print` function supporting simple
   interpolation using `{}` placeholders. The `print` function automatically
   appends a newline after the formatted output.
