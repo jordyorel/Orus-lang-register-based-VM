@@ -1,9 +1,9 @@
 use std::random
 
 fn main() {
-    print(random.rand_int(1, 10))
-    print(random.rand_int(1, 10))
-    print(random.rand_int(1, 10))
+    print(random.randint(1, 10))
+    print(random.randint(1, 10))
+    print(random.randint(1, 10))
     let colors = ["red", "green", "blue"]
     print(random.choice(colors))
     let nums = [1, 2, 3, 4]
