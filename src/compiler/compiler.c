@@ -110,6 +110,16 @@ static void deduceGenerics(Type* expected, Type* actual,
     }
 }
 
+static GenericConstraint findConstraint(Compiler* compiler, ObjString* name) {
+    for (int i = 0; i < compiler->genericCount; i++) {
+        if (compiler->genericNames[i] &&
+            strcmp(compiler->genericNames[i]->chars, name->chars) == 0) {
+            return compiler->genericConstraints[i];
+        }
+    }
+    return CONSTRAINT_NONE;
+}
+
 static void beginScope(Compiler* compiler) { compiler->scopeDepth++; }
 
 static void endScope(Compiler* compiler) {
@@ -407,6 +417,23 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             TokenType operator= node->data.operation.operator.type;
             switch (operator) {
                 case TOKEN_PLUS: {
+                    if ((leftType->kind == TYPE_GENERIC &&
+                         findConstraint(compiler, leftType->info.generic.name) != CONSTRAINT_NUMERIC) ||
+                        (rightType->kind == TYPE_GENERIC &&
+                         findConstraint(compiler, rightType->info.generic.name) != CONSTRAINT_NUMERIC)) {
+                        error(compiler, "Generic operands must satisfy Numeric constraint.");
+                        return;
+                    }
+                    if (leftType->kind == TYPE_GENERIC || rightType->kind == TYPE_GENERIC) {
+                        if (typesEqual(leftType, rightType)) {
+                            node->valueType = leftType;
+                            node->data.operation.convertLeft = false;
+                            node->data.operation.convertRight = false;
+                        } else {
+                            error(compiler, "Type mismatch in addition operation. Use 'as' for explicit casts.");
+                        }
+                        break;
+                    }
                     if (leftType->kind == TYPE_STRING || rightType->kind == TYPE_STRING) {
                         node->valueType = getPrimitiveType(TYPE_STRING);
                         node->data.operation.convertLeft = leftType->kind != TYPE_STRING && leftType->kind != TYPE_NIL;
@@ -434,6 +461,24 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 case TOKEN_MINUS:
                 case TOKEN_STAR:
                 case TOKEN_SLASH: {
+                    if ((leftType->kind == TYPE_GENERIC &&
+                         findConstraint(compiler, leftType->info.generic.name) != CONSTRAINT_NUMERIC) ||
+                        (rightType->kind == TYPE_GENERIC &&
+                         findConstraint(compiler, rightType->info.generic.name) != CONSTRAINT_NUMERIC)) {
+                        error(compiler, "Generic operands must satisfy Numeric constraint.");
+                        return;
+                    }
+                    if (leftType->kind == TYPE_GENERIC || rightType->kind == TYPE_GENERIC) {
+                        if (typesEqual(leftType, rightType)) {
+                            node->valueType = leftType;
+                            node->data.operation.convertLeft = false;
+                            node->data.operation.convertRight = false;
+                        } else {
+                            error(compiler, "Type mismatch in arithmetic operation. Use explicit 'as' casts.");
+                            return;
+                        }
+                        break;
+                    }
                     if (typesEqual(leftType, rightType) &&
                         (leftType->kind == TYPE_I32 || leftType->kind == TYPE_I64 ||
                          leftType->kind == TYPE_U32 || leftType->kind == TYPE_F64)) {
@@ -454,6 +499,24 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
 
                 case TOKEN_MODULO: {
+                    if ((leftType->kind == TYPE_GENERIC &&
+                         findConstraint(compiler, leftType->info.generic.name) != CONSTRAINT_NUMERIC) ||
+                        (rightType->kind == TYPE_GENERIC &&
+                         findConstraint(compiler, rightType->info.generic.name) != CONSTRAINT_NUMERIC)) {
+                        error(compiler, "Generic operands must satisfy Numeric constraint.");
+                        return;
+                    }
+                    if (leftType->kind == TYPE_GENERIC || rightType->kind == TYPE_GENERIC) {
+                        if (typesEqual(leftType, rightType)) {
+                            node->valueType = leftType;
+                            node->data.operation.convertLeft = false;
+                            node->data.operation.convertRight = false;
+                        } else {
+                            error(compiler, "Modulo operands must both be i32, i64 or u32.");
+                            return;
+                        }
+                        break;
+                    }
                     if (typesEqual(leftType, rightType) &&
                         (leftType->kind == TYPE_I32 || leftType->kind == TYPE_I64 || leftType->kind == TYPE_U32)) {
                         node->valueType = leftType;
@@ -531,6 +594,13 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 case TOKEN_GREATER_EQUAL:
                 case TOKEN_EQUAL_EQUAL:
                 case TOKEN_BANG_EQUAL: {
+                    if ((leftType->kind == TYPE_GENERIC &&
+                         findConstraint(compiler, leftType->info.generic.name) == CONSTRAINT_NONE) ||
+                        (rightType->kind == TYPE_GENERIC &&
+                         findConstraint(compiler, rightType->info.generic.name) == CONSTRAINT_NONE)) {
+                        error(compiler, "Generic operands must satisfy Comparable constraint.");
+                        return;
+                    }
                     // Comparison operators always return a boolean
                     node->valueType = getPrimitiveType(TYPE_BOOL);
                     if ((leftType->kind == TYPE_I64 && (rightType->kind == TYPE_I32 || rightType->kind == TYPE_U32)) ||
@@ -563,10 +633,16 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             TokenType operator= node->data.operation.operator.type;
             switch (operator) {
                 case TOKEN_MINUS:
+                    if (operandType->kind == TYPE_GENERIC &&
+                        findConstraint(compiler, operandType->info.generic.name) != CONSTRAINT_NUMERIC) {
+                        error(compiler, "Generic operand must satisfy Numeric constraint.");
+                        return;
+                    }
                     if (operandType->kind != TYPE_I32 &&
                         operandType->kind != TYPE_I64 &&
                         operandType->kind != TYPE_U32 &&
-                        operandType->kind != TYPE_F64) {
+                        operandType->kind != TYPE_F64 &&
+                        operandType->kind != TYPE_GENERIC) {
                         error(compiler,
                               "Unary minus operand must be a number.");
                         return;
@@ -1247,8 +1323,14 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
             Type* prevReturn = compiler->currentReturnType;
             bool prevGenericFlag = compiler->currentFunctionHasGenerics;
+            ObjString** prevNames = compiler->genericNames;
+            GenericConstraint* prevConstraints = compiler->genericConstraints;
+            int prevCount = compiler->genericCount;
             compiler->currentReturnType = node->data.function.returnType;
             compiler->currentFunctionHasGenerics = node->data.function.genericCount > 0;
+            compiler->genericNames = node->data.function.genericParams;
+            compiler->genericConstraints = node->data.function.genericConstraints;
+            compiler->genericCount = node->data.function.genericCount;
 
             beginScope(compiler);
             // Type check parameters
@@ -1259,6 +1341,9 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     endScope(compiler);
                     compiler->currentReturnType = prevReturn;
                     compiler->currentFunctionHasGenerics = prevGenericFlag;
+                    compiler->genericNames = prevNames;
+                    compiler->genericConstraints = prevConstraints;
+                    compiler->genericCount = prevCount;
                     return;
                 }
                 param = param->next;
@@ -1270,6 +1355,9 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 endScope(compiler);
                 compiler->currentReturnType = prevReturn;
                 compiler->currentFunctionHasGenerics = prevGenericFlag;
+                compiler->genericNames = prevNames;
+                compiler->genericConstraints = prevConstraints;
+                compiler->genericCount = prevCount;
                 return;
             }
             endScope(compiler);
@@ -1300,6 +1388,9 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
 
             compiler->currentReturnType = prevReturn;
             compiler->currentFunctionHasGenerics = prevGenericFlag;
+            compiler->genericNames = prevNames;
+            compiler->genericConstraints = prevConstraints;
+            compiler->genericCount = prevCount;
 
             // Function declarations don't have a value type
             node->valueType = NULL;
@@ -2265,6 +2356,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_F64:
                             writeOp(compiler, OP_ADD_F64);
                             break;
+                        case TYPE_GENERIC:
+                            writeOp(compiler, OP_ADD_GENERIC);
+                            break;
                         default:
                             error(compiler,
                                   "Addition not supported for this type.");
@@ -2288,6 +2382,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             break;
                         case TYPE_F64:
                             writeOp(compiler, OP_SUBTRACT_F64);
+                            break;
+                        case TYPE_GENERIC:
+                            writeOp(compiler, OP_SUBTRACT_GENERIC);
                             break;
                         default:
                             error(compiler,
@@ -2313,6 +2410,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_F64:
                             writeOp(compiler, OP_MULTIPLY_F64);
                             break;
+                        case TYPE_GENERIC:
+                            writeOp(compiler, OP_MULTIPLY_GENERIC);
+                            break;
                         default:
                             error(
                                 compiler,
@@ -2337,6 +2437,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                         case TYPE_F64:
                             writeOp(compiler, OP_DIVIDE_F64);
                             break;
+                        case TYPE_GENERIC:
+                            writeOp(compiler, OP_DIVIDE_GENERIC);
+                            break;
                         default:
                             error(compiler,
                                   "Division not supported for this type.");
@@ -2356,6 +2459,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             break;
                         case TYPE_U64:
                             writeOp(compiler, OP_MODULO_U64);
+                            break;
+                        case TYPE_GENERIC:
+                            writeOp(compiler, OP_MODULO_GENERIC);
                             break;
                         default:
                             error(compiler,
@@ -2438,8 +2544,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             writeOp(compiler, OP_LESS_F64);
                             break;
                         case TYPE_GENERIC:
-                            // Fallback to numeric comparison with conversion
-                            writeOp(compiler, OP_LESS_F64);
+                            writeOp(compiler, OP_LESS_GENERIC);
                             break;
                         default:
                             error(compiler, "Less than not supported for this type.");
@@ -2465,7 +2570,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             writeOp(compiler, OP_LESS_EQUAL_F64);
                             break;
                         case TYPE_GENERIC:
-                            writeOp(compiler, OP_LESS_EQUAL_F64);
+                            writeOp(compiler, OP_LESS_EQUAL_GENERIC);
                             break;
                         default:
                             error(compiler, "Less than or equal not supported for this type.");
@@ -2491,7 +2596,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             writeOp(compiler, OP_GREATER_F64);
                             break;
                         case TYPE_GENERIC:
-                            writeOp(compiler, OP_GREATER_F64);
+                            writeOp(compiler, OP_GREATER_GENERIC);
                             break;
                         default:
                             error(compiler, "Greater than not supported for this type.");
@@ -2517,7 +2622,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             writeOp(compiler, OP_GREATER_EQUAL_F64);
                             break;
                         case TYPE_GENERIC:
-                            writeOp(compiler, OP_GREATER_EQUAL_F64);
+                            writeOp(compiler, OP_GREATER_EQUAL_GENERIC);
                             break;
                         default:
                             error(compiler, "Greater than or equal not supported for this type.");
@@ -2573,6 +2678,9 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                             break;
                         case TYPE_F64:
                             writeOp(compiler, OP_NEGATE_F64);
+                            break;
+                        case TYPE_GENERIC:
+                            writeOp(compiler, OP_NEGATE_GENERIC);
                             break;
                         default:
                             error(compiler,
@@ -3733,6 +3841,9 @@ void initCompiler(Compiler* compiler, Chunk* chunk,
     compiler->currentColumn = 1;
     compiler->currentReturnType = NULL;
     compiler->currentFunctionHasGenerics = false;
+    compiler->genericNames = NULL;
+    compiler->genericConstraints = NULL;
+    compiler->genericCount = 0;
 
     // Count lines in sourceCode and record start pointers for each line
     if (sourceCode) {
@@ -3769,6 +3880,10 @@ static void freeCompiler(Compiler* compiler) {
     compiler->continueJumpCapacity = 0;
 
     freeSymbolTable(&compiler->symbols);
+
+    compiler->genericNames = NULL;
+    compiler->genericConstraints = NULL;
+    compiler->genericCount = 0;
 
     if (compiler->lineStarts) {
         free((void*)compiler->lineStarts);

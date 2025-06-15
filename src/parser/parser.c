@@ -899,6 +899,7 @@ static void functionDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
 
     // Generic parameters
     ObjString** generics = NULL;
+    GenericConstraint* constraints = NULL;
     int genericCount = 0;
     int prevGenericCount = parser->genericCount;
     if (match(parser, TOKEN_LESS)) {
@@ -906,13 +907,29 @@ static void functionDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
             consume(parser, TOKEN_IDENTIFIER, "Expect generic parameter name.");
             Token gnameTok = parser->previous;
             ObjString* gname = allocateString(gnameTok.start, gnameTok.length);
+            GenericConstraint gc = CONSTRAINT_NONE;
+            if (match(parser, TOKEN_COLON)) {
+                consume(parser, TOKEN_IDENTIFIER, "Expect constraint name after ':'");
+                Token cname = parser->previous;
+                if (cname.length == 7 && strncmp(cname.start, "Numeric", 7) == 0) {
+                    gc = CONSTRAINT_NUMERIC;
+                } else if (cname.length == 10 && strncmp(cname.start, "Comparable", 10) == 0) {
+                    gc = CONSTRAINT_COMPARABLE;
+                } else {
+                    errorAt(parser, &cname, "Unknown generic constraint");
+                }
+            }
             if (parser->genericCount >= parser->genericCapacity) {
                 parser->genericCapacity = parser->genericCapacity < 8 ? 8 : parser->genericCapacity * 2;
                 parser->genericParams = realloc(parser->genericParams, sizeof(ObjString*) * parser->genericCapacity);
+                parser->genericConstraints = realloc(parser->genericConstraints, sizeof(GenericConstraint) * parser->genericCapacity);
             }
-            parser->genericParams[parser->genericCount++] = gname;
+            parser->genericParams[parser->genericCount] = gname;
+            parser->genericConstraints[parser->genericCount++] = gc;
             generics = realloc(generics, sizeof(ObjString*) * (genericCount + 1));
-            generics[genericCount++] = gname;
+            constraints = realloc(constraints, sizeof(GenericConstraint) * (genericCount + 1));
+            generics[genericCount] = gname;
+            constraints[genericCount++] = gc;
         } while (match(parser, TOKEN_COMMA));
         consume(parser, TOKEN_GREATER, "Expect '>' after generic parameters.");
     }
@@ -1000,7 +1017,8 @@ static void functionDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
     parser->genericCount = prevGenericCount;
 
     ASTNode* fnNode = createFunctionNode(name, parameters, returnType, body,
-                                         generics, genericCount, isPublic);
+                                         generics, constraints, genericCount,
+                                         isPublic);
     fnNode->line = name.line;
     fnNode->data.function.isMethod = hasSelf;
     fnNode->data.function.implType = parser->currentImplType;
@@ -1105,11 +1123,25 @@ static void structDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
             consume(parser, TOKEN_IDENTIFIER, "Expect generic parameter name.");
             Token gnameTok = parser->previous;
             ObjString* gname = allocateString(gnameTok.start, gnameTok.length);
+            GenericConstraint gc = CONSTRAINT_NONE;
+            if (match(parser, TOKEN_COLON)) {
+                consume(parser, TOKEN_IDENTIFIER, "Expect constraint name after ':'");
+                Token cname = parser->previous;
+                if (cname.length == 7 && strncmp(cname.start, "Numeric", 7) == 0) {
+                    gc = CONSTRAINT_NUMERIC;
+                } else if (cname.length == 10 && strncmp(cname.start, "Comparable", 10) == 0) {
+                    gc = CONSTRAINT_COMPARABLE;
+                } else {
+                    errorAt(parser, &cname, "Unknown generic constraint");
+                }
+            }
             if (parser->genericCount >= parser->genericCapacity) {
                 parser->genericCapacity = parser->genericCapacity < 8 ? 8 : parser->genericCapacity * 2;
                 parser->genericParams = realloc(parser->genericParams, sizeof(ObjString*) * parser->genericCapacity);
+                parser->genericConstraints = realloc(parser->genericConstraints, sizeof(GenericConstraint) * parser->genericCapacity);
             }
-            parser->genericParams[parser->genericCount++] = gname;
+            parser->genericParams[parser->genericCount] = gname;
+            parser->genericConstraints[parser->genericCount++] = gc;
             generics = realloc(generics, sizeof(ObjString*) * (genericCount + 1));
             generics[genericCount++] = gname;
         } while (match(parser, TOKEN_COMMA));
@@ -1180,14 +1212,30 @@ static void implBlock(Parser* parser, ASTNode** ast) {
             consume(parser, TOKEN_IDENTIFIER, "Expect generic parameter name.");
             Token gnameTok = parser->previous;
             ObjString* gname = allocateString(gnameTok.start, gnameTok.length);
+            GenericConstraint gc = CONSTRAINT_NONE;
+            if (match(parser, TOKEN_COLON)) {
+                consume(parser, TOKEN_IDENTIFIER, "Expect constraint name after ':'");
+                Token cname = parser->previous;
+                if (cname.length == 7 && strncmp(cname.start, "Numeric", 7) == 0) {
+                    gc = CONSTRAINT_NUMERIC;
+                } else if (cname.length == 10 && strncmp(cname.start, "Comparable", 10) == 0) {
+                    gc = CONSTRAINT_COMPARABLE;
+                } else {
+                    errorAt(parser, &cname, "Unknown generic constraint");
+                }
+            }
             if (parser->genericCount >= parser->genericCapacity) {
                 parser->genericCapacity =
                     parser->genericCapacity < 8 ? 8 : parser->genericCapacity * 2;
                 parser->genericParams =
                     realloc(parser->genericParams,
                             sizeof(ObjString*) * parser->genericCapacity);
+                parser->genericConstraints =
+                    realloc(parser->genericConstraints,
+                            sizeof(GenericConstraint) * parser->genericCapacity);
             }
-            parser->genericParams[parser->genericCount++] = gname;
+            parser->genericParams[parser->genericCount] = gname;
+            parser->genericConstraints[parser->genericCount++] = gc;
         } while (match(parser, TOKEN_COMMA));
         consume(parser, TOKEN_GREATER, "Expect '>' after generic parameters.");
     }
@@ -1594,6 +1642,7 @@ void initParser(Parser* parser, Scanner* scanner, const char* filePath) {
     parser->functionDepth = 0;
     parser->currentImplType = NULL;
     parser->genericParams = NULL;
+    parser->genericConstraints = NULL;
     parser->genericCount = 0;
     parser->genericCapacity = 0;
     parser->filePath = filePath;
