@@ -256,7 +256,7 @@ fn greet(name: string) {    // no return value
 }
 ```
 
-Functions may be declared after their call site. Generic functions must currently appear before use (forward declarations for generics are not yet implemented).
+Functions may be declared after their call site. Generic functions can also be referenced before their definitions thanks to a prepass that records all generic signatures.
 
 ## Pattern Matching
 
