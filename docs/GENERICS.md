@@ -18,8 +18,8 @@
 - [x] Document the prepass collection process
 
 ### Generic Constraints
-- [ ] Design constraint syntax (e.g., `T: Numeric`, `T: Comparable`)
-- [ ] Implement compile-time checks for constrained operations
+- [x] Design constraint syntax (e.g., `T: Numeric`, `T: Comparable`)
+- [x] Implement compile-time checks for constrained operations
 - [ ] Expand the `type_constraints.orus` test with more use cases
 - [ ] Document constraint system in language guide
 

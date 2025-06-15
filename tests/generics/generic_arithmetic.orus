@@ -23,3 +23,17 @@ fn main() {
     print("div f64: {}", divide(5.0, 2.0))
 }
 
+// Test generic constraints and arithmetic
+fn add<T: Numeric>(a: T, b: T) -> T {
+    return a + b
+}
+
+fn greater<T: Comparable>(a: T, b: T) -> bool {
+    return a > b
+}
+
+fn main() {
+    print(add(2, 3))
+    print(add(1.5, 2.5))
+    print(greater(5, 3))
+}

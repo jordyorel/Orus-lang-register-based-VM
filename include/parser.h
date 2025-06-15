@@ -32,6 +32,7 @@ typedef struct {
     int functionDepth; // Track nested function declarations
     Type* currentImplType; // Track struct type for methods
     ObjString** genericParams;
+    GenericConstraint* genericConstraints;
     int genericCount;
     int genericCapacity;
     const char* filePath;

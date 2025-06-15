@@ -2,10 +2,8 @@
 // Tests boundary conditions and edge cases for generic types
 
 // Generic minimum function with numeric constraint
-// Note: In this test file we're assuming the language supports some kind of type constraints
-// If it doesn't, this would need to be adjusted accordingly
-fn min<T>(a: T, b: T) -> T {
-    if (a < b) {  // This assumes the type T supports comparison operations
+fn min<T: Comparable>(a: T, b: T) -> T {
+    if (a < b) {
         return a
     } else {
         return b
@@ -13,7 +11,7 @@ fn min<T>(a: T, b: T) -> T {
 }
 
 // Max function with similar constraints
-fn max<T>(a: T, b: T) -> T {
+fn max<T: Comparable>(a: T, b: T) -> T {
     if (a > b) {
         return a
     } else {
@@ -22,7 +20,7 @@ fn max<T>(a: T, b: T) -> T {
 }
 
 // Generic equality test
-fn equals<T>(a: T, b: T) -> bool {
+fn equals<T: Comparable>(a: T, b: T) -> bool {
     return a == b
 }
 

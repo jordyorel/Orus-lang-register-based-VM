@@ -144,6 +144,7 @@ typedef struct {
     Type* implType;            // Struct type if method
     ObjString* mangledName;    // GC-managed mangled name
     ObjString** genericParams; // Generic parameter names
+    GenericConstraint* genericConstraints; // Constraints for generics
     int genericCount;
     bool isPublic;             // Exported from module
 } FunctionData;
@@ -239,6 +240,7 @@ ASTNode* createWhileNode(ASTNode* condition, ASTNode* body);
 ASTNode* createForNode(Token iteratorName, ASTNode* startExpr, ASTNode* endExpr, ASTNode* stepExpr, ASTNode* body);
 ASTNode* createFunctionNode(Token name, ASTNode* parameters, Type* returnType,
                             ASTNode* body, ObjString** generics,
+                            GenericConstraint* constraints,
                             int genericCount, bool isPublic);
 ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount, Type* staticType,
                         Type** genericArgs, int genericArgCount);

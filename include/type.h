@@ -70,4 +70,10 @@ Type* instantiateStructType(Type* base, Type** args, int argCount);
 
 extern Type* primitiveTypes[TYPE_COUNT];
 
+typedef enum {
+    CONSTRAINT_NONE,
+    CONSTRAINT_NUMERIC,
+    CONSTRAINT_COMPARABLE
+} GenericConstraint;
+
 #endif
