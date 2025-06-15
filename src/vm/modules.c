@@ -59,9 +59,6 @@ char* load_module_with_fallback(const char* path, char** disk_path, long* mtime,
     const char* embedded = getEmbeddedModule(path);
     if (embedded) {
         if (from_embedded) *from_embedded = true;
-        if (!vm.suppressWarnings) {
-            fprintf(stderr, "[warning] Falling back to embedded module %s\n", path);
-        }
         return strdup(embedded);
     }
     return NULL;
