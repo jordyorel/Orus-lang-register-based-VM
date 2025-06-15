@@ -132,7 +132,7 @@ use std::math
 ## Development Priorities
 
 ### Short-Term (0–3 months)
-- Complete generic forward declarations
+- Finish generic forward declarations
 - Add remaining built-ins: `any`, `all`
 - Expand standard library with modules like `functional` and `random`.
 

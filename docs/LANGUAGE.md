@@ -313,7 +313,7 @@ example:
 let nested: Box<Box<i32> > = Box { value: Box { value: 1 } }
 ```
 
-Forward declarations for generic functions are not yet supported, so generic functions must appear before they are used. Constraint syntax is planned for a future version.
+Generic functions can be referenced before their definitions thanks to a prepass that records all function signatures. Constraint syntax is planned for a future version.
 
 ## Modules
 

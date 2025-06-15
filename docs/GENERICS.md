@@ -5,17 +5,17 @@
 - [x] Basic generic functionality implemented
 - [x] Generic types for collections via C-side macros (`DEFINE_ARRAY_TYPE`)
 - [x] Regular function forward declarations supported
-- [ ] Generic function forward declarations (in progress)
+- [x] Generic function forward declarations supported
 - [ ] Full generics implementation (in progress)
 
 ## High Priority Tasks
 
 ### Generic Forward Declarations & Prepass Collection
 - [x] Regular (non-generic) forward declarations are already supported
-- [ ] Implement prepass mechanism to collect generic function signatures
-- [ ] Remove generic function definition order restrictions
-- [ ] Add tests for generic forward declaration functionality
-- [ ] Document the prepass collection process
+- [x] Implement prepass mechanism to collect generic function signatures
+- [x] Remove generic function definition order restrictions
+- [x] Add tests for generic forward declaration functionality
+- [x] Document the prepass collection process
 
 ### Generic Constraints
 - [ ] Design constraint syntax (e.g., `T: Numeric`, `T: Comparable`)
