@@ -1,40 +1,60 @@
 use std::datetime
 
-static mut STATE: i64 = 0
+// Linear Congruential Generator state
+static mut SEED: u64 = 123456789u
 
-fn next_i64() -> i64 {
-    if STATE == 0 as i64 {
-        STATE = datetime.timestamp(datetime.now()) as i64
+fn rand_u64() -> u64 {
+    // Update the global seed using LCG parameters
+    SEED = ((SEED as i64 * 6364136223846793005 + 1) as u64)
+    return SEED
+}
+
+// Set the seed for reproducible sequences
+pub fn set_seed(seed: u64) {
+    SEED = seed
+}
+
+// Return a float in the range [0.0, 1.0)
+pub fn random() -> f64 {
+    // Divide by 2^64-1 to map to [0,1)
+    return (rand_u64() as f64) / 18446744073709551615.0
+}
+
+// Return an integer in [min, max]
+pub fn randint(min: i32, max: i32) -> i32 {
+    let r: f64 = random()
+    let range: f64 = (max - min + 1) as f64
+    let offset: i32 = (r * range) as i32
+    return min + offset
+}
+
+// Return a float in [a, b]
+pub fn uniform(a: f64, b: f64) -> f64 {
+    return a + (b - a) * random()
+}
+
+// Choose a random element from the array
+pub fn choice<T>(arr: [T]) -> T {
+    let i = randint(0, len(arr) - 1)
+    return arr[i]
+}
+
+// Shuffle the array in-place using Fisher-Yates
+pub fn shuffle<T>(arr: [T]) {
+    let n = len(arr)
+    for i in 0..n {
+        let j = randint(i, n - 1)
+        let temp = arr[i]
+        arr[i] = arr[j]
+        arr[j] = temp
     }
-    // ANSI C LCG parameters
-    let a: i64 = 1103515245
-    let c: i64 = 12345
-    let m: i64 = 2147483648
-    STATE = (STATE * a + c) % m
-    return STATE
 }
 
-pub fn rand() -> f64 {
-    return (next_i64() as f64) / 2147483648.0
+// Return k unique elements sampled from the array
+pub fn sample<T>(arr: [T], k: i32) -> [T] {
+    let copy: [T; 0] = arr[..]
+    shuffle(copy)
+    return copy[0..k]
 }
 
-pub fn rand_int(min: i32, max: i32) -> i32 {
-    let range: i64 = (max - min + 1) as i64
-    return min + (next_i64() % range) as i32
-}
-
-pub fn choice<T>(items: [T]) -> T {
-    let idx: i32 = rand_int(0, len(items) - 1)
-    return items[idx]
-}
-
-pub fn shuffle<T>(items: [T]) {
-    let mut i: i32 = len(items) - 1
-    while i > 0 {
-        let j: i32 = rand_int(0, i)
-        let temp = items[i]
-        items[i] = items[j]
-        items[j] = temp
-        i = i - 1
-    }
-}
+// TODO: additional distributions like gauss require math.log/cos/sin
