@@ -315,6 +315,10 @@ let nested: Box<Box<i32> > = Box { value: Box { value: 1 } }
 
 Generic functions can be referenced before their definitions thanks to a prepass that records all function signatures. Generics may specify constraints such as `T: Numeric` or `T: Comparable` to enable arithmetic and comparison operations.
 
+`Numeric` parameters permit arithmetic, bitwise and unary minus operators while
+`Comparable` enables comparison and equality checks. A numeric constraint also
+implies comparability.
+
 ## Modules
 
 Code can be split into multiple files. Use `use` to load an entire module. Only whole modules may be imported; individual items cannot be pulled in directly. After importing, reference functions or types through the module name.
@@ -389,7 +393,7 @@ print(len(arr))
 ## Feature Status
 
 - Modules, pattern matching, error handling and `impl` blocks are **fully implemented**.
-- Generics work for basic use cases but lack forward declarations and constraints.
+- Generics now support forward declarations and basic constraints.
 - The standard library is minimal; more built-ins are planned.
 - Initial modules are available under `std/` such as `std/math` for math helpers.
 
