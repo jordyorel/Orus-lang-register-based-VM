@@ -680,6 +680,24 @@ static InterpretResult run() {
                 vmPush(&vm, F64_VAL(-value));
                 break;
             }
+            case OP_ADD_NUMERIC:
+                binaryOpNumeric(&vm, '+', &result);
+                break;
+            case OP_SUBTRACT_NUMERIC:
+                binaryOpNumeric(&vm, '-', &result);
+                break;
+            case OP_MULTIPLY_NUMERIC:
+                binaryOpNumeric(&vm, '*', &result);
+                break;
+            case OP_DIVIDE_NUMERIC:
+                binaryOpNumeric(&vm, '/', &result);
+                break;
+            case OP_NEGATE_NUMERIC:
+                negateNumeric(&vm, &result);
+                break;
+            case OP_MODULO_NUMERIC:
+                moduloOpNumeric(&vm, &result);
+                break;
             case OP_I32_TO_F64: {
                 Value value = vmPop(&vm);
                 InterpretResult convResult = INTERPRET_OK;

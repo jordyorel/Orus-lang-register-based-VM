@@ -112,6 +112,18 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_DIVIDE_F64", offset);
         case OP_NEGATE_F64:
             return simpleInstruction("OP_NEGATE_F64", offset);
+        case OP_ADD_NUMERIC:
+            return simpleInstruction("OP_ADD_NUMERIC", offset);
+        case OP_SUBTRACT_NUMERIC:
+            return simpleInstruction("OP_SUBTRACT_NUMERIC", offset);
+        case OP_MULTIPLY_NUMERIC:
+            return simpleInstruction("OP_MULTIPLY_NUMERIC", offset);
+        case OP_DIVIDE_NUMERIC:
+            return simpleInstruction("OP_DIVIDE_NUMERIC", offset);
+        case OP_NEGATE_NUMERIC:
+            return simpleInstruction("OP_NEGATE_NUMERIC", offset);
+        case OP_MODULO_NUMERIC:
+            return simpleInstruction("OP_MODULO_NUMERIC", offset);
         case OP_MODULO_I32:
             return simpleInstruction("OP_MODULO_I32", offset);
         case OP_MODULO_I64:
