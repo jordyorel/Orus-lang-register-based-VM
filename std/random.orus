@@ -4,7 +4,7 @@ static mut STATE: i64 = 0
 
 fn next_i64() -> i64 {
     if STATE == 0 as i64 {
-        STATE = datetime.to_timestamp(datetime.now())
+        STATE = datetime.timestamp(datetime.now()) as i64
     }
     // ANSI C LCG parameters
     let a: i64 = 1103515245
