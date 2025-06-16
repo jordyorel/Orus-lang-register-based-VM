@@ -1,13 +1,13 @@
 // Test writing to array elements
 fn main() {
-    let matrix: [[i32; 3]; 2] = [[1, 2, 3], [4, 5, 6]]
+    let matrix: [[i32; 3]; 2] = [[1 as i32, 2 as i32, 3 as i32], [4 as i32, 5 as i32, 6 as i32]]
 
     print(matrix)
-    print(matrix[0])
-    print(matrix[1])
-    print(matrix[0][2]) // Should be 3
-    print(matrix[1][0]) // Should be 4
+    print(matrix[0 as i32])
+    print(matrix[1 as i32])
+    print(matrix[0 as i32][2 as i32]) // Should be 3
+    print(matrix[1 as i32][0 as i32]) // Should be 4
 
-    matrix[1][1] = 99
+    matrix[1 as i32][1 as i32] = 99 as i32
     print(matrix)
 }

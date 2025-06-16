@@ -37,13 +37,13 @@ impl Rectangle {
     }
 
     fn description(self) -> string {
-        return self.shape.description() + " with width=" + self.width + ", height=" + self.height
+        return self.shape.description() + " with width=" + (self.width as string) + ", height=" + (self.height as string)
     }
 }
 
 fn main() {
-    let rect: Rectangle = Rectangle.new(1, 2, 3, 4)
+    let rect: Rectangle = Rectangle.new(1 as i32, 2 as i32, 3 as i32, 4 as i32)
     print(rect.description())
-    rect.shape.move_to(5,6)
+    rect.shape.move_to(5 as i32, 6 as i32)
     print(rect.description())
 }

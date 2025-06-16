@@ -13,19 +13,19 @@ fn main() {
     print("Length after push: " + len(v))
 
     // Indexing
-    print("First element: " + v[0])
-    print("Second element: " + v[1])
-    print("Third element: " + v[2])
+    print("First element: " + (v[0 as i32] as string))
+    print("Second element: " + (v[1 as i32] as string))
+    print("Third element: " + (v[2 as i32] as string))
 
     // Pop element
     let last = v.pop()
-    print("Popped element: " + last)
+    print("Popped element: " + (last as string))
     print("After pop: " + v)
     print("Length after pop: " + len(v))
 
     // Iterate
     print("Iterate vector:")
-    for i in 0..len(v) {
-        print("v[" + i + "]: " + v[i])
+    for i in (0 as i32)..len(v) {
+        print("v[" + (i as string) + "]: " + (v[i] as string))
     }
 }

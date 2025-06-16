@@ -1,4 +1,4 @@
-    fn main() {
-    let arr: [i32; 2] = [1, 2, 3, 5]
+fn main() {
+    let arr: [i64; 2] = [1, 2, 3, 5]
     print(arr[true])
 }

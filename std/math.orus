@@ -24,15 +24,15 @@ pub fn pow(base: f64, exponent: i32) -> f64 {
     let mut b = base
     let mut e = exponent
     let mut result: f64 = 1.0
-    if e < 0 {
+    if e < (0 as i32) {
         b = 1.0 / b
         e = -e
     }
-    while e > 0 {
-        if (e & 1) == 1 {
+    while e > (0 as i32) {
+        if (e & (1 as i32)) == (1 as i32) {
             result = result * b
         }
-        e = e >> 1
+        e = e >> (1 as i32)
         b = b * b
     }
     return result
@@ -54,7 +54,7 @@ pub fn sqrt(x: f64) -> f64 {
 pub fn floor(x: f64) -> i32 {
     let i: i32 = x as i32
     if x < 0.0 and (x != (i as f64)) {
-        return i - 1
+        return i - 1 as i32
     }
     return i
 }
@@ -62,7 +62,7 @@ pub fn floor(x: f64) -> i32 {
 pub fn ceil(x: f64) -> i32 {
     let i: i32 = x as i32
     if x > 0.0 and (x != (i as f64)) {
-        return i + 1
+        return i + 1 as i32
     }
     return i
 }
@@ -74,31 +74,31 @@ pub fn round(x: f64) -> i32 {
 pub fn sign<T: Numeric>(x: T) -> i32 {
     let zero = x - x
     if x > zero {
-        return 1
+        return 1 as i32
     }
     if x < zero {
-        return -1
+        return -1 as i32
     }
-    return 0
+    return 0 as i32
 }
 
 pub fn average(values: [f64]) -> f64 {
-    if len(values) == 0 {
+    if len(values) == 0 as i32 {
         return 0.0
     }
     return sum(values) / (len(values) as f64)
 }
 
 pub fn median(values: [f64]) -> f64 {
-    if len(values) == 0 {
+    if len(values) == 0 as i32 {
         return 0.0
     }
     let sortedVals = sorted(values)
-    let mid = len(sortedVals) / 2
-    if (len(sortedVals) & 1) == 1 {
+    let mid: i32 = len(sortedVals) / 2 as i32
+    if (len(sortedVals) & (1 as i32)) == 1 as i32 {
         return sortedVals[mid]
     }
-    return (sortedVals[mid - 1] + sortedVals[mid]) / 2.0
+    return (sortedVals[mid - 1 as i32] + sortedVals[mid]) / 2.0
 }
 
 pub fn mod<T: Numeric>(a: T, b: T) -> T {

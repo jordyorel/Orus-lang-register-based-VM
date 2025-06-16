@@ -6,5 +6,5 @@ fn local_fn(a: i32, b: i32) -> i32 {
 }
 
 fn main() {
-    print(local_fn(1, 2))
+    print(local_fn(1 as i32, 2 as i32))
 }

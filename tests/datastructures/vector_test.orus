@@ -17,7 +17,7 @@ fn main() {
     vv.push([1,2,3])
     vv.push([4,5])
     print("Nested vector: " + vv)
-    for i in 0..len(vv) {
+    for i in (0 as i32)..len(vv) {
         print("vv[" + i + "]: " + vv[i])
     }
 }

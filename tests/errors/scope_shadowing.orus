@@ -1,8 +1,8 @@
 // Variable shadowing across scopes
 fn main() {
-    let x: i32 = 5
+    let x: i64 = 5
     if true {
-        let x_inner: i32 = 10
+        let x_inner: i64 = 10
         print(x_inner)
     }
     print(x)

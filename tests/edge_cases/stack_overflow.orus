@@ -1,12 +1,12 @@
 // Deep recursion to approach stack limits
 fn recurse(n: i32) {
-    if n <= 0 {
+    if n <= (0 as i32) {
         return
     }
-    recurse(n - 1)
+    recurse(n - (1 as i32))
 }
 
 fn main() {
-    recurse(20)
+    recurse(20 as i32)
     print("done")
 }

@@ -37,15 +37,15 @@ pub fn uniform(a: f64, b: f64) -> f64 {
 
 // Choose a random element from the array
 pub fn choice<T>(arr: [T]) -> T {
-    let i = randint(0, len(arr) - 1)
+    let i = randint(0 as i32, len(arr) - 1 as i32)
     return arr[i]
 }
 
 // Shuffle the array in-place using Fisher-Yates
 pub fn shuffle<T>(arr: [T]) {
     let n = len(arr)
-    for i in 0..n {
-        let j = randint(i, n - 1)
+    for i in 0 as i32..n {
+        let j = randint(i, n - 1 as i32)
         let temp = arr[i]
         arr[i] = arr[j]
         arr[j] = temp
@@ -56,7 +56,7 @@ pub fn shuffle<T>(arr: [T]) {
 pub fn sample<T>(arr: [T], k: i32) -> [T] {
     let copy: [T; 0] = arr[..]
     shuffle(copy)
-    return copy[0..k]
+    return copy[0 as i32..k]
 }
 
 // TODO: additional distributions like gauss require math.log/cos/sin

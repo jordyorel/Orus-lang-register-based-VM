@@ -16,18 +16,18 @@ fn main() {
     x = y
     print("After assignment x: {}, y: {}", x, y)
 
-    x = x + 5
+    x = x + (5 as i32)
     print("After expression assignment x: {}", x)
 
     // Compound assignments
-    x += 5
+    x += (5 as i32)
     print("After += x: {}", x)
-    x -= 2
+    x -= (2 as i32)
     print("After -= x: {}", x)
-    x *= 3
+    x *= (3 as i32)
     print("After *= x: {}", x)
-    x /= 3
+    x /= (3 as i32)
     print("After /= x: {}", x)
-    x %= 4
+    x %= (4 as i32)
     print("After %= x: {}", x)
 }

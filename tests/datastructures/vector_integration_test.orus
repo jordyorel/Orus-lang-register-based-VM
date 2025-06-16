@@ -7,20 +7,20 @@ struct Point {
 
 fn main() {
     let points = []
-    points.push(Point{x: 1, y: 2})
-    points.push(Point{x: 3, y: 4})
+    points.push(Point{x: 1 as i32, y: 2 as i32})
+    points.push(Point{x: 3 as i32, y: 4 as i32})
     print("Points vector: " + points)
-    for i in 0..len(points) {
+    for i in (0 as i32)..len(points) {
         let p = points[i]
-        print("Point " + i + ": (" + p.x + ", " + p.y + ")")
+        print("Point " + (i as string) + ": (" + (p.x as string) + ", " + (p.y as string) + ")")
     }
     // Mutate a point
-    points[0].x = 10
-    print("After mutation: " + points[0])
+    points[0 as i32].x = 10 as i32
+    print("After mutation: " + points[0 as i32])
     // Remove all
-    while len(points) > 0 {
+    while len(points) > (0 as i32) {
         let removed = points.pop()
-        print("Removed: " + removed)
+        print("Removed: " + (removed as string))
     }
     print("Points now: " + points)
 }

@@ -7,7 +7,7 @@ impl Counter {
     }
 
     fn inc(self) {
-        self.value = self.value + 1
+        self.value = self.value + (1 as i32)
     }
 
     fn get(self) -> i32 {
@@ -21,6 +21,6 @@ impl Counter {
 }
 
 fn main() {
-    let c: Counter = Counter.new(0)
+    let c: Counter = Counter.new(0 as i32)
     print(c.inc_and_get())
 }

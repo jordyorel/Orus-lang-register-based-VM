@@ -71,18 +71,18 @@ fn main() {
     print("\"hello\" == \"world\": {}", equals("hello", "world"))
     
     // Test optional values
-    let optionalInt = some(42)
+    let optionalInt = some(42 as i32)
     print("Has value: {}", optionalInt.hasValue)
-    print("Value: {}", getValue<i32>(optionalInt, 0))
+    print("Value: {}", getValue<i32>(optionalInt, 0 as i32))
     
-    let emptyOpt = none<i32>(0)
+    let emptyOpt = none<i32>(0 as i32)
     print("Has value: {}", emptyOpt.hasValue)
-    print("Default value: {}", getValue<i32>(emptyOpt, -1))
+    print("Default value: {}", getValue<i32>(emptyOpt, -1 as i32))
     
     // Edge case: Empty array with generic type
     let emptyArray = NullableArray<string>{items: []}
     emptyArray.items.push("First item")
-    print("Array after adding item: {}", emptyArray.items[0])
+    print("Array after adding item: {}", emptyArray.items[0 as i32])
     
     // Test with booleans
     let boolOpt = some(true)

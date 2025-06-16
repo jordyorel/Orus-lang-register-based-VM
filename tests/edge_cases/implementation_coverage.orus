@@ -9,16 +9,16 @@ impl Pair {
 
 fn compute(n: i32) -> i32 {
     let mut total: i32 = 0
-    for i in 0..n {
-        total = total + i
+    for i in (0 as i32)..n {
+        total = total + (i as i32)
     }
     return total
 }
 
 fn main() {
-    let p: Pair = Pair{a: 2, b: 3}
+    let p: Pair = Pair{a: 2 as i32, b: 3 as i32}
     print(p.sum())
-    print(compute(5))
+    print(compute(5 as i32))
     let arr: [i32; 2] = [7,8]
-    print(arr[1])
+    print(arr[1 as i32])
 }
