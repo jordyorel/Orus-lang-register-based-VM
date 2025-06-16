@@ -3,6 +3,7 @@
 #include "../../include/scanner.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "../../include/string_utils.h"
 #include <string.h>
 
 // Helper to fetch a specific line from a source file.
@@ -26,6 +27,21 @@ static const char* getSourceLine(const char* filePath, int lineNum) {
     fclose(file);
     return NULL;
 }
+static const char* suggestClosestSymbol(Compiler* compiler, const char* name) {
+    const char* best = NULL;
+    int bestDist = 4;
+    for (int i = 0; i < compiler->symbols.count; i++) {
+        Symbol* sym = &compiler->symbols.symbols[i];
+        if (!sym->active) continue;
+        int dist = levenshteinDistance(name, sym->name);
+        if (dist < bestDist) {
+            bestDist = dist;
+            best = sym->name;
+        }
+    }
+    return best;
+}
+
 
 void emitDiagnostic(Diagnostic* diagnostic) {
     // 1. Header with error code and message
@@ -174,9 +190,20 @@ void emitUndefinedVarError(Compiler* compiler,
     diagnostic.text.message = msgBuffer;
 
     diagnostic.text.help = strdup(helpBuffer);
-    
-    diagnostic.text.notes = &note;
-    diagnostic.text.noteCount = 1;
+
+    char suggestNote[64];
+    char* notes[2];
+    notes[0] = note;
+    int noteCount = 1;
+    const char* suggestion = suggestClosestSymbol(compiler, name);
+    if (suggestion && strcmp(suggestion, name) != 0) {
+        snprintf(suggestNote, sizeof(suggestNote),
+                 "did you mean `%s`?", suggestion);
+        notes[noteCount++] = suggestNote;
+    }
+
+    diagnostic.text.notes = notes;
+    diagnostic.text.noteCount = noteCount;
 
     emitDiagnostic(&diagnostic);
 
@@ -364,9 +391,23 @@ void emitUndefinedFunctionError(Compiler* compiler, Token* token) {
         token->length, token->start);
     diagnostic.text.message = msgBuffer;
     diagnostic.text.help = strdup("check for typos, missing imports, or incorrect function name");
-    const char* note = "functions must be defined before use and imported if from another module";
-    diagnostic.text.notes = (char**)&note;
-    diagnostic.text.noteCount = 1;
+
+    char baseNote[] = "functions must be defined before use and imported if from another module";
+    char suggestNote[64];
+    char* notes[2];
+    notes[0] = baseNote;
+    int noteCount = 1;
+    char nameBuf[64];
+    int len = token->length < 63 ? token->length : 63;
+    memcpy(nameBuf, token->start, len);
+    nameBuf[len] = '\0';
+    const char* suggestion = suggestClosestSymbol(compiler, nameBuf);
+    if (suggestion && strncmp(suggestion, nameBuf, 63) != 0) {
+        snprintf(suggestNote, sizeof(suggestNote), "did you mean `%s`?", suggestion);
+        notes[noteCount++] = suggestNote;
+    }
+    diagnostic.text.notes = notes;
+    diagnostic.text.noteCount = noteCount;
 
     emitDiagnostic(&diagnostic);
     if (diagnostic.text.help) free(diagnostic.text.help);
