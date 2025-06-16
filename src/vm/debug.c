@@ -271,6 +271,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_U32_TO_I64", offset);
         case OP_I64_TO_I32:
             return simpleInstruction("OP_I64_TO_I32", offset);
+        case OP_I64_TO_U32:
+            return simpleInstruction("OP_I64_TO_U32", offset);
         case OP_I32_TO_U64:
             return simpleInstruction("OP_I32_TO_U64", offset);
         case OP_U32_TO_U64:

@@ -716,7 +716,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             } else if ((src->kind == TYPE_I32 &&
                         (dst->kind == TYPE_U32 || dst->kind == TYPE_I64 || dst->kind == TYPE_F64 || dst->kind == TYPE_U64)) ||
                        (src->kind == TYPE_U32 && (dst->kind == TYPE_I32 || dst->kind == TYPE_F64 || dst->kind == TYPE_U64)) ||
-                       (src->kind == TYPE_I64 && dst->kind == TYPE_I32) ||
+                       (src->kind == TYPE_I64 && (dst->kind == TYPE_I32 || dst->kind == TYPE_U32)) ||
                        (src->kind == TYPE_U64 && (dst->kind == TYPE_I32 || dst->kind == TYPE_U32 || dst->kind == TYPE_F64)) ||
                        (src->kind == TYPE_F64 && (dst->kind == TYPE_I32 || dst->kind == TYPE_U32 || dst->kind == TYPE_U64 || dst->kind == TYPE_I64)) ||
                        (src->kind == TYPE_I64 && (dst->kind == TYPE_U64 || dst->kind == TYPE_F64)) ||
@@ -755,6 +755,12 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     if (IS_I64(node->left->data.literal)) {
                         int64_t v = AS_I64(node->left->data.literal);
                         node->left->data.literal = I32_VAL((int32_t)v);
+                        node->left->valueType = dst;
+                    }
+                } else if (src->kind == TYPE_I64 && dst->kind == TYPE_U32) {
+                    if (IS_I64(node->left->data.literal)) {
+                        int64_t v = AS_I64(node->left->data.literal);
+                        node->left->data.literal = U32_VAL((uint32_t)v);
                         node->left->valueType = dst;
                     }
                 } else if (src->kind == TYPE_I32 && dst->kind == TYPE_U64) {
@@ -2774,6 +2780,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 writeOp(compiler, OP_U32_TO_I64);
             } else if (from == TYPE_I64 && to == TYPE_I32) {
                 writeOp(compiler, OP_I64_TO_I32);
+            } else if (from == TYPE_I64 && to == TYPE_U32) {
+                writeOp(compiler, OP_I64_TO_U32);
             } else if (from == TYPE_I32 && to == TYPE_U64) {
                 writeOp(compiler, OP_I32_TO_U64);
             } else if (from == TYPE_U32 && to == TYPE_U64) {
