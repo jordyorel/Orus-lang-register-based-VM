@@ -55,9 +55,9 @@ allows comparison and equality operations. Numeric types implicitly satisfy
 - [x] Create higher-order functions for collections (map, filter, reduce)
 
 ### Error Reporting
-- [ ] Improve error messages for generic type mismatches
-- [ ] Add forward declaration suggestions to relevant error messages
-- [ ] Include examples in compile-time errors
+- [x] Improve error messages for generic type mismatches
+- [x] Add forward declaration suggestions to relevant error messages
+- [x] Include examples in compile-time errors
 - [ ] Create user-friendly debugging guide for generics
 
 ## Lower Priority Tasks
@@ -79,5 +79,7 @@ allows comparison and equality operations. Numeric types implicitly satisfy
 * Cross-module specialization is now fully supported.
 * Reference the `tests/generics/` directory for existing test cases
 * Prioritize improving developer experience with better error messages
+* Generic type mismatch errors now show the expected and actual types with
+  suggestions for resolving common mistakes
 * Consider performance implications of specialization vs. type erasure
 * Basic collection types and iterators are provided in `std/collections`
