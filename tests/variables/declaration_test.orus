@@ -5,7 +5,7 @@ fn main() {
     let f64_var: f64 = 3.14
     let bool_var: bool = true
     let inferred_i32 = 24
-    let inferred_u32 = 200 as u32
+    let inferred_u32 = 200
     let inferred_f64 = 2.71
 
     print("Variable declaration test:")
