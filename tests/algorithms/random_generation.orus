@@ -2,8 +2,8 @@
 fn rand_i32(seed: [i32; 1]) -> i32 {
     let a: i32 = 1664525
     let c: i32 = 1013904223
-    let next: i32 = a * seed[0] + c
-    seed[0] = next
+    let next: i32 = a * seed[0 as i32] + c
+    seed[0 as i32] = next
     return next
 }
 
@@ -13,7 +13,7 @@ fn rand(seed: [i32; 1]) -> f64 {
 
 // Returns an integer in [min, max]
 fn rand_int(seed: [i32; 1], min: i32, max: i32) -> i32 {
-    let range: i32 = max - min + 1
+    let range: i32 = max - min + (1 as i32)
     return min + (rand_i32(seed) % range)
 }
 
@@ -22,9 +22,9 @@ fn main() {
 
     print("Random float between 0 and 1: {}", rand(seed))
 
-    let a = rand_int(seed, 1, 10)
-    let b = rand_int(seed, 1, 10)
-    let c = rand_int(seed, 1, 10)
+    let a = rand_int(seed, 1 as i32, 10 as i32)
+    let b = rand_int(seed, 1 as i32, 10 as i32)
+    let c = rand_int(seed, 1 as i32, 10 as i32)
 
     print("Random ints between 1 and 10: {}, {}, {}", a, b, c)
 }

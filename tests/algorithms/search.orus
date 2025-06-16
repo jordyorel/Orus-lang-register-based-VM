@@ -4,13 +4,13 @@ impl Search {
     // Linear search algorithm
     fn linear_search(arr: [i32; 10], target: i32) -> i32 {
         let mut i: i32 = 0
-        while i < 10 {
+        while i < (10 as i32) {
             if arr[i] == target {
                 return i  // Return index where target was found
             }
-            i = i + 1
+            i = i + (1 as i32)
         }
-        return -1  // Return -1 if target not found
+        return -1 as i32  // Return -1 if target not found
     }
     
     // Binary search algorithm (requires sorted array)
@@ -20,7 +20,7 @@ impl Search {
         let mut mid: i32 = 0
         
         while left <= right {
-            mid = left + (right - left) / 2
+            mid = left + (right - left) / (2 as i32)
             
             // Check if target is present at mid
             if arr[mid] == target {
@@ -29,24 +29,24 @@ impl Search {
             
             // If target is greater, ignore left half
             if arr[mid] < target {
-                left = mid + 1
+                left = mid + (1 as i32)
             } else {
-                right = mid - 1
+                right = mid - (1 as i32)
             }
         }
         
         // Target not found
-        return -1
+        return -1 as i32
     }
     
     // Jump search simplified version
     fn jump_search(arr: [i32; 10], target: i32) -> i32 {
         // For our test cases, we know target 7 is at index 3
         // and target 10 is not in the array
-        if target == 7 {
-            return 3
+        if target == (7 as i32) {
+            return 3 as i32
         }
-        return -1
+        return -1 as i32
     }
     
     // Helper function for min value
@@ -59,7 +59,7 @@ impl Search {
     
     // Helper function to format search result
     fn format_result(name: string, index: i32, target: i32) -> string {
-        if index == -1 {
+        if index == (-1 as i32) {
             return name + ": Target " + target + " not found"
         } else {
             return name + ": Target " + target + " found at index " + index

@@ -4,14 +4,14 @@ impl StringAlgorithms {
     // Check if a string is a palindrome
     fn is_palindrome(s: string) -> bool {
         let mut left: i32 = 0
-        let mut right: i32 = len(s) - 1
+        let mut right: i32 = len(s) - (1 as i32)
 
         while left < right {
-            if substring(s, left, 1) != substring(s, right, 1) {
+            if substring(s, left, (1 as i32)) != substring(s, right, (1 as i32)) {
                 return false
             }
-            left = left + 1
-            right = right - 1
+            left = left + (1 as i32)
+            right = right - (1 as i32)
         }
 
         return true
@@ -24,10 +24,10 @@ impl StringAlgorithms {
         let n: i32 = len(s)
 
         while i < n {
-            if substring(s, i, 1) == c {
-                count = count + 1
+            if substring(s, i, (1 as i32)) == c {
+                count = count + (1 as i32)
             }
-            i = i + 1
+            i = i + (1 as i32)
         }
 
         return count
@@ -38,33 +38,33 @@ impl StringAlgorithms {
         let text_len: i32 = len(text)
         let pat_len: i32 = len(pattern)
 
-        if pat_len == 0 {
-            return 1
+        if pat_len == (0 as i32) {
+            return 1 as i32
         }
 
         if pat_len > text_len {
-            return 0
+            return 0 as i32
         }
 
         let mut i: i32 = 0
         while i <= text_len - pat_len {
             if substring(text, i, pat_len) == pattern {
-                return 1
+                return 1 as i32
             }
-            i = i + 1
+            i = i + (1 as i32)
         }
 
-        return 0
+        return 0 as i32
     }
     
     // Reverse a string
     fn reverse_string(s: string) -> string {
         let mut result: string = ""
-        let mut i: i32 = len(s) - 1
+        let mut i: i32 = len(s) - (1 as i32)
 
-        while i >= 0 {
-            result = result + substring(s, i, 1)
-            i = i - 1
+        while i >= (0 as i32) {
+            result = result + substring(s, i, (1 as i32))
+            i = i - (1 as i32)
         }
 
         return result
