@@ -8,6 +8,15 @@
 #include "../../include/common.h"
 #include "../../include/memory.h"
 
+/**
+ * @file parser.c
+ * @brief Recursive descent parser for the Orus language.
+ *
+ * The parser consumes tokens produced by the scanner and builds an abstract
+ * syntax tree representing the program. It implements a Pratt style parser
+ * where each function corresponds to a grammar production or operator.
+ */
+
 // Forward declaration for parse_precedence
 static ASTNode* parse_precedence(Parser* parser, Precedence precedence);
 
@@ -48,6 +57,13 @@ static void consumeStatementEnd(Parser* parser);
 static void synchronize(Parser* parser);
 
 
+/**
+ * Report a parser error at the given token.
+ *
+ * @param parser  Current parser instance.
+ * @param token   Location of the error.
+ * @param message Human readable error description.
+ */
 static void errorAt(Parser* parser, Token* token, const char* message) {
     if (parser->panicMode) return;
     parser->panicMode = true;
@@ -85,10 +101,22 @@ static void errorAt(Parser* parser, Token* token, const char* message) {
     parser->hadError = true;
 }
 
+/**
+ * Convenience wrapper around errorAt using the current token.
+ *
+ * @param parser  Parser to report on.
+ * @param message Error text.
+ */
 static void error(Parser* parser, const char* message) {
     errorAt(parser, &parser->current, message);
 }
 
+/**
+ * Consume the next token from the scanner.
+ *
+ * Handles newline tokens specially so they can be emitted as statements.
+ * @param parser Parser instance to update.
+ */
 static void advance(Parser* parser) {
     parser->previous = parser->current;
     for (;;) {
@@ -116,6 +144,13 @@ static void advance(Parser* parser) {
     }
 }
 
+/**
+ * Consume the current token if it matches the expected type.
+ *
+ * @param parser  Parser in use.
+ * @param type    Expected token type.
+ * @param message Error message when the expectation is not met.
+ */
 static void consume(Parser* parser, TokenType type, const char* message) {
     if (parser->current.type == type) {
         advance(parser);
@@ -124,6 +159,13 @@ static void consume(Parser* parser, TokenType type, const char* message) {
     error(parser, message);
 }
 
+/**
+ * Attempt to consume a token of the given type.
+ *
+ * @param parser Parser to read from.
+ * @param type   Expected token type.
+ * @return true if the token was matched and consumed.
+ */
 static bool match(Parser* parser, TokenType type) {
     if (parser->current.type != type) return false;
 
@@ -141,11 +183,16 @@ static bool match(Parser* parser, TokenType type) {
     return true;
 }
 
+/**
+ * Check the type of the current token without consuming it.
+ */
 static bool check(Parser* parser, TokenType type) {
     return parser->current.type == type;
 }
 
-// Peek at the next token without consuming it
+/**
+ * Peek at the next token without consuming it.
+ */
 static bool checkNext(TokenType type) {
     Scanner backup = scanner;
     Token next = scan_token();
@@ -153,6 +200,12 @@ static bool checkNext(TokenType type) {
     return next.type == type;
 }
 
+/**
+ * Parse a string literal into an AST node.
+ *
+ * @param parser Active parser instance.
+ * @return Newly allocated literal node.
+ */
 static ASTNode* parseString(Parser* parser) {
     // Comment out debug statement
     // fprintf(stderr, "DEBUG: parseString processing token: type=%d, '%.*s'\n",
@@ -189,6 +242,12 @@ static ASTNode* parseString(Parser* parser) {
     return node;
 }
 
+/**
+ * Parse a numeric literal (integer or floating point).
+ *
+ * @param parser Active parser instance.
+ * @return Literal AST node holding the numeric value.
+ */
 static ASTNode* parseNumber(Parser* parser) {
     const char* start = parser->previous.start;
     int length = parser->previous.length;
@@ -253,12 +312,24 @@ static ASTNode* parseNumber(Parser* parser) {
     return node;
 }
 
+/**
+ * Parse an expression enclosed in parentheses.
+ *
+ * @param parser Active parser.
+ * @return AST node representing the inner expression.
+ */
 static ASTNode* parseGrouping(Parser* parser) {
     ASTNode* expr = parse_precedence(parser, PREC_ASSIGNMENT);
     consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
     return expr;
 }
 
+/**
+ * Parse a unary prefix expression.
+ *
+ * @param parser Active parser.
+ * @return AST node for the unary operation.
+ */
 static ASTNode* parseUnary(Parser* parser) {
     Token operator= parser->previous;
     ASTNode* operand = parse_precedence(parser, PREC_UNARY);
@@ -267,6 +338,13 @@ static ASTNode* parseUnary(Parser* parser) {
     return node;
 }
 
+/**
+ * Parse a binary infix operator expression.
+ *
+ * @param parser Active parser.
+ * @param left   Previously parsed left operand.
+ * @return AST node representing the binary operation.
+ */
 static ASTNode* parseBinary(Parser* parser, ASTNode* left) {
     Token operator= parser->previous;
     ParseRule* rule = get_rule(operator.type);
@@ -277,6 +355,9 @@ static ASTNode* parseBinary(Parser* parser, ASTNode* left) {
     return node;
 }
 
+/**
+ * Parse logical 'and'/'or' operators which short circuit.
+ */
 static ASTNode* parseLogical(Parser* parser, ASTNode* left) {
     // Similar to parseBinary, but creates a logical node instead
     Token operator= parser->previous;
@@ -294,6 +375,13 @@ static ASTNode* parseLogical(Parser* parser, ASTNode* left) {
     return node;
 }
 
+/**
+ * Parse the ternary conditional operator `? :`.
+ *
+ * @param parser Active parser.
+ * @param left   Condition expression already parsed.
+ * @return AST node representing the ternary expression.
+ */
 static ASTNode* parseTernary(Parser* parser, ASTNode* left) {
     ASTNode* thenExpr = parse_precedence(parser, PREC_CONDITIONAL);
     consume(parser, TOKEN_COLON, "Expect ':' after '?' expression.");
@@ -303,6 +391,9 @@ static ASTNode* parseTernary(Parser* parser, ASTNode* left) {
     return node;
 }
 
+/**
+ * Parse an explicit `as` type cast expression.
+ */
 static ASTNode* parseCast(Parser* parser, ASTNode* left) {
     Type* target = parseType(parser);
     if (parser->hadError) return NULL;
@@ -311,11 +402,25 @@ static ASTNode* parseCast(Parser* parser, ASTNode* left) {
     return node;
 }
 
+/**
+ * Compare a token to a null terminated string.
+ *
+ * @param token Token whose lexeme is compared.
+ * @param str   Expected string.
+ * @return true if they match exactly.
+ */
 static bool tokenEquals(Token token, const char* str) {
     size_t len = strlen(str);
     return token.length == (int)len && strncmp(token.start, str, len) == 0;
 }
 
+/**
+ * Parse a function call expression.
+ *
+ * @param parser Parser in use.
+ * @param left   Node representing the callee.
+ * @return Call expression AST node or NULL on error.
+ */
 static ASTNode* parseCall(Parser* parser, ASTNode* left) {
     // Function calls are only valid for identifiers
     if (left->type != AST_VARIABLE) {
@@ -377,6 +482,13 @@ static ASTNode* parseCall(Parser* parser, ASTNode* left) {
     return node;
 }
 
+/**
+ * Parse array indexing or slicing expressions.
+ *
+ * @param parser Parser instance.
+ * @param left   Array expression being indexed.
+ * @return AST node representing the index or slice.
+ */
 static ASTNode* parseIndex(Parser* parser, ASTNode* left) {
     Token bracket = parser->previous; // '[' token
 
@@ -413,6 +525,13 @@ static ASTNode* parseIndex(Parser* parser, ASTNode* left) {
     return node;
 }
 
+/**
+ * Parse field access or method call using the `.` operator.
+ *
+ * @param parser Parser instance.
+ * @param left   Expression preceding the dot.
+ * @return AST node for the field access or method call.
+ */
 static ASTNode* parseDot(Parser* parser, ASTNode* left) {
     consume(parser, TOKEN_IDENTIFIER, "Expect property or method name after '.'.");
     Token name = parser->previous;
@@ -484,6 +603,10 @@ static ASTNode* parseDot(Parser* parser, ASTNode* left) {
 // matching `>` and then inspect the token that follows. If it is a `{` (struct
 // literal) or `(` (generic function call) we treat the angle brackets as
 // generic arguments.
+/**
+ * Heuristically check if a `<` following an identifier begins a list of
+ * generic type arguments rather than a comparison.
+ */
 static bool looksLikeGeneric() {
     Scanner backup = scanner;
     int depth = 1;
@@ -501,6 +624,9 @@ static bool looksLikeGeneric() {
     return after.type == TOKEN_LEFT_BRACE || after.type == TOKEN_LEFT_PAREN;
 }
 
+/**
+ * Parse an identifier reference and optional generic arguments.
+ */
 static ASTNode* parseVariable(Parser* parser) {
     Token name = parser->previous;
     Type** genericArgs = NULL;
@@ -532,6 +658,9 @@ static ASTNode* parseVariable(Parser* parser) {
     return var;
 }
 
+/**
+ * Parse the `nil` literal.
+ */
 static ASTNode* parseNil(Parser* parser) {
     (void)parser;
     ASTNode* node = createLiteralNode(NIL_VAL);
@@ -540,6 +669,9 @@ static ASTNode* parseNil(Parser* parser) {
     return node;
 }
 
+/**
+ * Parse an array literal expression `[expr, ...]`.
+ */
 static ASTNode* parseArray(Parser* parser) {
     ASTNode* elements = NULL;
     ASTNode* last = NULL;
@@ -567,6 +699,12 @@ static ASTNode* parseArray(Parser* parser) {
     return node;
 }
 
+/**
+ * Convert an identifier token to a struct type if one exists.
+ *
+ * @param token Token containing the struct name.
+ * @return Pointer to the struct type or NULL if not found.
+ */
 static Type* findStructTypeToken(Token token) {
     char name[token.length + 1];
     memcpy(name, token.start, token.length);
@@ -574,6 +712,14 @@ static Type* findStructTypeToken(Token token) {
     return findStructType(name);
 }
 
+/**
+ * Parse a struct literal initialiser `Struct { field: value }`.
+ *
+ * @param parser          Active parser instance.
+ * @param structName      Token containing the struct type name.
+ * @param genericArgs     Generic type arguments applied to the struct.
+ * @param genericArgCount Number of generic arguments.
+ */
 static ASTNode* parseStructLiteral(Parser* parser, Token structName,
                                    Type** genericArgs, int genericArgCount) {
 
@@ -609,6 +755,9 @@ static ASTNode* parseStructLiteral(Parser* parser, Token structName,
     return node;
 }
 
+/**
+ * Determine if a token indicates an expression continues on the next line.
+ */
 static bool isContinuationToken(TokenType type) {
     switch (type) {
         case TOKEN_AND:
@@ -633,6 +782,9 @@ static bool isContinuationToken(TokenType type) {
     }
 }
 
+/**
+ * Consume newline tokens that are insignificant for parsing.
+ */
 static void skipNewlines(Parser* parser) {
     while (check(parser, TOKEN_NEWLINE) &&
            (parser->parenDepth > 0 || isContinuationToken(parser->previous.type))) {
@@ -640,6 +792,9 @@ static void skipNewlines(Parser* parser) {
     }
 }
 
+/**
+ * Core Pratt parser routine for handling operator precedence.
+ */
 static ASTNode* parse_precedence(Parser* parser, Precedence precedence) {
     skipNewlines(parser);
     advance(parser);
@@ -685,6 +840,9 @@ static ASTNode* parse_precedence(Parser* parser, Precedence precedence) {
     return left;
 }
 
+/**
+ * Parse an expression respecting assignment precedence.
+ */
 static void expression(Parser* parser, ASTNode** ast) {
     *ast = NULL; // Initialize to NULL in case of error
     ASTNode* expr = parse_precedence(parser, PREC_ASSIGNMENT);
@@ -694,6 +852,9 @@ static void expression(Parser* parser, ASTNode** ast) {
     *ast = expr;
 }
 
+/**
+ * Expect and consume the newline terminating a statement.
+ */
 static void consumeStatementEnd(Parser* parser) {
     // Check for EOF first
     if (check(parser, TOKEN_EOF)) {
@@ -738,6 +899,9 @@ static void consumeStatementEnd(Parser* parser) {
     error(parser, "Expect newline after statement.");
 }
 
+/**
+ * Parse a `while` loop statement.
+ */
 static void whileStatement(Parser* parser, ASTNode** ast) {
     // Parse a while statement
     int line = parser->previous.line;
@@ -754,6 +918,9 @@ static void whileStatement(Parser* parser, ASTNode** ast) {
     (*ast)->line = line;
 }
 
+/**
+ * Parse a `for` loop statement supporting range syntax.
+ */
 static void forStatement(Parser* parser, ASTNode** ast) {
     // Parse a for statement
     int line = parser->previous.line;
@@ -814,6 +981,9 @@ static void forStatement(Parser* parser, ASTNode** ast) {
     (*ast)->line = line;
 }
 
+/**
+ * Parse a `match` statement with pattern arms.
+ */
 static void matchStatement(Parser* parser, ASTNode** ast) {
     ASTNode* value;
     expression(parser, &value);
@@ -890,6 +1060,9 @@ static void matchStatement(Parser* parser, ASTNode** ast) {
     (*ast)->line = value->line;
 }
 
+/**
+ * Parse a `try {}` `catch` statement.
+ */
 static void tryStatement(Parser* parser, ASTNode** ast) {
     int line = parser->previous.line;
     ASTNode* tryBlock;
@@ -906,6 +1079,13 @@ static void tryStatement(Parser* parser, ASTNode** ast) {
     (*ast)->line = line;
 }
 
+/**
+ * Parse a function or method declaration.
+ *
+ * @param parser    Active parser instance.
+ * @param ast       Output pointer receiving the function node.
+ * @param isPublic  Whether the declaration includes the `pub` keyword.
+ */
 static void functionDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
     // Parse function name
     consume(parser, TOKEN_IDENTIFIER, "Expect function name.");
@@ -1041,6 +1221,9 @@ static void functionDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
     *ast = fnNode;
 }
 
+/**
+ * Parse a `return` statement.
+ */
 static void returnStatement(Parser* parser, ASTNode** ast) {
     ASTNode* value = NULL;
 
@@ -1058,6 +1241,9 @@ static void returnStatement(Parser* parser, ASTNode** ast) {
     (*ast)->line = parser->previous.line;
 }
 
+/**
+ * Parse the legacy `import` statement.
+ */
 static void importStatement(Parser* parser, ASTNode** ast) {
     consume(parser, TOKEN_STRING, "Expect module path string after 'import'.");
     Token path = parser->previous;
@@ -1071,6 +1257,9 @@ static void importStatement(Parser* parser, ASTNode** ast) {
     (*ast)->line = path.line;
 }
 
+/**
+ * Parse a module `use` declaration.
+ */
 static void useStatement(Parser* parser, ASTNode** ast) {
     // Parse module path components
     ObjString** parts = NULL;
@@ -1127,6 +1316,9 @@ static void useStatement(Parser* parser, ASTNode** ast) {
     (*ast)->line = nameTok.line;
 }
 
+/**
+ * Parse a `struct` type declaration.
+ */
 static void structDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
     consume(parser, TOKEN_IDENTIFIER, "Expect struct name.");
     Token nameTok = parser->previous;
@@ -1213,6 +1405,9 @@ static void structDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
     (*ast)->line = nameTok.line;
 }
 
+/**
+ * Parse an `impl` block containing method definitions.
+ */
 static void implBlock(Parser* parser, ASTNode** ast) {
     int line = parser->previous.line;
     consume(parser, TOKEN_IDENTIFIER, "Expect type name after impl.");
@@ -1282,6 +1477,9 @@ static void implBlock(Parser* parser, ASTNode** ast) {
     (*ast)->line = line;
 }
 
+/**
+ * Parse a single statement of the language grammar.
+ */
 static void statement(Parser* parser, ASTNode** ast) {
     // Skip any leading newlines
     while (check(parser, TOKEN_NEWLINE)) {
@@ -1647,8 +1845,14 @@ ParseRule rules[] = {
     [TOKEN_DOUBLE_COLON] = {NULL, NULL, PREC_NONE},
 };
 
+/**
+ * Retrieve the parse rule table entry for a token type.
+ */
 ParseRule* get_rule(TokenType type) { return &rules[type]; }
 
+/**
+ * Initialise a Parser structure before starting parsing.
+ */
 void initParser(Parser* parser, Scanner* scanner, const char* filePath) {
     parser->current = (Token){0};
     parser->previous = (Token){0};
@@ -1666,6 +1870,14 @@ void initParser(Parser* parser, Scanner* scanner, const char* filePath) {
     parser->inMatchCase = false;
 }
 
+/**
+ * Entry point for parsing a source string into an AST.
+ *
+ * @param source    Null terminated source code string.
+ * @param filePath  Optional path for diagnostics.
+ * @param ast       Output pointer receiving the AST root.
+ * @return true on success, false if any parse errors occurred.
+ */
 bool parse(const char* source, const char* filePath, ASTNode** ast) {
     // fprintf(stderr, ">>> ENTERED PARSE FUNCTION <<<\n");
     Scanner scanner;
@@ -1716,6 +1928,9 @@ bool parse(const char* source, const char* filePath, ASTNode** ast) {
     return !parser.hadError;
 }
 
+/**
+ * Parse a type expression used in declarations and casts.
+ */
 static Type* parseType(Parser* parser) {
     Type* type = NULL;
     if (match(parser, TOKEN_LEFT_PAREN)) {
@@ -1805,6 +2020,9 @@ static Type* parseType(Parser* parser) {
     return type;
 }
 
+/**
+ * Parse the `true` or `false` literal.
+ */
 static ASTNode* parseBoolean(Parser* parser) {
     bool value = parser->previous.type == TOKEN_TRUE;
     ASTNode* node = createLiteralNode(BOOL_VAL(value));
@@ -1813,6 +2031,9 @@ static ASTNode* parseBoolean(Parser* parser) {
     return node;
 }
 
+/**
+ * Parse an `if`/`elif`/`else` statement chain.
+ */
 static void ifStatement(Parser* parser, ASTNode** ast) {
     // Parse an if statement
 
@@ -1868,6 +2089,9 @@ static void ifStatement(Parser* parser, ASTNode** ast) {
     (*ast)->line = parser->previous.line;
 }
 
+/**
+ * Parse a sequence of statements enclosed in braces.
+ */
 static void block(Parser* parser, ASTNode** ast) {
     // Parse a block of statements enclosed in { }
     consume(parser, TOKEN_LEFT_BRACE, "Expect '{' before block.");
@@ -1909,6 +2133,9 @@ static void block(Parser* parser, ASTNode** ast) {
     (*ast)->line = parser->previous.line;
 }
 
+/**
+ * Recover from a parse error by discarding tokens until a statement boundary.
+ */
 static void synchronize(Parser* parser) {
     parser->panicMode = false;
 
