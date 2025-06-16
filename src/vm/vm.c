@@ -47,7 +47,9 @@ static bool checkValueAgainstType(Value value, Type* type) {
     if (!type) return true;
     switch (type->kind) {
         case TYPE_I32: return IS_I32(value);
+        case TYPE_I64: return IS_I64(value);
         case TYPE_U32: return IS_U32(value);
+        case TYPE_U64: return IS_U64(value);
         case TYPE_F64: return IS_F64(value);
         case TYPE_BOOL: return IS_BOOL(value);
         case TYPE_STRING: return IS_STRING(value);
@@ -875,6 +877,15 @@ static InterpretResult run() {
                 }
                 int64_t value = AS_I64(vmPop(&vm));
                 vmPush(&vm, I32_VAL((int32_t)value));
+                break;
+            }
+            case OP_I64_TO_U32: {
+                if (!IS_I64(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be an integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int64_t value = AS_I64(vmPop(&vm));
+                vmPush(&vm, U32_VAL((uint32_t)value));
                 break;
             }
             case OP_I32_TO_U64: {
