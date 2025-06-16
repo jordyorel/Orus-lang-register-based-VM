@@ -2,8 +2,8 @@
 fn rand_u32(seed: [u32; 1]) -> u32 {
     let a: u32 = 1664525
     let c: u32 = 1013904223
-    let next: u32 = a * seed[0] + c
-    seed[0] = next
+    let next: u32 = a * seed[0 as i32] + c
+    seed[0 as i32] = next
     return next
 }
 
@@ -13,7 +13,7 @@ fn rand(seed: [u32; 1]) -> f64 {
 
 // Returns an unsigned integer in [min, max]
 fn rand_uint(seed: [u32; 1], min: u32, max: u32) -> u32 {
-    let range_i32: i32 = (max as i32) - (min as i32) + 1
+    let range_i32: i32 = (max as i32) - (min as i32) + (1 as i32)
     let range: u32 = range_i32 as u32
     return min + (rand_u32(seed) % range)
 }

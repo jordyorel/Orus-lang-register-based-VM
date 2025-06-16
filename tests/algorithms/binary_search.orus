@@ -7,27 +7,27 @@ impl BinarySearch {
         let mut mid: i32 = 0
 
         while left <= right {
-            mid = left + (right - left) / 2
+            mid = left + (right - left) / (2 as i32)
 
             if arr[mid] == target {
                 return mid
             }
 
             if arr[mid] < target {
-                left = mid + 1
+                left = mid + (1 as i32)
             } else {
-                right = mid - 1
+                right = mid - (1 as i32)
             }
         }
 
-        return -1
+        return -1 as i32
     }
     
     fn array_to_string(arr: [i32; 8]) -> string {
         let mut result: string = "["
-        for i in 0..8 {
+        for i in (0 as i32)..(8 as i32) {
             result = result + arr[i]
-            if i < 7 {
+            if i < (7 as i32) {
                 result = result + ", "
             }
         }
