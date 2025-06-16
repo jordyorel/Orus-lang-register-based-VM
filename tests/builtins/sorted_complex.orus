@@ -1,5 +1,5 @@
 fn main() {
-    let nums = [5, 1, 4, 3, 2, 2]
+    let nums: [i32] = [5, 1, 4, 3, 2, 2]
     print(sorted(nums, nil, false))
     //print(sorted(nums, false))
     print(sorted(nums, true))
