@@ -49,10 +49,10 @@ allows comparison and equality operations. Numeric types implicitly satisfy
 - [x] Create comprehensive tests for generic arithmetic
 
 ### Collection and Iterator Support
-- [ ] Build generic Map implementation
-- [ ] Build generic Set implementation
-- [ ] Implement standard iterator protocol for collections
-- [ ] Create higher-order functions for collections (map, filter, reduce)
+- [x] Build generic Map implementation
+- [x] Build generic Set implementation
+- [x] Implement standard iterator protocol for collections
+- [x] Create higher-order functions for collections (map, filter, reduce)
 
 ### Error Reporting
 - [ ] Improve error messages for generic type mismatches
@@ -80,3 +80,4 @@ allows comparison and equality operations. Numeric types implicitly satisfy
 * Reference the `tests/generics/` directory for existing test cases
 * Prioritize improving developer experience with better error messages
 * Consider performance implications of specialization vs. type erasure
+* Basic collection types and iterators are provided in `std/collections`

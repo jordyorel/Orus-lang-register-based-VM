@@ -1,0 +1,149 @@
+pub struct Entry<K, V> {
+    key: K,
+    value: V,
+}
+
+pub struct Map<K, V> {
+    items: [Entry<K, V>]
+}
+
+pub struct MapIterator<K, V> {
+    items: [Entry<K, V>]
+    index: i32
+}
+
+pub fn map_new<K, V>() -> Map<K, V> {
+    return Map<K, V>{ items: [] }
+}
+
+pub fn map_put<K: Comparable, V>(map: Map<K, V>, key: K, value: V) {
+    for i in 0..len(map.items) {
+        if map.items[i].key == key {
+            map.items[i].value = value
+            return
+        }
+    }
+    map.items.push(Entry<K, V>{ key: key, value: value })
+}
+
+pub fn map_get<K: Comparable, V>(map: Map<K, V>, key: K, default: V) -> V {
+    for i in 0..len(map.items) {
+        if map.items[i].key == key {
+            return map.items[i].value
+        }
+    }
+    return default
+}
+
+pub fn map_contains<K: Comparable, V>(map: Map<K, V>, key: K) -> bool {
+    for i in 0..len(map.items) {
+        if map.items[i].key == key {
+            return true
+        }
+    }
+    return false
+}
+
+pub fn map_remove<K: Comparable, V>(map: Map<K, V>, key: K) -> bool {
+    for i in 0..len(map.items) {
+        if map.items[i].key == key {
+            let idx = i
+            for j in idx+1..len(map.items) {
+                map.items[j-1] = map.items[j]
+            }
+            map.items.pop()
+            return true
+        }
+    }
+    return false
+}
+
+pub fn map_iter<K, V>(map: Map<K, V>) -> MapIterator<K, V> {
+    return MapIterator<K, V>{ items: map.items, index: 0 }
+}
+
+pub fn map_iter_has_next<K, V>(it: MapIterator<K, V>) -> bool {
+    return it.index < len(it.items)
+}
+
+pub fn map_iter_next<K, V>(it: MapIterator<K, V>) -> Entry<K, V> {
+    let item = it.items[it.index]
+    it.index = it.index + 1
+    return item
+}
+
+pub struct Set<T> {
+    items: [T]
+}
+
+pub struct SetIterator<T> {
+    items: [T]
+    index: i32
+}
+
+pub fn set_new<T>() -> Set<T> {
+    return Set<T>{ items: [] }
+}
+
+pub fn set_contains<T: Comparable>(set: Set<T>, value: T) -> bool {
+    for i in 0..len(set.items) {
+        if set.items[i] == value {
+            return true
+        }
+    }
+    return false
+}
+
+pub fn set_add<T: Comparable>(set: Set<T>, value: T) {
+    if not set_contains(set, value) {
+        set.items.push(value)
+    }
+}
+
+pub fn set_remove<T: Comparable>(set: Set<T>, value: T) -> bool {
+    for i in 0..len(set.items) {
+        if set.items[i] == value {
+            let idx = i
+            for j in idx+1..len(set.items) {
+                set.items[j-1] = set.items[j]
+            }
+            set.items.pop()
+            return true
+        }
+    }
+    return false
+}
+
+pub fn set_iter<T>(set: Set<T>) -> SetIterator<T> {
+    return SetIterator<T>{ items: set.items, index: 0 }
+}
+
+pub fn set_iter_has_next<T>(it: SetIterator<T>) -> bool {
+    return it.index < len(it.items)
+}
+
+pub fn set_iter_next<T>(it: SetIterator<T>) -> T {
+    let item = it.items[it.index]
+    it.index = it.index + 1
+    return item
+}
+
+pub struct ArrayIterator<T> {
+    items: [T]
+    index: i32
+}
+
+pub fn iter<T>(arr: [T]) -> ArrayIterator<T> {
+    return ArrayIterator<T>{ items: arr, index: 0 }
+}
+
+pub fn iter_has_next<T>(it: ArrayIterator<T>) -> bool {
+    return it.index < len(it.items)
+}
+
+pub fn iter_next<T>(it: ArrayIterator<T>) -> T {
+    let item = it.items[it.index]
+    it.index = it.index + 1
+    return item
+}
+

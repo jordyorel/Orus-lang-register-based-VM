@@ -39,7 +39,7 @@ This document consolidates the development roadmaps for the Orus language, track
 | Generic Constraints               | ✅ Done          | High     | 0.6.0 → 0.7.0    |
 | Improved Type Inference           | ✅ Done          | High     | Minor feature    |
 | Generic Arithmetic & Operators    | ✅ Done          | Medium   | Minor feature    |
-| Collection and Iterator Support   | Not started      | Medium   | Minor feature    |
+| Collection and Iterator Support   | ✅ Done          | Medium   | Minor feature    |
 | Enhanced Error Reporting          | Not started      | Medium   | Minor feature    |
 | Cross-Module Generics             | Not started      | Low      | Minor feature    |
 | Generics Documentation            | Not started      | Low      | No impact        |
@@ -102,6 +102,7 @@ use std::math
 |----------------|-------------------------------------------------|------------------|
 | `std/math`       | `clamp`, `sqrt`, `average`, constants like `PI` | 0.5.3            |
 | `std/random`     | LCG `random`, `randint`, `uniform`, `choice`, `sample`, `shuffle` | 0.6.0            |
+| `std/collections`| Generic `Map`, `Set` and iterator utilities     | 0.6.0            |
 | `std/functional` | `map`, `filter`, `reduce`                       | 0.6.0+ (depends on function support) |
 | `std/datetime`   | `DateTime` struct, `from_timestamp`, `to_timestamp`, `format`, auto `to_string` | 0.6.0+ |
 | `std/os`         | `cwd()`, file I/O, environment info             | 0.6.0+           |
