@@ -10,7 +10,7 @@ include:
   dynamic arrays using `push`, `pop`, `len`, `sum`, `min` and `max`.
 - User defined `struct` types and `impl` blocks for instance or static methods.
 - Public structs using `pub struct` to expose types from modules.
-- Generic functions and structs with type parameters.
+- Generic functions and structs with type parameters, including cross-module generics.
 - Modules and `use` statements for splitting code across files.
 - Control flow with `if`/`elif`/`else`, `for` ranges and `while` loops as well
   as `break` and `continue`.
@@ -28,7 +28,7 @@ include:
 - User input via `input(prompt)` for interactive programs.
 - Macro helpers for generic dynamic arrays.
 - Compile-time constants defined with the `const` keyword.
-- Standard library modules under `std/` such as `std/math` for math utilities and `std/datetime` for working with dates and times.
+- Standard library modules under `std/` such as `std/math` for math utilities, `std/datetime` for working with dates and times, and `std/collections` for generic data structures.
 - `DateTime` values automatically display in `YYYY-MM-DD HH:MM:SS` format when printed.
 - Variables are immutable by default. Use `let mut` for reassignment.
   See [docs/MUTABILITY.md](docs/MUTABILITY.md) for a detailed explanation.
