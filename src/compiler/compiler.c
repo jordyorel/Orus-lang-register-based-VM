@@ -3112,10 +3112,15 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
             writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
 
-            // Patch the then jump
+            // Patch the then jump and emit a pop so the condition is removed
+            // when the "then" branch is skipped
             int thenEnd = compiler->chunk->count;
             compiler->chunk->code[thenJump + 1] = (thenEnd - thenJump - 3) >> 8;
             compiler->chunk->code[thenJump + 2] = (thenEnd - thenJump - 3) & 0xFF;
+            // When jumping to the else/elif section the condition hasn't been
+            // popped yet. Emit a POP here so the stack stays balanced for the
+            // false branch as well.
+            writeOp(compiler, OP_POP);
 
             // Generate code for elif branches if any
             ASTNode* elifCondition = node->data.ifStmt.elifConditions;
@@ -3169,10 +3174,13 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
                 writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
 
-                // Patch the elif jump
+                // Patch the elif jump to the code after this branch. As with the
+                // main if/else case, emit a POP so the condition is discarded
+                // when the branch is skipped.
                 int elifEnd = compiler->chunk->count;
                 compiler->chunk->code[elifThenJump + 1] = (elifEnd - elifThenJump - 3) >> 8;
                 compiler->chunk->code[elifThenJump + 2] = (elifEnd - elifThenJump - 3) & 0xFF;
+                writeOp(compiler, OP_POP);
 
                 // Move to the next elif condition and branch
                 elifCondition = elifCondition->next;

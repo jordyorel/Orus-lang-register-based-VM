@@ -55,6 +55,12 @@ void printValue(Value value) {
                    AS_ERROR(value)->message->chars);
             break;
         }
+        case VAL_RANGE_ITERATOR: {
+            printf("<range %lld..%lld>",
+                   (long long)AS_RANGE_ITERATOR(value)->current,
+                   (long long)AS_RANGE_ITERATOR(value)->end);
+            break;
+        }
         default:
             printf("unknown");
             break;
@@ -91,6 +97,8 @@ bool valuesEqual(Value a, Value b) {
         }
         case VAL_ERROR:
             return a.as.error == b.as.error;
+        case VAL_RANGE_ITERATOR:
+            return a.as.rangeIter == b.as.rangeIter;
         default: return false;
     }
 }

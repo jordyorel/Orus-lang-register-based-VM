@@ -133,25 +133,8 @@ static Value native_range(int argCount, Value* args) {
         IS_U32(args[1])  ? (int64_t)AS_U32(args[1]) :
                           (int64_t)AS_U64(args[1]);
 
-    if (end < start) {
-        ObjArray* arr = allocateArray(0);
-        arr->length = 0;
-        return ARRAY_VAL(arr);
-    }
-
-    int64_t len64 = end - start;
-    if (len64 > INT32_MAX) len64 = INT32_MAX;
-    int len = (int)len64;
-    ObjArray* arr = allocateArray(len);
-    arr->length = len;
-    for (int i = 0; i < len; i++) {
-        if (IS_I32(args[0]) || IS_U32(args[0])) {
-            arr->elements[i] = I32_VAL((int32_t)(start + i));
-        } else if (IS_I64(args[0]) || IS_U64(args[0])) {
-            arr->elements[i] = I64_VAL(start + i);
-        }
-    }
-    return ARRAY_VAL(arr);
+    ObjRangeIterator* it = allocateRangeIterator(start, end);
+    return RANGE_ITERATOR_VAL(it);
 }
 
 /**

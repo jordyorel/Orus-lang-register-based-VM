@@ -10,6 +10,7 @@ typedef struct ObjString ObjString;
 typedef struct ObjArray ObjArray;
 typedef struct ObjIntArray ObjIntArray;
 typedef struct ObjError ObjError;
+typedef struct ObjRangeIterator ObjRangeIterator;
 typedef struct Value Value;
 
 // Base object type for the garbage collector
@@ -20,6 +21,7 @@ typedef enum {
     OBJ_AST,
     OBJ_TYPE,
     OBJ_ERROR,
+    OBJ_RANGE_ITERATOR,
 } ObjType;
 
 struct Obj {
@@ -39,6 +41,7 @@ typedef enum {
     VAL_STRING,
     VAL_ARRAY,
     VAL_ERROR,
+    VAL_RANGE_ITERATOR,
 } ValueType;
 
 typedef struct ObjString {
@@ -60,6 +63,12 @@ typedef struct ObjIntArray {
     int* elements;
 } ObjIntArray;
 
+typedef struct ObjRangeIterator {
+    Obj obj;
+    int64_t current;
+    int64_t end;
+} ObjRangeIterator;
+
 typedef ObjString String;
 typedef ObjArray Array;
 
@@ -75,6 +84,7 @@ typedef struct Value {
         ObjString* string;
         ObjArray* array;
         ObjError* error;
+        ObjRangeIterator* rangeIter;
     } as;
 } Value;
 
@@ -89,6 +99,7 @@ typedef struct Value {
 #define STRING_VAL(obj) ((Value){VAL_STRING, {.string = obj}})
 #define ARRAY_VAL(obj)   ((Value){VAL_ARRAY, {.array = obj}})
 #define ERROR_VAL(obj)   ((Value){VAL_ERROR, {.error = obj}})
+#define RANGE_ITERATOR_VAL(obj) ((Value){VAL_RANGE_ITERATOR, {.rangeIter = obj}})
 
 // Value checking macros
 #define IS_I32(value)    ((value).type == VAL_I32)
@@ -101,6 +112,7 @@ typedef struct Value {
 #define IS_STRING(value) ((value).type == VAL_STRING)
 #define IS_ARRAY(value)  ((value).type == VAL_ARRAY)
 #define IS_ERROR(value)  ((value).type == VAL_ERROR)
+#define IS_RANGE_ITERATOR(value) ((value).type == VAL_RANGE_ITERATOR)
 
 // Value extraction macros
 #define AS_I32(value)    ((value).as.i32)
@@ -112,6 +124,7 @@ typedef struct Value {
 #define AS_STRING(value) ((value).as.string)
 #define AS_ARRAY(value)  ((value).as.array)
 #define AS_ERROR(value)  ((value).as.error)
+#define AS_RANGE_ITERATOR(value) ((value).as.rangeIter)
 
 // Generic dynamic array implementation used for storing Values.
 #include "generic_array.h"
