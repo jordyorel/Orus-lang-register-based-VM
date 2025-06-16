@@ -69,7 +69,7 @@ allows comparison and equality operations. Numeric types implicitly satisfy
 - [x] Document module-boundary behavior
 
 ### Documentation and Examples
-- [ ] Create advanced generics tutorial
+- [x] Create advanced generics tutorial
 - [ ] Document best practices and patterns
 - [ ] Add code examples for common use cases
 - [ ] Update docs when new features are implemented

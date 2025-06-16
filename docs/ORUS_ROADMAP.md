@@ -3,7 +3,7 @@
 
 This document consolidates the development roadmaps for the Orus language, tracking progress and version increments across multiple development streams.
 
-**Current Version: 0.6.1**
+**Current Version: 0.6.2**
 
 ## Version History
 
@@ -15,6 +15,7 @@ This document consolidates the development roadmaps for the Orus language, track
 - **0.5.4**: Added `const` declarations, embedded standard library and enhanced casting rules
 - **0.6.0**: Cross-module generics and expanded standard library
 - **0.6.1**: Improved error reporting for generics
+- **0.6.2**: Suggestion hints for undefined names and integrated generics tutorial
 
 ## Completed Major Features
 
@@ -42,9 +43,9 @@ This document consolidates the development roadmaps for the Orus language, track
 | Improved Type Inference           | ✅ Done          | High     | Minor feature    |
 | Generic Arithmetic & Operators    | ✅ Done          | Medium   | Minor feature    |
 | Collection and Iterator Support   | ✅ Done          | Medium   | Minor feature    |
-| Enhanced Error Reporting          | In progress      | Medium   | Minor feature    |
+| Enhanced Error Reporting          | ✅ Done          | Medium   | Minor feature    |
 | Cross-Module Generics             | ✅ Done          | Low      | Minor feature    |
-| Generics Documentation            | Not started      | Low      | No impact        |
+| Generics Documentation            | ✅ Done          | Low      | No impact        |
 | Full Generics Implementation      | In progress      | High     | 0.7.0            |
 | Optimize Inference (Complex)      | Not started      | High     | Minor feature    |
 | Edge Case Inference Tests         | Not started      | High     | No impact        |
