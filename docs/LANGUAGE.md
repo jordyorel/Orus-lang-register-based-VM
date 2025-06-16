@@ -319,6 +319,11 @@ Generic functions can be referenced before their definitions thanks to a prepass
 `Comparable` enables comparison and equality checks. A numeric constraint also
 implies comparability.
 
+Generics work across modules through a prepass that specializes functions and
+structs before execution. Type inference handles nested generics and supports
+numeric operators when the `Numeric` constraint is used. Standard collections
+like `Map` and `Set` are implemented generically in the `std` library.
+
 ## Modules
 
 Code can be split into multiple files. Use `use` to load an entire module. Only whole modules may be imported; individual items cannot be pulled in directly. After importing, reference functions or types through the module name.
@@ -393,7 +398,7 @@ print(len(arr))
 ## Feature Status
 
 - Modules, pattern matching, error handling and `impl` blocks are **fully implemented**.
-- Generics now support forward declarations and basic constraints.
+- Generics now support forward declarations, constraints, cross-module specialization and improved inference.
 - The standard library is minimal; more built-ins are planned.
 - Initial modules are available under `std/` such as `std/math` for math helpers.
 

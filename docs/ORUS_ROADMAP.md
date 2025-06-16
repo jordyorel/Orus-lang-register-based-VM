@@ -45,6 +45,14 @@ This document consolidates the development roadmaps for the Orus language, track
 | Enhanced Error Reporting          | In progress      | Medium   | Minor feature    |
 | Cross-Module Generics             | ✅ Done          | Low      | Minor feature    |
 | Generics Documentation            | Not started      | Low      | No impact        |
+| Full Generics Implementation      | In progress      | High     | 0.7.0            |
+| Optimize Inference (Complex)      | Not started      | High     | Minor feature    |
+| Edge Case Inference Tests         | Not started      | High     | No impact        |
+| Debugging Guide                   | Not started      | Medium   | Docs only        |
+| Advanced Generics Tutorial        | Not started      | Low      | Docs only        |
+| Best Practices & Patterns         | Not started      | Low      | Docs only        |
+| Example Code Snippets             | Not started      | Low      | Docs only        |
+| Continuous Docs Updates           | Ongoing          | Low      | No impact        |
 
 ---
 
