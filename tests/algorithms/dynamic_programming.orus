@@ -17,7 +17,7 @@ impl DynamicProgramming {
         // Fill the array bottom-up
         let mut i: i32 = 2
         while i <= n {
-            fib[i] = fib[i-1] + fib[i-2]
+            fib[i] = fib[i - 1] + fib[i - 2]
             i = i + 1
         }
         
