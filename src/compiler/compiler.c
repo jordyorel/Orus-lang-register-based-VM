@@ -265,93 +265,121 @@ static bool statementsAlwaysReturn(ASTNode* stmt) {
 }
 
 static bool convertLiteralForDecl(ASTNode* init, Type* src, Type* dst) {
-    if (!init || init->type != AST_LITERAL || !src || !dst) return false;
+    if (!init || !src || !dst) return false;
+
+    bool unaryMinus = false;
+    ASTNode* lit = NULL;
+
+    if (init->type == AST_LITERAL) {
+        lit = init;
+    } else if (init->type == AST_UNARY &&
+               init->data.operation.operator.type == TOKEN_MINUS &&
+               init->left && init->left->type == AST_LITERAL) {
+        lit = init->left;
+        unaryMinus = true;
+    }
+
+    if (!lit) return false;
 
     if (src->kind == TYPE_I32 && dst->kind == TYPE_U32) {
-        if (IS_I32(init->data.literal)) {
-            int32_t v = AS_I32(init->data.literal);
-            init->data.literal = U32_VAL((uint32_t)v);
-            init->valueType = dst;
+        if (IS_I32(lit->data.literal)) {
+            int32_t v = AS_I32(lit->data.literal);
+            lit->data.literal = U32_VAL((uint32_t)v);
+            lit->valueType = dst;
+            if (unaryMinus) init->valueType = dst;
             return true;
         }
     } else if (src->kind == TYPE_U32 && dst->kind == TYPE_I32) {
-        if (IS_U32(init->data.literal)) {
-            uint32_t v = AS_U32(init->data.literal);
-            init->data.literal = I32_VAL((int32_t)v);
-            init->valueType = dst;
+        if (IS_U32(lit->data.literal)) {
+            uint32_t v = AS_U32(lit->data.literal);
+            lit->data.literal = I32_VAL((int32_t)v);
+            lit->valueType = dst;
+            if (unaryMinus) init->valueType = dst;
             return true;
         }
     } else if (src->kind == TYPE_I32 && dst->kind == TYPE_I64) {
-        if (IS_I32(init->data.literal)) {
-            int32_t v = AS_I32(init->data.literal);
-            init->data.literal = I64_VAL((int64_t)v);
-            init->valueType = dst;
+        if (IS_I32(lit->data.literal)) {
+            int32_t v = AS_I32(lit->data.literal);
+            lit->data.literal = I64_VAL((int64_t)v);
+            lit->valueType = dst;
+            if (unaryMinus) init->valueType = dst;
             return true;
         }
     } else if (src->kind == TYPE_I64 && dst->kind == TYPE_I32) {
-        if (IS_I64(init->data.literal)) {
-            int64_t v = AS_I64(init->data.literal);
-            init->data.literal = I32_VAL((int32_t)v);
-            init->valueType = dst;
+        if (IS_I64(lit->data.literal)) {
+            int64_t v = AS_I64(lit->data.literal);
+            lit->data.literal = I32_VAL((int32_t)v);
+            lit->valueType = dst;
+            if (unaryMinus) init->valueType = dst;
             return true;
         }
     } else if (src->kind == TYPE_I64 && dst->kind == TYPE_U32) {
-        if (IS_I64(init->data.literal)) {
-            int64_t v = AS_I64(init->data.literal);
-            init->data.literal = U32_VAL((uint32_t)v);
-            init->valueType = dst;
+        if (IS_I64(lit->data.literal)) {
+            int64_t v = AS_I64(lit->data.literal);
+            lit->data.literal = U32_VAL((uint32_t)v);
+            lit->valueType = dst;
+            if (unaryMinus) init->valueType = dst;
             return true;
         }
     } else if (src->kind == TYPE_I32 && dst->kind == TYPE_U64) {
-        if (IS_I32(init->data.literal)) {
-            int32_t v = AS_I32(init->data.literal);
-            init->data.literal = U64_VAL((uint64_t)v);
-            init->valueType = dst;
+        if (IS_I32(lit->data.literal)) {
+            int32_t v = AS_I32(lit->data.literal);
+            lit->data.literal = U64_VAL((uint64_t)v);
+            lit->valueType = dst;
+            if (unaryMinus) init->valueType = dst;
             return true;
         }
     } else if (src->kind == TYPE_U32 && dst->kind == TYPE_U64) {
-        if (IS_U32(init->data.literal)) {
-            uint32_t v = AS_U32(init->data.literal);
-            init->data.literal = U64_VAL((uint64_t)v);
-            init->valueType = dst;
+        if (IS_U32(lit->data.literal)) {
+            uint32_t v = AS_U32(lit->data.literal);
+            lit->data.literal = U64_VAL((uint64_t)v);
+            lit->valueType = dst;
+            if (unaryMinus) init->valueType = dst;
             return true;
         }
     } else if (src->kind == TYPE_U64 && dst->kind == TYPE_I32) {
-        if (IS_U64(init->data.literal)) {
-            uint64_t v = AS_U64(init->data.literal);
-            init->data.literal = I32_VAL((int32_t)v);
-            init->valueType = dst;
+        if (IS_U64(lit->data.literal)) {
+            uint64_t v = AS_U64(lit->data.literal);
+            lit->data.literal = I32_VAL((int32_t)v);
+            lit->valueType = dst;
+            if (unaryMinus) init->valueType = dst;
             return true;
         }
     } else if (src->kind == TYPE_U64 && dst->kind == TYPE_U32) {
-        if (IS_U64(init->data.literal)) {
-            uint64_t v = AS_U64(init->data.literal);
-            init->data.literal = U32_VAL((uint32_t)v);
-            init->valueType = dst;
+        if (IS_U64(lit->data.literal)) {
+            uint64_t v = AS_U64(lit->data.literal);
+            lit->data.literal = U32_VAL((uint32_t)v);
+            lit->valueType = dst;
+            if (unaryMinus) init->valueType = dst;
             return true;
         }
     } else if ((src->kind == TYPE_I32 || src->kind == TYPE_U32) &&
                dst->kind == TYPE_F64) {
-        double v = (src->kind == TYPE_I32) ? (double)AS_I32(init->data.literal)
-                                           : (double)AS_U32(init->data.literal);
-        init->data.literal = F64_VAL(v);
-        init->valueType = dst;
+        double v = (src->kind == TYPE_I32) ? (double)AS_I32(lit->data.literal)
+                                           : (double)AS_U32(lit->data.literal);
+        lit->data.literal = F64_VAL(v);
+        lit->valueType = dst;
+        if (unaryMinus) init->valueType = dst;
         return true;
     } else if (src->kind == TYPE_U64 && dst->kind == TYPE_F64) {
-        init->data.literal = F64_VAL((double)AS_U64(init->data.literal));
-        init->valueType = dst;
+        lit->data.literal = F64_VAL((double)AS_U64(lit->data.literal));
+        lit->valueType = dst;
+        if (unaryMinus) init->valueType = dst;
         return true;
     } else if (src->kind == TYPE_F64 && dst->kind == TYPE_I32) {
-        init->data.literal = I32_VAL((int32_t)AS_F64(init->data.literal));
-        init->valueType = dst;
+        lit->data.literal = I32_VAL((int32_t)AS_F64(lit->data.literal));
+        lit->valueType = dst;
+        if (unaryMinus) init->valueType = dst;
         return true;
     } else if (src->kind == TYPE_F64 && dst->kind == TYPE_U32) {
-        init->data.literal = U32_VAL((uint32_t)AS_F64(init->data.literal));
-        init->valueType = dst;
+        lit->data.literal = U32_VAL((uint32_t)AS_F64(lit->data.literal));
+        lit->valueType = dst;
+        if (unaryMinus) init->valueType = dst;
         return true;
     } else if (src->kind == TYPE_F64 && dst->kind == TYPE_U64) {
-        init->data.literal = U64_VAL((uint64_t)AS_F64(init->data.literal));
-        init->valueType = dst;
+        lit->data.literal = U64_VAL((uint64_t)AS_F64(lit->data.literal));
+        lit->valueType = dst;
+        if (unaryMinus) init->valueType = dst;
         return true;
     }
     return false;
