@@ -4,9 +4,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include "value.h"
 #include "vm.h"
 #include "memory.h"
+
+extern VM vm;
 
 // Helper functions for stack operations
 static inline Value vmPeek(VM* vm, int distance) {
@@ -34,6 +38,14 @@ static inline Value vmPop(VM* vm) {
     return *vm->stackTop;
 }
 
+static inline void handleOverflow(const char* message) {
+    if (vm.devMode) {
+        vmRuntimeError(message);
+    } else {
+        fprintf(stderr, "Warning: %s\n", message);
+    }
+}
+
 // Binary operations for i32
 static inline void binaryOpI32(VM* vm, char op, InterpretResult* result) {
     if (!IS_I32(vmPeek(vm, 0)) || !IS_I32(vmPeek(vm, 1))) {
@@ -49,22 +61,27 @@ static inline void binaryOpI32(VM* vm, char op, InterpretResult* result) {
     }
     int32_t b = AS_I32(vmPop(vm));
     int32_t a = AS_I32(vmPop(vm));
+    int32_t res = 0;
+    bool overflow = false;
     switch (op) {
-        case '+': vmPush(vm, I32_VAL(a + b)); break;
-        case '-': vmPush(vm, I32_VAL(a - b)); break;
-        case '*': vmPush(vm, I32_VAL(a * b)); break;
+        case '+': overflow = __builtin_add_overflow(a, b, &res); break;
+        case '-': overflow = __builtin_sub_overflow(a, b, &res); break;
+        case '*': overflow = __builtin_mul_overflow(a, b, &res); break;
         case '/':
             if (b == 0) {
                 vmRuntimeError("Division by zero.");
                 *result = INTERPRET_RUNTIME_ERROR;
                 return;
             }
-            vmPush(vm, I32_VAL(a / b));
+            res = a / b;
             break;
         default:
             fprintf(stderr, "Unknown operator: %c\n", op);
             *result = INTERPRET_RUNTIME_ERROR;
+            return;
     }
+    if (overflow) handleOverflow("i32 overflow");
+    vmPush(vm, I32_VAL(res));
 }
 
 // Binary operations for i64
@@ -76,22 +93,27 @@ static inline void binaryOpI64(VM* vm, char op, InterpretResult* result) {
     }
     int64_t b = AS_I64(vmPop(vm));
     int64_t a = AS_I64(vmPop(vm));
+    int64_t res = 0;
+    bool overflow = false;
     switch (op) {
-        case '+': vmPush(vm, I64_VAL(a + b)); break;
-        case '-': vmPush(vm, I64_VAL(a - b)); break;
-        case '*': vmPush(vm, I64_VAL(a * b)); break;
+        case '+': overflow = __builtin_add_overflow(a, b, &res); break;
+        case '-': overflow = __builtin_sub_overflow(a, b, &res); break;
+        case '*': overflow = __builtin_mul_overflow(a, b, &res); break;
         case '/':
             if (b == 0) {
                 vmRuntimeError("Division by zero.");
                 *result = INTERPRET_RUNTIME_ERROR;
                 return;
             }
-            vmPush(vm, I64_VAL(a / b));
+            res = a / b;
             break;
         default:
             fprintf(stderr, "Unknown operator: %c\n", op);
             *result = INTERPRET_RUNTIME_ERROR;
+            return;
     }
+    if (overflow) handleOverflow("i64 overflow");
+    vmPush(vm, I64_VAL(res));
 }
 
 // Binary operations for u32
@@ -263,31 +285,39 @@ static inline void binaryOpNumeric(VM* vm, char op, InterpretResult* result) {
         case VAL_I32: {
             int32_t av = AS_I32(a);
             int32_t bv = AS_I32(b);
+            int32_t res = 0;
+            bool overflow = false;
             switch (op) {
-                case '+': vmPush(vm, I32_VAL(av + bv)); break;
-                case '-': vmPush(vm, I32_VAL(av - bv)); break;
-                case '*': vmPush(vm, I32_VAL(av * bv)); break;
+                case '+': overflow = __builtin_add_overflow(av, bv, &res); break;
+                case '-': overflow = __builtin_sub_overflow(av, bv, &res); break;
+                case '*': overflow = __builtin_mul_overflow(av, bv, &res); break;
                 case '/':
                     if (bv == 0) { fprintf(stderr, "Division by zero.\n"); *result = INTERPRET_RUNTIME_ERROR; return; }
-                    vmPush(vm, I32_VAL(av / bv));
+                    res = av / bv;
                     break;
                 default: fprintf(stderr, "Unknown op\n"); *result = INTERPRET_RUNTIME_ERROR; return;
             }
+            if (overflow) handleOverflow("i32 overflow");
+            vmPush(vm, I32_VAL(res));
             break;
         }
         case VAL_I64: {
             int64_t av = AS_I64(a);
             int64_t bv = AS_I64(b);
+            int64_t res = 0;
+            bool overflow = false;
             switch (op) {
-                case '+': vmPush(vm, I64_VAL(av + bv)); break;
-                case '-': vmPush(vm, I64_VAL(av - bv)); break;
-                case '*': vmPush(vm, I64_VAL(av * bv)); break;
+                case '+': overflow = __builtin_add_overflow(av, bv, &res); break;
+                case '-': overflow = __builtin_sub_overflow(av, bv, &res); break;
+                case '*': overflow = __builtin_mul_overflow(av, bv, &res); break;
                 case '/':
                     if (bv == 0) { fprintf(stderr, "Division by zero.\n"); *result = INTERPRET_RUNTIME_ERROR; return; }
-                    vmPush(vm, I64_VAL(av / bv));
+                    res = av / bv;
                     break;
                 default: fprintf(stderr, "Unknown op\n"); *result = INTERPRET_RUNTIME_ERROR; return;
             }
+            if (overflow) handleOverflow("i64 overflow");
+            vmPush(vm, I64_VAL(res));
             break;
         }
         case VAL_U32: {
