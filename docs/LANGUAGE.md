@@ -482,6 +482,38 @@ push(arr, 2)
 print(len(arr))
 ```
 
+## Best Practices and Patterns
+
+This section collects recommended patterns when writing Orus code.
+
+### Module Organization
+
+Group related functions and structs into modules. Use `pub` to expose
+only necessary definitions and keep implementation details private.
+
+### Naming Conventions
+
+- Functions and variables use `snake_case`.
+- Struct names use `CamelCase`.
+- Constants are written in uppercase with underscores.
+
+### Immutability First
+
+Favor immutable bindings and avoid `let mut` unless mutation is
+necessary. This reduces accidental state changes and eases reasoning
+about code.
+
+### Error Handling
+
+Use `try`/`catch` blocks around operations that may fail. Return
+`nil` or custom error structs to propagate failure states.
+
+### Testing
+
+The examples in `tests/` demonstrate how small programs can act as
+regression tests. Add new scenarios when fixing bugs or adding
+features.
+
 ## Feature Status
 
 - Modules, pattern matching, error handling and `impl` blocks are **fully implemented**.

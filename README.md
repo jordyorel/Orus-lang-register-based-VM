@@ -135,9 +135,12 @@ The script executes each benchmark program and prints the time spent running it.
 - `include/` - Header files for language components
   - `std/` - Standard library modules such as `std/math`
 - `docs/` - Documentation
-  - `LANGUAGE.md` – Overview of the language syntax
+  - `LANGUAGE.md` – Overview of the language syntax and best practices
   - `GENERICS.md` – Notes on the generic programming capabilities
   - `COMPILATION_ROADMAP.md` – Planning for future compilation features
+  - `DEBUGGING_GUIDE.md` – Tips for diagnosing and fixing issues
+  - `ADVANCED_GENERICS_TUTORIAL.md` – In-depth guide for generic code
+  - `EXAMPLE_SNIPPETS.md` – Short sample programs
 - `tools/` – Utility scripts.
 
 ## Future Development
