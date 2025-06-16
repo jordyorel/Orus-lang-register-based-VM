@@ -1,3 +1,7 @@
+/**
+ * @file chunk.c
+ * @brief Bytecode chunk management utilities.
+ */
 
 #include<stdlib.h>
 #include<stdio.h>
@@ -5,9 +9,11 @@
 #include "../../include/chunk.h"
 #include "../../include/memory.h"
 
-// Initializes a Chunk structure to its default state.
-// Parameters:
-//   chunk - Pointer to the Chunk to be initialized.
+/**
+ * Initialize a bytecode Chunk structure.
+ *
+ * @param chunk Chunk to initialize.
+ */
 void initChunk(Chunk* chunk) {
     chunk->count = 0;
     chunk->capacity = 0;
@@ -19,9 +25,11 @@ void initChunk(Chunk* chunk) {
     chunk->line_capcity = 0;
 }
 
-// Frees the memory associated with a Chunk and resets it to its default state.
-// Parameters:
-//   chunk - Pointer to the Chunk to be freed.
+/**
+ * Free memory used by a Chunk and reset it to the empty state.
+ *
+ * @param chunk Chunk to free.
+ */
 void freeChunk(Chunk* chunk) {
     FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
     FREE_ARRAY(LineInfo, chunk->line_info, chunk->line_capcity);
@@ -37,10 +45,14 @@ void freeChunk(Chunk* chunk) {
     initChunk(chunk);
 }
 
-// Adds a byte (instruction) to the Chunk, growing its capacity if necessary.
-// Parameters:
-//   chunk - Pointer to the Chunk where the byte will be written.
-//   byte - The byte (instruction) to add to the chunk.
+/**
+ * Append a bytecode instruction to a chunk and record its line information.
+ *
+ * @param chunk  Target chunk.
+ * @param byte   Opcode byte to write.
+ * @param line   Source line number.
+ * @param column Source column number.
+ */
 void writeChunk(Chunk* chunk, uint8_t byte, int line, int column) {
     if (chunk->capacity < chunk->count + 1) {
         int oldCapacity = chunk->capacity;
@@ -64,6 +76,15 @@ void writeChunk(Chunk* chunk, uint8_t byte, int line, int column) {
     chunk->line_count++;
 }
 
+/**
+ * Write a constant value into the chunk's constant pool and emit the
+ * appropriate instruction.
+ *
+ * @param chunk  Target chunk.
+ * @param value  Constant value.
+ * @param line   Source line number.
+ * @param column Source column number.
+ */
 void writeConstant(Chunk* chunk, Value value, int line, int column) {
     int constantindex = addConstant(chunk, value);
     
@@ -84,15 +105,34 @@ void writeConstant(Chunk* chunk, Value value, int line, int column) {
 // Parameters:
 //   chunk - Pointer to the Chunk where the constant will be added.
 //   value - The constant value to add to the chunk.
+/**
+ * Add a constant to the chunk and return its index.
+ *
+ * @param chunk Chunk receiving the value.
+ * @param value Constant value.
+ * @return      Index of the value in the constant pool.
+ */
 int addConstant(Chunk* chunk, Value value) {
     writeValueArray(&chunk->constants, value);
     return chunk->constants.count - 1;
 }
 
-int len(Chunk* chunk) { 
+/**
+ * Get the number of bytes of code in the chunk.
+ *
+ * @param chunk Chunk to query.
+ */
+int len(Chunk* chunk) {
     return chunk->count; 
 }
 
+/**
+ * Find the source line for a given bytecode offset.
+ *
+ * @param chunk              Chunk to query.
+ * @param instruction_offset Byte index of the instruction.
+ * @return                   Source line number or -1.
+ */
 int get_line(Chunk* chunk, int instruction_offset) {
    int offset = 0;
    for (int i = 0; i < chunk->line_count; i++) {
@@ -104,6 +144,13 @@ int get_line(Chunk* chunk, int instruction_offset) {
    return -1;
 }
 
+/**
+ * Get the source column for a given bytecode offset.
+ *
+ * @param chunk              Chunk to query.
+ * @param instruction_offset Byte index of the instruction.
+ * @return                   Source column number.
+ */
 int get_column(Chunk* chunk, int instruction_offset) {
    int offset = 0;
    for (int i = 0; i < chunk->line_count; i++) {
@@ -115,6 +162,13 @@ int get_column(Chunk* chunk, int instruction_offset) {
    return 1;
 }
 
+/**
+ * Return the operand byte following an instruction.
+ *
+ * @param chunk  Chunk containing code.
+ * @param offset Offset of the instruction byte.
+ * @return       Operand byte.
+ */
 uint8_t get_code(Chunk* chunk, int offset) {
     if (offset < 0 || offset >= chunk->count - 1) {
         printf("Invalid operand access at offset %d\n", offset);
@@ -123,6 +177,13 @@ uint8_t get_code(Chunk* chunk, int offset) {
     return chunk->code[offset + 1];
 }
 
+/**
+ * Fetch the constant referenced by an instruction.
+ *
+ * @param chunk  Chunk containing constants.
+ * @param offset Offset of the instruction.
+ * @return       Constant value.
+ */
 Value get_constant(Chunk* chunk, int offset) {
     uint8_t constantIndex = get_code(chunk, offset);
     if (constantIndex >= chunk->constants.count) {

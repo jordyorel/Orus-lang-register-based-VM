@@ -1,3 +1,7 @@
+/**
+ * @file value.c
+ * @brief Value utilities including printing and comparison.
+ */
 #include <stdio.h>
 #include <string.h>
 
@@ -5,6 +9,11 @@
 #include "../../include/value.h"
 
 
+/**
+ * Print a runtime Value in human readable form.
+ *
+ * @param value Value to display.
+ */
 void printValue(Value value) {
     switch (value.type) {
         case VAL_I32:
@@ -52,6 +61,13 @@ void printValue(Value value) {
     }
 }
 
+/**
+ * Determine whether two runtime values are equal.
+ *
+ * @param a First value.
+ * @param b Second value.
+ * @return  True if values are equal.
+ */
 bool valuesEqual(Value a, Value b) {
     if (a.type != b.type) return false;
     

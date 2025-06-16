@@ -1,3 +1,7 @@
+/**
+ * @file vm.c
+ * @brief Virtual machine execution engine.
+ */
 #include "../../include/vm.h"
 #include "../../include/builtins.h"
 
@@ -23,12 +27,22 @@
 
 VM vm;
 
+/**
+ * Reset the VM stack pointer to the bottom of the stack.
+ */
 static void resetStack() { vm.stackTop = vm.stack; }
 Type* variableTypes[UINT8_COUNT] = {NULL};
 
 static const char* runtimeStack[UINT8_COUNT];
 static uint8_t runtimeStackCount = 0;
 
+/**
+ * Validate a runtime value against a static type.
+ *
+ * @param value Value to check.
+ * @param type  Expected type or NULL.
+ * @return      True if the value matches.
+ */
 static bool checkValueAgainstType(Value value, Type* type) {
     if (!type) return true;
     switch (type->kind) {
@@ -47,6 +61,9 @@ static bool checkValueAgainstType(Value value, Type* type) {
 
 static InterpretResult run();
 
+/**
+ * Initialize the virtual machine state and register builtins.
+ */
 void initVM() {
     initTypeSystem();
     resetStack();
@@ -88,6 +105,9 @@ void initVM() {
     initBuiltins();
 }
 
+/**
+ * Release all resources associated with the virtual machine.
+ */
 void freeVM() {
     
     for (int i = 0; i < UINT8_COUNT; i++) {
@@ -106,6 +126,9 @@ void freeVM() {
     vm.currentColumn = 1;
 }
 
+/**
+ * Output the current call stack to stderr.
+ */
 static void printStackTrace() {
     if (vm.frameCount == 0) return;
     fprintf(stderr, "Stack trace:\n");
@@ -115,6 +138,9 @@ static void printStackTrace() {
     }
 }
 
+/**
+ * Public wrapper to print the VM stack trace.
+ */
 void vmPrintStackTrace(void) { printStackTrace(); }
 
 static void runtimeError(ErrorType type, SrcLocation location,
@@ -136,6 +162,11 @@ static void runtimeError(ErrorType type, SrcLocation location,
     vm.lastError = ERROR_VAL(err);
 }
 
+/**
+ * Convenience wrapper to raise a runtime error without location info.
+ *
+ * @param message Error message.
+ */
 void vmRuntimeError(const char* message) {
     runtimeError(ERROR_RUNTIME, (SrcLocation){NULL, 0, 0}, "%s", message);
 }
@@ -212,6 +243,9 @@ static bool appendValueString(Value value, char** buffer, int* length,
     }
 }
 
+/**
+ * Debug helper to print the VM stack and current instruction.
+ */
 static void traceExecution() {
 #ifdef DEBUG_TRACE_EXECUTION
     if (!vm.trace) return;
@@ -225,6 +259,14 @@ static void traceExecution() {
 #endif
 }
 
+/**
+ * Register a builtin native function with the VM.
+ *
+ * @param name       Name exposed to Orus programs.
+ * @param function   C function implementing the builtin.
+ * @param arity      Number of arguments.
+ * @param returnType Expected return type or NULL.
+ */
 void defineNative(const char* name, NativeFn function, int arity, Type* returnType) {
     if (vm.nativeFunctionCount >= MAX_NATIVES) return;
     ObjString* str = allocateString(name, (int)strlen(name));
@@ -232,6 +274,12 @@ void defineNative(const char* name, NativeFn function, int arity, Type* returnTy
     vm.nativeFunctions[vm.nativeFunctionCount++] = nf;
 }
 
+/**
+ * Find a registered native function by name.
+ *
+ * @param name Name string object.
+ * @return     Index in the native function table or -1.
+ */
 int findNative(ObjString* name) {
     for (int i = 0; i < vm.nativeFunctionCount; i++) {
         if (vm.nativeFunctions[i].name->length == name->length &&
@@ -242,6 +290,12 @@ int findNative(ObjString* name) {
     return -1;
 }
 
+/**
+ * Load and execute a module, caching its exports.
+ *
+ * @param path Path to the module file.
+ * @return     Interpretation result code.
+ */
 static InterpretResult interpretModule(const char* path) {
     if (traceImports) fprintf(stderr, "[import] interpreting %s\n", path);
     for (int i = 0; i < runtimeStackCount; i++) {
@@ -364,10 +418,21 @@ static InterpretResult interpretModule(const char* path) {
     return result;
 }
 
+/**
+ * Public API to interpret a module by path.
+ *
+ * @param path Path of module to execute.
+ * @return     Interpretation result code.
+ */
 InterpretResult interpret_module(const char* path) {
     return interpretModule(path);
 }
 
+/**
+ * Execute bytecode instructions in the current chunk.
+ *
+ * @return Interpretation result code.
+ */
 static InterpretResult run() {
     #define READ_BYTE() (*vm.ip++)
     #define READ_SHORT() (vm.ip += 2, (uint16_t)((vm.ip[-2] << 8) | vm.ip[-1]))
@@ -2024,6 +2089,12 @@ static InterpretResult run() {
     return result;
 }
 
+/**
+ * Execute the given chunk starting at instruction 0.
+ *
+ * @param chunk Chunk to run.
+ * @return      Interpretation result code.
+ */
 InterpretResult runChunk(Chunk* chunk) {
     vm.chunk = chunk;
     vm.ip = chunk->code;
@@ -2039,14 +2110,28 @@ InterpretResult runChunk(Chunk* chunk) {
     return result;
 }
 
+/**
+ * Push a value onto the VM stack.
+ *
+ * @param value Value to push.
+ */
 void push(Value value) {
     vmPush(&vm, value);
 }
 
+/**
+ * Pop and return the top value from the VM stack.
+ */
 Value pop() {
     return vmPop(&vm);
 }
 
+/**
+ * Compile and execute a source string.
+ *
+ * @param source Source code to run.
+ * @return       Interpretation result code.
+ */
 InterpretResult interpret(const char* source) {
     ASTNode* ast;
     if (!parse(source, "<exec>", &ast)) {

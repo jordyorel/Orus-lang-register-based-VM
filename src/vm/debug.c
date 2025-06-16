@@ -1,3 +1,7 @@
+/**
+ * @file debug.c
+ * @brief Bytecode disassembly helpers.
+ */
 #include <stdio.h>
 
 #include "../../include/debug.h"
@@ -9,6 +13,12 @@ static int simpleInstruction(const char* name, int offset);
 static int byteInstruction(const char* name, Chunk* chunk, int offset);
 static int jumpInstruction(const char* name, int sign, Chunk* chunk, int offset);
 
+/**
+ * Print a human readable disassembly of a chunk.
+ *
+ * @param chunk Chunk to disassemble.
+ * @param name  Label printed at the top of the output.
+ */
 void disassembleChunk(Chunk* chunk, const char* name) {
     printf("== %s ==\n", name);
 
@@ -24,6 +34,14 @@ void disassembleChunk(Chunk* chunk, const char* name) {
 //   offset - The current index of the instruction.
 // Returns:
 //   The offset of the next instruction (current offset + 2).
+/**
+ * Disassemble an instruction that has a constant operand.
+ *
+ * @param name   Opcode name.
+ * @param chunk  Chunk containing the instruction.
+ * @param offset Offset into the chunk.
+ * @return       Offset of the next instruction.
+ */
 static int constantInstruction(const char* name, Chunk* chunk, int offset) {
     uint8_t constant = get_code(chunk, offset);
     printf("%-16s %4d '", name, constant);
@@ -38,6 +56,13 @@ static int constantInstruction(const char* name, Chunk* chunk, int offset) {
 //   offset - The current index of the instruction to disassemble.
 // Returns:
 //   The offset of the next instruction after the one being disassembled.
+/**
+ * Disassemble a single instruction from a chunk.
+ *
+ * @param chunk  Chunk containing the code.
+ * @param offset Offset of the instruction.
+ * @return       Offset of the next instruction.
+ */
 int disassembleInstruction(Chunk* chunk, int offset) {
     printf("%04d ", offset);
 
@@ -339,12 +364,27 @@ int disassembleInstruction(Chunk* chunk, int offset) {
 //   offset - The current index of the instruction.
 // Returns:
 //   The offset of the next instruction (current offset + 1).
+/**
+ * Print a one-byte instruction with no operands.
+ *
+ * @param name   Opcode name.
+ * @param offset Current offset.
+ * @return       Offset of the next instruction.
+ */
 static int simpleInstruction(const char* name, int offset) {
     printf("%s \n", name);
     return offset + 1;
 }
 
 // Implementation of byteInstruction
+/**
+ * Disassemble an instruction with a single byte operand.
+ *
+ * @param name   Opcode name.
+ * @param chunk  Chunk containing the code.
+ * @param offset Offset of the instruction.
+ * @return       Offset of the next instruction.
+ */
 static int byteInstruction(const char* name, Chunk* chunk, int offset) {
     uint8_t slot = chunk->code[offset + 1];
     printf("%-16s %4d\n", name, slot);
@@ -352,6 +392,15 @@ static int byteInstruction(const char* name, Chunk* chunk, int offset) {
 }
 
 // Implementation of jumpInstruction
+/**
+ * Disassemble a jump instruction which uses a 16-bit offset.
+ *
+ * @param name   Opcode name.
+ * @param sign   Direction of the jump (+1 or -1).
+ * @param chunk  Chunk containing the code.
+ * @param offset Offset of the instruction.
+ * @return       Offset of the next instruction.
+ */
 static int jumpInstruction(const char* name, int sign, Chunk* chunk, int offset) {
     uint16_t jump = (uint16_t)((chunk->code[offset + 1] << 8) | chunk->code[offset + 2]);
     printf("%-16s %4d -> %d\n", name, offset, offset + 3 + sign * jump);

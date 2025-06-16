@@ -1,3 +1,7 @@
+/**
+ * @file modules.c
+ * @brief Module loading and compilation.
+ */
 #include "../../include/modules.h"
 #include "../../include/file_utils.h"
 #include "../../include/parser.h"
@@ -23,6 +27,12 @@ static char module_error_buffer[256];
 
 extern VM vm;
 
+/**
+ * Read a module's source code from disk.
+ *
+ * @param resolved_path Filesystem path to module.
+ * @return              Newly allocated buffer with module source or NULL.
+ */
 char* load_module_source(const char* resolved_path) {
     return readFileSilent(resolved_path);
 }
@@ -64,6 +74,13 @@ char* load_module_with_fallback(const char* path, char** disk_path, long* mtime,
     return NULL;
 }
 
+/**
+ * Parse the source code of a module into an AST.
+ *
+ * @param source_code Source text of the module.
+ * @param module_name Name used for error reporting.
+ * @return            AST root or NULL on failure.
+ */
 ASTNode* parse_module_source(const char* source_code, const char* module_name) {
     ASTNode* ast;
     if (!parse(source_code, module_name, &ast)) {
@@ -72,6 +89,13 @@ ASTNode* parse_module_source(const char* source_code, const char* module_name) {
     return ast;
 }
 
+/**
+ * Compile an AST into bytecode for a module.
+ *
+ * @param ast         Parsed AST of the module.
+ * @param module_name Module identifier.
+ * @return            Newly allocated chunk or NULL on error.
+ */
 Chunk* compile_module_ast(ASTNode* ast, const char* module_name) {
     Chunk* chunk = malloc(sizeof(Chunk));
     if (!chunk) return NULL;
@@ -86,12 +110,24 @@ Chunk* compile_module_ast(ASTNode* ast, const char* module_name) {
     return chunk;
 }
 
+/**
+ * Add a compiled module to the VM's cache.
+ *
+ * @param module Module descriptor.
+ * @return       True on success.
+ */
 bool register_module(Module* module) {
     if (module_cache_count == UINT8_MAX) return false;
     module_cache[module_cache_count++] = *module;
     return true;
 }
 
+/**
+ * Retrieve a loaded module by name.
+ *
+ * @param name Module identifier.
+ * @return     Pointer to cached module or NULL.
+ */
 Module* get_module(const char* name) {
     for (int i = 0; i < module_cache_count; i++) {
         if (strcmp(module_cache[i].module_name, name) == 0) {
@@ -101,6 +137,13 @@ Module* get_module(const char* name) {
     return NULL;
 }
 
+/**
+ * Look up an exported symbol within a module.
+ *
+ * @param module Module to search.
+ * @param name   Export name.
+ * @return       Pointer to export entry or NULL.
+ */
 Export* get_export(Module* module, const char* name) {
     for (int i = 0; i < module->export_count; i++) {
         if (strcmp(module->exports[i].name, name) == 0) {
@@ -110,6 +153,12 @@ Export* get_export(Module* module, const char* name) {
     return NULL;
 }
 
+/**
+ * Load, parse and compile a module without executing it.
+ *
+ * @param path File path or module name.
+ * @return     Interpretation result code.
+ */
 InterpretResult compile_module_only(const char* path) {
     moduleError = NULL;
     if (traceImports) fprintf(stderr, "[import] loading %s\n", path);
