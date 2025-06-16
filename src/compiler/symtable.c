@@ -4,14 +4,32 @@
 #include "../../include/symtable.h"
 #include "../../include/memory.h"
 
+/**
+ * @file symtable.c
+ * @brief Symbol table implementation for the compiler.
+ *
+ * The symbol table tracks variables and functions across scopes during
+ * compilation. Entries are stored in a simple array that grows as needed.
+ */
+
 #define INITIAL_CAPACITY 8
 
+/**
+ * Initialize a symbol table instance.
+ *
+ * @param table Table to initialize.
+ */
 void initSymbolTable(SymbolTable* table) {
     table->symbols = NULL;
     table->count = 0;
     table->capacity = 0;
 }
 
+/**
+ * Free memory associated with a symbol table.
+ *
+ * @param table Table to clean up.
+ */
 void freeSymbolTable(SymbolTable* table) {
     // Types are managed elsewhere; do not free them here
     free(table->symbols);

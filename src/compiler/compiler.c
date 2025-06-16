@@ -13,10 +13,25 @@
 #include "../../include/modules.h"
 #include "../../include/debug.h"
 #include "../../include/scanner.h"
+
+/**
+ * @file compiler.c
+ * @brief Main bytecode compiler implementation.
+ *
+ * This module walks the parsed AST, performs type checking and emits
+ * bytecode for the Orus virtual machine.
+ */
+#include "../../include/scanner.h"
 #include "../../include/error.h"
 
 extern VM vm;
 
+/**
+ * Look up a struct type from its identifier token.
+ *
+ * @param token Token containing the struct name.
+ * @return Pointer to the matching Type or NULL.
+ */
 static Type* findStructTypeToken(Token token) {
     char name[token.length + 1];
     memcpy(name, token.start, token.length);
@@ -2174,6 +2189,12 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
     }
 }
 
+/**
+ * Emit bytecode instructions for a single AST node.
+ *
+ * @param compiler Active compiler instance.
+ * @param node     AST node to translate.
+ */
 static void generateCode(Compiler* compiler, ASTNode* node) {
     if (!node || compiler->hadError) {
         return;
