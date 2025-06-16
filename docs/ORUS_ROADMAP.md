@@ -50,11 +50,11 @@ This document consolidates the development roadmaps for the Orus language, track
 | Full Generics Implementation      | ✅ Done          | High     | 0.7.0            |
 | Optimize Inference (Complex)      | ✅ Done          | High     | Minor feature    |
 | Edge Case Inference Tests         | ✅ Done          | High     | No impact        |
-| Debugging Guide                   | Not started      | Medium   | Docs only        |
-| Advanced Generics Tutorial        | Not started      | Low      | Docs only        |
-| Best Practices & Patterns         | Not started      | Low      | Docs only        |
-| Example Code Snippets             | Not started      | Low      | Docs only        |
-| Continuous Docs Updates           | Ongoing          | Low      | No impact        |
+| Debugging Guide                   | ✅ Done          | Medium   | Docs only        |
+| Advanced Generics Tutorial        | ✅ Done          | Low      | Docs only        |
+| Best Practices & Patterns         | ✅ Done          | Low      | Docs only        |
+| Example Code Snippets             | ✅ Done          | Low      | Docs only        |
+| Continuous Docs Updates           | ✅ Done          | Low      | No impact        |
 
 ---
 
