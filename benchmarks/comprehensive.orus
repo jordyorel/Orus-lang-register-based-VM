@@ -1,0 +1,49 @@
+use std::datetime
+use std::math
+use std::random
+use std::collections
+
+struct Box<T> {
+    value: T
+}
+
+fn main() {
+    // Start time for benchmark
+    let start = datetime.now()
+
+    // Generate random boxes
+    let boxes: [Box<i32>] = []
+    for i in 0..1000 {
+        boxes.push(Box<i32>{ value: random.randint(0, 99) })
+    }
+
+    // Count frequency of tens using a map
+    let freq = collections.map_new<i32, i32>()
+    for b in boxes {
+        let bucket = (b.value / 10) * 10
+        let count = 1
+        if collections.map_contains(freq, bucket) {
+            count = collections.map_get(freq, bucket, 0) + 1
+        }
+        collections.map_put(freq, bucket, count)
+    }
+
+    // Perform some math heavy work
+    let total: f64 = 0.0
+    for i in 0..1000 {
+        total = total + math.sqrt(random.uniform(1.0, 1000.0))
+    }
+    print(math.round(total))
+
+    // Iterate over the map entries
+    let it = collections.map_iter(freq)
+    while collections.map_iter_has_next(it) {
+        let entry = collections.map_iter_next(it)
+        print(entry.key)
+        print(entry.value)
+    }
+
+    // Print elapsed seconds
+    let elapsed = datetime.timestamp(datetime.now()) - datetime.timestamp(start)
+    print(elapsed)
+}
