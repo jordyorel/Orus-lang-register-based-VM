@@ -9,7 +9,12 @@
 
 #define STACK_MAX 2048
 #define FRAMES_MAX 256
-#define LOOP_ITERATION_LIMIT 10000
+// The loop iteration limit was originally used to guard against
+// accidental infinite loops during early language development.
+// The interpreter is now mature enough that we no longer enforce
+// a hard iteration cap.  Commenting this out allows loops of any
+// length to execute.
+//#define LOOP_ITERATION_LIMIT 10000
 #define TRY_MAX 64
 #define MAX_NATIVES 64
 
