@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/time.h>
 
 #include "../../include/builtins.h"
 #include "../../include/error.h"
@@ -648,7 +649,11 @@ static Value native_timestamp(int argCount, Value* args) {
         vmRuntimeError("timestamp() takes no arguments.");
         return NIL_VAL;
     }
-    return I64_VAL((int64_t)time(NULL));
+
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    double seconds = (double)tv.tv_sec + (double)tv.tv_usec / 1000000.0;
+    return F64_VAL(seconds);
 }
 
 /**
@@ -695,7 +700,7 @@ static BuiltinEntry builtinTable[] = {
     {"input", native_input, 1, TYPE_STRING},
     {"int", native_int, 1, TYPE_I32},
     {"float", native_float, 1, TYPE_F64},
-    {"timestamp", native_timestamp, 0, TYPE_I64},
+    {"timestamp", native_timestamp, 0, TYPE_F64},
     {"sorted", native_sorted, -1, TYPE_ARRAY},
     {"module_name", native_module_name, 1, TYPE_STRING},
     {"module_path", native_module_path, 1, TYPE_STRING},

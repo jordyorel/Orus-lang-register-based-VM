@@ -1560,7 +1560,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                                             "timestamp", 0, node->data.call.argCount);
                     return;
                 }
-                node->valueType = getPrimitiveType(TYPE_I64);
+                node->valueType = getPrimitiveType(TYPE_F64);
                 break;
             } else if (!fromModule && tokenEquals(node->data.call.name, "push")) {
                 if (node->data.call.argCount != 2) {
