@@ -439,8 +439,8 @@ static InterpretResult run() {
     #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
     
     // Define and reset loop safety counter at the start of each VM run
-    static int absolute_loop_count = 0; // Tracks iterations across OP_LOOP
-    absolute_loop_count = 0;
+    // static int absolute_loop_count = 0; // Tracks iterations across OP_LOOP
+    // absolute_loop_count = 0;
 
     InterpretResult result = INTERPRET_OK;
 
@@ -1359,7 +1359,7 @@ static InterpretResult run() {
                 uint16_t offset = READ_SHORT();
                 
                 // Use the global loop counter defined at the start of run()
-                absolute_loop_count++;
+                // absolute_loop_count++;
                 
                 // If a loop iteration limit is defined, guard against runaway
                 // loops. The check is compiled out when the limit is disabled.
