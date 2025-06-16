@@ -3,6 +3,6 @@ fn takes_u32(val: u32) -> u32 {
 }
 
 fn main() {
-    let result = takes_u32(42 as u32)
+    let result = takes_u32(42)
     print("{}", result)
 }
