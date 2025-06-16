@@ -1,0 +1,7 @@
+fn main() {
+    let mut sum: i64 = 0
+    for i in 3000000000..3000000005 {
+        sum = sum + i
+    }
+    print(sum)
+}

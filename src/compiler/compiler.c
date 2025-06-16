@@ -1296,17 +1296,23 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             Type* endType = node->data.forStmt.endExpr->valueType;
             Type* stepType = node->data.forStmt.stepExpr ? node->data.forStmt.stepExpr->valueType : NULL;
 
-            if (!startType || (startType->kind != TYPE_I32 && startType->kind != TYPE_U32)) {
+            if (!startType ||
+                (startType->kind != TYPE_I32 && startType->kind != TYPE_I64 &&
+                 startType->kind != TYPE_U32 && startType->kind != TYPE_U64)) {
                 error(compiler, "For loop range start must be an integer.");
                 return;
             }
 
-            if (!endType || (endType->kind != TYPE_I32 && endType->kind != TYPE_U32)) {
+            if (!endType ||
+                (endType->kind != TYPE_I32 && endType->kind != TYPE_I64 &&
+                 endType->kind != TYPE_U32 && endType->kind != TYPE_U64)) {
                 error(compiler, "For loop range end must be an integer.");
                 return;
             }
 
-            if (stepType && (stepType->kind != TYPE_I32 && stepType->kind != TYPE_U32)) {
+            if (stepType &&
+                (stepType->kind != TYPE_I32 && stepType->kind != TYPE_I64 &&
+                 stepType->kind != TYPE_U32 && stepType->kind != TYPE_U64)) {
                 error(compiler, "For loop step must be an integer.");
                 return;
             }
@@ -3572,8 +3578,12 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     Type* iterType = node->data.forStmt.startExpr->valueType;
     if (iterType->kind == TYPE_I32) {
         writeOp(compiler, OP_LESS_I32);
+    } else if (iterType->kind == TYPE_I64) {
+        writeOp(compiler, OP_LESS_I64);
     } else if (iterType->kind == TYPE_U32) {
         writeOp(compiler, OP_LESS_U32);
+    } else if (iterType->kind == TYPE_U64) {
+        writeOp(compiler, OP_LESS_U64);
     } else {
         error(compiler, "Unsupported iterator type for for loop.");
         return;
@@ -3606,20 +3616,46 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     if (node->data.forStmt.stepExpr) {
         generateCode(compiler, node->data.forStmt.stepExpr);
         if (compiler->hadError) return;
+        Type* stepType = node->data.forStmt.stepExpr->valueType;
+        if (stepType && stepType->kind != iterType->kind) {
+            if (iterType->kind == TYPE_I64) {
+                if (stepType->kind == TYPE_I32) {
+                    writeOp(compiler, OP_I32_TO_I64);
+                } else if (stepType->kind == TYPE_U32) {
+                    writeOp(compiler, OP_U32_TO_I64);
+                } else if (stepType->kind == TYPE_U64) {
+                    writeOp(compiler, OP_U64_TO_I64);
+                }
+            } else if (iterType->kind == TYPE_U64) {
+                if (stepType->kind == TYPE_I32) {
+                    writeOp(compiler, OP_I32_TO_U64);
+                } else if (stepType->kind == TYPE_U32) {
+                    writeOp(compiler, OP_U32_TO_U64);
+                }
+            }
+        }
     } else {
         // Default step value is 1
         if (iterType->kind == TYPE_I32) {
             emitConstant(compiler, I32_VAL(1));
+        } else if (iterType->kind == TYPE_I64) {
+            emitConstant(compiler, I64_VAL(1));
         } else if (iterType->kind == TYPE_U32) {
             emitConstant(compiler, U32_VAL(1));
+        } else if (iterType->kind == TYPE_U64) {
+            emitConstant(compiler, U64_VAL(1));
         }
     }
 
     // Add the step to the iterator
     if (iterType->kind == TYPE_I32) {
         writeOp(compiler, OP_ADD_I32);
+    } else if (iterType->kind == TYPE_I64) {
+        writeOp(compiler, OP_ADD_I64);
     } else if (iterType->kind == TYPE_U32) {
         writeOp(compiler, OP_ADD_U32);
+    } else if (iterType->kind == TYPE_U64) {
+        writeOp(compiler, OP_ADD_U64);
     }
 
     // Store the incremented value back in the iterator variable
