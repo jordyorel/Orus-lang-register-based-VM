@@ -37,8 +37,8 @@ allows comparison and equality operations. Numeric types implicitly satisfy
 ### Improved Type Inference
 - [x] Enhance inference for arguments in generic functions
 - [x] Add support for nested generics inference
-- [ ] Optimize inference for complex expressions
-- [ ] Write test cases for edge cases in type inference
+- [x] Optimize inference for complex expressions
+- [x] Write test cases for edge cases in type inference
 
 ## Medium Priority Tasks
 

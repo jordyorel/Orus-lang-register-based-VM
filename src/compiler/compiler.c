@@ -67,16 +67,27 @@ static void predeclareFunction(Compiler* compiler, ASTNode* node);
 static void deduceGenerics(Type* expected, Type* actual,
                            ObjString** names, Type** subs, int count) {
     if (!expected || !actual) return;
+
     if (expected->kind == TYPE_GENERIC) {
         for (int i = 0; i < count; i++) {
             if (names[i] && strcmp(expected->info.generic.name->chars,
                                   names[i]->chars) == 0) {
+                if (actual->kind == TYPE_NIL) return;
                 if (!subs[i]) subs[i] = actual;
                 return;
             }
         }
         return;
     }
+
+    if (expected->kind == TYPE_ARRAY && actual->kind == TYPE_ARRAY) {
+        if (actual->info.array.elementType->kind == TYPE_NIL) return;
+        deduceGenerics(expected->info.array.elementType,
+                       actual->info.array.elementType,
+                       names, subs, count);
+        return;
+    }
+
     if (expected->kind != actual->kind) return;
     switch (expected->kind) {
         case TYPE_ARRAY:
@@ -1794,6 +1805,15 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 }
                 if (gcount > 0) {
                     expected = substituteGenerics(expected, gnames, gsubs, gcount);
+                }
+                if (i < acount && argNodes[i]->valueType &&
+                    argNodes[i]->valueType->kind == TYPE_ARRAY &&
+                    argNodes[i]->valueType->info.array.elementType->kind == TYPE_NIL &&
+                    expected->kind == TYPE_ARRAY) {
+                    argNodes[i]->valueType = expected;
+                    if (argNodes[i]->type == AST_VARIABLE) {
+                        variableTypes[argNodes[i]->data.variable.index] = expected;
+                    }
                 }
                 if (i >= acount || !typesEqual(expected, argNodes[i]->valueType)) {
                     const char* expectedType = getTypeName(expected->kind);
