@@ -3,8 +3,8 @@ fn main() {
     print(sum(values))
 
     let arr: [i32; 1] = [0]
-    push(arr, 10)
-    push(arr, 20)
-    push(arr, -5)
+    push(arr, 10 as i32)
+    push(arr, 20 as i32)
+    push(arr, -5 as i32)
     print(sum(arr))
 }
