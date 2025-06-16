@@ -949,9 +949,29 @@ static void forStatement(Parser* parser, ASTNode** ast) {
         expression(parser, &endExpr);
         consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after range.");
 
-        // Default step is 1
-        stepExpr = createLiteralNode(I32_VAL(1));
-        stepExpr->valueType = getPrimitiveType(TYPE_I32);
+        // Default step is 1 with type matching the start expression if known
+        TypeKind kind = TYPE_I32;
+        if (startExpr->valueType) {
+            TypeKind st = startExpr->valueType->kind;
+            if (st == TYPE_I64 || st == TYPE_U32 || st == TYPE_U64 || st == TYPE_I32)
+                kind = st;
+        }
+        switch (kind) {
+            case TYPE_I64:
+                stepExpr = createLiteralNode(I64_VAL(1));
+                break;
+            case TYPE_U32:
+                stepExpr = createLiteralNode(U32_VAL(1));
+                break;
+            case TYPE_U64:
+                stepExpr = createLiteralNode(U64_VAL(1));
+                break;
+            default:
+                stepExpr = createLiteralNode(I32_VAL(1));
+                kind = TYPE_I32;
+                break;
+        }
+        stepExpr->valueType = getPrimitiveType(kind);
     } else {
         // Parse the range start expression
         expression(parser, &startExpr);
@@ -967,9 +987,29 @@ static void forStatement(Parser* parser, ASTNode** ast) {
             // Parse the step expression
             expression(parser, &stepExpr);
         } else {
-            // Default step is 1
-            stepExpr = createLiteralNode(I32_VAL(1));
-            stepExpr->valueType = getPrimitiveType(TYPE_I32);
+            // Default step is 1 using the type of the start expression if known
+            TypeKind kind = TYPE_I32;
+            if (startExpr->valueType) {
+                TypeKind st = startExpr->valueType->kind;
+                if (st == TYPE_I64 || st == TYPE_U32 || st == TYPE_U64 || st == TYPE_I32)
+                    kind = st;
+            }
+            switch (kind) {
+                case TYPE_I64:
+                    stepExpr = createLiteralNode(I64_VAL(1));
+                    break;
+                case TYPE_U32:
+                    stepExpr = createLiteralNode(U32_VAL(1));
+                    break;
+                case TYPE_U64:
+                    stepExpr = createLiteralNode(U64_VAL(1));
+                    break;
+                default:
+                    stepExpr = createLiteralNode(I32_VAL(1));
+                    kind = TYPE_I32;
+                    break;
+            }
+            stepExpr->valueType = getPrimitiveType(kind);
         }
     }
 

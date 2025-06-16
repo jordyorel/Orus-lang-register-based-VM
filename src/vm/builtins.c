@@ -116,23 +116,40 @@ static Value native_range(int argCount, Value* args) {
         vmRuntimeError("range() takes exactly two arguments.");
         return NIL_VAL;
     }
-    if (!(IS_I32(args[0]) || IS_U32(args[0])) ||
-        !(IS_I32(args[1]) || IS_U32(args[1]))) {
-        vmRuntimeError("range() expects (i32/u32, i32/u32).");
+    if (!(IS_I32(args[0]) || IS_I64(args[0]) || IS_U32(args[0]) || IS_U64(args[0])) ||
+        !(IS_I32(args[1]) || IS_I64(args[1]) || IS_U32(args[1]) || IS_U64(args[1]))) {
+        vmRuntimeError("range() expects (i32/i64/u32/u64, i32/i64/u32/u64).");
         return NIL_VAL;
     }
-    int start = IS_I32(args[0]) ? AS_I32(args[0]) : (int)AS_U32(args[0]);
-    int end = IS_I32(args[1]) ? AS_I32(args[1]) : (int)AS_U32(args[1]);
+
+    int64_t start =
+        IS_I32(args[0])  ? AS_I32(args[0])  :
+        IS_I64(args[0])  ? AS_I64(args[0])  :
+        IS_U32(args[0])  ? (int64_t)AS_U32(args[0]) :
+                          (int64_t)AS_U64(args[0]);
+    int64_t end =
+        IS_I32(args[1])  ? AS_I32(args[1])  :
+        IS_I64(args[1])  ? AS_I64(args[1])  :
+        IS_U32(args[1])  ? (int64_t)AS_U32(args[1]) :
+                          (int64_t)AS_U64(args[1]);
+
     if (end < start) {
         ObjArray* arr = allocateArray(0);
         arr->length = 0;
         return ARRAY_VAL(arr);
     }
-    int len = end - start;
+
+    int64_t len64 = end - start;
+    if (len64 > INT32_MAX) len64 = INT32_MAX;
+    int len = (int)len64;
     ObjArray* arr = allocateArray(len);
     arr->length = len;
     for (int i = 0; i < len; i++) {
-        arr->elements[i] = I32_VAL(start + i);
+        if (IS_I32(args[0]) || IS_U32(args[0])) {
+            arr->elements[i] = I32_VAL((int32_t)(start + i));
+        } else if (IS_I64(args[0]) || IS_U64(args[0])) {
+            arr->elements[i] = I64_VAL(start + i);
+        }
     }
     return ARRAY_VAL(arr);
 }
