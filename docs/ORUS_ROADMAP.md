@@ -48,8 +48,8 @@ This document consolidates the development roadmaps for the Orus language, track
 | Cross-Module Generics             | ✅ Done          | Low      | Minor feature    |
 | Generics Documentation            | ✅ Done          | Low      | No impact        |
 | Full Generics Implementation      | ✅ Done          | High     | 0.7.0            |
-| Optimize Inference (Complex)      | Not started      | High     | Minor feature    |
-| Edge Case Inference Tests         | Not started      | High     | No impact        |
+| Optimize Inference (Complex)      | ✅ Done          | High     | Minor feature    |
+| Edge Case Inference Tests         | ✅ Done          | High     | No impact        |
 | Debugging Guide                   | Not started      | Medium   | Docs only        |
 | Advanced Generics Tutorial        | Not started      | Low      | Docs only        |
 | Best Practices & Patterns         | Not started      | Low      | Docs only        |
@@ -145,7 +145,7 @@ use std::math
 ## Development Priorities
 
 -### Short-Term (0–3 months)
-- Finalize improved type inference
+- ✅ Finalize improved type inference
 - Add remaining built-ins: `any`, `all`
 - Expand standard library with modules like `functional` and `random`.
 
