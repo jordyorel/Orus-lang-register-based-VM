@@ -66,6 +66,12 @@ static InterpretResult run();
  */
 void initVM() {
     initTypeSystem();
+    vm.stackCapacity = STACK_INIT_CAPACITY;
+    vm.stack = GROW_ARRAY(Value, NULL, 0, vm.stackCapacity);
+    if (!vm.stack) {
+        fprintf(stderr, "Failed to allocate VM stack\n");
+        exit(1);
+    }
     resetStack();
     vm.variableCount = 0;
     vm.functionCount = 0;
@@ -118,6 +124,12 @@ void freeVM() {
         vm.publicGlobals[i] = false;
     }
     vm.astRoot = NULL;
+    if (vm.stack) {
+        FREE_ARRAY(Value, vm.stack, vm.stackCapacity);
+        vm.stack = NULL;
+        vm.stackTop = NULL;
+        vm.stackCapacity = 0;
+    }
     freeObjects();
     vm.tryFrameCount = 0;
     vm.lastError = NIL_VAL;
@@ -1182,7 +1194,7 @@ static InterpretResult run() {
 
                     // Reset the stack to the frame's base, but keep the return value
                     // Make sure we don't set stackTop to an invalid position
-                    if (frame->stackOffset >= 0 && frame->stackOffset < STACK_MAX) {
+                    if (frame->stackOffset >= 0 && frame->stackOffset < vm.stackCapacity) {
                         vm.stackTop = vm.stack + frame->stackOffset;
                         vmPush(&vm, returnValue);
                     } else {

@@ -7,7 +7,7 @@
 #include "value.h"
 #include <stdbool.h>
 
-#define STACK_MAX 2048
+#define STACK_INIT_CAPACITY 2048
 #define FRAMES_MAX 256
 // The loop iteration limit was originally used to guard against
 // accidental infinite loops during early language development.
@@ -54,8 +54,9 @@ typedef struct {
 typedef struct {
     Chunk* chunk;
     uint8_t* ip;
-    Value stack[STACK_MAX];
+    Value* stack;
     Value* stackTop;
+    int stackCapacity;
     Value globals[UINT8_COUNT];
     Type* globalTypes[UINT8_COUNT];
     bool publicGlobals[UINT8_COUNT];
