@@ -2,14 +2,15 @@ pub const PI: f64 = 3.141592653589793
 pub const E: f64 = 2.718281828459045
 pub const TAU: f64 = 6.283185307179586
 
-pub fn abs(x: f64) -> f64 {
-    if x < 0.0 {
+pub fn abs<T: Numeric>(x: T) -> T {
+    let zero = x - x
+    if x < zero {
         return -x
     }
     return x
 }
 
-pub fn clamp(x: f64, min_val: f64, max_val: f64) -> f64 {
+pub fn clamp<T: Comparable>(x: T, min_val: T, max_val: T) -> T {
     if x < min_val {
         return min_val
     }
@@ -70,11 +71,12 @@ pub fn round(x: f64) -> i32 {
     return floor(x + 0.5)
 }
 
-pub fn sign(x: f64) -> i32 {
-    if x > 0.0 {
+pub fn sign<T: Numeric>(x: T) -> i32 {
+    let zero = x - x
+    if x > zero {
         return 1
     }
-    if x < 0.0 {
+    if x < zero {
         return -1
     }
     return 0
@@ -99,10 +101,11 @@ pub fn median(values: [f64]) -> f64 {
     return (sortedVals[mid - 1] + sortedVals[mid]) / 2.0
 }
 
-pub fn mod(a: i32, b: i32) -> i32 {
-    let r = a % b
-    if r < 0 {
-        return r + b
+pub fn mod<T: Numeric>(a: T, b: T) -> T {
+    let mut r = a % b
+    let zero = a - a
+    if r < zero {
+        r = r + b
     }
     return r
 }
