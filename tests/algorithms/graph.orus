@@ -8,7 +8,7 @@ struct Graph {
     vertices: i32,
     // We'll implement the adjacency list as a 2D array
     // Each row represents a vertex, and the values represent connections (1 = connected, 0 = not connected)
-    adj_matrix: [i32; 36]  // 6x6 matrix flattened to 1D
+    adj_matrix: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  // 6x6 matrix flattened to 1D
 }
 
 impl Graph {
