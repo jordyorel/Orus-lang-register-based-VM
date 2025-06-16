@@ -295,9 +295,6 @@ static ASTNode* parseNumber(Parser* parser) {
                 node = createLiteralNode(U64_VAL(uval));
                 node->valueType = createPrimitiveType(TYPE_U64);
             }
-        } else if (uval <= INT32_MAX) {
-            node = createLiteralNode(I32_VAL((int32_t)uval));
-            node->valueType = createPrimitiveType(TYPE_I32);
         } else if (uval <= INT64_MAX) {
             node = createLiteralNode(I64_VAL((int64_t)uval));
             node->valueType = createPrimitiveType(TYPE_I64);

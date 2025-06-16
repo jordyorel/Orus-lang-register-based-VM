@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include "../../include/memory.h"
 #include "../../include/chunk.h"
@@ -1099,11 +1100,23 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 node->left->type == AST_LITERAL) {
                 if (IS_I32(node->left->data.literal) &&
                     AS_I32(node->left->data.literal) >= 0) {
-                    // Convert the literal to u32
                     int32_t value = AS_I32(node->left->data.literal);
                     node->left->data.literal = U32_VAL((uint32_t)value);
                     node->left->valueType = varType;
                     valueType = varType;
+                }
+            }
+
+            // Implicitly cast i64 literals to i32 when safe
+            if (varType->kind == TYPE_I32 && valueType->kind == TYPE_I64 &&
+                node->left->type == AST_LITERAL) {
+                if (IS_I64(node->left->data.literal)) {
+                    int64_t v = AS_I64(node->left->data.literal);
+                    if (v >= INT32_MIN && v <= INT32_MAX) {
+                        node->left->data.literal = I32_VAL((int32_t)v);
+                        node->left->valueType = varType;
+                        valueType = varType;
+                    }
                 }
             }
 
