@@ -1,6 +1,6 @@
 # Orus Error Reference
 
-This document consolidates the syntax and compile-time errors currently emitted by the Orus language tools (version 0.6.2). Syntax errors arise while scanning and parsing source files. Compile-time errors occur later during type checking and semantic analysis.
+This document consolidates the syntax and compile-time errors currently emitted by the Orus language tools (version 0.7.0). Syntax errors arise while scanning and parsing source files. Compile-time errors occur later during type checking and semantic analysis.
 
 ## Syntax errors
 

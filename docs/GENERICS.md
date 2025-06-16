@@ -6,7 +6,7 @@
 - [x] Generic types for collections via C-side macros (`DEFINE_ARRAY_TYPE`)
 - [x] Regular function forward declarations supported
 - [x] Generic function forward declarations supported
-- [ ] Full generics implementation (in progress)
+- [x] Full generics implementation
 
 ## High Priority Tasks
 
