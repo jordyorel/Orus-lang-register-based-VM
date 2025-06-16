@@ -324,6 +324,93 @@ structs before execution. Type inference handles nested generics and supports
 numeric operators when the `Numeric` constraint is used. Standard collections
 like `Map` and `Set` are implemented generically in the `std` library.
 
+### Generic Functions
+
+Declare type parameters in angle brackets after the function name. The type can then be used in parameters and the return type.
+
+```orus
+fn identity<T>(value: T) -> T {
+    return value
+}
+```
+
+The type argument can often be inferred:
+
+```orus
+let x = identity<i32>(5)
+let y = identity("hello") // `T` inferred as `string`
+```
+
+Functions defined later in the file can still be called thanks to the prepass that records generic signatures:
+
+```orus
+fn main() {
+    print(firstElement([1, 2, 3]))
+}
+
+fn firstElement<T>(arr: [T]) -> T {
+    return arr[0]
+}
+```
+
+### Generic Structs
+
+Structs also support type parameters:
+
+```orus
+struct Box<T> { value: T }
+```
+
+Instances specify the concrete type:
+
+```orus
+let intBox = Box<i32>{ value: 42 }
+let strBox = Box<string>{ value: "hi" }
+```
+
+Nested generics require a space so `>>` is not misread as the shift operator:
+
+```orus
+let nested: Box<Box<i32> > = Box { value: intBox }
+```
+
+### Constraints
+
+Type parameters may declare constraints using a colon. `Numeric` enables arithmetic and bitwise operators while `Comparable` allows comparison and equality.
+
+```orus
+fn add<T: Numeric>(a: T, b: T) -> T { return a + b }
+fn min<T: Comparable>(a: T, b: T) -> T { if a < b { return a } else { return b } }
+```
+
+Numeric types automatically satisfy `Comparable`.
+
+### Cross-Module Generics
+
+Generic functions and structs can be defined in separate modules. The prepass ensures specializations are generated before execution.
+
+```orus
+// util.orus
+pub fn identity<T>(val: T) -> T { return val }
+```
+
+```orus
+// main.orus
+use util
+
+fn main() {
+    print(util.identity<i32>(42))
+}
+```
+
+### Collections
+
+Standard collections like `Map` and `Set` are implemented generically in `std/collections`. Higher-order helpers such as `map`, `filter` and `reduce` work with any element type.
+
+### Further Reading
+
+See `tests/generics/` for complete examples.
+
 ## Modules
 
 Code can be split into multiple files. Use `use` to load an entire module. Only whole modules may be imported; individual items cannot be pulled in directly. After importing, reference functions or types through the module name.
