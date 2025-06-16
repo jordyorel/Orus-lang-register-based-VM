@@ -107,8 +107,7 @@ For a summary of each category see `docs/TESTS_OVERVIEW.md`.
 
 ## Benchmarking
 
-Simple micro benchmarks live in the `benchmarks/` directory. After building the
-interpreter run:
+Simple micro benchmarks live in the `benchmarks/` directory. It also contains `comprehensive.orus` which exercises datetime handling, generic types, math utilities, random number generation and collection helpers. After building the interpreter run:
 
 ```sh
 bash benchmarks/run_benchmarks.sh
