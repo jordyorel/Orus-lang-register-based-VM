@@ -114,6 +114,8 @@ bash benchmarks/run_benchmarks.sh
 ```
 
 The script executes each benchmark program and prints the time spent running it.
+Each benchmark also reports its own elapsed time using `timestamp()` so they can
+be executed individually and still provide timing information.
 
 ## Repository layout
 

@@ -22,9 +22,15 @@ fn fibonacci_iter(n: i32) -> i32 {
 }
 
 fn main() {
-    let mut result: i32 = 0
+    let start = timestamp()
+    let mut results: [i32] = []
     for i in 0..500 {
-        result = fibonacci_iter(20)
+        let value = fibonacci_iter(20)
+        results.push(value)
     }
-    print(result)
+    // Print the last computed value to match previous behavior
+    let last = results[len(results) - 1]
+    print(last)
+    let elapsed = timestamp() - start
+    print(elapsed)
 }
