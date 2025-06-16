@@ -7,12 +7,12 @@ fn main() {
     vf.push(3.5)
     print("Float vector: " + vf)
     print("Length: " + len(vf))
-    print("First: " + vf[0] + ", Last: " + vf[len(vf)-1])
+    print("First: " + vf[0 as i32] + ", Last: " + vf[len(vf) - (1 as i32)])
     let popped = vf.pop()
     print("Popped: " + popped)
     print("After pop: " + vf)
     print("Iterate:")
-    for i in 0..len(vf) {
+    for i in (0 as i32)..len(vf) {
         print("vf[" + i + "]: " + vf[i])
     }
 }

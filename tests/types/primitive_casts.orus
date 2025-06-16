@@ -1,5 +1,5 @@
 fn main() {
-    let a: i32 = -3
+    let a = -3 as i32
     let b: i64 = a as i64
     let c: u32 = a as u32
     let d: u64 = b as u64

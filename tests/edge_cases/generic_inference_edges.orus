@@ -3,8 +3,8 @@
 // provide no type information (e.g. empty arrays).
 
 fn first_or<T>(arr: [T], default: T) -> T {
-    if (len(arr) > 0) {
-        return arr[0]
+    if (len(arr) > (0 as i32)) {
+        return arr[0 as i32]
     }
     return default
 }

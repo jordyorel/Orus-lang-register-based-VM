@@ -1,7 +1,7 @@
 // Test type mismatch error handling
 
 fn main() {
-    let a: i32 = 10
+    let a: i64 = 10
     let b: bool = true
 
     print("Type Mismatch Test:")
@@ -11,7 +11,7 @@ fn main() {
     let result = a + b
 
     print("Using compatible types instead:")
-    let c: i32 = 20
+    let c: i64 = 20
     let result = a + c
     print(result)
 }

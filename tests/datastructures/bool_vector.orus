@@ -7,12 +7,12 @@ fn main() {
     vb.push(true)
     print("Bool vector: " + vb)
     print("Length: " + len(vb))
-    print("First: " + vb[0] + ", Last: " + vb[len(vb)-1])
+    print("First: " + vb[0 as i32] + ", Last: " + vb[len(vb) - (1 as i32)])
     let popped = vb.pop()
     print("Popped: " + popped)
     print("After pop: " + vb)
     print("Iterate:")
-    for i in 0..len(vb) {
+    for i in (0 as i32)..len(vb) {
         print("vb[" + i + "]: " + vb[i])
     }
 }

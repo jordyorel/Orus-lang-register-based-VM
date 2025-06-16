@@ -9,46 +9,46 @@ struct Stack {
 impl Stack {
     fn new() -> Stack {
         return Stack{
-            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            top: -1
+            data: [0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32],
+            top: -1 as i32
         }
     }
     
     fn push(self, value: i32) -> bool {
-        if self.top >= 9 {
+        if self.top >= (9 as i32) {
             // Stack overflow
             return false
         }
         
-        self.top = self.top + 1
+        self.top = self.top + (1 as i32)
         self.data[self.top] = value
         return true
     }
     
     fn pop(self) -> i32 {
-        if self.top < 0 {
+        if self.top < (0 as i32) {
             // Stack underflow
-            return -1
+            return -1 as i32
         }
         
         let value: i32 = self.data[self.top]
-        self.top = self.top - 1
+        self.top = self.top - (1 as i32)
         return value
     }
     
     fn peek(self) -> i32 {
-        if self.top < 0 {
-            return -1
+        if self.top < (0 as i32) {
+            return -1 as i32
         }
         return self.data[self.top]
     }
     
     fn is_empty(self) -> bool {
-        return self.top < 0
+        return self.top < (0 as i32)
     }
     
     fn size(self) -> i32 {
-        return self.top + 1
+        return self.top + (1 as i32)
     }
 }
 
@@ -63,46 +63,46 @@ struct Queue {
 impl Queue {
     fn create() -> Queue {
         return Queue{
-            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            front: 0,
-            rear: -1,
-            count: 0
+            data: [0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32],
+            front: 0 as i32,
+            rear: -1 as i32,
+            count: 0 as i32
         }
     }
     
     fn enqueue(self, value: i32) -> bool {
-        if self.count >= 10 {
+        if self.count >= (10 as i32) {
             // Queue is full
             return false
         }
         
-        self.rear = (self.rear + 1) % 10
+        self.rear = (self.rear + (1 as i32)) % (10 as i32)
         self.data[self.rear] = value
-        self.count = self.count + 1
+        self.count = self.count + (1 as i32)
         return true
     }
     
     fn dequeue(self) -> i32 {
-        if self.count <= 0 {
+        if self.count <= (0 as i32) {
             // Queue is empty
-            return -1
+            return -1 as i32
         }
         
         let value: i32 = self.data[self.front]
-        self.front = (self.front + 1) % 10
-        self.count = self.count - 1
+        self.front = (self.front + (1 as i32)) % (10 as i32)
+        self.count = self.count - (1 as i32)
         return value
     }
     
     fn peek(self) -> i32 {
-        if self.count <= 0 {
-            return -1
+        if self.count <= (0 as i32) {
+            return -1 as i32
         }
         return self.data[self.front]
     }
     
     fn is_empty(self) -> bool {
-        return self.count == 0
+        return self.count == (0 as i32)
     }
     
     fn size(self) -> i32 {
@@ -120,7 +120,7 @@ fn main() {
     stack.push(3)
     print("Stack after pushes: " + stack)
     let s1 = stack.pop()
-    print("Popped from stack: " + s1)
+    print("Popped from stack: " + (s1 as string))
     print("Stack now: " + stack)
 
     // Queue (FIFO)
@@ -129,19 +129,19 @@ fn main() {
     queue.push(20)
     queue.push(30)
     print("Queue after pushes: " + queue)
-    let q1 = queue[0]
-    queue = queue[1..len(queue)]
-    print("Dequeued from queue: " + q1)
+    let q1 = queue[0 as i32]
+    queue = queue[(1 as i32)..len(queue)]
+    print("Dequeued from queue: " + (q1 as string))
     print("Queue now: " + queue)
 
     // Iterate stack
     print("Iterate stack:")
-    for i in 0..len(stack) {
-        print("stack[" + i + "]: " + stack[i])
+    for i in (0 as i32)..len(stack) {
+        print("stack[" + (i as string) + "]: " + (stack[i] as string))
     }
     // Iterate queue
     print("Iterate queue:")
-    for i in 0..len(queue) {
-        print("queue[" + i + "]: " + queue[i])
+    for i in (0 as i32)..len(queue) {
+        print("queue[" + (i as string) + "]: " + (queue[i] as string))
     }
 }

@@ -7,12 +7,12 @@ fn main() {
     vu.push(3u)
     print("UInt vector: " + vu)
     print("Length: " + len(vu))
-    print("First: " + vu[0] + ", Last: " + vu[len(vu)-1])
+    print("First: " + vu[0 as i32] + ", Last: " + vu[len(vu) - (1 as i32)])
     let popped = vu.pop()
     print("Popped: " + popped)
     print("After pop: " + vu)
     print("Iterate:")
-    for i in 0..len(vu) {
+    for i in (0 as i32)..len(vu) {
         print("vu[" + i + "]: " + vu[i])
     }
 }

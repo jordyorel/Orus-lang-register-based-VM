@@ -1,4 +1,4 @@
 fn main() {
-    let matrix: [[i32; 2]; 2] = [[1, 2], [3, 4]]
+    let matrix: [[i32; 2]; 2] = [[1 as i32, 2 as i32], [3 as i32, 4 as i32]]
     print(matrix)
 }

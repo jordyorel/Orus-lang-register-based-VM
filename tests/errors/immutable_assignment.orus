@@ -1,4 +1,4 @@
 fn main() {
-    let x: i32 = 5
+    let x: i64 = 5
     x = 6
 }

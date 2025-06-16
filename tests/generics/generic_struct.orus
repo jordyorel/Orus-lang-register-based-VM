@@ -9,7 +9,7 @@ struct Box<T> {
 // Create boxes with different types
 fn main() {
     // Integer box
-    let intBox = Box<i32>{item: 42}
+    let intBox = Box<i32>{item: 42 as i32}
     print("Int box contains: " + intBox.item)
     
     // Float box
@@ -21,7 +21,7 @@ fn main() {
     print("String box contains: " + stringBox.item)
     
     // Test reassigning values
-    intBox.item = 100
+    intBox.item = 100 as i32
     print("Updated int box: " + intBox.item)
     
     // Test nested generic structures

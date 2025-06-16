@@ -13,10 +13,10 @@ fn error(msg: string) {
 
 // Function that works with any array type
 fn firstElement<T>(arr: [T]) -> T {
-    if (len(arr) == 0) {
+    if (len(arr) == (0 as i32)) {
         error("Array is empty")
     }
-    return arr[0]
+    return arr[0 as i32]
 }
 
 // Pair struct for zip results
@@ -33,7 +33,7 @@ fn zip<A, B>(arrA: [A], arrB: [B]) -> [Pair<A, B>] {
         length = len(arrB)
     }
     
-    for i in 0..length {
+    for i in (0 as i32)..length {
         let pair = Pair<A, B>{first: arrA[i], second: arrB[i]}
         result.push(pair)
     }
@@ -44,14 +44,14 @@ fn zip<A, B>(arrA: [A], arrB: [B]) -> [Pair<A, B>] {
 // Higher-order function with generic parameters
 fn map<T, U>(arr: [T], callback: (T) -> U) -> [U] {
     let result = []
-    for i in 0..len(arr) {
+    for i in (0 as i32)..len(arr) {
         result.push(callback(arr[i]))
     }
     return result
 }
 
 fn double(x: i32) -> i32 {
-    return x * 2
+    return x * (2 as i32)
 }
 
 fn toUpper(s: string) -> string {
@@ -76,12 +76,12 @@ fn main() {
     print("First name: {}", firstElement(names))
     
     // Test zip function
-    let ids = [1, 2, 3, 4]
+    let ids: [i32] = [1, 2, 3, 4]
     let users = ["user1", "user2", "user3"]
     let zipped = zip(ids, users)
     
     print("Zipped results:")
-    for i in 0..len(zipped) {
+    for i in (0 as i32)..len(zipped) {
         print("ID: {}, User: {}", zipped[i].first, zipped[i].second)
     }
     

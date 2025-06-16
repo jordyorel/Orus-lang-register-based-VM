@@ -5,7 +5,7 @@ fn main() {
     print(math.abs(-5))
     print(math.clamp(15.0, 0.0, 10.0))
     print(math.clamp(15, 0, 10))
-    print(math.pow(2.0, 8))
+    print(math.pow(2.0, 8 as i32))
     print(math.sqrt(9.0))
     print(math.round(3.6))
     print(math.floor(3.9))

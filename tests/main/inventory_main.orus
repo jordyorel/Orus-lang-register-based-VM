@@ -6,12 +6,12 @@ impl Inventory {
     fn most_stocked(self) -> string {
         let mut num_red: i32 = 0
         let mut num_blue: i32 = 0
-        for i in 0..3 {
+        for i in (0 as i32)..(3 as i32) {
             let color: string = self.shirts[i]
             if color == "red" {
-                num_red = num_red + 1
+                num_red = num_red + (1 as i32)
             } else {
-                num_blue = num_blue + 1
+                num_blue = num_blue + (1 as i32)
             }
         }
         if num_red > num_blue {

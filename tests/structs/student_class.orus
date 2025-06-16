@@ -9,27 +9,27 @@ impl Student {
         return Student{
             name: name,
             id: id,
-            grades: [0, 0, 0, 0, 0]
+            grades: [0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32]
         }
     }
     
     fn set_grade(self, index: i32, grade: i32) {
-        if index >= 0 and index < 5 {
+        if index >= (0 as i32) and index < (5 as i32) {
             self.grades[index] = grade
         }
     }
     
     fn average(self) -> i32 {
         let mut sum: i32 = 0
-        for i in 0..5 {
+        for i in (0 as i32)..(5 as i32) {
             sum = sum + self.grades[i]
         }
-        return sum / 5
+        return sum / (5 as i32)
     }
     
     fn highest(self) -> i32 {
-        let mut max: i32 = self.grades[0]
-        for i in 1..5 {
+        let mut max: i32 = self.grades[0 as i32]
+        for i in (1 as i32)..(5 as i32) {
             if self.grades[i] > max {
                 max = self.grades[i]
             }
@@ -46,33 +46,33 @@ struct Class {
 
 impl Class {
     fn new(name: string) -> Class {
-        let s1: Student = Student.new("", 0)
-        let s2: Student = Student.new("", 0)
-        let s3: Student = Student.new("", 0)
+        let s1: Student = Student.new("", 0 as i32)
+        let s2: Student = Student.new("", 0 as i32)
+        let s3: Student = Student.new("", 0 as i32)
         
         return Class{
             name: name,
             students: [s1, s2, s3],
-            count: 0
+            count: 0 as i32
         }
     }
     
     fn add_student(self, student: Student) -> bool {
-        if self.count < 3 {
+        if self.count < (3 as i32) {
             self.students[self.count] = student
-            self.count = self.count + 1
+            self.count = self.count + (1 as i32)
             return true
         }
         return false
     }
     
     fn class_average(self) -> i32 {
-        if self.count == 0 {
-            return 0
+        if self.count == (0 as i32) {
+            return 0 as i32
         }
         
         let mut sum: i32 = 0
-        for i in 0..self.count {
+        for i in (0 as i32)..self.count {
             sum = sum + self.students[i].average()
         }
         return sum / self.count
@@ -80,19 +80,19 @@ impl Class {
 }
 
 fn main() {
-    let alice: Student = Student.new("Alice", 101)
-    alice.set_grade(0, 85)
-    alice.set_grade(1, 90)
-    alice.set_grade(2, 82)
-    alice.set_grade(3, 88)
-    alice.set_grade(4, 95)
+    let alice: Student = Student.new("Alice", 101 as i32)
+    alice.set_grade(0 as i32, 85 as i32)
+    alice.set_grade(1 as i32, 90 as i32)
+    alice.set_grade(2 as i32, 82 as i32)
+    alice.set_grade(3 as i32, 88 as i32)
+    alice.set_grade(4 as i32, 95 as i32)
 
-    let bob: Student = Student.new("Bob", 102)
-    bob.set_grade(0, 75)
-    bob.set_grade(1, 82)
-    bob.set_grade(2, 78)
-    bob.set_grade(3, 80)
-    bob.set_grade(4, 85)
+    let bob: Student = Student.new("Bob", 102 as i32)
+    bob.set_grade(0 as i32, 75 as i32)
+    bob.set_grade(1 as i32, 82 as i32)
+    bob.set_grade(2 as i32, 78 as i32)
+    bob.set_grade(3 as i32, 80 as i32)
+    bob.set_grade(4 as i32, 85 as i32)
 
     print("Alice's grades: {}", alice.grades)
     print("Alice's average: {}", alice.average())

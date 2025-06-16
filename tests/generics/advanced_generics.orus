@@ -39,14 +39,14 @@ fn createNode<T>(value: T, left: TreeNode<T>, right: TreeNode<T>) -> TreeNode<T>
 
 // Function that traverses tree in-order
 fn inorderTraversal<T>(node: TreeNode<T>, result: [T]) {
-    if (len(node.left) > 0) {
-        inorderTraversal(node.left[0], result)
+    if (len(node.left) > (0 as i32)) {
+        inorderTraversal(node.left[0 as i32], result)
     }
     
     result.push(node.value)
     
-    if (len(node.right) > 0) {
-        inorderTraversal(node.right[0], result)
+    if (len(node.right) > (0 as i32)) {
+        inorderTraversal(node.right[0 as i32], result)
     }
 }
 
@@ -85,7 +85,7 @@ fn main() {
     
     // Test tuple
     let tuple = Tuple<i32, string, bool>{
-        first: 1,
+        first: 1 as i32,
         second: "two",
         third: true
     }
@@ -98,7 +98,7 @@ fn main() {
     containers.push(createContainer(300))
     
     print("Container values:")
-    for i in 0..len(containers) {
+    for i in (0 as i32)..len(containers) {
         print("Container {}: {}", i, containers[i].value)
     }
 }

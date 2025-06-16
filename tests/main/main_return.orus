@@ -1,5 +1,5 @@
 // main may return a value which is ignored by the interpreter
 fn main() -> i32 {
     print("Returning 42 from main")
-    return 42
+    return 42 as i32
 }

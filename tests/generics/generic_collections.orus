@@ -33,13 +33,13 @@ struct Pair<K, V> {
 fn main() {
     // Test basic list operations
     let numbers = List<i32>{items: []}
-    add(numbers, 10)
-    add(numbers, 20)
-    add(numbers, 30)
+    add(numbers, 10 as i32)
+    add(numbers, 20 as i32)
+    add(numbers, 30 as i32)
     
     print("List size: " + size(numbers))
-    print("First item: " + get(numbers, 0))
-    print("Second item: " + get(numbers, 1))
+    print("First item: " + get(numbers, 0 as i32))
+    print("Second item: " + get(numbers, 1 as i32))
     
     // Test list with strings
     let names = List<string>{items: []}
@@ -48,18 +48,18 @@ fn main() {
     add(names, "Charlie")
     
     print("Names list:")
-    for i in 0..size(names) {
+    for i in (0 as i32)..size(names) {
         print(get(names, i))
     }
     
     // Test with complex data structure
     let dict = []
-    dict.push(Pair<string, i32>{key: "one", value: 1})
-    dict.push(Pair<string, i32>{key: "two", value: 2})
-    dict.push(Pair<string, i32>{key: "three", value: 3})
+    dict.push(Pair<string, i32>{key: "one", value: 1 as i32})
+    dict.push(Pair<string, i32>{key: "two", value: 2 as i32})
+    dict.push(Pair<string, i32>{key: "three", value: 3 as i32})
     
     print("Dictionary entries:")
-    for i in 0..len(dict) {
+    for i in (0 as i32)..len(dict) {
         print(dict[i].key + " -> " + dict[i].value)
     }
 }
