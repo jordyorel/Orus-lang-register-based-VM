@@ -95,6 +95,7 @@ typedef struct {
     Obj* objects;
     size_t bytesAllocated;
     bool trace;
+    unsigned long instruction_count;
 } VM;
 
 typedef enum {

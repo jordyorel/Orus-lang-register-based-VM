@@ -74,6 +74,7 @@ void initVM() {
     vm.lastError = NIL_VAL;
     vm.objects = NULL;
     vm.bytesAllocated = 0;
+    vm.instruction_count = 0;
     vm.astRoot = NULL;
     vm.filePath = NULL;
     vm.currentLine = 0;
@@ -446,6 +447,10 @@ static InterpretResult run() {
 
     for (;;) {
         if (vm.trace) traceExecution();
+        vm.instruction_count++;
+        if (vm.instruction_count % 10000 == 0) {
+            collectGarbage();
+        }
         vm.currentLine = get_line(vm.chunk, (int)(vm.ip - vm.chunk->code));
         vm.currentColumn = get_column(vm.chunk, (int)(vm.ip - vm.chunk->code));
         uint8_t instruction = READ_BYTE();
@@ -1764,6 +1769,12 @@ static InterpretResult run() {
                                                     AS_ERROR(arg)->type,
                                                     AS_ERROR(arg)->message->chars);
                                 break;
+                            case VAL_RANGE_ITERATOR:
+                                valueLen = snprintf(valueStr, sizeof(valueStr),
+                                                    "<range %lld..%lld>",
+                                                    (long long)AS_RANGE_ITERATOR(arg)->current,
+                                                    (long long)AS_RANGE_ITERATOR(arg)->end);
+                                break;
                         }
 
                         if (valueLen > 0) {
@@ -1935,6 +1946,12 @@ static InterpretResult run() {
                             case VAL_ERROR:
                                 valueLen = snprintf(valueStr, sizeof(valueStr), "Error(%d): %s", AS_ERROR(arg)->type, AS_ERROR(arg)->message->chars);
                                 break;
+                            case VAL_RANGE_ITERATOR:
+                                valueLen = snprintf(valueStr, sizeof(valueStr),
+                                                    "<range %lld..%lld>",
+                                                    (long long)AS_RANGE_ITERATOR(arg)->current,
+                                                    (long long)AS_RANGE_ITERATOR(arg)->end);
+                                break;
                         }
 
                         if (valueLen > 0) {
@@ -2101,6 +2118,7 @@ static InterpretResult run() {
 InterpretResult runChunk(Chunk* chunk) {
     vm.chunk = chunk;
     vm.ip = chunk->code;
+    vm.instruction_count = 0;
 
     if (vm.trace) {
 #ifdef DEBUG_TRACE_EXECUTION

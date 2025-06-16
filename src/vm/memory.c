@@ -103,6 +103,15 @@ ObjIntArray* allocateIntArray(int length) {
     return array;
 }
 
+ObjRangeIterator* allocateRangeIterator(int64_t start, int64_t end) {
+    ObjRangeIterator* it =
+        (ObjRangeIterator*)allocateObject(sizeof(ObjRangeIterator),
+                                          OBJ_RANGE_ITERATOR);
+    it->current = start;
+    it->end = end;
+    return it;
+}
+
 /**
  * Allocate a runtime error object with message and location.
  *
@@ -180,6 +189,10 @@ void markObject(Obj* object) {
         case OBJ_ERROR: {
             ObjError* err = (ObjError*)object;
             markObject((Obj*)err->message);
+            break;
+        }
+        case OBJ_RANGE_ITERATOR: {
+            // Range iterators have no referenced objects
             break;
         }
         case OBJ_AST: {
@@ -369,6 +382,11 @@ static void freeObject(Obj* object) {
             vm.bytesAllocated -= sizeof(ObjIntArray) + sizeof(int) * array->length;
             free(array->elements);
             free(array);
+            break;
+        }
+        case OBJ_RANGE_ITERATOR: {
+            vm.bytesAllocated -= sizeof(ObjRangeIterator);
+            free(object);
             break;
         }
         case OBJ_ERROR: {
