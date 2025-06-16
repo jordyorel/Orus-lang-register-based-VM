@@ -74,7 +74,8 @@ pub fn map_iter_next<K, V>(it: MapIterator<K, V>) -> Entry<K, V> {
 
 pub fn map_keys<K, V>(map: Map<K, V>) -> [K] {
     let keys = []
-    for entry in map.items {
+    for i in 0..len(map.items) {
+        let entry = map.items[i]
         keys.push(entry.key)
     }
     return keys
@@ -82,7 +83,8 @@ pub fn map_keys<K, V>(map: Map<K, V>) -> [K] {
 
 pub fn map_values<K, V>(map: Map<K, V>) -> [V] {
     let values = []
-    for entry in map.items {
+    for i in 0..len(map.items) {
+        let entry = map.items[i]
         values.push(entry.value)
     }
     return values

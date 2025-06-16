@@ -6,10 +6,10 @@ fn fibonacci_iter(n: i32) -> i32 {
         return 1
     }
 
-    let a: i32 = 0
-    let b: i32 = 1
-    let c: i32 = 0
-    let i: i32 = 2
+    let mut a: i32 = 0
+    let mut b: i32 = 1
+    let mut c: i32 = 0
+    let mut i: i32 = 2
 
     while i <= n {
         c = a + b
@@ -22,7 +22,7 @@ fn fibonacci_iter(n: i32) -> i32 {
 }
 
 fn main() {
-    let result: i32 = 0
+    let mut result: i32 = 0
     for i in 0..500 {
         result = fibonacci_iter(20)
     }

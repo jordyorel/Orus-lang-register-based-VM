@@ -1,4 +1,3 @@
-use std::datetime
 
 // Linear Congruential Generator state
 static mut SEED: u64 = 123456789u
