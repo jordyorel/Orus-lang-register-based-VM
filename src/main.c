@@ -12,11 +12,13 @@
 #include "../include/modules.h"
 #include "../include/builtin_stdlib.h"
 #include "../include/error.h"
+#include "../include/string_utils.h"
 #include "../include/version.h"
 #include <limits.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
+extern VM vm;
 
 static void deriveRuntimeHelp(const char* message,
                               char** helpOut,
@@ -35,7 +37,31 @@ static void deriveRuntimeHelp(const char* message,
         *noteOut = "the operation expected a different type";
     } else if (strstr(message, "Module") && strstr(message, "not found")) {
         *helpOut = strdup("check the module path or adjust the ORUS_STD_PATH environment variable");
-        *noteOut = "imports are resolved relative to the current file or the standard library path";
+        const char* baseNote = "imports are resolved relative to the current file or the standard library path";
+        const char* suggestion = NULL;
+        const char* start = strchr(message, '`');
+        const char* end = start ? strchr(start + 1, '`') : NULL;
+        char modName[64];
+        if (start && end && end - start - 1 < (int)sizeof(modName)) {
+            int len = (int)(end - start - 1);
+            memcpy(modName, start + 1, len);
+            modName[len] = '\0';
+            int bestDist = 4;
+            for (int i = 0; i < vm.moduleCount; i++) {
+                if (vm.loadedModules[i]) {
+                    const char* cand = vm.loadedModules[i]->chars;
+                    int dist = levenshteinDistance(modName, cand);
+                    if (dist < bestDist) { bestDist = dist; suggestion = cand; }
+                }
+            }
+        }
+        if (suggestion) {
+            char buf[128];
+            snprintf(buf, sizeof(buf), "%s. Did you mean `%s`?", baseNote, suggestion);
+            *noteOut = strdup(buf);
+        } else {
+            *noteOut = baseNote;
+        }
     } else if (strstr(message, "Import cycle")) {
         *helpOut = strdup("restructure your modules to remove circular dependencies");
         *noteOut = "module A importing B while B imports A causes an import cycle";
