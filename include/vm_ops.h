@@ -19,11 +19,7 @@ static inline Value vmPeek(VM* vm, int distance) {
 }
 
 static inline void vmPush(VM* vm, Value value) {
-    // Safety check for stack overflow
-    if (vm->stackTop - vm->stack >= STACK_MAX) {
-        fprintf(stderr, "Error: Stack overflow\n");
-        return;
-    }
+    GROW_STACK_IF_NEEDED(vm);
     *vm->stackTop = value;
     vm->stackTop++;
 }
