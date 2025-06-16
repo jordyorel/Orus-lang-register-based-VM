@@ -63,10 +63,10 @@ allows comparison and equality operations. Numeric types implicitly satisfy
 ## Lower Priority Tasks
 
 ### Cross-Module Generics
-- [ ] Enable importing generic types from other modules
-- [ ] Ensure proper specialization across compilation units
-- [ ] Create tests with multi-file scenarios
-- [ ] Document module-boundary behavior
+- [x] Enable importing generic types from other modules
+- [x] Ensure proper specialization across compilation units
+- [x] Create tests with multi-file scenarios
+- [x] Document module-boundary behavior
 
 ### Documentation and Examples
 - [ ] Create advanced generics tutorial
@@ -76,7 +76,7 @@ allows comparison and equality operations. Numeric types implicitly satisfy
 
 ## Implementation Notes
 * Current progress: generic functions and structs support forward declarations through a prepass.
-* Current limitations: cross-module specialization is incomplete and arithmetic support is still evolving.
+* Cross-module specialization is now fully supported.
 * Reference the `tests/generics/` directory for existing test cases
 * Prioritize improving developer experience with better error messages
 * Consider performance implications of specialization vs. type erasure

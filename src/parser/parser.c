@@ -26,6 +26,7 @@ static ASTNode* parseCast(Parser* parser, ASTNode* left);
 static ASTNode* parseStructLiteral(Parser* parser, Token structName,
                                    Type** genericArgs, int genericArgCount);
 static Type* findStructTypeToken(Token token);
+static bool looksLikeGeneric();
 static ASTNode* parseBoolean(Parser* parser);
 static ASTNode* parseVariable(Parser* parser);
 static ASTNode* parseNil(Parser* parser);
@@ -416,6 +417,20 @@ static ASTNode* parseDot(Parser* parser, ASTNode* left) {
     consume(parser, TOKEN_IDENTIFIER, "Expect property or method name after '.'.");
     Token name = parser->previous;
 
+    // Optional generic arguments after the property/method name
+    Type** genericArgs = NULL;
+    int genericCount = 0;
+    if (check(parser, TOKEN_LESS) && looksLikeGeneric()) {
+        advance(parser); // consume '<'
+        do {
+            Type* argType = parseType(parser);
+            if (parser->hadError) return NULL;
+            genericArgs = realloc(genericArgs, sizeof(Type*) * (genericCount + 1));
+            genericArgs[genericCount++] = argType;
+        } while (match(parser, TOKEN_COMMA));
+        consume(parser, TOKEN_GREATER, "Expect '>' after generic arguments.");
+    }
+
     if (match(parser, TOKEN_LEFT_PAREN)) {
         bool useReceiver = true;
         Type* staticType = NULL;
@@ -453,7 +468,8 @@ static ASTNode* parseDot(Parser* parser, ASTNode* left) {
 
         consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
 
-        ASTNode* node = createCallNode(name, arguments, argCount, staticType, NULL, 0);
+        ASTNode* node = createCallNode(name, arguments, argCount, staticType,
+                                      genericArgs, genericCount);
         node->line = name.line;
         return node;
     }

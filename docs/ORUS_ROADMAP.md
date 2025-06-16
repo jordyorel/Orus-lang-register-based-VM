@@ -41,7 +41,7 @@ This document consolidates the development roadmaps for the Orus language, track
 | Generic Arithmetic & Operators    | ✅ Done          | Medium   | Minor feature    |
 | Collection and Iterator Support   | ✅ Done          | Medium   | Minor feature    |
 | Enhanced Error Reporting          | Not started      | Medium   | Minor feature    |
-| Cross-Module Generics             | Not started      | Low      | Minor feature    |
+| Cross-Module Generics             | ✅ Done          | Low      | Minor feature    |
 | Generics Documentation            | Not started      | Low      | No impact        |
 
 ---
