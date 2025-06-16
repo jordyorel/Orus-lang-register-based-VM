@@ -40,7 +40,7 @@ include:
 - Integer literals automatically use `i32`, `i64` or `u64` based on value. A
   trailing `u` suffix forces an unsigned type.
 
-The repository contains the source code for the interpreter and a collection of sample programs used as tests. For a quick tour of the language syntax see [`docs/LANGUAGE.md`](docs/LANGUAGE.md). Additional notes on the generics and array helper are available in [`docs/GENERICS.md`](docs/GENERICS.md), and practical examples of generics are now included directly in [`docs/LANGUAGE.md`](docs/LANGUAGE.md). A future compilation roadmap is outlined in [`docs/COMPILATION_ROADMAP.md`](docs/COMPILATION_ROADMAP.md). For a summary of built-in functions consult [`docs/BUILTINS.md`](docs/BUILTINS.md).
+The repository contains the interpreter sources and a large suite of example programs. A quick tour of the syntax lives in [`docs/LANGUAGE.md`](docs/LANGUAGE.md) and a step-by-step introduction is provided in [`docs/TUTORIAL.md`](docs/TUTORIAL.md). Notes on generics appear in [`docs/GENERICS.md`](docs/GENERICS.md) and more examples are spread throughout the test suite. See [`docs/TESTS_OVERVIEW.md`](docs/TESTS_OVERVIEW.md) for a list of categories. A potential compilation roadmap is outlined in [`docs/COMPILATION_ROADMAP.md`](docs/COMPILATION_ROADMAP.md). For a summary of built-in functions consult [`docs/BUILTINS.md`](docs/BUILTINS.md).
 
 ## Building
 
@@ -103,6 +103,7 @@ The script uses `bash`. On Windows, run it from WSL or Git Bash so that the
 shell utilities behave like they do on Unix systems.
 
 Each subdirectory of `tests/` represents a category and contains example programs. The script executes every `.orus` file and reports success or failure.
+For a summary of each category see `docs/TESTS_OVERVIEW.md`.
 
 ## Benchmarking
 
