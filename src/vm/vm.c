@@ -1361,13 +1361,16 @@ static InterpretResult run() {
                 // Use the global loop counter defined at the start of run()
                 absolute_loop_count++;
                 
-                // If the loop has iterated too many times, it's likely an infinite loop
+                // If a loop iteration limit is defined, guard against runaway
+                // loops. The check is compiled out when the limit is disabled.
+#ifdef LOOP_ITERATION_LIMIT
                 if (absolute_loop_count > LOOP_ITERATION_LIMIT) {
-                    fprintf(stderr, "ERROR: Loop iteration limit exceeded (%d). "
-                           "Forced termination to prevent infinite loop.\n",
-                           LOOP_ITERATION_LIMIT);
+                    fprintf(stderr, "ERROR: Loop iteration limit exceeded (%d)."
+                            " Forced termination to prevent infinite loop.\n",
+                            LOOP_ITERATION_LIMIT);
                     return INTERPRET_RUNTIME_ERROR;
                 }
+#endif
                 vm.ip -= offset;
 
                 break;
