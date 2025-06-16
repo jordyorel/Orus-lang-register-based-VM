@@ -429,6 +429,12 @@ static void emitConstant(Compiler* compiler, Value value) {
     }
 }
 
+/**
+ * Perform static type checking on a subtree.
+ *
+ * @param compiler Active compiler context.
+ * @param node     Root of the AST subtree.
+ */
 static void typeCheckNode(Compiler* compiler, ASTNode* node) {
     if (!node) {
         return;
@@ -3707,7 +3713,9 @@ uint8_t resolveVariable(Compiler* compiler, Token name) {
     return UINT8_MAX;  // Not found
 }
 
-// Add a break jump to the array
+/**
+ * Record the location of a `break` jump to patch later.
+ */
 static void addBreakJump(Compiler* compiler, int jumpPos) {
     if (compiler->breakJumps == NULL) {
         compiler->breakJumpCapacity = 8;
@@ -3723,7 +3731,9 @@ static void addBreakJump(Compiler* compiler, int jumpPos) {
     compiler->breakJumps->elements[compiler->breakJumpCount++] = jumpPos;
 }
 
-// Add a continue jump to the array
+/**
+ * Record the location of a `continue` jump to patch later.
+ */
 static void addContinueJump(Compiler* compiler, int jumpPos) {
     if (compiler->continueJumps == NULL) {
         compiler->continueJumpCapacity = 8;
@@ -3739,7 +3749,9 @@ static void addContinueJump(Compiler* compiler, int jumpPos) {
     compiler->continueJumps->elements[compiler->continueJumpCount++] = jumpPos;
 }
 
-// Patch all continue jumps to jump to the loopContinue position
+/**
+ * Patch all recorded `continue` jumps with the correct destination.
+ */
 static void patchContinueJumps(Compiler* compiler) {
     int continueDest = compiler->loopContinue;
     for (int i = 0; i < compiler->continueJumpCount; i++) {
@@ -3751,7 +3763,9 @@ static void patchContinueJumps(Compiler* compiler) {
     compiler->continueJumpCount = 0;
 }
 
-// Patch all break jumps to jump to the current position
+/**
+ * Patch all recorded `break` jumps with the end of the loop.
+ */
 static void patchBreakJumps(Compiler* compiler) {
     int breakDest = compiler->chunk->count;
 
@@ -3767,8 +3781,9 @@ static void patchBreakJumps(Compiler* compiler) {
     compiler->breakJumpCount = 0;
 }
 
-// Perform a prepass over the AST to record all function declarations so
-// they can be referenced before their definitions.
+/**
+ * Record a function declaration so it may be referenced before definition.
+ */
 static void predeclareFunction(Compiler* compiler, ASTNode* node) {
     char tempName[node->data.function.name.length + 1];
     memcpy(tempName, node->data.function.name.start, node->data.function.name.length);

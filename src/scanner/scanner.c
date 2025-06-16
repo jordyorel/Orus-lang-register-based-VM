@@ -2,10 +2,17 @@
 #include <string.h>
 #include <stdlib.h>
 
-
 #include "../../include/scanner.h"
 #include "../../include/common.h"
 
+/**
+ * @file scanner.c
+ * @brief Lexical scanner for the Orus language.
+ *
+ * The scanner converts raw source code into a stream of tokens that the
+ * parser can consume. It recognises keywords, literals and punctuation while
+ * tracking line information for diagnostics.
+ */
 
 Scanner scanner;
 
@@ -15,7 +22,12 @@ Scanner scanner;
 // Hash table for keywords
 KeywordEntry keywordTable[HASH_TABLE_SIZE];
 
-// Hash function (djb2 algorithm)
+/**
+ * Simple hash function used for the keyword table.
+ *
+ * @param str Null terminated string to hash.
+ * @return Hash value suitable for indexing the keyword table.
+ */
 unsigned int hash(const char* str) {
     unsigned int hash = 5381;
     int c;
@@ -25,6 +37,12 @@ unsigned int hash(const char* str) {
     return hash % HASH_TABLE_SIZE;
 }
 
+/**
+ * Populate the keyword lookup table used by the scanner.
+ *
+ * This table maps language keywords to their corresponding token types and is
+ * generated once when the scanner is initialised.
+ */
 void init_keyword_table() {
     // First, clear the table
     for (int i = 0; i < HASH_TABLE_SIZE; i++) {
@@ -57,6 +75,12 @@ void init_keyword_table() {
     }
 }
 
+/**
+ * Initialise the global scanner state for a new source buffer.
+ *
+ * @param source Pointer to the null terminated string containing the program
+ *               source code.
+ */
 void init_scanner(const char* source) {
     scanner.start = source;
     scanner.current = source;
@@ -65,48 +89,80 @@ void init_scanner(const char* source) {
     init_keyword_table();
 }
 
-// Check if a character is alphabetic
+/**
+ * Determine whether a character can start or continue an identifier.
+ *
+ * @param c Character to test.
+ * @return true if the character is alphabetic or an underscore.
+ */
 static bool is_alpha(char c) {
     return (c >= 'a' && c <= 'z') ||
             (c >= 'A' && c <= 'Z') ||
             c == '_';
 }
 
-// Check if a character is a digit
+/**
+ * Test if a character is a decimal digit.
+ *
+ * @param c Character to examine.
+ * @return true when the character is '0'..'9'.
+ */
 static bool is_digit(char c) {
     return c >= '0' && c <= '9';
 }
 
-// Check if a character is a hexadecimal digit
+/**
+ * Test if a character is valid in a hexadecimal literal.
+ *
+ * @param c Character to examine.
+ * @return true when the character is 0-9, a-f or A-F.
+ */
 static bool is_hex_digit(char c) {
     return (c >= '0' && c <= '9') ||
            (c >= 'a' && c <= 'f') ||
            (c >= 'A' && c <= 'F');
 }
 
-// Check if the scanner has reached the end of the source
+/**
+ * Determine if the scanner has consumed all input.
+ *
+ * @return true when the current position is at the terminating null byte.
+ */
 static bool is_at_end() {
     return *scanner.current == '\0';
 }
 
-// Advance the scanner and return the current character
+/**
+ * Consume the next character from the source.
+ *
+ * @return The consumed character.
+ */
 static char advance() {
     scanner.current++;
     return scanner.current[-1];
 }
 
-// Peek at the current character
+/**
+ * Peek at the current character without consuming it.
+ */
 static char peek() {
     return *scanner.current;
 }
 
-// Peek at the next character
+/**
+ * Look ahead one character without advancing.
+ */
 static char peek_next() {
     if (is_at_end()) return '\0';
     return scanner.current[1];
 }
 
-// Match the current character with an expected character
+/**
+ * Conditionally consume a specific character.
+ *
+ * @param expected Character to match.
+ * @return true if the character was consumed.
+ */
 static bool match(char expected) {
     if (is_at_end()) return false;
     if (*scanner.current != expected) return false;
@@ -114,7 +170,11 @@ static bool match(char expected) {
     return true;
 }
 
-// Create a token
+/**
+ * Construct a token object from the current lexeme.
+ *
+ * @param type Token type to assign.
+ */
 static Token make_token(TokenType type) {
     Token token;
     token.type = type;
@@ -124,7 +184,11 @@ static Token make_token(TokenType type) {
     return token;
 }
 
-// Create an error token
+/**
+ * Create a token representing a lexical error.
+ *
+ * @param message Static error message.
+ */
 static Token error_token(const char* message) {
     Token token;
     token.type = TOKEN_ERROR;
@@ -134,7 +198,9 @@ static Token error_token(const char* message) {
     return token;
 }
 
-// Skip whitespace and comments
+/**
+ * Consume whitespace and comments, stopping at newlines.
+ */
 static void skip_whitespace() {
     for (;;) {
         char c = peek();
@@ -182,6 +248,13 @@ static void skip_whitespace() {
     }
 }
 
+/**
+ * Look up a token type for a potential keyword.
+ *
+ * @param start  Pointer to the start of the identifier.
+ * @param length Length of the identifier.
+ * @return Keyword token type or TOKEN_IDENTIFIER.
+ */
 static TokenType get_keyword_type(const char* start, int length) {
     char temp[length + 1];
     memcpy(temp, start, length);
@@ -200,6 +273,11 @@ static TokenType get_keyword_type(const char* start, int length) {
     return TOKEN_IDENTIFIER;
 }
 
+/**
+ * Scan an identifier or keyword token.
+ *
+ * @return The constructed token with appropriate type.
+ */
 static Token identifier() {
     while (is_alpha(peek()) || is_digit(peek())) {
         advance();
@@ -212,6 +290,12 @@ static Token identifier() {
 }
 
 // Scan a number literal
+/**
+ * Scan an integer or floating point literal.
+ *
+ * Handles hexadecimal prefixes, underscores and optional unsigned suffixes.
+ * @return Token for the numeric literal.
+ */
 static Token number() {
     // Check for hexadecimal prefix 0x or 0X
     if (scanner.start[0] == '0' && (peek() == 'x' || peek() == 'X')) {
@@ -302,6 +386,11 @@ static Token number() {
 }
 
 // Scan a string literal
+/**
+ * Scan a quoted string literal handling escape sequences.
+ *
+ * @return Token for the parsed string.
+ */
 static Token string() {
     while (peek() != '"' && !is_at_end()) {
         if (peek() == '\n') scanner.line++;
@@ -327,6 +416,11 @@ static Token string() {
     return make_token(TOKEN_STRING);
 }
 
+/**
+ * Retrieve the next lexical token from the input stream.
+ *
+ * @return The next token describing the lexeme.
+ */
 Token scan_token() {
     skip_whitespace();
     scanner.start = scanner.current;
