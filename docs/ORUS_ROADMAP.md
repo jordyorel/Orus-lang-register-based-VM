@@ -144,17 +144,17 @@ use std::math
 
 ## Development Priorities
 
--### Short-Term (0–3 months)
+-### Short-Term
 - ✅ Finalize improved type inference
 - Add remaining built-ins: `any`, `all`
 - Expand standard library with modules like `functional` and `random`.
 
-### Medium-Term (3–12 months)
+### Medium-Term
 - Generic constraints and arithmetic  
 - Build out I/O, date/time, strings, and collections  
 - Improve diagnostics and error reporting
 
-### Long-Term (12+ months)
+### Long-Term
 - Full concurrency model with async/thread support  
 - Language optimizations and bytecode performance  
 - Prepare stable 1.0 release
