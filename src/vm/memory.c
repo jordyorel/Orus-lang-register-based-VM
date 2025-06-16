@@ -1,3 +1,7 @@
+/**
+ * @file memory.c
+ * @brief Memory management and garbage collector.
+ */
 #include <stdlib.h>
 #include <string.h>
 
@@ -8,6 +12,14 @@
 
 #define GC_HEAP_GROW_FACTOR 2
 
+/**
+ * Resize a memory allocation similar to realloc.
+ *
+ * @param pointer Existing allocation.
+ * @param oldSize Previous size in bytes.
+ * @param newSize New desired size in bytes.
+ * @return        Pointer to reallocated memory or NULL when newSize is 0.
+ */
 void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
     if (newSize == 0) {
         free(pointer);
@@ -23,6 +35,13 @@ extern VM vm;
 
 static size_t gcThreshold = 1024 * 1024;
 
+/**
+ * Allocate a new garbage-collected object and link it into the VM.
+ *
+ * @param size Size of the object.
+ * @param type Object type tag.
+ * @return     Pointer to the allocated object.
+ */
 static void* allocateObject(size_t size, ObjType type) {
     vm.bytesAllocated += size;
     if (vm.bytesAllocated > gcThreshold) {
@@ -38,6 +57,13 @@ static void* allocateObject(size_t size, ObjType type) {
     return object;
 }
 
+/**
+ * Allocate a new ObjString containing the given characters.
+ *
+ * @param chars  UTF-8 text.
+ * @param length Number of bytes.
+ * @return       Newly allocated string object.
+ */
 ObjString* allocateString(const char* chars, int length) {
     ObjString* string = (ObjString*)allocateObject(sizeof(ObjString), OBJ_STRING);
     string->length = length;
@@ -48,6 +74,12 @@ ObjString* allocateString(const char* chars, int length) {
     return string;
 }
 
+/**
+ * Allocate an array object capable of holding the given number of elements.
+ *
+ * @param length Initial element count.
+ * @return       Newly allocated array object.
+ */
 ObjArray* allocateArray(int length) {
     ObjArray* array = (ObjArray*)allocateObject(sizeof(ObjArray), OBJ_ARRAY);
     array->length = length;
@@ -57,6 +89,12 @@ ObjArray* allocateArray(int length) {
     return array;
 }
 
+/**
+ * Allocate an integer array object.
+ *
+ * @param length Number of elements.
+ * @return       Newly allocated integer array.
+ */
 ObjIntArray* allocateIntArray(int length) {
     ObjIntArray* array = (ObjIntArray*)allocateObject(sizeof(ObjIntArray), OBJ_INT_ARRAY);
     array->length = length;
@@ -65,6 +103,14 @@ ObjIntArray* allocateIntArray(int length) {
     return array;
 }
 
+/**
+ * Allocate a runtime error object with message and location.
+ *
+ * @param type     Kind of error.
+ * @param message  Error message text.
+ * @param location Source location information.
+ * @return         Newly allocated error object.
+ */
 ObjError* allocateError(ErrorType type, const char* message, SrcLocation location) {
     ObjError* err = (ObjError*)allocateObject(sizeof(ObjError), OBJ_ERROR);
     err->type = type;
@@ -73,12 +119,18 @@ ObjError* allocateError(ErrorType type, const char* message, SrcLocation locatio
     return err;
 }
 
+/**
+ * Allocate an empty AST node object.
+ */
 ASTNode* allocateASTNode() {
     ASTNode* node = (ASTNode*)allocateObject(sizeof(ASTNode), OBJ_AST);
     memset(node, 0, sizeof(ASTNode));
     return node;
 }
 
+/**
+ * Allocate a Type descriptor object.
+ */
 Type* allocateType() {
     return (Type*)allocateObject(sizeof(Type), OBJ_TYPE);
 }
@@ -86,6 +138,11 @@ Type* allocateType() {
 void markObject(Obj* object);
 static void freeObject(Obj* object);
 
+/**
+ * Mark a value during garbage collection.
+ *
+ * @param value The value to mark.
+ */
 void markValue(Value value) {
     if (IS_STRING(value)) {
         markObject((Obj*)AS_STRING(value));
@@ -96,6 +153,11 @@ void markValue(Value value) {
     }
 }
 
+/**
+ * Mark an object and any objects it references.
+ *
+ * @param object Object to mark.
+ */
 void markObject(Obj* object) {
     if (object == NULL || object->marked) return;
     object->marked = true;
@@ -237,6 +299,9 @@ void markObject(Obj* object) {
     }
 }
 
+/**
+ * Run the mark-and-sweep garbage collector.
+ */
 void collectGarbage() {
     // Mark roots
     for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
@@ -278,6 +343,11 @@ void collectGarbage() {
     }
 }
 
+/**
+ * Free a single heap object.
+ *
+ * @param object Object to free.
+ */
 static void freeObject(Obj* object) {
     switch (object->type) {
         case OBJ_STRING: {
@@ -352,6 +422,9 @@ static void freeObject(Obj* object) {
     }
 }
 
+/**
+ * Free all objects currently allocated by the VM.
+ */
 void freeObjects() {
     Obj* object = vm.objects;
     while (object != NULL) {
@@ -361,6 +434,13 @@ void freeObjects() {
     }
 }
 
+/**
+ * Duplicate a string into freshly allocated memory.
+ *
+ * @param chars  Source characters.
+ * @param length Number of bytes to copy.
+ * @return       Newly allocated null-terminated string.
+ */
 char* copyString(const char* chars, int length) {
     char* copy = (char*)malloc(length + 1);
     memcpy(copy, chars, length);

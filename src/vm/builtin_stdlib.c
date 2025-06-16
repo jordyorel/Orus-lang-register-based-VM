@@ -1,3 +1,7 @@
+/**
+ * @file builtin_stdlib.c
+ * @brief Embedded standard library modules and helpers.
+ */
 #include "../../include/builtin_stdlib.h"
 #include <string.h>
 #include <stdio.h>
@@ -11,6 +15,12 @@ const EmbeddedModule embeddedStdlib[] = {
 };
 const int embeddedStdlibCount = sizeof(embeddedStdlib)/sizeof(EmbeddedModule);
 
+/**
+ * Look up an embedded standard library module by name.
+ *
+ * @param name Module identifier.
+ * @return     Source code string or NULL if not found.
+ */
 const char* getEmbeddedModule(const char* name){
     for(int i=0;i<embeddedStdlibCount;i++){
         if(strcmp(embeddedStdlib[i].name,name)==0) return embeddedStdlib[i].source;
@@ -18,6 +28,11 @@ const char* getEmbeddedModule(const char* name){
     return NULL;
 }
 
+/**
+ * Create intermediate directories for a given path if they do not exist.
+ *
+ * @param path File system path.
+ */
 static void ensure_dir(const char* path){
     char tmp[512];
     strncpy(tmp,path,sizeof(tmp)-1);
@@ -26,6 +41,11 @@ static void ensure_dir(const char* path){
     mkdir(tmp,0755);
 }
 
+/**
+ * Writes all embedded modules to a directory on disk.
+ *
+ * @param dir Destination directory.
+ */
 void dumpEmbeddedStdlib(const char* dir){
     char full[512];
     for(int i=0;i<embeddedStdlibCount;i++){

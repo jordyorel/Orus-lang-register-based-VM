@@ -1,3 +1,7 @@
+/**
+ * @file builtins.c
+ * @brief Implementation of built-in native functions.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +17,13 @@
 extern VM vm;
 
 
+/**
+ * Implementation of the `len` builtin. Returns the length of an array or
+ * string.
+ *
+ * @param argCount Number of arguments provided.
+ * @param args     Values of the arguments.
+ */
 static Value native_len(int argCount, Value* args) {
     if (argCount != 1) {
         vmRuntimeError("len() takes exactly one argument.");
@@ -28,6 +39,12 @@ static Value native_len(int argCount, Value* args) {
     return NIL_VAL;
 }
 
+/**
+ * Extracts a substring from a string.
+ *
+ * @param argCount Number of arguments.
+ * @param args     [string, start, length].
+ */
 static Value native_substring(int argCount, Value* args) {
     if (argCount != 3) {
         vmRuntimeError("substring() takes exactly three arguments.");
@@ -48,6 +65,12 @@ static Value native_substring(int argCount, Value* args) {
     return STRING_VAL(result);
 }
 
+/**
+ * Appends an element to the end of an array and returns the array.
+ *
+ * @param argCount Number of arguments.
+ * @param args     [array, value].
+ */
 static Value native_push(int argCount, Value* args) {
     if (argCount != 2) {
         vmRuntimeError("push() takes exactly two arguments.");
@@ -62,6 +85,12 @@ static Value native_push(int argCount, Value* args) {
     return args[0];
 }
 
+/**
+ * Removes and returns the last element of an array.
+ *
+ * @param argCount Number of arguments.
+ * @param args     [array].
+ */
 static Value native_pop(int argCount, Value* args) {
     if (argCount != 1) {
         vmRuntimeError("pop() takes exactly one argument.");
@@ -75,6 +104,12 @@ static Value native_pop(int argCount, Value* args) {
     return arrayPop(arr);
 }
 
+/**
+ * Generates an array of integers from start (inclusive) to end (exclusive).
+ *
+ * @param argCount Number of arguments.
+ * @param args     [start, end].
+ */
 static Value native_range(int argCount, Value* args) {
     if (argCount != 2) {
         vmRuntimeError("range() takes exactly two arguments.");
@@ -101,6 +136,12 @@ static Value native_range(int argCount, Value* args) {
     return ARRAY_VAL(arr);
 }
 
+/**
+ * Helper that converts a runtime value to its type name string.
+ *
+ * @param val Value to inspect.
+ * @return    Name of the value's type.
+ */
 static const char* getValueTypeName(Value val) {
     switch (val.type) {
         case VAL_I32:   return "i32";
@@ -117,6 +158,12 @@ static const char* getValueTypeName(Value val) {
     }
 }
 
+/**
+ * Returns a string describing the type of the given value.
+ *
+ * @param argCount Number of arguments.
+ * @param args     [value].
+ */
 static Value native_type_of(int argCount, Value* args) {
     if (argCount != 1) {
         vmRuntimeError("type_of() takes exactly one argument.");
@@ -127,6 +174,12 @@ static Value native_type_of(int argCount, Value* args) {
     return STRING_VAL(result);
 }
 
+/**
+ * Checks if a value's type name matches the provided string.
+ *
+ * @param argCount Number of arguments.
+ * @param args     [value, type_name].
+ */
 static Value native_is_type(int argCount, Value* args) {
     if (argCount != 2) {
         vmRuntimeError("is_type() takes exactly two arguments.");
@@ -143,6 +196,12 @@ static Value native_is_type(int argCount, Value* args) {
     return BOOL_VAL(result);
 }
 
+/**
+ * Prompts the user for input and returns the entered string.
+ *
+ * @param argCount Number of arguments.
+ * @param args     [prompt].
+ */
 static Value native_input(int argCount, Value* args) {
     if (argCount != 1) {
         vmRuntimeError("input() takes exactly one argument.");
@@ -167,6 +226,12 @@ static Value native_input(int argCount, Value* args) {
     return STRING_VAL(result);
 }
 
+/**
+ * Converts a string to a 32-bit integer.
+ *
+ * @param argCount Number of arguments.
+ * @param args     [string].
+ */
 static Value native_int(int argCount, Value* args) {
     if (argCount != 1) {
         vmRuntimeError("int() takes exactly one argument.");
@@ -190,6 +255,12 @@ static Value native_int(int argCount, Value* args) {
     return I32_VAL((int32_t)value);
 }
 
+/**
+ * Converts a string to a floating point number.
+ *
+ * @param argCount Number of arguments.
+ * @param args     [string].
+ */
 static Value native_float(int argCount, Value* args) {
     if (argCount != 1) {
         vmRuntimeError("float() takes exactly one argument.");
@@ -209,6 +280,12 @@ static Value native_float(int argCount, Value* args) {
     return F64_VAL(value);
 }
 
+/**
+ * Sums the numeric elements of an array.
+ *
+ * @param argCount Number of arguments.
+ * @param args     [array].
+ */
 static Value native_sum(int argCount, Value* args) {
     if (argCount != 1) {
         vmRuntimeError("sum() takes exactly one argument.");
@@ -243,6 +320,12 @@ static Value native_sum(int argCount, Value* args) {
         return I32_VAL((int32_t)total);
 }
 
+/**
+ * Returns the smallest numeric element of an array.
+ *
+ * @param argCount Number of arguments.
+ * @param args     [array].
+ */
 static Value native_min(int argCount, Value* args) {
     if (argCount != 1) {
         vmRuntimeError("min() takes exactly one argument.");
@@ -297,6 +380,12 @@ static Value native_min(int argCount, Value* args) {
         return I32_VAL((int32_t)best);
 }
 
+/**
+ * Returns the largest numeric element of an array.
+ *
+ * @param argCount Number of arguments.
+ * @param args     [array].
+ */
 static Value native_max(int argCount, Value* args) {
     if (argCount != 1) {
         vmRuntimeError("max() takes exactly one argument.");
@@ -356,16 +445,34 @@ static Value native_max(int argCount, Value* args) {
 // Helper functions for timsort implementation
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
+/**
+ * Determines whether a value is numeric.
+ *
+ * @param v Candidate value.
+ * @return  True if the value is a number.
+ */
 static bool isNumber(Value v) {
     return IS_I32(v) || IS_U32(v) || IS_F64(v);
 }
 
+/**
+ * Converts a numeric Value to a C double.
+ *
+ * @param v Numeric value.
+ */
 static double toNumber(Value v) {
     if (IS_I32(v)) return AS_I32(v);
     if (IS_U32(v)) return AS_U32(v);
     return AS_F64(v);
 }
 
+/**
+ * Compares two values for use in sorting.
+ *
+ * @param a First value.
+ * @param b Second value.
+ * @return  Negative if a < b, zero if equal, positive if a > b.
+ */
 static int compareValues(Value a, Value b) {
     if (isNumber(a) && isNumber(b)) {
         double da = toNumber(a);
@@ -384,6 +491,14 @@ static int compareValues(Value a, Value b) {
     }
 }
 
+/**
+ * Simple insertion sort used by timsort.
+ *
+ * @param arr     Array of values to sort.
+ * @param left    Starting index.
+ * @param right   Ending index.
+ * @param reverse True to sort descending.
+ */
 static void insertionSort(Value* arr, int left, int right, bool reverse) {
     for (int i = left + 1; i <= right; i++) {
         Value key = arr[i];
@@ -397,6 +512,16 @@ static void insertionSort(Value* arr, int left, int right, bool reverse) {
     }
 }
 
+/**
+ * Merges two sorted halves used by timsort.
+ *
+ * @param arr     Array of values to merge.
+ * @param l       Left index.
+ * @param m       Middle index.
+ * @param r       Right index.
+ * @param temp    Temporary buffer.
+ * @param reverse True for descending order.
+ */
 static void merge(Value* arr, int l, int m, int r, Value* temp, bool reverse) {
     int len1 = m - l + 1;
     int len2 = r - m;
@@ -416,6 +541,13 @@ static void merge(Value* arr, int l, int m, int r, Value* temp, bool reverse) {
     while (j < len1 + len2) arr[k++] = temp[j++];
 }
 
+/**
+ * Minimal timsort implementation used by the sorted() builtin.
+ *
+ * @param arr     Array of values to sort.
+ * @param n       Number of elements.
+ * @param reverse True to sort in descending order.
+ */
 static void timSort(Value* arr, int n, bool reverse) {
     const int MIN_RUN = 32;
     for (int i = 0; i < n; i += MIN_RUN) {
@@ -436,6 +568,12 @@ static void timSort(Value* arr, int n, bool reverse) {
     free(temp);
 }
 
+/**
+ * Returns a sorted copy of an array. A boolean argument may reverse the order.
+ *
+ * @param argCount Number of arguments.
+ * @param args     Array plus optional flags.
+ */
 static Value native_sorted(int argCount, Value* args) {
     if (argCount < 1 || argCount > 3) {
         vmRuntimeError("sorted() takes between 1 and 3 arguments.");
@@ -479,6 +617,12 @@ static Value native_sorted(int argCount, Value* args) {
     return ARRAY_VAL(out);
 }
 
+/**
+ * Returns the short name of a previously loaded module.
+ *
+ * @param argCount Number of arguments.
+ * @param args     [module_path].
+ */
 static Value native_module_name(int argCount, Value* args) {
     if (argCount != 1 || !IS_STRING(args[0])) {
         vmRuntimeError("module_name() expects module path string.");
@@ -493,6 +637,12 @@ static Value native_module_name(int argCount, Value* args) {
     return STRING_VAL(s);
 }
 
+/**
+ * Returns the current Unix timestamp.
+ *
+ * @param argCount Number of arguments (must be 0).
+ * @param args     Unused.
+ */
 static Value native_timestamp(int argCount, Value* args) {
     if (argCount != 0) {
         vmRuntimeError("timestamp() takes no arguments.");
@@ -501,6 +651,12 @@ static Value native_timestamp(int argCount, Value* args) {
     return I64_VAL((int64_t)time(NULL));
 }
 
+/**
+ * Retrieves the canonical path of a loaded module.
+ *
+ * @param argCount Number of arguments.
+ * @param args     [module_path].
+ */
 static Value native_module_path(int argCount, Value* args) {
     if (argCount != 1 || !IS_STRING(args[0])) {
         vmRuntimeError("module_path() expects module path string.");
@@ -515,6 +671,9 @@ static Value native_module_path(int argCount, Value* args) {
     return STRING_VAL(s);
 }
 
+/**
+ * Table entry describing a builtin function.
+ */
 typedef struct {
     const char* name;
     NativeFn fn;
@@ -542,6 +701,9 @@ static BuiltinEntry builtinTable[] = {
     {"module_path", native_module_path, 1, TYPE_STRING},
 };
 
+/**
+ * Registers all builtin functions with the VM.
+ */
 void initBuiltins(void) {
     size_t count = sizeof(builtinTable) / sizeof(BuiltinEntry);
     for (size_t i = 0; i < count; i++) {
