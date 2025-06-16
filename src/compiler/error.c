@@ -6,7 +6,21 @@
 #include "../../include/string_utils.h"
 #include <string.h>
 
-// Helper to fetch a specific line from a source file.
+/**
+ * @file error.c
+ * @brief Diagnostic and error reporting helpers.
+ *
+ * Routines in this file build rich error messages used by the compiler. They
+ * format source spans and suggestions to aid in debugging.
+ */
+
+/**
+ * Fetch a specific line from a source file for display in a diagnostic.
+ *
+ * @param filePath Path to the source file.
+ * @param lineNum  Line number to retrieve (1-based).
+ * @return Pointer to a static buffer containing the line text or NULL.
+ */
 static const char* getSourceLine(const char* filePath, int lineNum) {
     FILE* file = fopen(filePath, "r");
     if (!file) return NULL;
@@ -27,6 +41,13 @@ static const char* getSourceLine(const char* filePath, int lineNum) {
     fclose(file);
     return NULL;
 }
+/**
+ * Suggest the closest symbol name for a potential typo.
+ *
+ * @param compiler Active compiler instance.
+ * @param name     Identifier that failed to resolve.
+ * @return Suggested symbol name or NULL.
+ */
 static const char* suggestClosestSymbol(Compiler* compiler, const char* name) {
     const char* best = NULL;
     int bestDist = 4;
@@ -43,6 +64,11 @@ static const char* suggestClosestSymbol(Compiler* compiler, const char* name) {
 }
 
 
+/**
+ * Print a formatted diagnostic message with source context.
+ *
+ * @param diagnostic Populated diagnostic structure to display.
+ */
 void emitDiagnostic(Diagnostic* diagnostic) {
     // 1. Header with error code and message
     const char* category = "Compile error";

@@ -3,6 +3,15 @@
 #include "../../include/type.h"
 #include "../../include/memory.h"
 #include "../../include/common.h"
+
+/**
+ * @file type.c
+ * @brief Runtime type system utilities.
+ *
+ * This module manages the `Type` structures used during compilation and
+ * execution. It provides constructors for primitive and composite types and
+ * helpers for comparing and substituting types.
+ */
 #include <string.h>
 
 // Define the array of primitive types
@@ -11,6 +20,9 @@ static Type* structTypes[UINT8_COUNT] = {NULL};
 static int structTypeCount = 0;
 static bool typeSystemInitialized = false;
 
+/**
+ * Initialize the global type system and create primitive types.
+ */
 void initTypeSystem(void) {
     if (typeSystemInitialized) return;
     
@@ -37,12 +49,24 @@ Type* getPrimitiveType(TypeKind kind) {
     return primitiveTypes[kind];
 }
 
+/**
+ * Allocate a primitive type descriptor.
+ *
+ * @param kind Primitive kind constant.
+ * @return Newly allocated Type object.
+ */
 Type* createPrimitiveType(TypeKind kind) {
     Type* type = allocateType();
     type->kind = kind;
     return type;
 }
 
+/**
+ * Create an array type.
+ *
+ * @param elementType Element type stored in the array.
+ * @return Newly allocated Type object.
+ */
 Type* createArrayType(Type* elementType) {
     Type* type = allocateType();
     type->kind = TYPE_ARRAY;
@@ -50,6 +74,14 @@ Type* createArrayType(Type* elementType) {
     return type;
 }
 
+/**
+ * Create a function type.
+ *
+ * @param returnType  Return type of the function.
+ * @param paramTypes  Array of parameter types.
+ * @param paramCount  Number of parameters.
+ * @return Newly allocated Type object.
+ */
 Type* createFunctionType(Type* returnType, Type** paramTypes, int paramCount) {
     Type* type = allocateType();
     type->kind = TYPE_FUNCTION;
