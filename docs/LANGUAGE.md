@@ -2,6 +2,10 @@
 
 Orus is an experimental interpreted language influenced by modern scripting languages and Rust-like syntax. This guide covers the features available in version 0.7.0 and serves both as a tutorial and reference. All examples come from the `tests/` directory.
 
+For a step-by-step walkthrough from beginner to advanced topics see
+`docs/TUTORIAL.md`. Additional snippets are collected in
+`docs/EXAMPLE_SNIPPETS.md`.
+
 ## Getting Started
 
 A simple program prints text using the built-in `print` function:
@@ -409,11 +413,15 @@ Standard collections like `Map` and `Set` are implemented generically in `std/co
 
 ### Further Reading
 
-See `tests/generics/` for complete examples.
+See `tests/generics/` for complete examples. The file
+`docs/ADVANCED_GENERICS_TUTORIAL.md` explores more complex patterns and
+best practices for generic code.
 
 ## Modules
 
 Code can be split into multiple files. Use `use` to load an entire module. Only whole modules may be imported; individual items cannot be pulled in directly. After importing, reference functions or types through the module name.
+
+The import system design is described further in `docs/import.md`.
 
 ```orus
 use math::utils
@@ -462,6 +470,14 @@ Use `pub struct` to export a type from a module.
 pub struct Point { x: i32, y: i32 }
 ```
 
+### Additional Import Features
+
+The import system also supports a few conveniences:
+
+- `use *` brings all public members of a module into scope.
+- `module_name()` and `module_path()` return the current module's name and path.
+- Run the interpreter with `--trace-imports` to log module loading.
+
 ## Built-in Functions
 
 Common utilities are always available. See `docs/BUILTINS.md` for full details.
@@ -474,7 +490,8 @@ Common utilities are always available. See `docs/BUILTINS.md` for full details.
 - `sum(array)`, `min(array)`, `max(array)`
 - `type_of(value)`, `is_type(value, name)`
 - `input(prompt)`, `int(text)`, `float(text)`
-- `sorted(array, reverse)`
+- `timestamp()`
+- `sorted(array, key=nil, reverse)`
 
 ```orus
 let arr: [i32; 1] = [1]
@@ -514,10 +531,23 @@ The examples in `tests/` demonstrate how small programs can act as
 regression tests. Add new scenarios when fixing bugs or adding
 features.
 
+### Debugging
+
+Compile the interpreter with `DEBUG=1` for extra runtime checks and verbose
+logging. Insert `print` statements or use `type_of()` to inspect values during
+execution. Detailed error messages with file and line information are listed in
+`docs/ERROR_REFERENCE.md`. See `docs/DEBUGGING_GUIDE.md` for additional
+troubleshooting techniques.
+
 ## Feature Status
 
 - Modules, pattern matching, error handling and `impl` blocks are **fully implemented**.
 - Generics now support forward declarations, constraints, cross-module specialization and improved inference.
 - The standard library is minimal; more built-ins are planned.
 - Initial modules are available under `std/` such as `std/math` for math helpers.
+- A basic `std/random` module provides pseudo random numbers; see
+  `docs/RANDOM_MODULE_LIMITATIONS.md` for details.
+
+Development milestones are tracked in `docs/ORUS_ROADMAP.md` and
+`docs/COMPILATION_ROADMAP.md`.
 
