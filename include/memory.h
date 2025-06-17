@@ -49,16 +49,22 @@
     ((vm)->stackI64 = \
          GROW_ARRAY(int64_t, (vm)->stackI64, oldCapacity, newCapacity))
 
-#define GROW_I64_STACK_IF_NEEDED(vm)                                   \
-    if ((vm)->stackI64Top - (vm)->stackI64 >= (vm)->stackCapacity) {   \
-        int oldCapacity = (vm)->stackCapacity;                         \
-        (vm)->stackCapacity = GROW_CAPACITY(oldCapacity);              \
-        GROW_I64_STACK(vm, oldCapacity, (vm)->stackCapacity);          \
-        if (!(vm)->stackI64) {                                         \
-            fprintf(stderr, "Failed to allocate memory for i64 stack!\n");\
-            exit(1);                                                   \
-        }                                                              \
-        (vm)->stackI64Top = (vm)->stackI64 + oldCapacity;              \
+#define GROW_I64_STACK_IF_NEEDED(vm)                                      \
+    if ((vm)->stackI64Top - (vm)->stackI64 >= (vm)->stackCapacity) {      \
+        int oldCapacity = (vm)->stackCapacity;                            \
+        int64_t* oldI64 = (vm)->stackI64;                                 \
+        Value* oldStack = (vm)->stack;                                    \
+        ptrdiff_t offsetVal = (vm)->stackTop - oldStack;                  \
+        ptrdiff_t offsetI64 = (vm)->stackI64Top - oldI64;                 \
+        (vm)->stackCapacity = GROW_CAPACITY(oldCapacity);                 \
+        GROW_I64_STACK(vm, oldCapacity, (vm)->stackCapacity);             \
+        GROW_STACK(vm, oldCapacity, (vm)->stackCapacity);                 \
+        if (!(vm)->stackI64 || !(vm)->stack) {                            \
+            fprintf(stderr, "Failed to allocate memory for stacks!\n");   \
+            exit(1);                                                      \
+        }                                                                 \
+        (vm)->stackTop = (vm)->stack + offsetVal;                         \
+        (vm)->stackI64Top = (vm)->stackI64 + offsetI64;                   \
     }
 
 // static inline size_t growArray(type, pointer, oldCount, newCount) {
