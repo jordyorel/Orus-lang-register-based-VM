@@ -56,6 +56,8 @@ typedef struct {
     uint8_t* ip;
     Value* stack;
     Value* stackTop;
+    int64_t* stackI64;
+    int64_t* stackI64Top;
     int stackCapacity;
     Value globals[UINT8_COUNT];
     Type* globalTypes[UINT8_COUNT];

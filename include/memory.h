@@ -45,6 +45,22 @@
         (vm)->stackTop = (vm)->stack + oldCapacity;                    \
     }
 
+#define GROW_I64_STACK(vm, oldCapacity, newCapacity) \
+    ((vm)->stackI64 = \
+         GROW_ARRAY(int64_t, (vm)->stackI64, oldCapacity, newCapacity))
+
+#define GROW_I64_STACK_IF_NEEDED(vm)                                   \
+    if ((vm)->stackI64Top - (vm)->stackI64 >= (vm)->stackCapacity) {   \
+        int oldCapacity = (vm)->stackCapacity;                         \
+        (vm)->stackCapacity = GROW_CAPACITY(oldCapacity);              \
+        GROW_I64_STACK(vm, oldCapacity, (vm)->stackCapacity);          \
+        if (!(vm)->stackI64) {                                         \
+            fprintf(stderr, "Failed to allocate memory for i64 stack!\n");\
+            exit(1);                                                   \
+        }                                                              \
+        (vm)->stackI64Top = (vm)->stackI64 + oldCapacity;              \
+    }
+
 // static inline size_t growArray(type, pointer, oldCount, newCount) {
 //     return reallocate(pointer, sizeof(type) * (oldCount), sizeof(type) * (newCount));
 // }
