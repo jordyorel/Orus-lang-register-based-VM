@@ -436,17 +436,30 @@ static int makeConstant(Compiler* compiler, ObjString* string) {
 
 static void emitConstant(Compiler* compiler, Value value) {
     // Ensure constants are emitted with valid values
-    // Allow VAL_STRING for now to fix compilation, may need VM changes later.
-    if (IS_I32(value) || IS_I64(value) || IS_U32(value) || IS_U64(value) || IS_F64(value) || IS_BOOL(value) || IS_NIL(value) || IS_STRING(value)) {
+    if (IS_I32(value) || IS_I64(value) || IS_U32(value) || IS_U64(value) ||
+        IS_F64(value) || IS_BOOL(value) || IS_NIL(value) || IS_STRING(value)) {
         if (IS_STRING(value)) {
             ObjString* copy = allocateString(value.as.string->chars,
                                             value.as.string->length);
             value.as.string = copy;
         }
-        // fprintf(stderr, "DEBUG: Emitting valid constant: ");
-        // printValue(value);
-        // fprintf(stderr, "\n");
-        writeConstant(compiler->chunk, value, compiler->currentLine, compiler->currentColumn);
+
+        if (IS_I64(value)) {
+            int constant = addConstant(compiler->chunk, value);
+            if (constant < 256) {
+                writeOp(compiler, OP_I64_CONST);
+                writeByte(compiler, (uint8_t)constant);
+            } else {
+                // Fallback to generic constant for large pools
+                writeOp(compiler, OP_CONSTANT_LONG);
+                writeByte(compiler, (constant >> 16) & 0xFF);
+                writeByte(compiler, (constant >> 8) & 0xFF);
+                writeByte(compiler, constant & 0xFF);
+            }
+        } else {
+            writeConstant(compiler->chunk, value, compiler->currentLine,
+                         compiler->currentColumn);
+        }
     } else {
         // fprintf(stderr, "ERROR: Invalid constant type\n");
         // Debug log to trace invalid constants
@@ -3678,7 +3691,8 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     int enclosingLoopEnd = compiler->loopEnd;
     int enclosingLoopContinue = compiler->loopContinue;
     int enclosingLoopDepth = compiler->loopDepth;
-    
+    bool useTypedJump = false;
+
     // Generate code for the range start expression and store it in the iterator variable
     generateCode(compiler, node->data.forStmt.startExpr);
     if (compiler->hadError) return;
@@ -3691,38 +3705,49 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     int loopStart = compiler->chunk->count;
     compiler->loopStart = loopStart;
     compiler->loopDepth++;
-    
+
     // Get the iterator value for comparison
     writeOp(compiler, OP_GET_GLOBAL);
     writeOp(compiler, node->data.forStmt.iteratorIndex);
-    
+
     // Get the end value for comparison
     generateCode(compiler, node->data.forStmt.endExpr);
     if (compiler->hadError) return;
 
     // Compare the iterator with the end value
     Type* iterType = node->data.forStmt.startExpr->valueType;
+    int exitJump;
     if (iterType->kind == TYPE_I32) {
         writeOp(compiler, OP_LESS_I32);
+        exitJump = compiler->chunk->count;
+        writeOp(compiler, OP_JUMP_IF_FALSE);
+        writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
+        writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
+        writeOp(compiler, OP_POP);
     } else if (iterType->kind == TYPE_I64) {
-        writeOp(compiler, OP_LESS_I64);
+        useTypedJump = true;
+        exitJump = compiler->chunk->count;
+        writeOp(compiler, OP_JUMP_IF_LT_I64);
+        writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
+        writeChunk(compiler->chunk, 0xFF, 0, 1);
     } else if (iterType->kind == TYPE_U32) {
         writeOp(compiler, OP_LESS_U32);
+        exitJump = compiler->chunk->count;
+        writeOp(compiler, OP_JUMP_IF_FALSE);
+        writeChunk(compiler->chunk, 0xFF, 0, 1);
+        writeChunk(compiler->chunk, 0xFF, 0, 1);
+        writeOp(compiler, OP_POP);
     } else if (iterType->kind == TYPE_U64) {
         writeOp(compiler, OP_LESS_U64);
+        exitJump = compiler->chunk->count;
+        writeOp(compiler, OP_JUMP_IF_FALSE);
+        writeChunk(compiler->chunk, 0xFF, 0, 1);
+        writeChunk(compiler->chunk, 0xFF, 0, 1);
+        writeOp(compiler, OP_POP);
     } else {
         error(compiler, "Unsupported iterator type for for loop.");
         return;
     }
-
-    // Emit a jump-if-false instruction to exit the loop when condition is false
-    int exitJump = compiler->chunk->count;
-    writeOp(compiler, OP_JUMP_IF_FALSE);
-    writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
-    writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
-
-    // Pop the condition value from the stack
-    writeOp(compiler, OP_POP);
 
     // Generate code for the body
     generateCode(compiler, node->data.forStmt.body);
@@ -3739,6 +3764,7 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     writeOp(compiler, node->data.forStmt.iteratorIndex);
 
     // Add the step value
+    bool useIncI64 = false;
     if (node->data.forStmt.stepExpr) {
         generateCode(compiler, node->data.forStmt.stepExpr);
         if (compiler->hadError) return;
@@ -3765,7 +3791,7 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
         if (iterType->kind == TYPE_I32) {
             emitConstant(compiler, I32_VAL(1));
         } else if (iterType->kind == TYPE_I64) {
-            emitConstant(compiler, I64_VAL(1));
+            useIncI64 = true;
         } else if (iterType->kind == TYPE_U32) {
             emitConstant(compiler, U32_VAL(1));
         } else if (iterType->kind == TYPE_U64) {
@@ -3777,7 +3803,11 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     if (iterType->kind == TYPE_I32) {
         writeOp(compiler, OP_ADD_I32);
     } else if (iterType->kind == TYPE_I64) {
-        writeOp(compiler, OP_ADD_I64);
+        if (useIncI64) {
+            writeOp(compiler, OP_INC_I64);
+        } else {
+            writeOp(compiler, OP_ADD_I64);
+        }
     } else if (iterType->kind == TYPE_U32) {
         writeOp(compiler, OP_ADD_U32);
     } else if (iterType->kind == TYPE_U64) {
@@ -3787,7 +3817,7 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     // Store the incremented value back in the iterator variable
     writeOp(compiler, OP_SET_GLOBAL);
     writeOp(compiler, node->data.forStmt.iteratorIndex);
-    
+
     // Pop the value from the stack after SET_GLOBAL (important for stack cleanliness!)
     writeOp(compiler, OP_POP);
 
@@ -3801,17 +3831,20 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     int exitDest = compiler->chunk->count;
     compiler->chunk->code[exitJump + 1] = (exitDest - exitJump - 3) >> 8;
     compiler->chunk->code[exitJump + 2] = (exitDest - exitJump - 3) & 0xFF;
-    
+
     // Set the loop end position to the destination of the exit jump
     compiler->loopEnd = exitDest;
-    
+
     // Patch all break jumps to jump to the current position
     patchBreakJumps(compiler);
 
     // Like while loops, the condition value remains on the stack when the loop
     // exits via the jump-if-false above because the OP_POP directly after the
-    // jump is skipped. Emit a pop here to keep the stack balanced on exit.
-    writeOp(compiler, OP_POP);
+    // jump is skipped. Emit a pop here to keep the stack balanced on exit for
+    // generic comparisons.
+    if (!useTypedJump) {
+        writeOp(compiler, OP_POP);
+    }
 
     endScope(compiler);
 

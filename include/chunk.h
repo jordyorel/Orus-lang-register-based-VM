@@ -13,6 +13,7 @@ typedef enum {
     // op constant
     OP_CONSTANT,
     OP_CONSTANT_LONG,
+    OP_I64_CONST,
 
     // Integer (i32) operations
     OP_ADD_I32,
@@ -226,6 +227,8 @@ typedef enum {
     OP_TYPE_OF_BOOL,
     OP_TYPE_OF_STRING,
     OP_TYPE_OF_ARRAY,
+    OP_INC_I64,
+    OP_JUMP_IF_LT_I64,
 } opCode;
 
 typedef struct {

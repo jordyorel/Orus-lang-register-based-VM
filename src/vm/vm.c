@@ -646,6 +646,19 @@ static InterpretResult run() {
                 vmPush(&vm, constant);
                 break;
             }
+            case OP_CONSTANT_LONG: {
+                uint32_t index = (uint32_t)(READ_BYTE() << 16);
+                index |= (uint32_t)(READ_BYTE() << 8);
+                index |= READ_BYTE();
+                Value constant = vm.chunk->constants.values[index];
+                vmPush(&vm, constant);
+                break;
+            }
+            case OP_I64_CONST: {
+                Value constant = READ_CONSTANT();
+                vmPush(&vm, constant);
+                break;
+            }
             case OP_ADD_I32:
                 binaryOpI32(&vm, '+', &result);
                 break;
@@ -912,6 +925,19 @@ static InterpretResult run() {
                 }
                 int64_t value = AS_I64(vmPop(&vm));
                 vmPush(&vm, I64_VAL(-value));
+                break;
+            }
+            case OP_INC_I64: {
+                if (!IS_I64(vmPeek(&vm, 0))) {
+                    RUNTIME_ERROR("Operand must be a 64-bit integer.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int64_t value = AS_I64(vmPop(&vm));
+                int64_t resultVal;
+                if (__builtin_add_overflow(value, 1, &resultVal)) {
+                    handleOverflow("i64 overflow");
+                }
+                vmPush(&vm, I64_VAL(resultVal));
                 break;
             }
             case OP_NEGATE_U32: {
@@ -1525,6 +1551,24 @@ static InterpretResult run() {
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 if (AS_BOOL(condition)) {
+                    vm.ip += offset;
+                }
+
+                break;
+            }
+            case OP_JUMP_IF_LT_I64: {
+                uint16_t offset = READ_SHORT();
+                if (vm.stackTop - vm.stack < 2) {
+                    RUNTIME_ERROR("Stack underflow in JUMP_IF_LT_I64.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Value b = vmPop(&vm);
+                Value a = vmPop(&vm);
+                if (!IS_I64(a) || !IS_I64(b)) {
+                    RUNTIME_ERROR("Operands must be 64-bit integers.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                if (AS_I64(a) >= AS_I64(b)) {
                     vm.ip += offset;
                 }
 
