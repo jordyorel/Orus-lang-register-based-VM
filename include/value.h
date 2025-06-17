@@ -60,7 +60,7 @@ typedef struct ObjArray {
 typedef struct ObjIntArray {
     Obj obj;
     int length;
-    int* elements;
+    int64_t* elements;
 } ObjIntArray;
 
 typedef struct ObjRangeIterator {
