@@ -84,13 +84,16 @@ The following built-in functions are implemented in the Orus runtime and availab
 - `len(value)` – Length of a string or array  
 - `substring(str, start, len)` – Extract part of a string  
 - `push(array, value)` / `pop(array)` – Dynamic array operations  
-- `range(start, end)` – Range generator for loops  
-- `sum(array)` – Return sum of numeric values in array  
-- `min(array)` / `max(array)` – Return min/max value from array  
-- `sorted(array, reverse)` – Returns a new sorted array  
-- `type_of(value)` / `is_type(value, name)` – Type inspection and checking  
-- `input(prompt)` – Console input from user  
-- `int(text)` / `float(text)` – Safe type conversion from string  
+- `range(start, end)` – Range generator for loops
+- `sum(array)` – Return sum of numeric values in array
+- `min(array)` / `max(array)` – Return min/max value from array
+- `sorted(array, reverse)` – Returns a new sorted array
+- `type_of(value)` / `is_type(value, name)` – Type inspection and checking
+- `input(prompt)` – Console input from user
+- `int(text)` / `float(text)` – Safe type conversion from string
+- `timestamp()` – Current UNIX timestamp
+- `module_name(path)` / `module_path(path)` – Introspection helpers
+- `native_pow(base, exp)` / `native_sqrt(x)` – C math wrappers
 
 #### 🧩 Next Built-ins (Planned for runtime inclusion)
 
