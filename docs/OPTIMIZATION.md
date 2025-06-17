@@ -15,7 +15,7 @@ Improve the execution performance of the Orus language by leveraging its **stati
 | Use typed VM stack/registers for primitives   | Not started |
 | Lazy typed iterators for `range()`            | Not started |
 | Fast-path array push for primitives           | Not started |
-| Type-based print & builtins dispatch          | Not started |
+| Type-based print & builtins dispatch          | In progress |
 | GC-aware execution in tight numeric loops     | Not started |
 | Default auto-inference to `i64` over `i32`    | Planned     |
 | Overflow-safe numeric promotion               | Planned     |
@@ -58,6 +58,9 @@ Improve the execution performance of the Orus language by leveraging its **stati
 
 * Use compile-time dispatch to print functions like `PRINT_I64`, `PRINT_F64`, etc.
 * Also apply this to other built-ins like `len`, `type_of`, etc., based on known types.
+* Initial typed print opcodes for numeric, boolean and string values are now available.
+* Added specialized `LEN_ARRAY` and `LEN_STRING` opcodes for `len()` when the argument type is known.
+* Specialized `TYPE_OF_*` opcodes push constant type names when the argument's static type is known.
 
 ### 7. GC-Aware Execution
 

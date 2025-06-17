@@ -216,6 +216,34 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_PRINT", offset);
         case OP_PRINT_NO_NL:
             return simpleInstruction("OP_PRINT_NO_NL", offset);
+        case OP_PRINT_I32:
+            return simpleInstruction("OP_PRINT_I32", offset);
+        case OP_PRINT_I32_NO_NL:
+            return simpleInstruction("OP_PRINT_I32_NO_NL", offset);
+        case OP_PRINT_I64:
+            return simpleInstruction("OP_PRINT_I64", offset);
+        case OP_PRINT_I64_NO_NL:
+            return simpleInstruction("OP_PRINT_I64_NO_NL", offset);
+        case OP_PRINT_U32:
+            return simpleInstruction("OP_PRINT_U32", offset);
+        case OP_PRINT_U32_NO_NL:
+            return simpleInstruction("OP_PRINT_U32_NO_NL", offset);
+        case OP_PRINT_U64:
+            return simpleInstruction("OP_PRINT_U64", offset);
+        case OP_PRINT_U64_NO_NL:
+            return simpleInstruction("OP_PRINT_U64_NO_NL", offset);
+        case OP_PRINT_F64:
+            return simpleInstruction("OP_PRINT_F64", offset);
+        case OP_PRINT_F64_NO_NL:
+            return simpleInstruction("OP_PRINT_F64_NO_NL", offset);
+        case OP_PRINT_BOOL:
+            return simpleInstruction("OP_PRINT_BOOL", offset);
+        case OP_PRINT_BOOL_NO_NL:
+            return simpleInstruction("OP_PRINT_BOOL_NO_NL", offset);
+        case OP_PRINT_STRING:
+            return simpleInstruction("OP_PRINT_STRING", offset);
+        case OP_PRINT_STRING_NO_NL:
+            return simpleInstruction("OP_PRINT_STRING_NO_NL", offset);
         case OP_FORMAT_PRINT:
             return simpleInstruction("OP_FORMAT_PRINT", offset);
         case OP_FORMAT_PRINT_NO_NL:
@@ -238,10 +266,30 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_ARRAY_POP", offset);
         case OP_LEN:
             return simpleInstruction("OP_LEN", offset);
+        case OP_LEN_ARRAY:
+            return simpleInstruction("OP_LEN_ARRAY", offset);
+        case OP_LEN_STRING:
+            return simpleInstruction("OP_LEN_STRING", offset);
         case OP_SUBSTRING:
             return simpleInstruction("OP_SUBSTRING", offset);
         case OP_SLICE:
             return simpleInstruction("OP_SLICE", offset);
+        case OP_TYPE_OF_I32:
+            return simpleInstruction("OP_TYPE_OF_I32", offset);
+        case OP_TYPE_OF_I64:
+            return simpleInstruction("OP_TYPE_OF_I64", offset);
+        case OP_TYPE_OF_U32:
+            return simpleInstruction("OP_TYPE_OF_U32", offset);
+        case OP_TYPE_OF_U64:
+            return simpleInstruction("OP_TYPE_OF_U64", offset);
+        case OP_TYPE_OF_F64:
+            return simpleInstruction("OP_TYPE_OF_F64", offset);
+        case OP_TYPE_OF_BOOL:
+            return simpleInstruction("OP_TYPE_OF_BOOL", offset);
+        case OP_TYPE_OF_STRING:
+            return simpleInstruction("OP_TYPE_OF_STRING", offset);
+        case OP_TYPE_OF_ARRAY:
+            return simpleInstruction("OP_TYPE_OF_ARRAY", offset);
 
         case OP_CALL: {
             uint8_t functionIndex = chunk->code[offset + 1];

@@ -1486,6 +1486,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                                                node->data.call.name.length);
             int nativeIdx = findNative(nameObj);
             node->data.call.nativeIndex = nativeIdx;
+            node->data.call.builtinOp = -1;
             // Built-in functions
             if (!fromModule && tokenEquals(node->data.call.name, "len")) {
                 if (node->data.call.argCount != 1) {
@@ -1503,6 +1504,10 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                     emitLenInvalidTypeError(compiler, &node->data.call.name, actualType);
                     return;
                 }
+                if (arg->valueType->kind == TYPE_ARRAY)
+                    node->data.call.builtinOp = OP_LEN_ARRAY;
+                else if (arg->valueType->kind == TYPE_STRING)
+                    node->data.call.builtinOp = OP_LEN_STRING;
                 node->valueType = getPrimitiveType(TYPE_I32);
                 break;
             } else if (!fromModule && tokenEquals(node->data.call.name, "substring")) {
@@ -1542,6 +1547,19 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 ASTNode* valArg = node->data.call.arguments;
                 typeCheckNode(compiler, valArg);
                 if (compiler->hadError) return;
+                if (valArg->valueType) {
+                    switch (valArg->valueType->kind) {
+                        case TYPE_I32:   node->data.call.builtinOp = OP_TYPE_OF_I32; break;
+                        case TYPE_I64:   node->data.call.builtinOp = OP_TYPE_OF_I64; break;
+                        case TYPE_U32:   node->data.call.builtinOp = OP_TYPE_OF_U32; break;
+                        case TYPE_U64:   node->data.call.builtinOp = OP_TYPE_OF_U64; break;
+                        case TYPE_F64:   node->data.call.builtinOp = OP_TYPE_OF_F64; break;
+                        case TYPE_BOOL:  node->data.call.builtinOp = OP_TYPE_OF_BOOL; break;
+                        case TYPE_STRING:node->data.call.builtinOp = OP_TYPE_OF_STRING; break;
+                        case TYPE_ARRAY: node->data.call.builtinOp = OP_TYPE_OF_ARRAY; break;
+                        default: break;
+                    }
+                }
                 node->valueType = getPrimitiveType(TYPE_STRING);
                 break;
             } else if (!fromModule && tokenEquals(node->data.call.name, "is_type")) {
@@ -3037,10 +3055,49 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                     free(temp);
                 }
 
-                if (node->data.print.newline)
-                    writeOp(compiler, OP_PRINT);
-                else
-                    writeOp(compiler, OP_PRINT_NO_NL);
+                Type* t = node->data.print.format->valueType;
+                if (t) {
+                    opCode op = OP_PRINT;
+                    opCode opNoNl = OP_PRINT_NO_NL;
+                    switch (t->kind) {
+                        case TYPE_I32:
+                            op = OP_PRINT_I32;
+                            opNoNl = OP_PRINT_I32_NO_NL;
+                            break;
+                        case TYPE_I64:
+                            op = OP_PRINT_I64;
+                            opNoNl = OP_PRINT_I64_NO_NL;
+                            break;
+                        case TYPE_U32:
+                            op = OP_PRINT_U32;
+                            opNoNl = OP_PRINT_U32_NO_NL;
+                            break;
+                        case TYPE_U64:
+                            op = OP_PRINT_U64;
+                            opNoNl = OP_PRINT_U64_NO_NL;
+                            break;
+                        case TYPE_F64:
+                            op = OP_PRINT_F64;
+                            opNoNl = OP_PRINT_F64_NO_NL;
+                            break;
+                        case TYPE_BOOL:
+                            op = OP_PRINT_BOOL;
+                            opNoNl = OP_PRINT_BOOL_NO_NL;
+                            break;
+                        case TYPE_STRING:
+                            op = OP_PRINT_STRING;
+                            opNoNl = OP_PRINT_STRING_NO_NL;
+                            break;
+                        default:
+                            break;
+                    }
+                    writeOp(compiler, node->data.print.newline ? op : opNoNl);
+                } else {
+                    if (node->data.print.newline)
+                        writeOp(compiler, OP_PRINT);
+                    else
+                        writeOp(compiler, OP_PRINT_NO_NL);
+                }
             }
             break;
         }
@@ -3452,6 +3509,18 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
         }
         case AST_CALL: {
             compiler->currentColumn = tokenColumn(compiler, &node->data.call.name);
+            // Emit specialized builtin opcode if available
+            if (node->data.call.builtinOp != -1) {
+                ASTNode* arg = node->data.call.arguments;
+                while (arg) {
+                    generateCode(compiler, arg);
+                    if (compiler->hadError) return;
+                    arg = arg->next;
+                }
+                writeOp(compiler, (opCode)node->data.call.builtinOp);
+                break;
+            }
+
             // Built-in implementations using native registry
             if (node->data.call.nativeIndex != -1) {
                 ASTNode* arg = node->data.call.arguments;

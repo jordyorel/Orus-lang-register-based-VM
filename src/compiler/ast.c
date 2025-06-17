@@ -395,6 +395,7 @@ ASTNode* createCallNode(Token name, ASTNode* arguments, int argCount, Type* stat
     node->data.call.staticType = staticType;
     node->data.call.mangledName = NULL;
     node->data.call.nativeIndex = -1;
+    node->data.call.builtinOp = -1;
     node->data.call.genericArgs = genericArgs;
     node->data.call.genericArgCount = genericArgCount;
     node->valueType = NULL;
