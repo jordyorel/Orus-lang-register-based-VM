@@ -11,8 +11,8 @@ Improve the execution performance of the Orus language by leveraging its **stati
 | Task                                          | Status      |
 | --------------------------------------------- | ----------- |
 | Type-specialized bytecode generation          | ✅ Done |
-| Avoid boxing/tagging of known primitive types | Not started | 
-| Use typed VM stack/registers for primitives   | Not started |
+| Avoid boxing/tagging of known primitive types | ✅ Done |
+| Use typed VM stack/registers for primitives   | ✅ Done |
 | Lazy typed iterators for `range()`            | Not started |
 | Fast-path array push for primitives           | Not started |
 | Type-based print & builtins dispatch          | In progress |
@@ -37,6 +37,11 @@ Improve the execution performance of the Orus language by leveraging its **stati
 * Store raw types like `int64_t`, `float64_t` directly in VM stack/registers.
 * Only wrap in a `Value` union when dynamic behavior is necessary.
 * Avoid heap allocations for local integer/float values.
+* Initial opcodes now skip runtime type checks for integer arithmetic.
+* Introduced a parallel `int64_t` stack used by 64-bit integer opcodes.
+* Added `vmPushI64` and `vmPopI64` helpers so typed opcodes operate on raw values.
+* Removed runtime type checks for all specialized integer operations.
+* Phase 2 completed with unboxed primitives across the interpreter.
 
 ### 3. Optimize Interpreter Dispatch
 

@@ -30,7 +30,10 @@ VM vm;
 /**
  * Reset the VM stack pointer to the bottom of the stack.
  */
-static void resetStack() { vm.stackTop = vm.stack; }
+static void resetStack() {
+    vm.stackTop = vm.stack;
+    vm.stackI64Top = vm.stackI64;
+}
 Type* variableTypes[UINT8_COUNT] = {NULL};
 
 static const char* runtimeStack[UINT8_COUNT];
@@ -72,6 +75,11 @@ void initVM() {
     vm.stack = GROW_ARRAY(Value, NULL, 0, vm.stackCapacity);
     if (!vm.stack) {
         fprintf(stderr, "Failed to allocate VM stack\n");
+        exit(1);
+    }
+    vm.stackI64 = GROW_ARRAY(int64_t, NULL, 0, vm.stackCapacity);
+    if (!vm.stackI64) {
+        fprintf(stderr, "Failed to allocate VM i64 stack\n");
         exit(1);
     }
     resetStack();
@@ -131,6 +139,11 @@ void freeVM() {
         vm.stack = NULL;
         vm.stackTop = NULL;
         vm.stackCapacity = 0;
+    }
+    if (vm.stackI64) {
+        FREE_ARRAY(int64_t, vm.stackI64, vm.stackCapacity);
+        vm.stackI64 = NULL;
+        vm.stackI64Top = NULL;
     }
     freeObjects();
     vm.tryFrameCount = 0;
@@ -516,21 +529,21 @@ static InterpretResult run() {
             }
 
             case OP_PRINT_I64: {
-                if (vm.stackTop <= vm.stack) {
+                if (vm.stackI64Top <= vm.stackI64) {
                     RUNTIME_ERROR("Stack underflow in PRINT_I64 operation.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                int64_t v = AS_I64(vmPop(&vm));
+                int64_t v = vmPopI64(&vm);
                 printf("%lld\n", (long long)v);
                 break;
             }
 
             case OP_PRINT_I64_NO_NL: {
-                if (vm.stackTop <= vm.stack) {
+                if (vm.stackI64Top <= vm.stackI64) {
                     RUNTIME_ERROR("Stack underflow in PRINT_I64 operation.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                int64_t v = AS_I64(vmPop(&vm));
+                int64_t v = vmPopI64(&vm);
                 printf("%lld", (long long)v);
                 fflush(stdout);
                 break;
@@ -656,7 +669,7 @@ static InterpretResult run() {
             }
             case OP_I64_CONST: {
                 Value constant = READ_CONSTANT();
-                vmPush(&vm, constant);
+                vmPushI64(&vm, AS_I64(constant));
                 break;
             }
             case OP_ADD_I32:
@@ -783,31 +796,9 @@ static InterpretResult run() {
             case OP_NOT_EQUAL:
                 compareOpAny(&vm, '!', &result);
                 break;
-            case OP_LESS_I32: {
-                // Check for stack underflow
-                if (vm.stackTop - vm.stack < 2) {
-                    RUNTIME_ERROR("Stack underflow in LESS_I32 comparison. Need 2 values, have %ld.",
-                                 vm.stackTop - vm.stack);
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-
-                Value b = vmPop(&vm);  // Pop the second value first
-                Value a = vmPop(&vm);  // Then pop the first value
-
-                // Ensure we have valid integers
-                if (!IS_I32(a) || !IS_I32(b)) {
-                    RUNTIME_ERROR("Operands must be integers.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-
-                int32_t aValue = AS_I32(a);
-                int32_t bValue = AS_I32(b);
-                bool result = aValue < bValue;
-
-                vmPush(&vm, BOOL_VAL(result));
-
+            case OP_LESS_I32:
+                compareOpI32(&vm, '<', &result);
                 break;
-            }
             case OP_LESS_I64:
                 compareOpI64(&vm, '<', &result);
                 break;
@@ -910,59 +901,35 @@ static InterpretResult run() {
                 binaryOpF64(&vm, '/', &result);
                 break;
             case OP_NEGATE_I32: {
-                if (!IS_I32(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be an integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 int32_t value = AS_I32(vmPop(&vm));
                 vmPush(&vm, I32_VAL(-value));
                 break;
             }
             case OP_NEGATE_I64: {
-                if (!IS_I64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a 64-bit integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-                int64_t value = AS_I64(vmPop(&vm));
-                vmPush(&vm, I64_VAL(-value));
+                int64_t value = vmPopI64(&vm);
+                vmPushI64(&vm, -value);
                 break;
             }
             case OP_INC_I64: {
-                if (!IS_I64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a 64-bit integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-                int64_t value = AS_I64(vmPop(&vm));
+                int64_t value = vmPopI64(&vm);
                 int64_t resultVal;
                 if (__builtin_add_overflow(value, 1, &resultVal)) {
                     handleOverflow("i64 overflow");
                 }
-                vmPush(&vm, I64_VAL(resultVal));
+                vmPushI64(&vm, resultVal);
                 break;
             }
             case OP_NEGATE_U32: {
-                if (!IS_U32(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be an unsigned integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 uint32_t value = AS_U32(vmPop(&vm));
                 vmPush(&vm, U32_VAL(-value));
                 break;
             }
             case OP_NEGATE_U64: {
-                if (!IS_U64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a 64-bit unsigned integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 uint64_t value = AS_U64(vmPop(&vm));
                 vmPush(&vm, U64_VAL(-value));
                 break;
             }
             case OP_NEGATE_F64: {
-                if (!IS_F64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a floating point number.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 double value = AS_F64(vmPop(&vm));
                 vmPush(&vm, F64_VAL(-value));
                 break;
@@ -1008,316 +975,177 @@ static InterpretResult run() {
                 break;
             }
             case OP_I32_TO_U32: {
-                if (!IS_I32(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be an integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 int32_t value = AS_I32(vmPop(&vm));
                 vmPush(&vm, U32_VAL((uint32_t)value));
                 break;
             }
             case OP_U32_TO_I32: {
-                if (!IS_U32(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be an unsigned integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 uint32_t value = AS_U32(vmPop(&vm));
                 vmPush(&vm, I32_VAL((int32_t)value));
                 break;
             }
             case OP_I32_TO_I64: {
-                if (!IS_I32(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be an integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 int32_t value = AS_I32(vmPop(&vm));
-                vmPush(&vm, I64_VAL((int64_t)value));
+                vmPushI64(&vm, (int64_t)value);
                 break;
             }
             case OP_U32_TO_I64: {
-                if (!IS_U32(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be an unsigned integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 uint32_t value = AS_U32(vmPop(&vm));
-                vmPush(&vm, I64_VAL((int64_t)value));
+                vmPushI64(&vm, (int64_t)value);
                 break;
             }
             case OP_I64_TO_I32: {
-                if (!IS_I64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be an integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-                int64_t value = AS_I64(vmPop(&vm));
+                int64_t value = vmPopI64(&vm);
                 vmPush(&vm, I32_VAL((int32_t)value));
                 break;
             }
             case OP_I64_TO_U32: {
-                if (!IS_I64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be an integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-                int64_t value = AS_I64(vmPop(&vm));
+                int64_t value = vmPopI64(&vm);
                 vmPush(&vm, U32_VAL((uint32_t)value));
                 break;
             }
             case OP_I32_TO_U64: {
-                if (!IS_I32(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be an integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 int32_t value = AS_I32(vmPop(&vm));
                 vmPush(&vm, U64_VAL((uint64_t)value));
                 break;
             }
             case OP_U32_TO_U64: {
-                if (!IS_U32(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be an unsigned integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 uint32_t value = AS_U32(vmPop(&vm));
                 vmPush(&vm, U64_VAL((uint64_t)value));
                 break;
             }
             case OP_U64_TO_I32: {
-                if (!IS_U64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a 64-bit unsigned integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 uint64_t value = AS_U64(vmPop(&vm));
                 vmPush(&vm, I32_VAL((int32_t)value));
                 break;
             }
             case OP_U64_TO_U32: {
-                if (!IS_U64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a 64-bit unsigned integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 uint64_t value = AS_U64(vmPop(&vm));
                 vmPush(&vm, U32_VAL((uint32_t)value));
                 break;
             }
             case OP_U64_TO_F64: {
-                if (!IS_U64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a 64-bit unsigned integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 uint64_t value = AS_U64(vmPop(&vm));
                 vmPush(&vm, F64_VAL((double)value));
                 break;
             }
             case OP_F64_TO_U64: {
-                if (!IS_F64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a floating point number.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 double value = AS_F64(vmPop(&vm));
                 vmPush(&vm, U64_VAL((uint64_t)value));
                 break;
             }
             case OP_F64_TO_I32: {
-                if (!IS_F64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a floating point number.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 double value = AS_F64(vmPop(&vm));
                 vmPush(&vm, I32_VAL((int32_t)value));
                 break;
             }
             case OP_F64_TO_U32: {
-                if (!IS_F64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a floating point number.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 double value = AS_F64(vmPop(&vm));
                 vmPush(&vm, U32_VAL((uint32_t)value));
                 break;
             }
             case OP_I64_TO_U64: {
-                if (!IS_I64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a 64-bit integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-                int64_t value = AS_I64(vmPop(&vm));
+                int64_t value = vmPopI64(&vm);
                 vmPush(&vm, U64_VAL((uint64_t)value));
                 break;
             }
             case OP_U64_TO_I64: {
-                if (!IS_U64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a 64-bit unsigned integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 uint64_t value = AS_U64(vmPop(&vm));
-                vmPush(&vm, I64_VAL((int64_t)value));
+                vmPushI64(&vm, (int64_t)value);
                 break;
             }
             case OP_I64_TO_F64: {
-                if (!IS_I64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a 64-bit integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-                int64_t value = AS_I64(vmPop(&vm));
+                int64_t value = vmPopI64(&vm);
                 vmPush(&vm, F64_VAL((double)value));
                 break;
             }
             case OP_F64_TO_I64: {
-                if (!IS_F64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a floating point number.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 double value = AS_F64(vmPop(&vm));
-                vmPush(&vm, I64_VAL((int64_t)value));
+                vmPushI64(&vm, (int64_t)value);
                 break;
             }
             case OP_I32_TO_BOOL: {
-                if (!IS_I32(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be an integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 int32_t value = AS_I32(vmPop(&vm));
                 vmPush(&vm, BOOL_VAL(value != 0));
                 break;
             }
             case OP_U32_TO_BOOL: {
-                if (!IS_U32(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be an unsigned integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 uint32_t value = AS_U32(vmPop(&vm));
                 vmPush(&vm, BOOL_VAL(value != 0));
                 break;
             }
             case OP_I64_TO_BOOL: {
-                if (!IS_I64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a 64-bit integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-                int64_t value = AS_I64(vmPop(&vm));
+                int64_t value = vmPopI64(&vm);
                 vmPush(&vm, BOOL_VAL(value != 0));
                 break;
             }
             case OP_U64_TO_BOOL: {
-                if (!IS_U64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a 64-bit unsigned integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 uint64_t value = AS_U64(vmPop(&vm));
                 vmPush(&vm, BOOL_VAL(value != 0));
                 break;
             }
             case OP_BOOL_TO_I32: {
-                if (!IS_BOOL(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a boolean.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 bool value = AS_BOOL(vmPop(&vm));
                 vmPush(&vm, I32_VAL(value ? 1 : 0));
                 break;
             }
             case OP_BOOL_TO_U32: {
-                if (!IS_BOOL(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a boolean.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 bool value = AS_BOOL(vmPop(&vm));
                 vmPush(&vm, U32_VAL(value ? 1 : 0));
                 break;
             }
             case OP_BOOL_TO_I64: {
-                if (!IS_BOOL(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a boolean.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 bool value = AS_BOOL(vmPop(&vm));
-                vmPush(&vm, I64_VAL(value ? 1 : 0));
+                vmPushI64(&vm, value ? 1 : 0);
                 break;
             }
             case OP_BOOL_TO_U64: {
-                if (!IS_BOOL(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a boolean.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 bool value = AS_BOOL(vmPop(&vm));
                 vmPush(&vm, U64_VAL(value ? 1 : 0));
                 break;
             }
             case OP_BOOL_TO_F64: {
-                if (!IS_BOOL(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a boolean.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 bool value = AS_BOOL(vmPop(&vm));
                 vmPush(&vm, F64_VAL(value ? 1.0 : 0.0));
                 break;
             }
             case OP_F64_TO_BOOL: {
-                if (!IS_F64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a floating point number.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 double value = AS_F64(vmPop(&vm));
                 vmPush(&vm, BOOL_VAL(value != 0.0));
                 break;
             }
             case OP_I64_TO_STRING: {
-                if (!IS_I64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a 64-bit integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-                Value v = vmPop(&vm);
+                int64_t value = vmPopI64(&vm);
+                Value v = I64_VAL(value);
                 vmPush(&vm, convertToString(v));
                 break;
             }
             case OP_U64_TO_STRING: {
-                if (!IS_U64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a 64-bit unsigned integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 Value v = vmPop(&vm);
                 vmPush(&vm, convertToString(v));
                 break;
             }
             case OP_I32_TO_STRING: {
-                if (!IS_I32(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be an integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 Value v = vmPop(&vm);
                 vmPush(&vm, convertToString(v));
                 break;
             }
             case OP_U32_TO_STRING: {
-                if (!IS_U32(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be an unsigned integer.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 Value v = vmPop(&vm);
                 vmPush(&vm, convertToString(v));
                 break;
             }
             case OP_F64_TO_STRING: {
-                if (!IS_F64(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a floating point number.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 Value v = vmPop(&vm);
                 vmPush(&vm, convertToString(v));
                 break;
             }
             case OP_BOOL_TO_STRING: {
-                if (!IS_BOOL(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be a boolean.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 Value v = vmPop(&vm);
                 vmPush(&vm, convertToString(v));
                 break;
             }
             case OP_ARRAY_TO_STRING: {
-                if (!IS_ARRAY(vmPeek(&vm, 0))) {
-                    RUNTIME_ERROR("Operand must be an array.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
                 Value v = vmPop(&vm);
                 int capacity = 64;
                 int length = 0;
@@ -1380,11 +1208,19 @@ static InterpretResult run() {
                     // Make sure we don't set stackTop to an invalid position
                     if (frame->stackOffset >= 0 && frame->stackOffset < vm.stackCapacity) {
                         vm.stackTop = vm.stack + frame->stackOffset;
-                        vmPush(&vm, returnValue);
+                        if (IS_I64(returnValue)) {
+                            vmPushI64(&vm, AS_I64(returnValue));
+                        } else {
+                            vmPush(&vm, returnValue);
+                        }
                     } else {
                         // Invalid stack offset, just push the return value if present
                         vm.stackTop = vm.stack;
-                        vmPush(&vm, returnValue);
+                        if (IS_I64(returnValue)) {
+                            vmPushI64(&vm, AS_I64(returnValue));
+                        } else {
+                            vmPush(&vm, returnValue);
+                        }
                     }
 
                     if (vm.trace) {
@@ -1397,7 +1233,11 @@ static InterpretResult run() {
                     }
                 } else {
                     // If we're not in a function call, optionally push the return value back
-                    vmPush(&vm, returnValue);
+                    if (IS_I64(returnValue)) {
+                        vmPushI64(&vm, AS_I64(returnValue));
+                    } else {
+                        vmPush(&vm, returnValue);
+                    }
 
                     return INTERPRET_OK;
                 }
@@ -1428,7 +1268,11 @@ static InterpretResult run() {
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 Value value = vm.globals[index];
-                vmPush(&vm, value);
+                if (vm.globalTypes[index] && vm.globalTypes[index]->kind == TYPE_I64) {
+                    vmPushI64(&vm, AS_I64(value));
+                } else {
+                    vmPush(&vm, value);
+                }
 
                 break;
             }
@@ -1558,17 +1402,13 @@ static InterpretResult run() {
             }
             case OP_JUMP_IF_LT_I64: {
                 uint16_t offset = READ_SHORT();
-                if (vm.stackTop - vm.stack < 2) {
+                if (vm.stackI64Top - vm.stackI64 < 2) {
                     RUNTIME_ERROR("Stack underflow in JUMP_IF_LT_I64.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                Value b = vmPop(&vm);
-                Value a = vmPop(&vm);
-                if (!IS_I64(a) || !IS_I64(b)) {
-                    RUNTIME_ERROR("Operands must be 64-bit integers.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-                if (AS_I64(a) >= AS_I64(b)) {
+                int64_t b = vmPopI64(&vm);
+                int64_t a = vmPopI64(&vm);
+                if (a >= b) {
                     vm.ip += offset;
                 }
 
@@ -1658,7 +1498,12 @@ static InterpretResult run() {
                     RUNTIME_ERROR("Array index out of bounds.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                vmPush(&vm, arr->elements[idx]);
+                Value elem = arr->elements[idx];
+                if (IS_I64(elem)) {
+                    vmPushI64(&vm, AS_I64(elem));
+                } else {
+                    vmPush(&vm, elem);
+                }
                 break;
             }
             case OP_ARRAY_SET: {
@@ -1684,7 +1529,11 @@ static InterpretResult run() {
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 arr->elements[idx] = value;
-                vmPush(&vm, value);
+                if (IS_I64(value)) {
+                    vmPushI64(&vm, AS_I64(value));
+                } else {
+                    vmPush(&vm, value);
+                }
                 break;
             }
             case OP_ARRAY_PUSH: {
@@ -1696,7 +1545,11 @@ static InterpretResult run() {
                 }
                 ObjArray* arr = AS_ARRAY(arrayVal);
                 arrayPush(&vm, arr, value);
-                vmPush(&vm, value);
+                if (IS_I64(value)) {
+                    vmPushI64(&vm, AS_I64(value));
+                } else {
+                    vmPush(&vm, value);
+                }
                 break;
             }
             case OP_ARRAY_POP: {
@@ -1707,7 +1560,11 @@ static InterpretResult run() {
                 }
                 ObjArray* arr = AS_ARRAY(arrayVal);
                 Value v = arrayPop(arr);
-                vmPush(&vm, v);
+                if (IS_I64(v)) {
+                    vmPushI64(&vm, AS_I64(v));
+                } else {
+                    vmPush(&vm, v);
+                }
                 break;
             }
             case OP_LEN: {

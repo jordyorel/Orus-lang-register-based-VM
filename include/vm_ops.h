@@ -35,7 +35,28 @@ static inline Value vmPop(VM* vm) {
         return NIL_VAL;
     }
     vm->stackTop--;
-    return *vm->stackTop;
+    Value val = *vm->stackTop;
+    if (IS_I64(val) && vm->stackI64Top > vm->stackI64) {
+        vm->stackI64Top--;
+    }
+    return val;
+}
+
+static inline int64_t vmPopI64(VM* vm) {
+    if (vm->stackI64Top <= vm->stackI64) {
+        fprintf(stderr, "Error: I64 stack underflow\n");
+        return 0;
+    }
+    vm->stackI64Top--;
+    vm->stackTop--; /* keep value stack in sync */
+    return *vm->stackI64Top;
+}
+
+static inline void vmPushI64(VM* vm, int64_t value) {
+    GROW_I64_STACK_IF_NEEDED(vm);
+    *vm->stackI64Top = value;
+    vm->stackI64Top++;
+    vmPush(vm, I64_VAL(value)); /* mirror on generic stack */
 }
 
 static inline void handleOverflow(const char* message) {
@@ -48,25 +69,35 @@ static inline void handleOverflow(const char* message) {
 
 // Binary operations for i32
 static inline void binaryOpI32(VM* vm, char op, InterpretResult* result) {
-    if (!IS_I32(vmPeek(vm, 0)) || !IS_I32(vmPeek(vm, 1))) {
-        fprintf(stderr, "Operands must be integers.\n");
-        fprintf(stderr, "Top of stack: %d, Next: %d\n", (int)(vm->stackTop - vm->stack), (int)(vm->stackTop - vm->stack - 1));
-        fprintf(stderr, "Values: ");
-        printValue(vmPeek(vm, 0));
-        fprintf(stderr, " and ");
-        printValue(vmPeek(vm, 1));
-        fprintf(stderr, "\n");
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
     int32_t b = AS_I32(vmPop(vm));
     int32_t a = AS_I32(vmPop(vm));
     int32_t res = 0;
     bool overflow = false;
     switch (op) {
-        case '+': overflow = __builtin_add_overflow(a, b, &res); break;
-        case '-': overflow = __builtin_sub_overflow(a, b, &res); break;
-        case '*': overflow = __builtin_mul_overflow(a, b, &res); break;
+        case '+': {
+            unsigned long long ua = (unsigned long long)a;
+            unsigned long long ub = (unsigned long long)b;
+            unsigned long long ur;
+            overflow = __builtin_add_overflow(ua, ub, &ur);
+            res = (int64_t)ur;
+            break;
+        }
+        case '-': {
+            unsigned long long ua = (unsigned long long)a;
+            unsigned long long ub = (unsigned long long)b;
+            unsigned long long ur;
+            overflow = __builtin_sub_overflow(ua, ub, &ur);
+            res = (int64_t)ur;
+            break;
+        }
+        case '*': {
+            unsigned long long ua = (unsigned long long)a;
+            unsigned long long ub = (unsigned long long)b;
+            unsigned long long ur;
+            overflow = __builtin_mul_overflow(ua, ub, &ur);
+            res = (int64_t)ur;
+            break;
+        }
         case '/':
             if (b == 0) {
                 vmRuntimeError("Division by zero.");
@@ -86,13 +117,8 @@ static inline void binaryOpI32(VM* vm, char op, InterpretResult* result) {
 
 // Binary operations for i64
 static inline void binaryOpI64(VM* vm, char op, InterpretResult* result) {
-    if (!IS_I64(vmPeek(vm, 0)) || !IS_I64(vmPeek(vm, 1))) {
-        fprintf(stderr, "Operands must be 64-bit integers.\n");
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
-    int64_t b = AS_I64(vmPop(vm));
-    int64_t a = AS_I64(vmPop(vm));
+    int64_t b = vmPopI64(vm);
+    int64_t a = vmPopI64(vm);
     int64_t res = 0;
     bool overflow = false;
     switch (op) {
@@ -113,16 +139,11 @@ static inline void binaryOpI64(VM* vm, char op, InterpretResult* result) {
             return;
     }
     if (overflow) handleOverflow("i64 overflow");
-    vmPush(vm, I64_VAL(res));
+    vmPushI64(vm, res);
 }
 
 // Binary operations for u32
 static inline void binaryOpU32(VM* vm, char op, InterpretResult* result) {
-    if (!IS_U32(vmPeek(vm, 0)) || !IS_U32(vmPeek(vm, 1))) {
-        fprintf(stderr, "Operands must be unsigned integers.\n");
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
     uint32_t b = AS_U32(vmPop(vm));
     uint32_t a = AS_U32(vmPop(vm));
     switch (op) {
@@ -145,11 +166,6 @@ static inline void binaryOpU32(VM* vm, char op, InterpretResult* result) {
 
 // Binary operations for u64
 static inline void binaryOpU64(VM* vm, char op, InterpretResult* result) {
-    if (!IS_U64(vmPeek(vm, 0)) || !IS_U64(vmPeek(vm, 1))) {
-        fprintf(stderr, "Operands must be 64-bit unsigned integers.\n");
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
     uint64_t b = AS_U64(vmPop(vm));
     uint64_t a = AS_U64(vmPop(vm));
     switch (op) {
@@ -508,11 +524,6 @@ static inline void compareOpGeneric(VM* vm, char op, InterpretResult* result) {
 
 // Modulo operation for i32
 static inline void moduloOpI32(VM* vm, InterpretResult* result) {
-    if (!IS_I32(vmPeek(vm, 0)) || !IS_I32(vmPeek(vm, 1))) {
-        fprintf(stderr, "Operands must be integers.\n");
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
     int32_t b = AS_I32(vmPop(vm));
     int32_t a = AS_I32(vmPop(vm));
     if (b == 0) {
@@ -525,11 +536,6 @@ static inline void moduloOpI32(VM* vm, InterpretResult* result) {
 
 // Modulo operation for u32
 static inline void moduloOpU32(VM* vm, InterpretResult* result) {
-    if (!IS_U32(vmPeek(vm, 0)) || !IS_U32(vmPeek(vm, 1))) {
-        fprintf(stderr, "Operands must be unsigned integers.\n");
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
     uint32_t b = AS_U32(vmPop(vm));
     uint32_t a = AS_U32(vmPop(vm));
     if (b == 0) {
@@ -541,28 +547,20 @@ static inline void moduloOpU32(VM* vm, InterpretResult* result) {
 }
 
 static inline void moduloOpI64(VM* vm, InterpretResult* result) {
-    if (!IS_I64(vmPeek(vm, 0)) || !IS_I64(vmPeek(vm, 1))) {
-        fprintf(stderr, "Operands must be 64-bit integers.\n");
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
-    int64_t b = AS_I64(vmPop(vm));
-    int64_t a = AS_I64(vmPop(vm));
+    int64_t b = vmPopI64(vm);
+    int64_t a = vmPopI64(vm);
     if (b == 0) {
         fprintf(stderr, "Modulo by zero.\n");
         *result = INTERPRET_RUNTIME_ERROR;
         return;
     }
-    vmPush(vm, I64_VAL(a % b));
+    int64_t r = a % b;
+    if (r < 0) r += (b < 0) ? -b : b;
+    vmPushI64(vm, r);
 }
 
 // Bitwise operations for i32
 static inline void bitwiseOpI32(VM* vm, char op, InterpretResult* result) {
-    if (!IS_I32(vmPeek(vm, 0)) || !IS_I32(vmPeek(vm, 1))) {
-        fprintf(stderr, "Operands must be integers.\n");
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
     int32_t b = AS_I32(vmPop(vm));
     int32_t a = AS_I32(vmPop(vm));
     switch (op) {
@@ -574,27 +572,17 @@ static inline void bitwiseOpI32(VM* vm, char op, InterpretResult* result) {
 }
 
 static inline void bitwiseOpI64(VM* vm, char op, InterpretResult* result) {
-    if (!IS_I64(vmPeek(vm, 0)) || !IS_I64(vmPeek(vm, 1))) {
-        fprintf(stderr, "Operands must be 64-bit integers.\n");
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
-    int64_t b = AS_I64(vmPop(vm));
-    int64_t a = AS_I64(vmPop(vm));
+    int64_t b = vmPopI64(vm);
+    int64_t a = vmPopI64(vm);
     switch (op) {
-        case '&': vmPush(vm, I64_VAL(a & b)); break;
-        case '|': vmPush(vm, I64_VAL(a | b)); break;
-        case '^': vmPush(vm, I64_VAL(a ^ b)); break;
+        case '&': vmPushI64(vm, a & b); break;
+        case '|': vmPushI64(vm, a | b); break;
+        case '^': vmPushI64(vm, a ^ b); break;
         default: fprintf(stderr, "Unknown bitwise op\n"); *result = INTERPRET_RUNTIME_ERROR; return;
     }
 }
 
 static inline void bitwiseOpU32(VM* vm, char op, InterpretResult* result) {
-    if (!IS_U32(vmPeek(vm, 0)) || !IS_U32(vmPeek(vm, 1))) {
-        fprintf(stderr, "Operands must be unsigned integers.\n");
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
     uint32_t b = AS_U32(vmPop(vm));
     uint32_t a = AS_U32(vmPop(vm));
     switch (op) {
@@ -606,71 +594,57 @@ static inline void bitwiseOpU32(VM* vm, char op, InterpretResult* result) {
 }
 
 static inline void bitwiseNotI32(VM* vm, InterpretResult* result) {
-    if (!IS_I32(vmPeek(vm, 0))) { *result = INTERPRET_RUNTIME_ERROR; return; }
     int32_t a = AS_I32(vmPop(vm));
     vmPush(vm, I32_VAL(~a));
 }
 
 static inline void bitwiseNotI64(VM* vm, InterpretResult* result) {
-    if (!IS_I64(vmPeek(vm, 0))) { *result = INTERPRET_RUNTIME_ERROR; return; }
-    int64_t a = AS_I64(vmPop(vm));
-    vmPush(vm, I64_VAL(~a));
+    int64_t a = vmPopI64(vm);
+    vmPushI64(vm, ~a);
 }
 
 static inline void bitwiseNotU32(VM* vm, InterpretResult* result) {
-    if (!IS_U32(vmPeek(vm, 0))) { *result = INTERPRET_RUNTIME_ERROR; return; }
     uint32_t a = AS_U32(vmPop(vm));
     vmPush(vm, U32_VAL(~a));
 }
 
 static inline void shiftLeftI32(VM* vm, InterpretResult* result) {
-    if (!IS_I32(vmPeek(vm,0)) || !IS_I32(vmPeek(vm,1))) { *result = INTERPRET_RUNTIME_ERROR; return; }
     int32_t b = AS_I32(vmPop(vm));
     int32_t a = AS_I32(vmPop(vm));
     vmPush(vm, I32_VAL(a << b));
 }
 
 static inline void shiftRightI32(VM* vm, InterpretResult* result) {
-    if (!IS_I32(vmPeek(vm,0)) || !IS_I32(vmPeek(vm,1))) { *result = INTERPRET_RUNTIME_ERROR; return; }
     int32_t b = AS_I32(vmPop(vm));
     int32_t a = AS_I32(vmPop(vm));
     vmPush(vm, I32_VAL(a >> b));
 }
 
 static inline void shiftLeftI64(VM* vm, InterpretResult* result) {
-    if (!IS_I64(vmPeek(vm,0)) || !IS_I64(vmPeek(vm,1))) { *result = INTERPRET_RUNTIME_ERROR; return; }
-    int64_t b = AS_I64(vmPop(vm));
-    int64_t a = AS_I64(vmPop(vm));
-    vmPush(vm, I64_VAL(a << b));
+    int64_t b = vmPopI64(vm);
+    int64_t a = vmPopI64(vm);
+    vmPushI64(vm, a << b);
 }
 
 static inline void shiftRightI64(VM* vm, InterpretResult* result) {
-    if (!IS_I64(vmPeek(vm,0)) || !IS_I64(vmPeek(vm,1))) { *result = INTERPRET_RUNTIME_ERROR; return; }
-    int64_t b = AS_I64(vmPop(vm));
-    int64_t a = AS_I64(vmPop(vm));
-    vmPush(vm, I64_VAL(a >> b));
+    int64_t b = vmPopI64(vm);
+    int64_t a = vmPopI64(vm);
+    vmPushI64(vm, a >> b);
 }
 
 static inline void shiftLeftU32(VM* vm, InterpretResult* result) {
-    if (!IS_U32(vmPeek(vm,0)) || !IS_U32(vmPeek(vm,1))) { *result = INTERPRET_RUNTIME_ERROR; return; }
     uint32_t b = AS_U32(vmPop(vm));
     uint32_t a = AS_U32(vmPop(vm));
     vmPush(vm, U32_VAL(a << b));
 }
 
 static inline void shiftRightU32(VM* vm, InterpretResult* result) {
-    if (!IS_U32(vmPeek(vm,0)) || !IS_U32(vmPeek(vm,1))) { *result = INTERPRET_RUNTIME_ERROR; return; }
     uint32_t b = AS_U32(vmPop(vm));
     uint32_t a = AS_U32(vmPop(vm));
     vmPush(vm, U32_VAL(a >> b));
 }
 
 static inline void moduloOpU64(VM* vm, InterpretResult* result) {
-    if (!IS_U64(vmPeek(vm, 0)) || !IS_U64(vmPeek(vm, 1))) {
-        fprintf(stderr, "Operands must be 64-bit unsigned integers.\n");
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
     uint64_t b = AS_U64(vmPop(vm));
     uint64_t a = AS_U64(vmPop(vm));
     if (b == 0) {
@@ -683,30 +657,6 @@ static inline void moduloOpU64(VM* vm, InterpretResult* result) {
 
 // Comparison operations for i32
 static inline void compareOpI32(VM* vm, char op, InterpretResult* result) {
-    // First check if we have two values on the stack
-    if (vm->stackTop - vm->stack < 2) {
-        // Not enough values on stack, push a default false value
-        fprintf(stderr, "Error: Not enough values on stack for comparison\n");
-        vmPush(vm, BOOL_VAL(false));
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
-    
-    if (!IS_I32(vmPeek(vm, 0)) || !IS_I32(vmPeek(vm, 1))) {
-        // If one of the values isn't an i32, try to safely handle the error
-        fprintf(stderr, "Operands must be integers for comparison.\n");
-        
-        // Pop the values safely (already checked we have 2 values above)
-        vmPop(vm);
-        vmPop(vm);
-        
-        // Push a default false value to keep the stack consistent
-        vmPush(vm, BOOL_VAL(false));
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
-    
-    // Now safely perform the operation
     int32_t b = AS_I32(vmPop(vm));
     int32_t a = AS_I32(vmPop(vm));
     bool value = false;
@@ -729,19 +679,13 @@ static inline void compareOpI32(VM* vm, char op, InterpretResult* result) {
 }
 
 static inline void compareOpI64(VM* vm, char op, InterpretResult* result) {
-    if (vm->stackTop - vm->stack < 2) {
+    if (vm->stackI64Top - vm->stackI64 < 2) {
         vmPush(vm, BOOL_VAL(false));
         *result = INTERPRET_RUNTIME_ERROR;
         return;
     }
-    if (!IS_I64(vmPeek(vm, 0)) || !IS_I64(vmPeek(vm, 1))) {
-        vmPop(vm); vmPop(vm);
-        vmPush(vm, BOOL_VAL(false));
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
-    int64_t b = AS_I64(vmPop(vm));
-    int64_t a = AS_I64(vmPop(vm));
+    int64_t b = vmPopI64(vm);
+    int64_t a = vmPopI64(vm);
     bool value = false;
     switch (op) {
         case '<': value = a < b; break;
@@ -761,30 +705,6 @@ static inline void compareOpI64(VM* vm, char op, InterpretResult* result) {
 
 // Comparison operations for u32
 static inline void compareOpU32(VM* vm, char op, InterpretResult* result) {
-    // First check if we have two values on the stack
-    if (vm->stackTop - vm->stack < 2) {
-        // Not enough values on stack, push a default false value
-        fprintf(stderr, "Error: Not enough values on stack for comparison\n");
-        vmPush(vm, BOOL_VAL(false));
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
-    
-    if (!IS_U32(vmPeek(vm, 0)) || !IS_U32(vmPeek(vm, 1))) {
-        // If one of the values isn't a u32, try to safely handle the error
-        fprintf(stderr, "Operands must be unsigned integers for comparison.\n");
-        
-        // Pop the values safely (already checked we have 2 values above)
-        vmPop(vm);
-        vmPop(vm);
-        
-        // Push a default false value to keep the stack consistent
-        vmPush(vm, BOOL_VAL(false));
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
-    
-    // Now safely perform the operation
     uint32_t b = AS_U32(vmPop(vm));
     uint32_t a = AS_U32(vmPop(vm));
     bool value = false;
@@ -808,22 +728,6 @@ static inline void compareOpU32(VM* vm, char op, InterpretResult* result) {
 
 // Comparison operations for u64
 static inline void compareOpU64(VM* vm, char op, InterpretResult* result) {
-    if (vm->stackTop - vm->stack < 2) {
-        fprintf(stderr, "Error: Not enough values on stack for comparison\n");
-        vmPush(vm, BOOL_VAL(false));
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
-
-    if (!IS_U64(vmPeek(vm, 0)) || !IS_U64(vmPeek(vm, 1))) {
-        fprintf(stderr, "Operands must be unsigned integers for comparison.\n");
-        vmPop(vm);
-        vmPop(vm);
-        vmPush(vm, BOOL_VAL(false));
-        *result = INTERPRET_RUNTIME_ERROR;
-        return;
-    }
-
     uint64_t b = AS_U64(vmPop(vm));
     uint64_t a = AS_U64(vmPop(vm));
     bool value = false;
