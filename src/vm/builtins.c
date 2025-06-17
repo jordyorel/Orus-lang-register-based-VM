@@ -106,6 +106,40 @@ static Value native_pop(int argCount, Value* args) {
 }
 
 /**
+ * Preallocate capacity for a dynamic array.
+ *
+ * @param argCount Number of arguments.
+ * @param args     [array, capacity].
+ */
+static Value native_reserve(int argCount, Value* args) {
+    if (argCount != 2) {
+        vmRuntimeError("reserve() takes exactly two arguments.");
+        return NIL_VAL;
+    }
+    if (!IS_ARRAY(args[0])) {
+        vmRuntimeError("First argument to reserve() must be array.");
+        return NIL_VAL;
+    }
+    if (!(IS_I32(args[1]) || IS_I64(args[1]) || IS_U32(args[1]) || IS_U64(args[1]))) {
+        vmRuntimeError("reserve() expects integer capacity.");
+        return NIL_VAL;
+    }
+    int cap = IS_I32(args[1])  ? AS_I32(args[1])  :
+              IS_I64(args[1])  ? (int)AS_I64(args[1])  :
+              IS_U32(args[1])  ? (int)AS_U32(args[1]) :
+                                (int)AS_U64(args[1]);
+    if (cap <= 0) return args[0];
+    ObjArray* arr = AS_ARRAY(args[0]);
+    if (cap > arr->capacity) {
+        int oldCap = arr->capacity;
+        arr->capacity = cap;
+        arr->elements = GROW_ARRAY(Value, arr->elements, oldCap, arr->capacity);
+        vm.bytesAllocated += sizeof(Value) * (arr->capacity - oldCap);
+    }
+    return args[0];
+}
+
+/**
  * Generates an array of integers from start (inclusive) to end (exclusive).
  *
  * @param argCount Number of arguments.
@@ -692,6 +726,7 @@ static BuiltinEntry builtinTable[] = {
     {"substring", native_substring, 3, TYPE_STRING},
     {"push", native_push, 2, TYPE_COUNT},
     {"pop", native_pop, 1, TYPE_COUNT},
+    {"reserve", native_reserve, 2, TYPE_COUNT},
     {"range", native_range, 2, TYPE_COUNT},
     {"sum", native_sum, 1, TYPE_COUNT},
     {"min", native_min, 1, TYPE_COUNT},

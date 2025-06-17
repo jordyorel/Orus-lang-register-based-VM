@@ -1610,11 +1610,7 @@ static InterpretResult run() {
                 }
                 ObjArray* arr = AS_ARRAY(arrayVal);
                 arrayPush(&vm, arr, value);
-                if (IS_I64(value)) {
-                    vmPushI64(&vm, AS_I64(value));
-                } else {
-                    vmPush(&vm, value);
-                }
+                vmPush(&vm, arrayVal);
                 break;
             }
             case OP_ARRAY_POP: {
@@ -1630,6 +1626,35 @@ static InterpretResult run() {
                 } else {
                     vmPush(&vm, v);
                 }
+                break;
+            }
+            case OP_ARRAY_RESERVE: {
+                Value capVal = vmPop(&vm);
+                Value arrayVal = vmPop(&vm);
+                if (!IS_ARRAY(arrayVal)) {
+                    RUNTIME_ERROR("First argument to reserve() must be array.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                if (!(IS_I32(capVal) || IS_I64(capVal) || IS_U32(capVal) ||
+                      IS_U64(capVal))) {
+                    RUNTIME_ERROR("reserve() expects integer capacity.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int cap = IS_I32(capVal)  ? AS_I32(capVal)  :
+                          IS_I64(capVal)  ? (int)AS_I64(capVal)  :
+                          IS_U32(capVal)  ? (int)AS_U32(capVal) :
+                                            (int)AS_U64(capVal);
+                if (cap > 0) {
+                    ObjArray* arr = AS_ARRAY(arrayVal);
+                    if (cap > arr->capacity) {
+                        int oldCap = arr->capacity;
+                        arr->capacity = cap;
+                        arr->elements =
+                            GROW_ARRAY(Value, arr->elements, oldCap, arr->capacity);
+                        vm.bytesAllocated += sizeof(Value) * (arr->capacity - oldCap);
+                    }
+                }
+                vmPush(&vm, arrayVal);
                 break;
             }
             case OP_LEN: {

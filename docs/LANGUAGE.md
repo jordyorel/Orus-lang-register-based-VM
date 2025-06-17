@@ -485,7 +485,7 @@ Common utilities are always available. See `docs/BUILTINS.md` for full details.
 - `print(values...)`
 - `len(value)`
 - `substring(str, start, len)`
-- `push(array, value)` and `pop(array)`
+- `push(array, value)` / `pop(array)` / `reserve(array, capacity)`
 - `range(start, end)`
 - `sum(array)`, `min(array)`, `max(array)`
 - `type_of(value)`, `is_type(value, name)`
@@ -495,9 +495,12 @@ Common utilities are always available. See `docs/BUILTINS.md` for full details.
 
 ```orus
 let arr: [i32; 1] = [1]
+reserve(arr, 10) // preallocate capacity
 push(arr, 2)
 print(len(arr))
 ```
+`push`, `pop` and `reserve` compile to specialized opcodes when the
+array type is statically known, avoiding the overhead of a function call.
 
 ## Best Practices and Patterns
 

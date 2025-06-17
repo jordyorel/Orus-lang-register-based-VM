@@ -98,8 +98,8 @@ ObjArray* allocateArray(int length) {
 ObjIntArray* allocateIntArray(int length) {
     ObjIntArray* array = (ObjIntArray*)allocateObject(sizeof(ObjIntArray), OBJ_INT_ARRAY);
     array->length = length;
-    vm.bytesAllocated += sizeof(int) * length;
-    array->elements = (int*)malloc(sizeof(int) * length);
+    vm.bytesAllocated += sizeof(int64_t) * length;
+    array->elements = (int64_t*)malloc(sizeof(int64_t) * length);
     return array;
 }
 
@@ -379,7 +379,7 @@ static void freeObject(Obj* object) {
         }
         case OBJ_INT_ARRAY: {
             ObjIntArray* array = (ObjIntArray*)object;
-            vm.bytesAllocated -= sizeof(ObjIntArray) + sizeof(int) * array->length;
+            vm.bytesAllocated -= sizeof(ObjIntArray) + sizeof(int64_t) * array->length;
             free(array->elements);
             free(array);
             break;
