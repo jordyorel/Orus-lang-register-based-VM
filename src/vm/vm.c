@@ -686,17 +686,50 @@ static InterpretResult run() {
                 binaryOpI32(&vm, '/', &result);
                 break;
             case OP_ADD_I64:
-                binaryOpI64(&vm, '+', &result);
+            {
+                int64_t b = vmPopI64(&vm);
+                int64_t a = vmPopI64(&vm);
+                int64_t r;
+                if (__builtin_add_overflow(a, b, &r)) {
+                    handleOverflow("i64 overflow");
+                }
+                vmPushI64(&vm, r);
                 break;
+            }
             case OP_SUBTRACT_I64:
-                binaryOpI64(&vm, '-', &result);
+            {
+                int64_t b = vmPopI64(&vm);
+                int64_t a = vmPopI64(&vm);
+                int64_t r;
+                if (__builtin_sub_overflow(a, b, &r)) {
+                    handleOverflow("i64 overflow");
+                }
+                vmPushI64(&vm, r);
                 break;
+            }
             case OP_MULTIPLY_I64:
-                binaryOpI64(&vm, '*', &result);
+            {
+                int64_t b = vmPopI64(&vm);
+                int64_t a = vmPopI64(&vm);
+                int64_t r;
+                if (__builtin_mul_overflow(a, b, &r)) {
+                    handleOverflow("i64 overflow");
+                }
+                vmPushI64(&vm, r);
                 break;
+            }
             case OP_DIVIDE_I64:
-                binaryOpI64(&vm, '/', &result);
+            {
+                int64_t b = vmPopI64(&vm);
+                int64_t a = vmPopI64(&vm);
+                if (b == 0) {
+                    vmRuntimeError("Division by zero.");
+                    result = INTERPRET_RUNTIME_ERROR;
+                } else {
+                    vmPushI64(&vm, a / b);
+                }
                 break;
+            }
             case OP_ADD_U32:
                 binaryOpU32(&vm, '+', &result);
                 break;
@@ -796,6 +829,18 @@ static InterpretResult run() {
             case OP_NOT_EQUAL:
                 compareOpAny(&vm, '!', &result);
                 break;
+            case OP_EQUAL_I64: {
+                int64_t b = vmPopI64(&vm);
+                int64_t a = vmPopI64(&vm);
+                vmPush(&vm, BOOL_VAL(a == b));
+                break;
+            }
+            case OP_NOT_EQUAL_I64: {
+                int64_t b = vmPopI64(&vm);
+                int64_t a = vmPopI64(&vm);
+                vmPush(&vm, BOOL_VAL(a != b));
+                break;
+            }
             case OP_LESS_I32:
                 compareOpI32(&vm, '<', &result);
                 break;
@@ -1204,23 +1249,23 @@ static InterpretResult run() {
                     vm.chunk = frame->previousChunk;
                     vm.ip = frame->returnAddress;
 
-                    // Reset the stack to the frame's base, but keep the return value
-                    // Make sure we don't set stackTop to an invalid position
+                    // Reset the stack to the frame's base and rebuild the i64 stack
                     if (frame->stackOffset >= 0 && frame->stackOffset < vm.stackCapacity) {
                         vm.stackTop = vm.stack + frame->stackOffset;
-                        if (IS_I64(returnValue)) {
-                            vmPushI64(&vm, AS_I64(returnValue));
-                        } else {
-                            vmPush(&vm, returnValue);
-                        }
                     } else {
-                        // Invalid stack offset, just push the return value if present
                         vm.stackTop = vm.stack;
-                        if (IS_I64(returnValue)) {
-                            vmPushI64(&vm, AS_I64(returnValue));
-                        } else {
-                            vmPush(&vm, returnValue);
+                    }
+                    vm.stackI64Top = vm.stackI64;
+                    for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
+                        if (IS_I64(*slot)) {
+                            *vm.stackI64Top = AS_I64(*slot);
+                            vm.stackI64Top++;
                         }
+                    }
+                    if (IS_I64(returnValue)) {
+                        vmPushI64(&vm, AS_I64(returnValue));
+                    } else {
+                        vmPush(&vm, returnValue);
                     }
 
                     if (vm.trace) {
@@ -1763,8 +1808,14 @@ static InterpretResult run() {
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
+                int i64ArgsCount = 0;
+                for (int i = 0; i < argCount; i++) {
+                    Value* slot = vm.stackTop - argCount + i;
+                    if (IS_I64(*slot)) i64ArgsCount++;
+                }
                 Value result = nf->function(argCount, vm.stackTop - argCount);
                 vm.stackTop -= argCount;
+                vm.stackI64Top -= i64ArgsCount;
                 if (IS_ERROR(vm.lastError)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }

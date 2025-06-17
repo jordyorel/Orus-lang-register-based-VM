@@ -86,6 +86,8 @@ typedef enum {
     // Comparison operations
     OP_EQUAL,
     OP_NOT_EQUAL,
+    OP_EQUAL_I64,
+    OP_NOT_EQUAL_I64,
     OP_LESS_I32,
     OP_LESS_I64,
     OP_LESS_U32,

@@ -2740,11 +2740,19 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                     break;
 
                 case TOKEN_EQUAL_EQUAL:
-                    writeOp(compiler, OP_EQUAL);
+                    if (leftType->kind == TYPE_I64 || rightType->kind == TYPE_I64) {
+                        writeOp(compiler, OP_EQUAL_I64);
+                    } else {
+                        writeOp(compiler, OP_EQUAL);
+                    }
                     break;
 
                 case TOKEN_BANG_EQUAL:
-                    writeOp(compiler, OP_NOT_EQUAL);
+                    if (leftType->kind == TYPE_I64 || rightType->kind == TYPE_I64) {
+                        writeOp(compiler, OP_NOT_EQUAL_I64);
+                    } else {
+                        writeOp(compiler, OP_NOT_EQUAL);
+                    }
                     break;
 
                 // Logical operators
