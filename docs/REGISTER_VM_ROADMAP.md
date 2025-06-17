@@ -30,10 +30,10 @@ Design and implement a high-performance, register-based virtual machine for Orus
 
 | Task                                          | Status  |
 | --------------------------------------------- | ------- |
-| Register-based bytecode format                | Planned |
-| Define a fixed-size virtual register file     | Planned |
-| Implement IR generator that maps to registers | Planned |
-| Replace VM stack with register file           | Planned |
+| Register-based bytecode format                | Done    |
+| Define a fixed-size virtual register file     | Done    |
+| Implement IR generator that maps to registers | Done    |
+| Replace VM stack with register file           | Done    |
 
 ---
 
