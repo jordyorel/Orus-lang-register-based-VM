@@ -1320,11 +1320,14 @@ fn main() {
     print(max(values))
 
     let arr: [i32; 1] = [0]
+    reserve(arr, 3)
     push(arr, 10)
     push(arr, -3)
     push(arr, 7)
     print(max(arr))
 }
+// push/pop/reserve compile to fast bytecode when the array's element
+// type is known at compile time.
 ```
 
 ### `tests/builtins/max_simple.orus`

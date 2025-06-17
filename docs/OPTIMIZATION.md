@@ -14,10 +14,10 @@ Improve the execution performance of the Orus language by leveraging its **stati
 | Avoid boxing/tagging of known primitive types | ✅ Done |
 | Use typed VM stack/registers for primitives   | ✅ Done |
 | Lazy typed iterators for `range()`            | ✅ Done |
-| Fast-path array push for primitives           | Not started |
 | Type-based print & builtins dispatch          | ✅ Done |
 | GC-aware execution in tight numeric loops     | ✅ Done |
 | Ahead-of-Time optimization of stdlib          | ✅ Done |
+| Fast-path array push for primitives           | ✅ Done |
 | Default auto-inference to `i64` over `i32`    | Planned     |
 | Overflow-safe numeric promotion               | Planned     |
 
@@ -63,6 +63,8 @@ Improve the execution performance of the Orus language by leveraging its **stati
 * Use contiguous memory for primitive arrays (`int64_t*`, etc.).
 * Avoid wrapping values in dynamic containers unless explicitly required.
 * Allow `reserve()` for preallocating array capacity.
+* Compile `push`, `pop` and `reserve` to specialized opcodes when the array
+  type is known at compile time.
 
 ### 6. Optimized Print and Built-ins
 

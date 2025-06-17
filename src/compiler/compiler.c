@@ -1672,6 +1672,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                         return;
                     }
                     node->valueType = arr->valueType;
+                    node->data.call.builtinOp = OP_ARRAY_PUSH;
                     break;
                 }
                 // Not an array: likely a method call, fall through
@@ -1687,9 +1688,31 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 if (compiler->hadError) return;
                 if (arr->valueType && arr->valueType->kind == TYPE_ARRAY) {
                     node->valueType = arr->valueType->info.array.elementType;
+                    node->data.call.builtinOp = OP_ARRAY_POP;
                     break;
                 }
                 // Not an array: treat as normal call
+            } else if (!fromModule && tokenEquals(node->data.call.name, "reserve")) {
+                if (node->data.call.argCount != 2) {
+                    emitBuiltinArgCountError(compiler, &node->data.call.name,
+                                            "reserve", 2, node->data.call.argCount);
+                    return;
+                }
+                ASTNode* arr = node->data.call.arguments;
+                ASTNode* cap = arr->next;
+                typeCheckNode(compiler, arr);
+                typeCheckNode(compiler, cap);
+                if (compiler->hadError) return;
+                if (arr->valueType && arr->valueType->kind == TYPE_ARRAY) {
+                    if (cap->valueType &&
+                        (cap->valueType->kind == TYPE_I32 || cap->valueType->kind == TYPE_I64 ||
+                         cap->valueType->kind == TYPE_U32 || cap->valueType->kind == TYPE_U64)) {
+                        node->valueType = arr->valueType;
+                        node->data.call.builtinOp = OP_ARRAY_RESERVE;
+                        break;
+                    }
+                }
+                // Not an array or invalid capacity type: treat as normal call
             } else if (!fromModule && tokenEquals(node->data.call.name, "sorted")) {
                 if (node->data.call.argCount < 1 || node->data.call.argCount > 3) {
                     error(compiler, "sorted() takes between 1 and 3 arguments.");
@@ -3253,7 +3276,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             ASTNode* elifCondition = node->data.ifStmt.elifConditions;
             ASTNode* elifBranch = node->data.ifStmt.elifBranches;
             ObjIntArray* elifJumpsObj = NULL;
-            int* elifJumps = NULL;
+            int64_t* elifJumps = NULL;
             int elifCount = 0;
 
             // Count the number of elif branches
@@ -3330,7 +3353,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
             // Patch all elif jumps
             for (int i = 0; i < elifCount; i++) {
-                int elifJump = elifJumps[i];
+                int elifJump = (int)elifJumps[i];
                 compiler->chunk->code[elifJump + 1] = (end - elifJump - 3) >> 8;
                 compiler->chunk->code[elifJump + 2] = (end - elifJump - 3) & 0xFF;
             }
@@ -3939,7 +3962,7 @@ static void addBreakJump(Compiler* compiler, int jumpPos) {
         compiler->breakJumpCapacity = oldCapacity * 2;
         compiler->breakJumps->elements =
             realloc(compiler->breakJumps->elements,
-                    sizeof(int) * compiler->breakJumpCapacity);
+                    sizeof(int64_t) * compiler->breakJumpCapacity);
         compiler->breakJumps->length = compiler->breakJumpCapacity;
     }
     compiler->breakJumps->elements[compiler->breakJumpCount++] = jumpPos;
@@ -3957,7 +3980,7 @@ static void addContinueJump(Compiler* compiler, int jumpPos) {
         compiler->continueJumpCapacity = oldCapacity * 2;
         compiler->continueJumps->elements =
             realloc(compiler->continueJumps->elements,
-                    sizeof(int) * compiler->continueJumpCapacity);
+                    sizeof(int64_t) * compiler->continueJumpCapacity);
         compiler->continueJumps->length = compiler->continueJumpCapacity;
     }
     compiler->continueJumps->elements[compiler->continueJumpCount++] = jumpPos;
@@ -3969,7 +3992,7 @@ static void addContinueJump(Compiler* compiler, int jumpPos) {
 static void patchContinueJumps(Compiler* compiler) {
     int continueDest = compiler->loopContinue;
     for (int i = 0; i < compiler->continueJumpCount; i++) {
-        int jumpPos = compiler->continueJumps->elements[i];
+        int jumpPos = (int)compiler->continueJumps->elements[i];
         int offset = continueDest - jumpPos - 3;
         compiler->chunk->code[jumpPos + 1] = (offset >> 8) & 0xFF;
         compiler->chunk->code[jumpPos + 2] = offset & 0xFF;
@@ -3985,7 +4008,7 @@ static void patchBreakJumps(Compiler* compiler) {
 
     // Patch all break jumps to jump to the current position
     for (int i = 0; i < compiler->breakJumpCount; i++) {
-        int jumpPos = compiler->breakJumps->elements[i];
+        int jumpPos = (int)compiler->breakJumps->elements[i];
         int offset = breakDest - jumpPos - 3;
         compiler->chunk->code[jumpPos + 1] = (offset >> 8) & 0xFF;
         compiler->chunk->code[jumpPos + 2] = offset & 0xFF;

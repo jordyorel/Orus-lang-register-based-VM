@@ -280,6 +280,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_ARRAY_PUSH", offset);
         case OP_ARRAY_POP:
             return simpleInstruction("OP_ARRAY_POP", offset);
+        case OP_ARRAY_RESERVE:
+            return simpleInstruction("OP_ARRAY_RESERVE", offset);
         case OP_LEN:
             return simpleInstruction("OP_LEN", offset);
         case OP_LEN_ARRAY:

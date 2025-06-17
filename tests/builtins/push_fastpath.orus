@@ -1,0 +1,11 @@
+fn main() {
+    let arr: [i32; 1] = [0]
+    reserve(arr, 4)
+    push(arr, 1 as i32)
+    push(arr, 2 as i32)
+    push(arr, 3 as i32)
+    print(len(arr))
+    let v = pop(arr)
+    print(v)
+    print(len(arr))
+}

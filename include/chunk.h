@@ -214,6 +214,7 @@ typedef enum {
     OP_ARRAY_SET,
     OP_ARRAY_PUSH,
     OP_ARRAY_POP,
+    OP_ARRAY_RESERVE,
     OP_LEN,
     OP_LEN_ARRAY,
     OP_LEN_STRING,

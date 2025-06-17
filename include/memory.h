@@ -80,6 +80,7 @@ ObjString* allocateString(const char* str, int length);
 
 // Allocate a new array object with the given length
 ObjArray* allocateArray(int length);
+// Allocate a new 64-bit integer array with the given length
 ObjIntArray* allocateIntArray(int length);
 ObjRangeIterator* allocateRangeIterator(int64_t start, int64_t end);
 struct ObjError* allocateError(ErrorType type, const char* message, SrcLocation location);
