@@ -85,9 +85,13 @@ After building, run the interpreter in two ways:
 
 When run in project mode the interpreter searches all `.orus` files for a
 `main` function if the manifest doesn't specify an entry file. The project must
+
 contain exactly one such function.
 
+For additional runtime options see [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
+
 # Display the current interpreter version
+
 ./orusc --version
 ```
 

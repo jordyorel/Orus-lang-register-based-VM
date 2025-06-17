@@ -92,11 +92,13 @@ typedef struct {
     int nativeFunctionCount;
 
     const char* stdPath;
+    const char* cachePath;
     bool devMode;
 
     // Garbage collector state
     Obj* objects;
     size_t bytesAllocated;
+    bool gcPaused;
     bool trace;
     unsigned long instruction_count;
 } VM;

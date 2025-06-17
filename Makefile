@@ -12,7 +12,7 @@ RELEASE_TARGET=build/release/clox
 
 debug: $(OBJ)
 	@mkdir -p $(dir $(RELEASE_TARGET))
-	$(CC) -o $(RELEASE_TARGET) $^
+	$(CC) -o $(RELEASE_TARGET) $^ -lm
 	cp $(RELEASE_TARGET) $(TARGET)
 
 orusc: debug
@@ -20,7 +20,7 @@ orusc: debug
 # Rule to build the final binary
 $(RELEASE_TARGET): $(OBJ)
 	@mkdir -p $(dir $@)
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ -lm
 
 # Rule to compile .c files into .o files in debug directory
 build/debug/clox/%.o: src/%.c

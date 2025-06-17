@@ -7,6 +7,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
+#include <math.h>
 
 #include "../../include/builtins.h"
 #include "../../include/error.h"
@@ -280,6 +281,30 @@ static Value native_float(int argCount, Value* args) {
         return NIL_VAL;
     }
     return F64_VAL(value);
+}
+
+/**
+ * Compute base^exp using the platform math library.
+ */
+static Value native_pow(int argCount, Value* args) {
+    if (argCount != 2 || !IS_F64(args[0]) || !IS_I32(args[1])) {
+        vmRuntimeError("native_pow expects (f64, i32).");
+        return NIL_VAL;
+    }
+    double base = AS_F64(args[0]);
+    int exp = AS_I32(args[1]);
+    return F64_VAL(pow(base, (double)exp));
+}
+
+/**
+ * Compute the square root using the platform math library.
+ */
+static Value native_sqrt(int argCount, Value* args) {
+    if (argCount != 1 || !IS_F64(args[0])) {
+        vmRuntimeError("native_sqrt expects (f64).");
+        return NIL_VAL;
+    }
+    return F64_VAL(sqrt(AS_F64(args[0])));
 }
 
 /**
@@ -705,6 +730,8 @@ static BuiltinEntry builtinTable[] = {
     {"sorted", native_sorted, -1, TYPE_ARRAY},
     {"module_name", native_module_name, 1, TYPE_STRING},
     {"module_path", native_module_path, 1, TYPE_STRING},
+    {"native_pow", native_pow, 2, TYPE_F64},
+    {"native_sqrt", native_sqrt, 1, TYPE_F64},
 };
 
 /**
