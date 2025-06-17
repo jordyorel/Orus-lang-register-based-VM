@@ -964,6 +964,26 @@ static InterpretResult run() {
                 vmPushI64(&vm, resultVal);
                 break;
             }
+            case OP_ITER_NEXT_I64: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in ITER_NEXT_I64.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Value iterVal = vmPop(&vm);
+                if (!IS_RANGE_ITERATOR(iterVal)) {
+                    RUNTIME_ERROR("ITER_NEXT_I64 expects range iterator.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                ObjRangeIterator* it = AS_RANGE_ITERATOR(iterVal);
+                if (it->current >= it->end) {
+                    vmPush(&vm, BOOL_VAL(false));
+                } else {
+                    int64_t v = it->current++;
+                    vmPushI64(&vm, v);
+                    vmPush(&vm, BOOL_VAL(true));
+                }
+                break;
+            }
             case OP_NEGATE_U32: {
                 uint32_t value = AS_U32(vmPop(&vm));
                 vmPush(&vm, U32_VAL(-value));

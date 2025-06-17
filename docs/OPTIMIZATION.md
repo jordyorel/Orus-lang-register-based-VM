@@ -13,7 +13,7 @@ Improve the execution performance of the Orus language by leveraging its **stati
 | Type-specialized bytecode generation          | ✅ Done |
 | Avoid boxing/tagging of known primitive types | ✅ Done |
 | Use typed VM stack/registers for primitives   | ✅ Done |
-| Lazy typed iterators for `range()`            | Not started |
+| Lazy typed iterators for `range()`            | ✅ Done |
 | Fast-path array push for primitives           | Not started |
 | Type-based print & builtins dispatch          | In progress |
 | GC-aware execution in tight numeric loops     | Not started |
@@ -52,9 +52,10 @@ Improve the execution performance of the Orus language by leveraging its **stati
 
 ### 4. Lazy and Typed `range()` Iterators
 
-* Ensure `range(start, end)` returns a lightweight `RangeIterator` with `int64_t` fields.
-* For-loops must consume this via `ITER_NEXT_I64` style instructions.
-* Never allocate full arrays for iteration.
+* `range(start, end)` now returns a lightweight `RangeIterator` with `int64_t` fields.
+* For-loops advance these iterators via the `ITER_NEXT_I64` opcode.
+* No arrays are allocated for range iteration.
+* Phase complete with the new opcode driving lazy iteration.
 
 ### 5. Efficient Arrays and `push()`
 

@@ -155,6 +155,7 @@ static const char* getValueTypeName(Value val) {
         case VAL_STRING:return "string";
         case VAL_ARRAY: return "array";
         case VAL_ERROR: return "error";
+        case VAL_RANGE_ITERATOR: return "range";
         default:        return "unknown";
     }
 }
