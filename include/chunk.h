@@ -231,6 +231,7 @@ typedef enum {
     OP_TYPE_OF_ARRAY,
     OP_INC_I64,
     OP_JUMP_IF_LT_I64,
+    OP_ITER_NEXT_I64,
 } opCode;
 
 typedef struct {
