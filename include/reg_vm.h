@@ -12,5 +12,6 @@ typedef struct {
 
 void initRegisterVM(RegisterVM* vm, RegisterChunk* chunk);
 void freeRegisterVM(RegisterVM* vm);
+Value runRegisterVM(RegisterVM* vm);
 
 #endif // ORUS_REG_VM_H

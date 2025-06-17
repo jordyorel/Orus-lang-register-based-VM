@@ -41,10 +41,10 @@ Design and implement a high-performance, register-based virtual machine for Orus
 
 | Task                                                    | Status  |
 | ------------------------------------------------------- | ------- |
-| Implement `MOV`, `LOAD_CONST`, `ADD_RR`, `SUB_RR` ops   | Planned |
-| Implement typed comparison ops: `EQ_I64`, `GT_I64`, etc | Planned |
-| Update control flow ops (`JUMP`, `JZ`, `CALL`)          | Planned |
-| Update loop constructs to register-indexed form         | Planned |
+| Implement `MOV`, `LOAD_CONST`, `ADD_RR`, `SUB_RR` ops   | Done |
+| Implement typed comparison ops: `EQ_I64`, `GT_I64`, etc | Done |
+| Update control flow ops (`JUMP`, `JZ`, `CALL`)          | Done |
+| Update loop constructs to register-indexed form         | Done |
 
 ---
 

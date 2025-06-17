@@ -12,6 +12,15 @@ typedef enum {
     ROP_LOAD_CONST,
     ROP_ADD_RR,
     ROP_SUB_RR,
+    ROP_EQ_I64,
+    ROP_NE_I64,
+    ROP_LT_I64,
+    ROP_LE_I64,
+    ROP_GT_I64,
+    ROP_GE_I64,
+    ROP_JUMP,
+    ROP_JZ,
+    ROP_CALL,
 } RegisterOp;
 
 typedef struct {
