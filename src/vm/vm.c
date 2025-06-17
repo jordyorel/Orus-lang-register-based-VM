@@ -494,6 +494,153 @@ static InterpretResult run() {
                 break;
             }
 
+            case OP_PRINT_I32: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in PRINT_I32 operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int32_t v = AS_I32(vmPop(&vm));
+                printf("%d\n", v);
+                break;
+            }
+
+            case OP_PRINT_I32_NO_NL: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in PRINT_I32 operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int32_t v = AS_I32(vmPop(&vm));
+                printf("%d", v);
+                fflush(stdout);
+                break;
+            }
+
+            case OP_PRINT_I64: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in PRINT_I64 operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int64_t v = AS_I64(vmPop(&vm));
+                printf("%lld\n", (long long)v);
+                break;
+            }
+
+            case OP_PRINT_I64_NO_NL: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in PRINT_I64 operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int64_t v = AS_I64(vmPop(&vm));
+                printf("%lld", (long long)v);
+                fflush(stdout);
+                break;
+            }
+
+            case OP_PRINT_U32: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in PRINT_U32 operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                uint32_t v = AS_U32(vmPop(&vm));
+                printf("%u\n", v);
+                break;
+            }
+
+            case OP_PRINT_U32_NO_NL: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in PRINT_U32 operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                uint32_t v = AS_U32(vmPop(&vm));
+                printf("%u", v);
+                fflush(stdout);
+                break;
+            }
+
+            case OP_PRINT_U64: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in PRINT_U64 operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                uint64_t v = AS_U64(vmPop(&vm));
+                printf("%llu\n", (unsigned long long)v);
+                break;
+            }
+
+            case OP_PRINT_U64_NO_NL: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in PRINT_U64 operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                uint64_t v = AS_U64(vmPop(&vm));
+                printf("%llu", (unsigned long long)v);
+                fflush(stdout);
+                break;
+            }
+
+            case OP_PRINT_F64: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in PRINT_F64 operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                double v = AS_F64(vmPop(&vm));
+                printf("%g\n", v);
+                break;
+            }
+
+            case OP_PRINT_F64_NO_NL: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in PRINT_F64 operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                double v = AS_F64(vmPop(&vm));
+                printf("%g", v);
+                fflush(stdout);
+                break;
+            }
+
+            case OP_PRINT_BOOL: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in PRINT_BOOL operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                bool v = AS_BOOL(vmPop(&vm));
+                printf("%s\n", v ? "true" : "false");
+                break;
+            }
+
+            case OP_PRINT_BOOL_NO_NL: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in PRINT_BOOL operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                bool v = AS_BOOL(vmPop(&vm));
+                printf("%s", v ? "true" : "false");
+                fflush(stdout);
+                break;
+            }
+
+            case OP_PRINT_STRING: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in PRINT_STRING operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                ObjString* s = AS_STRING(vmPop(&vm));
+                printf("%s\n", s->chars);
+                break;
+            }
+
+            case OP_PRINT_STRING_NO_NL: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in PRINT_STRING operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                ObjString* s = AS_STRING(vmPop(&vm));
+                printf("%s", s->chars);
+                fflush(stdout);
+                break;
+            }
+
             case OP_CONSTANT: {
                 Value constant = READ_CONSTANT();
                 vmPush(&vm, constant);
@@ -1531,6 +1678,24 @@ static InterpretResult run() {
                 }
                 break;
             }
+            case OP_LEN_ARRAY: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in LEN_ARRAY operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Value val = vmPop(&vm);
+                vmPush(&vm, I32_VAL(AS_ARRAY(val)->length));
+                break;
+            }
+            case OP_LEN_STRING: {
+                if (vm.stackTop <= vm.stack) {
+                    RUNTIME_ERROR("Stack underflow in LEN_STRING operation.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Value val = vmPop(&vm);
+                vmPush(&vm, I32_VAL(AS_STRING(val)->length));
+                break;
+            }
             case OP_SUBSTRING: {
                 Value lenVal = vmPop(&vm);
                 Value startVal = vmPop(&vm);
@@ -1586,6 +1751,46 @@ static InterpretResult run() {
                     result->elements[i] = src->elements[start + i];
                 }
                 vmPush(&vm, ARRAY_VAL(result));
+                break;
+            }
+            case OP_TYPE_OF_I32: {
+                ObjString* result = allocateString("i32", 3);
+                vmPush(&vm, STRING_VAL(result));
+                break;
+            }
+            case OP_TYPE_OF_I64: {
+                ObjString* result = allocateString("i64", 3);
+                vmPush(&vm, STRING_VAL(result));
+                break;
+            }
+            case OP_TYPE_OF_U32: {
+                ObjString* result = allocateString("u32", 3);
+                vmPush(&vm, STRING_VAL(result));
+                break;
+            }
+            case OP_TYPE_OF_U64: {
+                ObjString* result = allocateString("u64", 3);
+                vmPush(&vm, STRING_VAL(result));
+                break;
+            }
+            case OP_TYPE_OF_F64: {
+                ObjString* result = allocateString("f64", 3);
+                vmPush(&vm, STRING_VAL(result));
+                break;
+            }
+            case OP_TYPE_OF_BOOL: {
+                ObjString* result = allocateString("bool", 4);
+                vmPush(&vm, STRING_VAL(result));
+                break;
+            }
+            case OP_TYPE_OF_STRING: {
+                ObjString* result = allocateString("string", 6);
+                vmPush(&vm, STRING_VAL(result));
+                break;
+            }
+            case OP_TYPE_OF_ARRAY: {
+                ObjString* result = allocateString("array", 5);
+                vmPush(&vm, STRING_VAL(result));
                 break;
             }
             case OP_CALL: {

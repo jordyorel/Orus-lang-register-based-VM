@@ -158,6 +158,7 @@ typedef struct {
     Type* staticType;         // Struct type if called as Struct.fn
     ObjString* mangledName;    // GC-managed mangled name if method call
     int nativeIndex;           // -1 if not a native function
+    int builtinOp;             // Specialized opcode for builtins (-1 if none)
     Type** genericArgs;        // Generic argument types
     int genericArgCount;
 } CallData;

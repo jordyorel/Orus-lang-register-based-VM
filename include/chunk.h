@@ -185,6 +185,20 @@ typedef enum {
     OP_POP,
     OP_PRINT,
     OP_PRINT_NO_NL,
+    OP_PRINT_I32,
+    OP_PRINT_I32_NO_NL,
+    OP_PRINT_I64,
+    OP_PRINT_I64_NO_NL,
+    OP_PRINT_U32,
+    OP_PRINT_U32_NO_NL,
+    OP_PRINT_U64,
+    OP_PRINT_U64_NO_NL,
+    OP_PRINT_F64,
+    OP_PRINT_F64_NO_NL,
+    OP_PRINT_BOOL,
+    OP_PRINT_BOOL_NO_NL,
+    OP_PRINT_STRING,
+    OP_PRINT_STRING_NO_NL,
     OP_FORMAT_PRINT, // New opcode for string interpolation
     OP_FORMAT_PRINT_NO_NL,
     OP_DEFINE_GLOBAL,
@@ -198,8 +212,20 @@ typedef enum {
     OP_ARRAY_PUSH,
     OP_ARRAY_POP,
     OP_LEN,
+    OP_LEN_ARRAY,
+    OP_LEN_STRING,
     OP_SUBSTRING,
     OP_SLICE,
+
+    // Typed type_of opcodes
+    OP_TYPE_OF_I32,
+    OP_TYPE_OF_I64,
+    OP_TYPE_OF_U32,
+    OP_TYPE_OF_U64,
+    OP_TYPE_OF_F64,
+    OP_TYPE_OF_BOOL,
+    OP_TYPE_OF_STRING,
+    OP_TYPE_OF_ARRAY,
 } opCode;
 
 typedef struct {
