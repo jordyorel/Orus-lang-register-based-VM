@@ -10,7 +10,7 @@ Improve the execution performance of the Orus language by leveraging its **stati
 
 | Task                                          | Status      |
 | --------------------------------------------- | ----------- |
-| Type-specialized bytecode generation          | Not started |
+| Type-specialized bytecode generation          | ✅ Done |
 | Avoid boxing/tagging of known primitive types | Not started | 
 | Use typed VM stack/registers for primitives   | Not started |
 | Lazy typed iterators for `range()`            | Not started |
@@ -28,7 +28,9 @@ Improve the execution performance of the Orus language by leveraging its **stati
 
 * Infer exact types of all expressions during compilation.
 * Emit optimized opcodes like `ADD_I64`, `PUSH_I64_CONST`, `PRINT_I64` instead of generic `ADD`, `PUSH`, etc.
-* Ensure loops (`for i in 0..n`) use `i64` counters and emit optimized instructions (`INC_I64`, `JUMP_IF_LT_I64`).
+* Implemented `OP_I64_CONST` for direct push of 64-bit integer constants.
+* Compiler now emits `INC_I64` and `JUMP_IF_LT_I64` for loops with `i64` counters, enabling faster increments and comparisons.
+* Type-specialized bytecode generation is now complete, enabling fast numeric loops without extra type checks.
 
 ### 2. Avoid Boxing and Tagging for Primitives
 

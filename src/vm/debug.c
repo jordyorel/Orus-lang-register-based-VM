@@ -80,6 +80,10 @@ int disassembleInstruction(Chunk* chunk, int offset) {
     switch (instruction) {
         case OP_CONSTANT:
             return constantInstruction("OP_CONSTANT", chunk, offset);
+        case OP_CONSTANT_LONG:
+            return constantInstruction("OP_CONSTANT_LONG", chunk, offset);
+        case OP_I64_CONST:
+            return constantInstruction("OP_I64_CONST", chunk, offset);
 
         // Integer operations
         case OP_ADD_I32:
@@ -103,6 +107,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_DIVIDE_I64", offset);
         case OP_NEGATE_I64:
             return simpleInstruction("OP_NEGATE_I64", offset);
+        case OP_INC_I64:
+            return simpleInstruction("OP_INC_I64", offset);
 
         // Unsigned integer operations
         case OP_ADD_U32:
@@ -395,6 +401,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return jumpInstruction("OP_JUMP_IF_FALSE", 1, chunk, offset);
         case OP_JUMP_IF_TRUE:
             return jumpInstruction("OP_JUMP_IF_TRUE", 1, chunk, offset);
+        case OP_JUMP_IF_LT_I64:
+            return jumpInstruction("OP_JUMP_IF_LT_I64", 1, chunk, offset);
         case OP_LOOP:
             return jumpInstruction("OP_LOOP", -1, chunk, offset);
         case OP_BREAK:
