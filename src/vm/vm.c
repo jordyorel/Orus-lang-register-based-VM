@@ -18,12 +18,25 @@
 #include "../../include/error.h"
 #include "../../include/location.h"
 #include "../../include/file_utils.h"
+#include "../../include/bytecode_io.h"
 #include "../../include/parser.h"
 #include "../../include/vm_ops.h"
 #include "../../include/modules.h"
 #include "../../include/type.h"
 #include "../../include/builtin_stdlib.h"
 #include <sys/stat.h>
+/**
+ * Compute the cache file path for a module within ORUS_CACHE_PATH.
+ */
+
+static char* cache_path_for(const char* module_path) {
+    if (!vm.cachePath) return NULL;
+    const char* base = strrchr(module_path, '/');
+    base = base ? base + 1 : module_path;
+    char* buf = malloc(strlen(vm.cachePath) + strlen(base) + 6);
+    sprintf(buf, "%s/%s.obc", vm.cachePath, base);
+    return buf;
+}
 
 VM vm;
 
@@ -90,6 +103,7 @@ void initVM() {
     vm.lastError = NIL_VAL;
     vm.objects = NULL;
     vm.bytesAllocated = 0;
+    vm.gcPaused = false;
     vm.instruction_count = 0;
     vm.astRoot = NULL;
     vm.filePath = NULL;
@@ -101,6 +115,8 @@ void initVM() {
     vm.trace = envTrace && envTrace[0] != '\0';
     const char* envPath = getenv("ORUS_PATH");
     vm.stdPath = envPath && envPath[0] != '\0' ? envPath : NULL;
+    const char* envCache = getenv("ORUS_CACHE_PATH");
+    vm.cachePath = envCache && envCache[0] != '\0' ? envCache : NULL;
     const char* envDev = getenv("ORUS_DEV_MODE");
     vm.devMode = envDev && envDev[0] != '\0';
     for (int i = 0; i < UINT8_COUNT; i++) {
@@ -386,21 +402,33 @@ static InterpretResult interpretModule(const char* path) {
     }
 
     int startGlobals = vm.variableCount;
-
-    ASTNode* ast = parse_module_source(source, path);
-    if (!ast) {
-        free(source);
-        RUNTIME_ERROR("Parsing failed for module.");
-        runtimeStackCount--;
-        return INTERPRET_COMPILE_ERROR;
+    char* cacheFile = cache_path_for(path);
+    Chunk* chunk = NULL;
+    if (cacheFile) {
+        long cached_mtime;
+        chunk = readChunkFromFile(cacheFile, &cached_mtime);
+        if (chunk && cached_mtime != mtime) { freeChunk(chunk); free(chunk); chunk = NULL; }
     }
-
-    Chunk* chunk = compile_module_ast(ast, path);
+    ASTNode* ast = NULL;
     if (!chunk) {
-        free(source);
-        RUNTIME_ERROR("Compilation failed for module.");
-        runtimeStackCount--;
-        return INTERPRET_COMPILE_ERROR;
+        ast = parse_module_source(source, path);
+        if (!ast) {
+            free(source);
+            if (cacheFile) free(cacheFile);
+            RUNTIME_ERROR("Parsing failed for module.");
+            runtimeStackCount--;
+            return INTERPRET_COMPILE_ERROR;
+        }
+
+        chunk = compile_module_ast(ast, path);
+        if (!chunk) {
+            free(source);
+            if (cacheFile) free(cacheFile);
+            RUNTIME_ERROR("Compilation failed for module.");
+            runtimeStackCount--;
+            return INTERPRET_COMPILE_ERROR;
+        }
+        if (cacheFile) writeChunkToFile(chunk, cacheFile, mtime);
     }
 
     Module mod;
@@ -443,6 +471,7 @@ static InterpretResult interpretModule(const char* path) {
 
     runtimeStackCount--;
     free(source);
+    if (cacheFile) free(cacheFile);
     return result;
 }
 
@@ -475,7 +504,7 @@ static InterpretResult run() {
     for (;;) {
         if (vm.trace) traceExecution();
         vm.instruction_count++;
-        if (vm.instruction_count % 10000 == 0) {
+        if (vm.instruction_count % 10000 == 0 && !vm.gcPaused) {
             collectGarbage();
         }
         vm.currentLine = get_line(vm.chunk, (int)(vm.ip - vm.chunk->code));
@@ -982,6 +1011,14 @@ static InterpretResult run() {
                     vmPushI64(&vm, v);
                     vmPush(&vm, BOOL_VAL(true));
                 }
+                break;
+            }
+            case OP_GC_PAUSE: {
+                pauseGC();
+                break;
+            }
+            case OP_GC_RESUME: {
+                resumeGC();
                 break;
             }
             case OP_NEGATE_U32: {

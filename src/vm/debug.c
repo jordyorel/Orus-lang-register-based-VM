@@ -111,6 +111,10 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_INC_I64", offset);
         case OP_ITER_NEXT_I64:
             return simpleInstruction("OP_ITER_NEXT_I64", offset);
+        case OP_GC_PAUSE:
+            return simpleInstruction("OP_GC_PAUSE", offset);
+        case OP_GC_RESUME:
+            return simpleInstruction("OP_GC_RESUME", offset);
 
         // Unsigned integer operations
         case OP_ADD_U32:

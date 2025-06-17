@@ -44,7 +44,7 @@ static size_t gcThreshold = 1024 * 1024;
  */
 static void* allocateObject(size_t size, ObjType type) {
     vm.bytesAllocated += size;
-    if (vm.bytesAllocated > gcThreshold) {
+    if (!vm.gcPaused && vm.bytesAllocated > gcThreshold) {
         collectGarbage();
         gcThreshold = vm.bytesAllocated * GC_HEAP_GROW_FACTOR;
     }
@@ -316,6 +316,7 @@ void markObject(Obj* object) {
  * Run the mark-and-sweep garbage collector.
  */
 void collectGarbage() {
+    if (vm.gcPaused) return;
     // Mark roots
     for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
         markValue(*slot);
@@ -451,6 +452,10 @@ void freeObjects() {
         object = next;
     }
 }
+
+void pauseGC() { vm.gcPaused = true; }
+
+void resumeGC() { vm.gcPaused = false; }
 
 /**
  * Duplicate a string into freshly allocated memory.

@@ -8,6 +8,7 @@
 #include "../../include/compiler.h"
 #include "../../include/vm.h"
 #include "../../include/builtin_stdlib.h"
+#include "../../include/bytecode_io.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -26,6 +27,15 @@ const char* moduleError = NULL;
 static char module_error_buffer[256];
 
 extern VM vm;
+
+static char* cache_path_for(const char* module_path) {
+    if (!vm.cachePath) return NULL;
+    const char* base = strrchr(module_path, '/');
+    base = base ? base + 1 : module_path;
+    char buf[512];
+    snprintf(buf, sizeof(buf), "%s/%s.obc", vm.cachePath, base);
+    return strdup(buf);
+}
 
 /**
  * Read a module's source code from disk.
@@ -191,20 +201,32 @@ InterpretResult compile_module_only(const char* path) {
         return INTERPRET_RUNTIME_ERROR;
     }
 
-    ASTNode* ast = parse_module_source(source, path);
-    if (!ast) {
-        free(source);
-        loading_stack_count--;
-        return INTERPRET_COMPILE_ERROR;
-    }
-
     int startGlobals = vm.variableCount;
-
-    Chunk* chunk = compile_module_ast(ast, path);
+    char* cacheFile = cache_path_for(path);
+    Chunk* chunk = NULL;
+    if (cacheFile) {
+        long cached_mtime;
+        chunk = readChunkFromFile(cacheFile, &cached_mtime);
+        if (chunk && cached_mtime != mtime) { freeChunk(chunk); free(chunk); chunk = NULL; }
+    }
+    ASTNode* ast = NULL;
     if (!chunk) {
-        free(source);
-        loading_stack_count--;
-        return INTERPRET_COMPILE_ERROR;
+        ast = parse_module_source(source, path);
+        if (!ast) {
+            free(source);
+            loading_stack_count--;
+            if (cacheFile) free(cacheFile);
+            return INTERPRET_COMPILE_ERROR;
+        }
+
+        chunk = compile_module_ast(ast, path);
+        if (!chunk) {
+            free(source);
+            loading_stack_count--;
+            if (cacheFile) free(cacheFile);
+            return INTERPRET_COMPILE_ERROR;
+        }
+        if (cacheFile) writeChunkToFile(chunk, cacheFile, mtime);
     }
 
     Module mod;
@@ -237,5 +259,6 @@ InterpretResult compile_module_only(const char* path) {
     register_module(&mod);
     loading_stack_count--;
     free(source);
+    if (cacheFile) free(cacheFile);
     return INTERPRET_OK;
 }

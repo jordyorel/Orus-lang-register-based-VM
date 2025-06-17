@@ -233,6 +233,8 @@ typedef enum {
     OP_INC_I64,
     OP_JUMP_IF_LT_I64,
     OP_ITER_NEXT_I64,
+    OP_GC_PAUSE,
+    OP_GC_RESUME,
 } opCode;
 
 typedef struct {

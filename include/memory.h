@@ -96,6 +96,8 @@ void markValue(Value value);
 // Garbage collector interface
 void collectGarbage();
 void freeObjects();
+void pauseGC();
+void resumeGC();
 
 // Utility to copy a raw C string onto the heap
 char* copyString(const char* str, int length);

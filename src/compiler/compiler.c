@@ -3724,6 +3724,14 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     int enclosingLoopDepth = compiler->loopDepth;
     bool useTypedJump = false;
 
+    Type* iterType = node->data.forStmt.startExpr->valueType;
+    bool numericLoop = iterType &&
+        (iterType->kind == TYPE_I32 || iterType->kind == TYPE_I64 ||
+         iterType->kind == TYPE_U32 || iterType->kind == TYPE_U64);
+    if (numericLoop) {
+        writeOp(compiler, OP_GC_PAUSE);
+    }
+
     // Generate code for the range start expression and store it in the iterator variable
     generateCode(compiler, node->data.forStmt.startExpr);
     if (compiler->hadError) return;
@@ -3746,7 +3754,6 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     if (compiler->hadError) return;
 
     // Compare the iterator with the end value
-    Type* iterType = node->data.forStmt.startExpr->valueType;
     int exitJump;
     if (iterType->kind == TYPE_I32) {
         writeOp(compiler, OP_LESS_I32);
@@ -3875,6 +3882,10 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     // generic comparisons.
     if (!useTypedJump) {
         writeOp(compiler, OP_POP);
+    }
+
+    if (numericLoop) {
+        writeOp(compiler, OP_GC_RESUME);
     }
 
     endScope(compiler);

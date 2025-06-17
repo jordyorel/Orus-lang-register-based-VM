@@ -14,9 +14,10 @@ Improve the execution performance of the Orus language by leveraging its **stati
 | Avoid boxing/tagging of known primitive types | ✅ Done |
 | Use typed VM stack/registers for primitives   | ✅ Done |
 | Lazy typed iterators for `range()`            | ✅ Done |
+| Type-based print & builtins dispatch          | ✅ Done |
+| GC-aware execution in tight numeric loops     | ✅ Done |
+| Ahead-of-Time optimization of stdlib          | ✅ Done |
 | Fast-path array push for primitives           | ✅ Done |
-| Type-based print & builtins dispatch          | In progress |
-| GC-aware execution in tight numeric loops     | Not started |
 | Default auto-inference to `i64` over `i32`    | Planned     |
 | Overflow-safe numeric promotion               | Planned     |
 
@@ -72,18 +73,24 @@ Improve the execution performance of the Orus language by leveraging its **stati
 * Initial typed print opcodes for numeric, boolean and string values are now available.
 * Added specialized `LEN_ARRAY` and `LEN_STRING` opcodes for `len()` when the argument type is known.
 * Specialized `TYPE_OF_*` opcodes push constant type names when the argument's static type is known.
+* Phase complete with compile-time builtin dispatch implemented.
 
 ### 7. GC-Aware Execution
 
 * Avoid tracking of loop-local primitive variables in the GC.
 * Disable GC temporarily during tight numeric loops.
 * Leverage type info for lifetime tracking.
+* GC pause/resume opcodes emitted around numeric loops.
+* Phase complete with GC-aware execution implemented.
 
 ### 8. Optional: Ahead-of-Time Optimization
 
 * Compile hot blocks or standard library functions to native code.
 * Use C or LLVM as backends for critical math-heavy functions.
 * Cache optimized bytecode or binaries when possible.
+* Standard library `pow()` and `sqrt()` now delegate to native C implementations.
+* Modules are saved as `.obc` bytecode files in `ORUS_CACHE_PATH` when available.
+* Phase complete with basic AOT caching and native math builtins.
 
 ---
 
