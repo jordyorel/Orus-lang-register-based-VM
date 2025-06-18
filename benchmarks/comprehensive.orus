@@ -11,33 +11,33 @@ fn main() {
     let start = timestamp()
 
     // Generate random boxes
-    let mut boxes: [Box<i32>] = []
-    for i in 0..100 {
-        boxes.push(Box<i32>{ value: random.randint(0, 99) })
+    let mut boxes: [Box<i64>] = []
+    for i in (0 as i64)..(100 as i64) {
+        boxes.push(Box<i64>{ value: random.randint(0 as i32, 99 as i32) as i64 })
     }
 
     // Count frequency of tens using a Map from std::collections
-    let freq = collections.map_new<i32, i32>()
-    for i in 0..len(boxes) {
-        let b = boxes[i]
-        let bucket = b.value / 10
-        let count = collections.map_get<i32, i32>(freq, bucket, 0)
-        collections.map_put<i32, i32>(freq, bucket, count + 1)
+    let freq = collections.map_new<i64, i64>()
+    for i in (0 as i64)..len(boxes) as i64 {
+        let b = boxes[i as i32]
+        let bucket = b.value / (10 as i64)
+        let count = collections.map_get<i64, i64>(freq, bucket, 0 as i64)
+        collections.map_put<i64, i64>(freq, bucket, count + (1 as i64))
     }
 
     // Perform some math heavy work
     let mut total: f64 = 0.0
-    for i in 0..100 {
+    for i in (0 as i64)..(100 as i64) {
         total = total + math.sqrt(random.uniform(1.0, 1000.0))
     }
     print(math.round(total))
 
     // Iterate over the frequency map
-    let keys = collections.map_keys<i32, i32>(freq)
-    for i in 0..len(keys) {
-        let k = keys[i]
-        let v = collections.map_get<i32, i32>(freq, k, 0)
-        print(k * 10)
+    let keys = collections.map_keys<i64, i64>(freq)
+    for i in (0 as i64)..len(keys) as i64 {
+        let k = keys[i as i32]
+        let v = collections.map_get<i64, i64>(freq, k, 0 as i64)
+        print(k * 10 as i64)
         print(v)
     }
 

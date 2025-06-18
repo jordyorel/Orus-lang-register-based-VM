@@ -121,6 +121,12 @@ The script executes each benchmark program and prints the time spent running it.
 Each benchmark also reports its own elapsed time using `timestamp()` so they can
 be executed individually and still provide timing information.
 
+To compare the stack-based VM with the register-based VM run:
+
+```sh
+bash benchmarks/compare_vms.sh
+```
+
 ## Repository layout
 
 - `src/` – C source for the interpreter.

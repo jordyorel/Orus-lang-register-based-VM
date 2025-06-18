@@ -17,7 +17,7 @@ pub fn map_new<K, V>() -> Map<K, V> {
 }
 
 pub fn map_put<K: Comparable, V>(map: Map<K, V>, key: K, value: V) {
-    for i in 0..len(map.items) {
+    for i in (0 as i32)..len(map.items) {
         if map.items[i].key == key {
             map.items[i].value = value
             return
@@ -27,7 +27,7 @@ pub fn map_put<K: Comparable, V>(map: Map<K, V>, key: K, value: V) {
 }
 
 pub fn map_get<K: Comparable, V>(map: Map<K, V>, key: K, default: V) -> V {
-    for i in 0..len(map.items) {
+    for i in (0 as i32)..len(map.items) {
         if map.items[i].key == key {
             return map.items[i].value
         }
@@ -36,7 +36,7 @@ pub fn map_get<K: Comparable, V>(map: Map<K, V>, key: K, default: V) -> V {
 }
 
 pub fn map_contains<K: Comparable, V>(map: Map<K, V>, key: K) -> bool {
-    for i in 0..len(map.items) {
+    for i in (0 as i32)..len(map.items) {
         if map.items[i].key == key {
             return true
         }
@@ -45,11 +45,11 @@ pub fn map_contains<K: Comparable, V>(map: Map<K, V>, key: K) -> bool {
 }
 
 pub fn map_remove<K: Comparable, V>(map: Map<K, V>, key: K) -> bool {
-    for i in 0..len(map.items) {
+    for i in (0 as i32)..len(map.items) {
         if map.items[i].key == key {
             let idx = i
-            for j in idx+1..len(map.items) {
-                map.items[j-1] = map.items[j]
+    for j in idx + (1 as i32)..len(map.items) {
+                map.items[j - (1 as i32)] = map.items[j]
             }
             map.items.pop()
             return true
@@ -59,7 +59,7 @@ pub fn map_remove<K: Comparable, V>(map: Map<K, V>, key: K) -> bool {
 }
 
 pub fn map_iter<K, V>(map: Map<K, V>) -> MapIterator<K, V> {
-    return MapIterator<K, V>{ items: map.items, index: 0 }
+    return MapIterator<K, V>{ items: map.items, index: 0 as i32 }
 }
 
 pub fn map_iter_has_next<K, V>(it: MapIterator<K, V>) -> bool {
@@ -68,13 +68,13 @@ pub fn map_iter_has_next<K, V>(it: MapIterator<K, V>) -> bool {
 
 pub fn map_iter_next<K, V>(it: MapIterator<K, V>) -> Entry<K, V> {
     let item = it.items[it.index]
-    it.index = it.index + 1
+    it.index = it.index + (1 as i32)
     return item
 }
 
 pub fn map_keys<K, V>(map: Map<K, V>) -> [K] {
     let keys = []
-    for i in 0..len(map.items) {
+    for i in (0 as i32)..len(map.items) {
         let entry = map.items[i]
         keys.push(entry.key)
     }
@@ -83,7 +83,7 @@ pub fn map_keys<K, V>(map: Map<K, V>) -> [K] {
 
 pub fn map_values<K, V>(map: Map<K, V>) -> [V] {
     let values = []
-    for i in 0..len(map.items) {
+    for i in (0 as i32)..len(map.items) {
         let entry = map.items[i]
         values.push(entry.value)
     }
@@ -104,7 +104,7 @@ pub fn set_new<T>() -> Set<T> {
 }
 
 pub fn set_contains<T: Comparable>(set: Set<T>, value: T) -> bool {
-    for i in 0..len(set.items) {
+    for i in (0 as i32)..len(set.items) {
         if set.items[i] == value {
             return true
         }
@@ -119,11 +119,11 @@ pub fn set_add<T: Comparable>(set: Set<T>, value: T) {
 }
 
 pub fn set_remove<T: Comparable>(set: Set<T>, value: T) -> bool {
-    for i in 0..len(set.items) {
+    for i in (0 as i32)..len(set.items) {
         if set.items[i] == value {
             let idx = i
-            for j in idx+1..len(set.items) {
-                set.items[j-1] = set.items[j]
+    for j in idx + (1 as i32)..len(set.items) {
+                set.items[j - (1 as i32)] = set.items[j]
             }
             set.items.pop()
             return true
@@ -133,7 +133,7 @@ pub fn set_remove<T: Comparable>(set: Set<T>, value: T) -> bool {
 }
 
 pub fn set_iter<T>(set: Set<T>) -> SetIterator<T> {
-    return SetIterator<T>{ items: set.items, index: 0 }
+    return SetIterator<T>{ items: set.items, index: 0 as i32 }
 }
 
 pub fn set_iter_has_next<T>(it: SetIterator<T>) -> bool {
@@ -142,7 +142,7 @@ pub fn set_iter_has_next<T>(it: SetIterator<T>) -> bool {
 
 pub fn set_iter_next<T>(it: SetIterator<T>) -> T {
     let item = it.items[it.index]
-    it.index = it.index + 1
+    it.index = it.index + (1 as i32)
     return item
 }
 
@@ -152,7 +152,7 @@ pub struct ArrayIterator<T> {
 }
 
 pub fn iter<T>(arr: [T]) -> ArrayIterator<T> {
-    return ArrayIterator<T>{ items: arr, index: 0 }
+    return ArrayIterator<T>{ items: arr, index: 0 as i32 }
 }
 
 pub fn iter_has_next<T>(it: ArrayIterator<T>) -> bool {
@@ -161,7 +161,7 @@ pub fn iter_has_next<T>(it: ArrayIterator<T>) -> bool {
 
 pub fn iter_next<T>(it: ArrayIterator<T>) -> T {
     let item = it.items[it.index]
-    it.index = it.index + 1
+    it.index = it.index + (1 as i32)
     return item
 }
 
