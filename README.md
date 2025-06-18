@@ -109,6 +109,12 @@ Tests are located in the `tests/` directory. After building the interpreter, run
 bash tests/run_all_tests.sh
 ```
 
+To verify that both the stack and register backends produce identical output, execute:
+
+```sh
+bash tests/check_vm_parity.sh
+```
+
 The script uses `bash`. On Windows, run it from WSL or Git Bash so that the
 shell utilities behave like they do on Unix systems.
 
