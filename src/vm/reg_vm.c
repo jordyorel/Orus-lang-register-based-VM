@@ -119,6 +119,7 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_GC_RESUME,
         &&op_ADD_GENERIC,
         &&op_ADD_I64,
+        &&op_MULTIPLY_I64,
         &&op_ADD_NUMERIC,
         &&op_BOOL_TO_I64,
         &&op_BOOL_TO_U64,
@@ -961,6 +962,17 @@ op_ADD_I64: {
     uint8_t s1 = ip->src1;
     uint8_t s2 = ip->src2;
     i64_regs[dest] = i64_regs[s1] + i64_regs[s2];
+#ifdef DEBUG_TRACE_EXECUTION
+    printf("[Debug] i64_regs[R%d] = %lld\n", dest, (long long)i64_regs[dest]);
+#endif
+    ip++; DISPATCH();
+}
+
+op_MULTIPLY_I64: {
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    i64_regs[dest] = i64_regs[s1] * i64_regs[s2];
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] i64_regs[R%d] = %lld\n", dest, (long long)i64_regs[dest]);
 #endif
@@ -1970,6 +1982,13 @@ op_LEN_STRING:
                 uint64_t a = AS_U64(rvm->registers[instr.src1]);
                 uint64_t b = AS_U64(rvm->registers[instr.src2]);
                 rvm->registers[instr.dst] = U64_VAL(a * b);
+                break;
+            }
+            case ROP_MULTIPLY_I64: {
+                i64_regs[instr.dst] = i64_regs[instr.src1] * i64_regs[instr.src2];
+#ifdef DEBUG_TRACE_EXECUTION
+                printf("[Debug] i64_regs[R%d] = %lld\n", instr.dst, (long long)i64_regs[instr.dst]);
+#endif
                 break;
             }
             case ROP_DIV_U64: {
