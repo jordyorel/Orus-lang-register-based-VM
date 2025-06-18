@@ -200,6 +200,7 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_GREATER_EQUAL_U32,
         &&op_GREATER_EQUAL_U64,
         &&op_GREATER_EQUAL_F64,
+        &&op_GREATER_EQUAL_GENERIC,
         &&op_GREATER_GENERIC,
         &&op_EQUAL_I64,
         &&op_MODULO_NUMERIC,
@@ -1544,6 +1545,19 @@ op_GREATER_EQUAL_F64: {
     ip++; DISPATCH();
 }
 
+op_GREATER_EQUAL_GENERIC: {
+    Value a = regs[ip->src1];
+    Value b = regs[ip->src2];
+    if (a.type != b.type) {
+        regs[ip->dst] = NIL_VAL;
+    } else if (a.type == VAL_F64) {
+        regs[ip->dst] = BOOL_VAL(AS_F64(a) >= AS_F64(b));
+    } else {
+        regs[ip->dst] = BOOL_VAL(AS_I64(a) >= AS_I64(b));
+    }
+    ip++; DISPATCH();
+}
+
 op_GREATER_GENERIC: {
     Value a = regs[ip->src1];
     Value b = regs[ip->src2];
@@ -1902,6 +1916,18 @@ op_DIVIDE_NUMERIC: {
                 rvm->registers[instr.dst] = BOOL_VAL(a >= b);
                 break;
             }
+            case ROP_GREATER_EQUAL_GENERIC: {
+                Value a = rvm->registers[instr.src1];
+                Value b = rvm->registers[instr.src2];
+                if (a.type != b.type) {
+                    rvm->registers[instr.dst] = NIL_VAL;
+                } else if (a.type == VAL_F64) {
+                    rvm->registers[instr.dst] = BOOL_VAL(AS_F64(a) >= AS_F64(b));
+                } else {
+                    rvm->registers[instr.dst] = BOOL_VAL(AS_I64(a) >= AS_I64(b));
+                }
+                break;
+            }
             case ROP_GREATER_GENERIC:
                 rvm->registers[instr.dst] = BOOL_VAL(valuesEqual(rvm->registers[instr.src1], rvm->registers[instr.src2]) ? false :
                                                 (rvm->registers[instr.src1].type == VAL_F64 ? AS_F64(rvm->registers[instr.src1]) > AS_F64(rvm->registers[instr.src2])
@@ -1965,6 +1991,18 @@ op_DIVIDE_NUMERIC: {
                 double a = AS_F64(rvm->registers[instr.src1]);
                 double b = AS_F64(rvm->registers[instr.src2]);
                 rvm->registers[instr.dst] = BOOL_VAL(a <= b);
+                break;
+            }
+            case ROP_LESS_EQUAL_GENERIC: {
+                Value a = rvm->registers[instr.src1];
+                Value b = rvm->registers[instr.src2];
+                if (a.type != b.type) {
+                    rvm->registers[instr.dst] = NIL_VAL;
+                } else if (a.type == VAL_F64) {
+                    rvm->registers[instr.dst] = BOOL_VAL(AS_F64(a) <= AS_F64(b));
+                } else {
+                    rvm->registers[instr.dst] = BOOL_VAL(AS_I64(a) <= AS_I64(b));
+                }
                 break;
             }
             case ROP_LESS_GENERIC:

@@ -1234,6 +1234,58 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
+            case OP_LESS_GENERIC: {
+                if (sp < 2) { offset++; break; }
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_LESS_GENERIC, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
+            case OP_LESS_EQUAL_GENERIC: {
+                if (sp < 2) { offset++; break; }
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_LESS_EQUAL_GENERIC, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
+            case OP_GREATER_GENERIC: {
+                if (sp < 2) { offset++; break; }
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_GREATER_GENERIC, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
+            case OP_GREATER_EQUAL_GENERIC: {
+                if (sp < 2) { offset++; break; }
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_GREATER_EQUAL_GENERIC, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
             case OP_JUMP_IF_LT_I64: {
                 uint16_t off = (uint16_t)(chunk->code[offset + 1] << 8 | chunk->code[offset + 2]);
                 if (sp < 2) { offset += 3; break; }
