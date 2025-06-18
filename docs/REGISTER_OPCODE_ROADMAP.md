@@ -27,11 +27,11 @@ The following tasks cover the migration process. Status markers use:
 
 ## Next Steps
 
-1. Implement the semantics of arithmetic, comparison and control flow instructions now present in `RegisterOp`.
-2. Extend the register IR generator to emit these new instructions when compiling from stack bytecode.
-3. Update the VM debug printer to recognize the new opcode names.
-4. Create regression tests ensuring parity between stack and register backends.
-5. Benchmarks confirmed there are no performance regressions.
+1. Implement the semantics of arithmetic, comparison and control flow instructions now present in `RegisterOp`. ✅ Done
+2. Extend the register IR generator to emit these new instructions when compiling from stack bytecode. ✅ Done
+3. Update the VM debug printer to recognize the new opcode names. ✅ Done
+4. Create regression tests ensuring parity between stack and register backends. ✅ Done
+5. Benchmarks confirmed there are no performance regressions. ✅ Done
 
 Once these steps are complete, the register VM will fully support the same instruction set as the stack VM.
 
