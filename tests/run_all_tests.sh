@@ -58,10 +58,15 @@ run_category_tests() {
             
             # Check if the test has an accompanying .in file to provide stdin
             input_file="${test_file%.orus}.in"
-            if [ -f "$input_file" ]; then
-                output=$($ORUS_EXECUTABLE "$test_file" < "$input_file" 2>&1)
+            if [ "$category" = "regvm" ]; then
+                cmd="$ORUS_EXECUTABLE --regvm \"$test_file\""
             else
-                output=$($ORUS_EXECUTABLE "$test_file" 2>&1)
+                cmd="$ORUS_EXECUTABLE \"$test_file\""
+            fi
+            if [ -f "$input_file" ]; then
+                output=$(eval $cmd < "$input_file" 2>&1)
+            else
+                output=$(eval $cmd 2>&1)
             fi
             exit_code=$?
 

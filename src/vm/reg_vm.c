@@ -24,114 +24,111 @@ Value runRegisterVM(RegisterVM* rvm) {
     RegisterInstr* ip = rvm->ip;
     Value* regs = rvm->registers;
 
-    static void* dispatch[ROP_U64_TO_STRING + 1] = {
-        [0 ... ROP_U64_TO_STRING] = &&op_UNIMPL,
-        [ROP_NOP] = &&op_NOP,
-        [ROP_MOV] = &&op_MOV,
-        [ROP_LOAD_CONST] = &&op_LOAD_CONST,
-        [ROP_ADD_RR] = &&op_ADD_RR,
-        [ROP_SUB_RR] = &&op_SUB_RR,
-        [ROP_MUL_RR] = &&op_MUL_RR,
-        [ROP_DIV_RR] = &&op_DIV_RR,
-        [ROP_EQ_I64] = &&op_EQ_I64,
-        [ROP_NE_I64] = &&op_NE_I64,
-        [ROP_LT_I64] = &&op_LT_I64,
-        [ROP_LE_I64] = &&op_LE_I64,
-        [ROP_GT_I64] = &&op_GT_I64,
-        [ROP_GE_I64] = &&op_GE_I64,
-        [ROP_JUMP] = &&op_JUMP,
-        [ROP_JZ] = &&op_JZ,
-        [ROP_CALL] = &&op_CALL,
-        [ROP_ADD_I32] = &&op_ADD_I32,
-        [ROP_SUB_I32] = &&op_SUB_I32,
-        [ROP_MUL_I32] = &&op_MUL_I32,
-        [ROP_DIV_I32] = &&op_DIV_I32,
-        [ROP_ADD_U32] = &&op_ADD_U32,
-        [ROP_SUB_U32] = &&op_SUB_U32,
-        [ROP_MUL_U32] = &&op_MUL_U32,
-        [ROP_DIV_U32] = &&op_DIV_U32,
-        [ROP_ADD_U64] = &&op_ADD_U64,
-        [ROP_SUB_U64] = &&op_SUB_U64,
-        [ROP_MUL_U64] = &&op_MUL_U64,
-        [ROP_DIV_U64] = &&op_DIV_U64,
-        [ROP_NEG_I32] = &&op_NEG_I32,
-        [ROP_NEG_U32] = &&op_NEG_U32,
-        [ROP_NEG_U64] = &&op_NEG_U64,
-        [ROP_AND] = &&op_AND,
-        [ROP_OR] = &&op_OR,
-        [ROP_NOT] = &&op_NOT,
-        [ROP_BIT_AND_I32] = &&op_BIT_AND_I32,
-        [ROP_BIT_AND_U32] = &&op_BIT_AND_U32,
-        [ROP_BIT_OR_I32] = &&op_BIT_OR_I32,
-        [ROP_BIT_OR_U32] = &&op_BIT_OR_U32,
-        [ROP_BIT_XOR_I32] = &&op_BIT_XOR_I32,
-        [ROP_BIT_XOR_U32] = &&op_BIT_XOR_U32,
-        [ROP_BIT_NOT_I32] = &&op_BIT_NOT_I32,
-        [ROP_BIT_NOT_U32] = &&op_BIT_NOT_U32,
-        [ROP_SHIFT_LEFT_I32] = &&op_SHIFT_LEFT_I32,
-        [ROP_SHIFT_RIGHT_I32] = &&op_SHIFT_RIGHT_I32,
-        [ROP_SHIFT_LEFT_U32] = &&op_SHIFT_LEFT_U32,
-        [ROP_SHIFT_RIGHT_U32] = &&op_SHIFT_RIGHT_U32,
-        [ROP_I32_TO_BOOL] = &&op_I32_TO_BOOL,
-        [ROP_U32_TO_BOOL] = &&op_U32_TO_BOOL,
-        [ROP_BOOL_TO_I32] = &&op_BOOL_TO_I32,
-        [ROP_BOOL_TO_U32] = &&op_BOOL_TO_U32,
-        [ROP_BOOL_TO_F64] = &&op_BOOL_TO_F64,
-        [ROP_F64_TO_BOOL] = &&op_F64_TO_BOOL,
-        [ROP_I32_TO_F64] = &&op_I32_TO_F64,
-        [ROP_U32_TO_F64] = &&op_U32_TO_F64,
-        [ROP_I32_TO_U32] = &&op_I32_TO_U32,
-        [ROP_U32_TO_I32] = &&op_U32_TO_I32,
-        [ROP_I32_TO_I64] = &&op_I32_TO_I64,
-        [ROP_U32_TO_I64] = &&op_U32_TO_I64,
-        [ROP_I64_TO_I32] = &&op_I64_TO_I32,
-        [ROP_I64_TO_U32] = &&op_I64_TO_U32,
-        [ROP_I32_TO_U64] = &&op_I32_TO_U64,
-        [ROP_U32_TO_U64] = &&op_U32_TO_U64,
-        [ROP_U64_TO_I32] = &&op_U64_TO_I32,
-        [ROP_U64_TO_U32] = &&op_U64_TO_U32,
-        [ROP_U64_TO_F64] = &&op_U64_TO_F64,
-        [ROP_F64_TO_U64] = &&op_F64_TO_U64,
-        [ROP_F64_TO_I32] = &&op_F64_TO_I32,
-        [ROP_F64_TO_U32] = &&op_F64_TO_U32,
-        [ROP_I64_TO_F64] = &&op_I64_TO_F64,
-        [ROP_F64_TO_I64] = &&op_F64_TO_I64,
-        [ROP_I32_TO_STRING] = &&op_I32_TO_STRING,
-        [ROP_U32_TO_STRING] = &&op_U32_TO_STRING,
-        [ROP_F64_TO_STRING] = &&op_F64_TO_STRING,
-        [ROP_BOOL_TO_STRING] = &&op_BOOL_TO_STRING,
-        [ROP_ARRAY_TO_STRING] = &&op_ARRAY_TO_STRING,
-        [ROP_ARRAY_RESERVE] = &&op_ARRAY_RESERVE,
-        [ROP_CONCAT] = &&op_CONCAT,
-        [ROP_TYPE_OF_I32] = &&op_TYPE_OF_I32,
-        [ROP_TYPE_OF_I64] = &&op_TYPE_OF_I64,
-        [ROP_TYPE_OF_U32] = &&op_TYPE_OF_U32,
-        [ROP_TYPE_OF_U64] = &&op_TYPE_OF_U64,
-        [ROP_TYPE_OF_F64] = &&op_TYPE_OF_F64,
-        [ROP_TYPE_OF_BOOL] = &&op_TYPE_OF_BOOL,
-        [ROP_TYPE_OF_STRING] = &&op_TYPE_OF_STRING,
-        [ROP_TYPE_OF_ARRAY] = &&op_TYPE_OF_ARRAY,
-        [ROP_GC_PAUSE] = &&op_GC_PAUSE,
-        [ROP_GC_RESUME] = &&op_GC_RESUME,
-        [ROP_ADD_GENERIC] = &&op_ADD_GENERIC,
-        [ROP_ADD_I64] = &&op_ADD_I64,
-        [ROP_ADD_NUMERIC] = &&op_ADD_NUMERIC,
-        [ROP_SUBTRACT_GENERIC] = &&op_SUBTRACT_GENERIC,
-        [ROP_MULTIPLY_GENERIC] = &&op_MULTIPLY_GENERIC,
-        [ROP_DIVIDE_GENERIC] = &&op_DIVIDE_GENERIC,
-        [ROP_MODULO_GENERIC] = &&op_MODULO_GENERIC,
-        [ROP_NEGATE_GENERIC] = &&op_NEGATE_GENERIC,
-        [ROP_SUBTRACT_I64] = &&op_SUBTRACT_I64,
-        [ROP_NEGATE_I64] = &&op_NEGATE_I64,
-        [ROP_BOOL_TO_I64] = &&op_BOOL_TO_I64,
-        [ROP_BOOL_TO_U64] = &&op_BOOL_TO_U64,
-        [ROP_BREAK] = &&op_BREAK,
-        [ROP_CALL_NATIVE] = &&op_CALL_NATIVE,
-        [ROP_CONSTANT] = &&op_CONSTANT,
-        [ROP_CONSTANT_LONG] = &&op_CONSTANT_LONG,
-        [ROP_CONTINUE] = &&op_CONTINUE,
-        [ROP_EQUAL] = &&op_EQUAL,
-        [ROP_NOT_EQUAL] = &&op_NOT_EQUAL,
+    static void* dispatch[] = {
+        &&op_NOP,
+        &&op_MOV,
+        &&op_LOAD_CONST,
+        &&op_ADD_RR,
+        &&op_SUB_RR,
+        &&op_MUL_RR,
+        &&op_DIV_RR,
+        &&op_EQ_I64,
+        &&op_NE_I64,
+        &&op_LT_I64,
+        &&op_LE_I64,
+        &&op_GT_I64,
+        &&op_GE_I64,
+        &&op_JUMP,
+        &&op_JZ,
+        &&op_CALL,
+        &&op_ADD_I32,
+        &&op_SUB_I32,
+        &&op_MUL_I32,
+        &&op_DIV_I32,
+        &&op_ADD_U32,
+        &&op_SUB_U32,
+        &&op_MUL_U32,
+        &&op_DIV_U32,
+        &&op_ADD_U64,
+        &&op_SUB_U64,
+        &&op_MUL_U64,
+        &&op_DIV_U64,
+        &&op_NEG_I32,
+        &&op_NEG_U32,
+        &&op_NEG_U64,
+        &&op_AND,
+        &&op_OR,
+        &&op_NOT,
+        &&op_BIT_AND_I32,
+        &&op_BIT_AND_U32,
+        &&op_BIT_OR_I32,
+        &&op_BIT_OR_U32,
+        &&op_BIT_XOR_I32,
+        &&op_BIT_XOR_U32,
+        &&op_BIT_NOT_I32,
+        &&op_BIT_NOT_U32,
+        &&op_SHIFT_LEFT_I32,
+        &&op_SHIFT_RIGHT_I32,
+        &&op_SHIFT_LEFT_U32,
+        &&op_SHIFT_RIGHT_U32,
+        &&op_I32_TO_BOOL,
+        &&op_U32_TO_BOOL,
+        &&op_BOOL_TO_I32,
+        &&op_BOOL_TO_U32,
+        &&op_BOOL_TO_F64,
+        &&op_F64_TO_BOOL,
+        &&op_I32_TO_F64,
+        &&op_U32_TO_F64,
+        &&op_I32_TO_U32,
+        &&op_U32_TO_I32,
+        &&op_I32_TO_I64,
+        &&op_U32_TO_I64,
+        &&op_I64_TO_I32,
+        &&op_I64_TO_U32,
+        &&op_I32_TO_U64,
+        &&op_U32_TO_U64,
+        &&op_U64_TO_I32,
+        &&op_U64_TO_U32,
+        &&op_U64_TO_F64,
+        &&op_F64_TO_U64,
+        &&op_F64_TO_I32,
+        &&op_F64_TO_U32,
+        &&op_I64_TO_F64,
+        &&op_F64_TO_I64,
+        &&op_I32_TO_STRING,
+        &&op_U32_TO_STRING,
+        &&op_F64_TO_STRING,
+        &&op_BOOL_TO_STRING,
+        &&op_ARRAY_TO_STRING,
+        &&op_ARRAY_RESERVE,
+        &&op_CONCAT,
+        &&op_TYPE_OF_I32,
+        &&op_TYPE_OF_I64,
+        &&op_TYPE_OF_U32,
+        &&op_TYPE_OF_U64,
+        &&op_TYPE_OF_F64,
+        &&op_TYPE_OF_BOOL,
+        &&op_TYPE_OF_STRING,
+        &&op_TYPE_OF_ARRAY,
+        &&op_GC_PAUSE,
+        &&op_GC_RESUME,
+        &&op_ADD_GENERIC,
+        &&op_ADD_I64,
+        &&op_ADD_NUMERIC,
+        &&op_BOOL_TO_I64,
+        &&op_BOOL_TO_U64,
+        &&op_BREAK,
+        &&op_CALL_NATIVE,
+        &&op_CONSTANT,
+        &&op_CONSTANT_LONG,
+        &&op_CONTINUE,
+        &&op_EQUAL,
+        &&op_NOT_EQUAL,
+        &&op_JUMP_IF_FALSE,
+        &&op_JUMP_IF_TRUE,
+        &&op_LOOP,
+        &&op_POP,
+        &&op_RETURN,
     };
 
 #define DISPATCH()                                             \
@@ -1000,10 +997,6 @@ op_CONSTANT_LONG:
 op_CONTINUE:
     ip++; DISPATCH();
 
-op_UNIMPL:
-    fprintf(stderr, "Unimplemented register opcode %d\n", ip->opcode);
-    return NIL_VAL;
-
 op_EQUAL:
     regs[ip->dst] = BOOL_VAL(valuesEqual(regs[ip->src1], regs[ip->src2]));
     ip++; DISPATCH();
@@ -1011,6 +1004,36 @@ op_EQUAL:
 op_NOT_EQUAL:
     regs[ip->dst] = BOOL_VAL(!valuesEqual(regs[ip->src1], regs[ip->src2]));
     ip++; DISPATCH();
+
+op_JUMP_IF_FALSE:
+    if ((IS_BOOL(regs[ip->src1]) && !AS_BOOL(regs[ip->src1])) ||
+        (IS_I64(regs[ip->src1]) && AS_I64(regs[ip->src1]) == 0)) {
+        ip = rvm->chunk->code + ip->dst;
+    } else {
+        ip++;
+    }
+    DISPATCH();
+
+op_JUMP_IF_TRUE:
+    if ((IS_BOOL(regs[ip->src1]) && AS_BOOL(regs[ip->src1])) ||
+        (IS_I64(regs[ip->src1]) && AS_I64(regs[ip->src1]) != 0)) {
+        ip = rvm->chunk->code + ip->dst;
+    } else {
+        ip++;
+    }
+    DISPATCH();
+
+op_LOOP:
+    ip = rvm->chunk->code + ip->dst;
+    DISPATCH();
+
+op_POP:
+    regs[ip->dst] = NIL_VAL;
+    ip++; DISPATCH();
+
+op_RETURN:
+    rvm->ip = ip + 1;
+    return regs[ip->src1];
 
 #else
     while (true) {
@@ -1495,6 +1518,32 @@ op_NOT_EQUAL:
                 break;
             case ROP_CONTINUE:
                 break;
+            case ROP_EQUAL:
+                rvm->registers[instr.dst] = BOOL_VAL(valuesEqual(rvm->registers[instr.src1], rvm->registers[instr.src2]));
+                break;
+            case ROP_NOT_EQUAL:
+                rvm->registers[instr.dst] = BOOL_VAL(!valuesEqual(rvm->registers[instr.src1], rvm->registers[instr.src2]));
+                break;
+            case ROP_JUMP_IF_FALSE:
+                if ((IS_BOOL(rvm->registers[instr.src1]) && !AS_BOOL(rvm->registers[instr.src1])) ||
+                    (IS_I64(rvm->registers[instr.src1]) && AS_I64(rvm->registers[instr.src1]) == 0)) {
+                    rvm->ip = rvm->chunk->code + instr.dst;
+                }
+                break;
+            case ROP_JUMP_IF_TRUE:
+                if ((IS_BOOL(rvm->registers[instr.src1]) && AS_BOOL(rvm->registers[instr.src1])) ||
+                    (IS_I64(rvm->registers[instr.src1]) && AS_I64(rvm->registers[instr.src1]) != 0)) {
+                    rvm->ip = rvm->chunk->code + instr.dst;
+                }
+                break;
+            case ROP_LOOP:
+                rvm->ip = rvm->chunk->code + instr.dst;
+                break;
+            case ROP_POP:
+                rvm->registers[instr.dst] = NIL_VAL;
+                break;
+            case ROP_RETURN:
+                return rvm->registers[instr.src1];
             case ROP_JUMP:
                 rvm->ip = rvm->chunk->code + instr.dst;
                 break;
