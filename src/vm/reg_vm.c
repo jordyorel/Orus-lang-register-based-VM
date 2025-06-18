@@ -124,6 +124,7 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_CONTINUE,
         &&op_EQUAL,
         &&op_NOT_EQUAL,
+        &&op_NOT_EQUAL_I64,
         &&op_JUMP_IF_FALSE,
         &&op_JUMP_IF_TRUE,
         &&op_LOOP,
@@ -329,6 +330,48 @@ op_DIV_F64: {
     double a = AS_F64(regs[ip->src1]);
     double b = AS_F64(regs[ip->src2]);
     regs[ip->dst] = F64_VAL(b == 0.0 ? 0.0 : a / b);
+    ip++; DISPATCH();
+}
+
+op_DIVIDE_I64: {
+    int64_t b = AS_I64(regs[ip->src2]);
+    int64_t a = AS_I64(regs[ip->src1]);
+    regs[ip->dst] = b == 0 ? NIL_VAL : I64_VAL(a / b);
+    ip++; DISPATCH();
+}
+
+op_MOD_I32: {
+    int32_t b = AS_I32(regs[ip->src2]);
+    int32_t a = AS_I32(regs[ip->src1]);
+    regs[ip->dst] = b == 0 ? NIL_VAL : I32_VAL(a % b);
+    ip++; DISPATCH();
+}
+
+op_MOD_U32: {
+    uint32_t b = AS_U32(regs[ip->src2]);
+    uint32_t a = AS_U32(regs[ip->src1]);
+    regs[ip->dst] = b == 0 ? NIL_VAL : U32_VAL(a % b);
+    ip++; DISPATCH();
+}
+
+op_MOD_U64: {
+    uint64_t b = AS_U64(regs[ip->src2]);
+    uint64_t a = AS_U64(regs[ip->src1]);
+    regs[ip->dst] = b == 0 ? NIL_VAL : U64_VAL(a % b);
+    ip++; DISPATCH();
+}
+
+op_GREATER_I32: {
+    int32_t a = AS_I32(regs[ip->src1]);
+    int32_t b = AS_I32(regs[ip->src2]);
+    regs[ip->dst] = BOOL_VAL(a > b);
+    ip++; DISPATCH();
+}
+
+op_LESS_I32: {
+    int32_t a = AS_I32(regs[ip->src1]);
+    int32_t b = AS_I32(regs[ip->src2]);
+    regs[ip->dst] = BOOL_VAL(a < b);
     ip++; DISPATCH();
 }
 
@@ -1048,6 +1091,13 @@ op_NOT_EQUAL:
     regs[ip->dst] = BOOL_VAL(!valuesEqual(regs[ip->src1], regs[ip->src2]));
     ip++; DISPATCH();
 
+op_NOT_EQUAL_I64: {
+    int64_t a = AS_I64(regs[ip->src1]);
+    int64_t b = AS_I64(regs[ip->src2]);
+    regs[ip->dst] = BOOL_VAL(a != b);
+    ip++; DISPATCH();
+}
+
 op_JUMP_IF_FALSE:
     if ((IS_BOOL(regs[ip->src1]) && !AS_BOOL(regs[ip->src1])) ||
         (IS_I64(regs[ip->src1]) && AS_I64(regs[ip->src1]) == 0)) {
@@ -1308,6 +1358,12 @@ op_LEN_STRING:
                 rvm->registers[instr.dst] = BOOL_VAL(!valuesEqual(rvm->registers[instr.src1],
                                                                  rvm->registers[instr.src2]));
                 break;
+            case ROP_NOT_EQUAL_I64: {
+                int64_t a = AS_I64(rvm->registers[instr.src1]);
+                int64_t b = AS_I64(rvm->registers[instr.src2]);
+                rvm->registers[instr.dst] = BOOL_VAL(a != b);
+                break;
+            }
             case ROP_LT_I64: {
                 int64_t a = AS_I64(rvm->registers[instr.src1]);
                 int64_t b = AS_I64(rvm->registers[instr.src2]);
@@ -1330,6 +1386,18 @@ op_LEN_STRING:
                 int64_t a = AS_I64(rvm->registers[instr.src1]);
                 int64_t b = AS_I64(rvm->registers[instr.src2]);
                 rvm->registers[instr.dst] = BOOL_VAL(a >= b);
+                break;
+            }
+            case ROP_GREATER_I32: {
+                int32_t a = AS_I32(rvm->registers[instr.src1]);
+                int32_t b = AS_I32(rvm->registers[instr.src2]);
+                rvm->registers[instr.dst] = BOOL_VAL(a > b);
+                break;
+            }
+            case ROP_LESS_I32: {
+                int32_t a = AS_I32(rvm->registers[instr.src1]);
+                int32_t b = AS_I32(rvm->registers[instr.src2]);
+                rvm->registers[instr.dst] = BOOL_VAL(a < b);
                 break;
             }
             case ROP_PRINT:
@@ -1677,6 +1745,30 @@ op_LEN_STRING:
                 }
                 break;
             }
+            case ROP_MODULO_I32: {
+                int32_t b = AS_I32(rvm->registers[instr.src2]);
+                int32_t a = AS_I32(rvm->registers[instr.src1]);
+                rvm->registers[instr.dst] = b == 0 ? NIL_VAL : I32_VAL(a % b);
+                break;
+            }
+            case ROP_MODULO_U32: {
+                uint32_t b = AS_U32(rvm->registers[instr.src2]);
+                uint32_t a = AS_U32(rvm->registers[instr.src1]);
+                rvm->registers[instr.dst] = b == 0 ? NIL_VAL : U32_VAL(a % b);
+                break;
+            }
+            case ROP_MODULO_U64: {
+                uint64_t b = AS_U64(rvm->registers[instr.src2]);
+                uint64_t a = AS_U64(rvm->registers[instr.src1]);
+                rvm->registers[instr.dst] = b == 0 ? NIL_VAL : U64_VAL(a % b);
+                break;
+            }
+            case ROP_MODULO_I64: {
+                int64_t b = AS_I64(rvm->registers[instr.src2]);
+                int64_t a = AS_I64(rvm->registers[instr.src1]);
+                rvm->registers[instr.dst] = b == 0 ? NIL_VAL : I64_VAL(a % b);
+                break;
+            }
             case ROP_NEGATE_GENERIC: {
                 Value a = rvm->registers[instr.src1];
                 switch (a.type) {
@@ -1835,6 +1927,12 @@ op_LEN_STRING:
                 uint64_t b = AS_U64(rvm->registers[instr.src2]);
                 uint64_t a = AS_U64(rvm->registers[instr.src1]);
                 rvm->registers[instr.dst] = U64_VAL(b == 0 ? 0 : a / b);
+                break;
+            }
+            case ROP_DIVIDE_I64: {
+                int64_t b = AS_I64(rvm->registers[instr.src2]);
+                int64_t a = AS_I64(rvm->registers[instr.src1]);
+                rvm->registers[instr.dst] = b == 0 ? NIL_VAL : I64_VAL(a / b);
                 break;
             }
             case ROP_NEG_I32:
