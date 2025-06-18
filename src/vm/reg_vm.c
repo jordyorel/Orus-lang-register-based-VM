@@ -1,3 +1,4 @@
+#define DEBUG_TRACE_EXECUTION
 #include "../../include/reg_vm.h"
 #include "../../include/vm.h"
 #include "../../include/memory.h"
@@ -12,6 +13,8 @@ extern VM vm;
 void initRegisterVM(RegisterVM* rvm, RegisterChunk* chunk) {
     rvm->chunk = chunk;
     rvm->ip = chunk->code;
+    memset(rvm->i64_regs, 0, sizeof(rvm->i64_regs));
+    memset(rvm->f64_regs, 0, sizeof(rvm->f64_regs));
     memset(rvm->registers, 0, sizeof(rvm->registers));
 }
 
@@ -23,6 +26,8 @@ Value runRegisterVM(RegisterVM* rvm) {
 #if defined(__GNUC__) || defined(__clang__)
     RegisterInstr* ip = rvm->ip;
     Value* regs = rvm->registers;
+    int64_t* i64_regs = rvm->i64_regs;
+    double*  f64_regs = rvm->f64_regs;
 
     static void* dispatch[] = {
         &&op_NOP,
@@ -306,37 +311,59 @@ op_STORE_GLOBAL:
     DISPATCH();
 
 op_ADD_F64: {
-    double a = AS_F64(regs[ip->src1]);
-    double b = AS_F64(regs[ip->src2]);
-    regs[ip->dst] = F64_VAL(a + b);
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    f64_regs[dest] = f64_regs[s1] + f64_regs[s2];
+#ifdef DEBUG_TRACE_EXECUTION
+    printf("[Debug] f64_regs[R%d] = %f\n", dest, f64_regs[dest]);
+#endif
     ip++; DISPATCH();
 }
 
 op_SUB_F64: {
-    double a = AS_F64(regs[ip->src1]);
-    double b = AS_F64(regs[ip->src2]);
-    regs[ip->dst] = F64_VAL(a - b);
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    f64_regs[dest] = f64_regs[s1] - f64_regs[s2];
+#ifdef DEBUG_TRACE_EXECUTION
+    printf("[Debug] f64_regs[R%d] = %f\n", dest, f64_regs[dest]);
+#endif
     ip++; DISPATCH();
 }
 
 op_MUL_F64: {
-    double a = AS_F64(regs[ip->src1]);
-    double b = AS_F64(regs[ip->src2]);
-    regs[ip->dst] = F64_VAL(a * b);
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    f64_regs[dest] = f64_regs[s1] * f64_regs[s2];
+#ifdef DEBUG_TRACE_EXECUTION
+    printf("[Debug] f64_regs[R%d] = %f\n", dest, f64_regs[dest]);
+#endif
     ip++; DISPATCH();
 }
 
 op_DIV_F64: {
-    double a = AS_F64(regs[ip->src1]);
-    double b = AS_F64(regs[ip->src2]);
-    regs[ip->dst] = F64_VAL(b == 0.0 ? 0.0 : a / b);
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    double b = f64_regs[s2];
+    f64_regs[dest] = b == 0.0 ? 0.0 : f64_regs[s1] / b;
+#ifdef DEBUG_TRACE_EXECUTION
+    printf("[Debug] f64_regs[R%d] = %f\n", dest, f64_regs[dest]);
+#endif
     ip++; DISPATCH();
 }
 
 op_DIVIDE_I64: {
-    int64_t b = AS_I64(regs[ip->src2]);
-    int64_t a = AS_I64(regs[ip->src1]);
-    regs[ip->dst] = b == 0 ? NIL_VAL : I64_VAL(a / b);
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    int64_t b = i64_regs[s2];
+    i64_regs[dest] = b == 0 ? 0 : i64_regs[s1] / b;
+#ifdef DEBUG_TRACE_EXECUTION
+    printf("[Debug] i64_regs[R%d] = %lld\n", dest, (long long)i64_regs[dest]);
+#endif
     ip++; DISPATCH();
 }
 
@@ -930,9 +957,13 @@ op_ADD_GENERIC: {
 }
 
 op_ADD_I64: {
-    int64_t a = AS_I64(regs[ip->src1]);
-    int64_t b = AS_I64(regs[ip->src2]);
-    regs[ip->dst] = I64_VAL(a + b);
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    i64_regs[dest] = i64_regs[s1] + i64_regs[s2];
+#ifdef DEBUG_TRACE_EXECUTION
+    printf("[Debug] i64_regs[R%d] = %lld\n", dest, (long long)i64_regs[dest]);
+#endif
     ip++; DISPATCH();
 }
 
@@ -1048,22 +1079,35 @@ op_NEGATE_GENERIC: {
 }
 
 op_SUBTRACT_I64: {
-    int64_t a = AS_I64(regs[ip->src1]);
-    int64_t b = AS_I64(regs[ip->src2]);
-    regs[ip->dst] = I64_VAL(a - b);
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    i64_regs[dest] = i64_regs[s1] - i64_regs[s2];
+#ifdef DEBUG_TRACE_EXECUTION
+    printf("[Debug] i64_regs[R%d] = %lld\n", dest, (long long)i64_regs[dest]);
+#endif
     ip++; DISPATCH();
 }
 
 op_NEGATE_I64:
-    regs[ip->dst] = I64_VAL(-AS_I64(regs[ip->src1]));
+    i64_regs[ip->dst] = -i64_regs[ip->src1];
+#ifdef DEBUG_TRACE_EXECUTION
+    printf("[Debug] i64_regs[R%d] = %lld\n", ip->dst, (long long)i64_regs[ip->dst]);
+#endif
     ip++; DISPATCH();
 
 op_BOOL_TO_I64:
-    regs[ip->dst] = I64_VAL(AS_BOOL(regs[ip->src1]) ? 1 : 0);
+    i64_regs[ip->dst] = regs[ip->src1].type == VAL_BOOL && AS_BOOL(regs[ip->src1]) ? 1 : 0;
+#ifdef DEBUG_TRACE_EXECUTION
+    printf("[Debug] i64_regs[R%d] = %lld\n", ip->dst, (long long)i64_regs[ip->dst]);
+#endif
     ip++; DISPATCH();
 
 op_BOOL_TO_U64:
-    regs[ip->dst] = U64_VAL(AS_BOOL(regs[ip->src1]) ? 1u : 0u);
+    i64_regs[ip->dst] = regs[ip->src1].type == VAL_BOOL && AS_BOOL(regs[ip->src1]) ? 1 : 0;
+#ifdef DEBUG_TRACE_EXECUTION
+    printf("[Debug] i64_regs[R%d] = %lld\n", ip->dst, (long long)i64_regs[ip->dst]);
+#endif
     ip++; DISPATCH();
 
 op_BREAK:
@@ -1273,14 +1317,17 @@ op_IMPORT:
     ip++; DISPATCH();
 
 op_INC_I64:
-    regs[ip->dst] = I64_VAL(AS_I64(regs[ip->dst]) + 1);
+    i64_regs[ip->dst] += 1;
+#ifdef DEBUG_TRACE_EXECUTION
+    printf("[Debug] i64_regs[R%d] = %lld\n", ip->dst, (long long)i64_regs[ip->dst]);
+#endif
     ip++; DISPATCH();
 
 op_ITER_NEXT_I64:
     ip++; DISPATCH();
 
 op_JUMP_IF_LT_I64:
-    if (AS_I64(regs[ip->src1]) < AS_I64(regs[ip->src2]))
+    if (i64_regs[ip->src1] < i64_regs[ip->src2])
         ip = rvm->chunk->code + ip->dst;
     else
         ip++;
@@ -1594,9 +1641,10 @@ op_LEN_STRING:
                 break;
             }
             case ROP_ADD_I64: {
-                int64_t a = AS_I64(rvm->registers[instr.src1]);
-                int64_t b = AS_I64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = I64_VAL(a + b);
+                i64_regs[instr.dst] = i64_regs[instr.src1] + i64_regs[instr.src2];
+#ifdef DEBUG_TRACE_EXECUTION
+                printf("[Debug] i64_regs[R%d] = %lld\n", instr.dst, (long long)i64_regs[instr.dst]);
+#endif
                 break;
             }
             case ROP_ADD_NUMERIC: {
@@ -1793,9 +1841,10 @@ op_LEN_STRING:
                 break;
             }
             case ROP_SUBTRACT_I64: {
-                int64_t a = AS_I64(rvm->registers[instr.src1]);
-                int64_t b = AS_I64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = I64_VAL(a - b);
+                i64_regs[instr.dst] = i64_regs[instr.src1] - i64_regs[instr.src2];
+#ifdef DEBUG_TRACE_EXECUTION
+                printf("[Debug] i64_regs[R%d] = %lld\n", instr.dst, (long long)i64_regs[instr.dst]);
+#endif
                 break;
             }
             case ROP_NEGATE_I64:
@@ -1930,9 +1979,11 @@ op_LEN_STRING:
                 break;
             }
             case ROP_DIVIDE_I64: {
-                int64_t b = AS_I64(rvm->registers[instr.src2]);
-                int64_t a = AS_I64(rvm->registers[instr.src1]);
-                rvm->registers[instr.dst] = b == 0 ? NIL_VAL : I64_VAL(a / b);
+                int64_t b = i64_regs[instr.src2];
+                i64_regs[instr.dst] = b == 0 ? 0 : i64_regs[instr.src1] / b;
+#ifdef DEBUG_TRACE_EXECUTION
+                printf("[Debug] i64_regs[R%d] = %lld\n", instr.dst, (long long)i64_regs[instr.dst]);
+#endif
                 break;
             }
             case ROP_NEG_I32:
@@ -2211,10 +2262,11 @@ op_LEN_STRING:
                 int32_t b = AS_I32(rvm->registers[instr.src2]);
                 rvm->registers[instr.dst] = I32_VAL(a - b);
                 break; }
-            case ROP_SUBTRACT_I64: {
-                int64_t a = AS_I64(rvm->registers[instr.src1]);
-                int64_t b = AS_I64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = I64_VAL(a - b);
+        case ROP_SUBTRACT_I64: {
+                i64_regs[instr.dst] = i64_regs[instr.src1] - i64_regs[instr.src2];
+#ifdef DEBUG_TRACE_EXECUTION
+                printf("[Debug] i64_regs[R%d] = %lld\n", instr.dst, (long long)i64_regs[instr.dst]);
+#endif
                 break; }
             case ROP_SUBTRACT_NUMERIC: {
                 Value a = rvm->registers[instr.src1];
@@ -2269,12 +2321,15 @@ op_LEN_STRING:
             case ROP_IMPORT:
                 break;
             case ROP_INC_I64:
-                rvm->registers[instr.dst] = I64_VAL(AS_I64(rvm->registers[instr.dst]) + 1);
+                i64_regs[instr.dst] += 1;
+#ifdef DEBUG_TRACE_EXECUTION
+                printf("[Debug] i64_regs[R%d] = %lld\n", instr.dst, (long long)i64_regs[instr.dst]);
+#endif
                 break;
             case ROP_ITER_NEXT_I64:
                 break;
             case ROP_JUMP_IF_LT_I64:
-                if (AS_I64(rvm->registers[instr.src1]) < AS_I64(rvm->registers[instr.src2]))
+                if (i64_regs[instr.src1] < i64_regs[instr.src2])
                     rvm->ip = rvm->chunk->code + instr.dst;
                 break;
             case ROP_LEN_ARRAY:

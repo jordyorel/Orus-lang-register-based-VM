@@ -66,41 +66,53 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
             }
             case OP_ADD_I64: {
                 if (sp < 2) { offset++; break; }
-                int src2 = stackRegs[--sp];
-                int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_ADD_I64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_ADD_I64, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
                 writeRegisterInstr(out, instr);
-                RELEASE_REG(src2);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
             case OP_SUBTRACT_I64: {
                 if (sp < 2) { offset++; break; }
-                int src2 = stackRegs[--sp];
-                int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_SUBTRACT_I64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_SUBTRACT_I64, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
                 writeRegisterInstr(out, instr);
-                RELEASE_REG(src2);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
             case OP_MULTIPLY_I64: {
                 if (sp < 2) { offset++; break; }
-                int src2 = stackRegs[--sp];
-                int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_MUL_RR, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_MULTIPLY_I64, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
                 writeRegisterInstr(out, instr);
-                RELEASE_REG(src2);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
             case OP_DIVIDE_I64: {
                 if (sp < 2) { offset++; break; }
-                int src2 = stackRegs[--sp];
-                int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_DIV_RR, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_DIVIDE_I64, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
                 writeRegisterInstr(out, instr);
-                RELEASE_REG(src2);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
@@ -234,41 +246,53 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
             }
             case OP_ADD_F64: {
                 if (sp < 2) { offset++; break; }
-                int src2 = stackRegs[--sp];
-                int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_ADD_F64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_ADD_F64, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
                 writeRegisterInstr(out, instr);
-                RELEASE_REG(src2);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
             case OP_SUBTRACT_F64: {
                 if (sp < 2) { offset++; break; }
-                int src2 = stackRegs[--sp];
-                int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_SUB_F64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_SUB_F64, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
                 writeRegisterInstr(out, instr);
-                RELEASE_REG(src2);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
             case OP_MULTIPLY_F64: {
                 if (sp < 2) { offset++; break; }
-                int src2 = stackRegs[--sp];
-                int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_MUL_F64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_MUL_F64, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
                 writeRegisterInstr(out, instr);
-                RELEASE_REG(src2);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
             case OP_DIVIDE_F64: {
                 if (sp < 2) { offset++; break; }
-                int src2 = stackRegs[--sp];
-                int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_DIV_F64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_DIV_F64, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
                 writeRegisterInstr(out, instr);
-                RELEASE_REG(src2);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
@@ -1044,7 +1068,7 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 int tmp = ALLOC_REG();
                 RegisterInstr load = {ROP_LOAD_CONST, (uint8_t)tmp, (uint8_t)constIndex, 0};
                 writeRegisterInstr(out, load);
-                RegisterInstr add = {ROP_ADD_RR, (uint8_t)reg, (uint8_t)reg, (uint8_t)tmp};
+                RegisterInstr add = {ROP_ADD_I64, (uint8_t)reg, (uint8_t)reg, (uint8_t)tmp};
                 writeRegisterInstr(out, add);
                 RELEASE_REG(tmp);
                 offset += 1;
