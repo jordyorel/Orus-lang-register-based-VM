@@ -84,6 +84,9 @@ After building, run the interpreter in two ways:
 # Execute a project directory
 ./orusc --project path/to/project
 
+To trace individual register updates during execution, compile with
+`DEBUG_TRACE_EXECUTION` enabled in `reg_vm.c`.
+
 ```
 
 When run in project mode the interpreter searches all `.orus` files for a
