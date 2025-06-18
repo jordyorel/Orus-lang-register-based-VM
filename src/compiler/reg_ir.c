@@ -968,6 +968,22 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
+            case OP_LEN_ARRAY: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_LEN_ARRAY, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_LEN_STRING: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_LEN_STRING, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
             case OP_ARRAY_RESERVE: {
                 if (sp < 2) { offset++; break; }
                 int cap = stackRegs[--sp];
@@ -1287,27 +1303,127 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
-            case OP_PRINT_I64:
-            case OP_PRINT_F64:
-            case OP_PRINT_U64:
-            case OP_PRINT_BOOL:
-            case OP_PRINT_STRING: {
+            case OP_PRINT_I32: {
                 if (sp < 1) { offset++; break; }
                 int src = stackRegs[--sp];
-                RegisterInstr instr = {ROP_PRINT, 0, (uint8_t)src, 0};
+                RegisterInstr instr = {ROP_PRINT_I32, 0, (uint8_t)src, 0};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(src);
                 offset += 1;
                 break;
             }
-            case OP_PRINT_I64_NO_NL:
-            case OP_PRINT_F64_NO_NL:
-            case OP_PRINT_U64_NO_NL:
-            case OP_PRINT_BOOL_NO_NL:
+            case OP_PRINT_I32_NO_NL: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT_I32_NO_NL, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
+            case OP_PRINT_I64: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT_I64, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
+            case OP_PRINT_I64_NO_NL: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT_I64_NO_NL, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
+            case OP_PRINT_U32: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT_U32, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
+            case OP_PRINT_U32_NO_NL: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT_U32_NO_NL, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
+            case OP_PRINT_U64: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT_U64, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
+            case OP_PRINT_U64_NO_NL: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT_U64_NO_NL, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
+            case OP_PRINT_F64: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT_F64, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
+            case OP_PRINT_F64_NO_NL: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT_F64_NO_NL, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
+            case OP_PRINT_BOOL: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT_BOOL, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
+            case OP_PRINT_BOOL_NO_NL: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT_BOOL_NO_NL, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
+            case OP_PRINT_STRING: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT_STRING, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
             case OP_PRINT_STRING_NO_NL: {
                 if (sp < 1) { offset++; break; }
                 int src = stackRegs[--sp];
-                RegisterInstr instr = {ROP_PRINT_NO_NL, 0, (uint8_t)src, 0};
+                RegisterInstr instr = {ROP_PRINT_STRING_NO_NL, 0, (uint8_t)src, 0};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(src);
                 offset += 1;
