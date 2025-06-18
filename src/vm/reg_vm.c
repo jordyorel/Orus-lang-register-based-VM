@@ -39,6 +39,8 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_DIV_RR,
         &&op_EQ_I64,
         &&op_NE_I64,
+        &&op_EQ_F64,
+        &&op_NE_F64,
         &&op_LT_I64,
         &&op_LE_I64,
         &&op_GT_I64,
@@ -282,51 +284,51 @@ op_DIV_RR: {
 }
 
 op_EQ_I64: {
-    int64_t a = AS_I64(regs[ip->src1]);
-    int64_t b = AS_I64(regs[ip->src2]);
-    regs[ip->dst] = BOOL_VAL(a == b);
-    ip++;
-    DISPATCH();
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    regs[dest] = BOOL_VAL(i64_regs[s1] == i64_regs[s2]);
+    ip++; DISPATCH();
 }
 
 op_NE_I64: {
-    int64_t a = AS_I64(regs[ip->src1]);
-    int64_t b = AS_I64(regs[ip->src2]);
-    regs[ip->dst] = BOOL_VAL(a != b);
-    ip++;
-    DISPATCH();
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    regs[dest] = BOOL_VAL(i64_regs[s1] != i64_regs[s2]);
+    ip++; DISPATCH();
 }
 
 op_LT_I64: {
-    int64_t a = AS_I64(regs[ip->src1]);
-    int64_t b = AS_I64(regs[ip->src2]);
-    regs[ip->dst] = BOOL_VAL(a < b);
-    ip++;
-    DISPATCH();
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    regs[dest] = BOOL_VAL(i64_regs[s1] < i64_regs[s2]);
+    ip++; DISPATCH();
 }
 
 op_LE_I64: {
-    int64_t a = AS_I64(regs[ip->src1]);
-    int64_t b = AS_I64(regs[ip->src2]);
-    regs[ip->dst] = BOOL_VAL(a <= b);
-    ip++;
-    DISPATCH();
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    regs[dest] = BOOL_VAL(i64_regs[s1] <= i64_regs[s2]);
+    ip++; DISPATCH();
 }
 
 op_GT_I64: {
-    int64_t a = AS_I64(regs[ip->src1]);
-    int64_t b = AS_I64(regs[ip->src2]);
-    regs[ip->dst] = BOOL_VAL(a > b);
-    ip++;
-    DISPATCH();
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    regs[dest] = BOOL_VAL(i64_regs[s1] > i64_regs[s2]);
+    ip++; DISPATCH();
 }
 
 op_GE_I64: {
-    int64_t a = AS_I64(regs[ip->src1]);
-    int64_t b = AS_I64(regs[ip->src2]);
-    regs[ip->dst] = BOOL_VAL(a >= b);
-    ip++;
-    DISPATCH();
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    regs[dest] = BOOL_VAL(i64_regs[s1] >= i64_regs[s2]);
+    ip++; DISPATCH();
 }
 
 op_PRINT:
@@ -393,6 +395,22 @@ op_DIV_F64: {
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] f64_regs[R%d] = %f\n", dest, f64_regs[dest]);
 #endif
+    ip++; DISPATCH();
+}
+
+op_EQ_F64: {
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    regs[dest] = BOOL_VAL(f64_regs[s1] == f64_regs[s2]);
+    ip++; DISPATCH();
+}
+
+op_NE_F64: {
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    regs[dest] = BOOL_VAL(f64_regs[s1] != f64_regs[s2]);
     ip++; DISPATCH();
 }
 
@@ -1394,9 +1412,10 @@ op_LEN_STRING:
     ip++; DISPATCH();
 
 op_LESS_EQUAL_F64: {
-    double a = AS_F64(regs[ip->src1]);
-    double b = AS_F64(regs[ip->src2]);
-    regs[ip->dst] = BOOL_VAL(a <= b);
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    regs[dest] = BOOL_VAL(f64_regs[s1] <= f64_regs[s2]);
     ip++; DISPATCH();
 }
 
@@ -1442,9 +1461,10 @@ op_LESS_EQUAL_U64: {
 }
 
 op_LESS_F64: {
-    double a = AS_F64(regs[ip->src1]);
-    double b = AS_F64(regs[ip->src2]);
-    regs[ip->dst] = BOOL_VAL(a < b);
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    regs[dest] = BOOL_VAL(f64_regs[s1] < f64_regs[s2]);
     ip++; DISPATCH();
 }
 
@@ -1504,9 +1524,10 @@ op_GREATER_U64: {
 }
 
 op_GREATER_F64: {
-    double a = AS_F64(regs[ip->src1]);
-    double b = AS_F64(regs[ip->src2]);
-    regs[ip->dst] = BOOL_VAL(a > b);
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    regs[dest] = BOOL_VAL(f64_regs[s1] > f64_regs[s2]);
     ip++; DISPATCH();
 }
 
@@ -1539,9 +1560,10 @@ op_GREATER_EQUAL_U64: {
 }
 
 op_GREATER_EQUAL_F64: {
-    double a = AS_F64(regs[ip->src1]);
-    double b = AS_F64(regs[ip->src2]);
-    regs[ip->dst] = BOOL_VAL(a >= b);
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    regs[dest] = BOOL_VAL(f64_regs[s1] >= f64_regs[s2]);
     ip++; DISPATCH();
 }
 
@@ -1801,15 +1823,11 @@ op_DIVIDE_NUMERIC: {
                 break;
             }
             case ROP_EQ_I64: {
-                int64_t a = AS_I64(rvm->registers[instr.src1]);
-                int64_t b = AS_I64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = BOOL_VAL(a == b);
+                rvm->registers[instr.dst] = BOOL_VAL(rvm->i64_regs[instr.src1] == rvm->i64_regs[instr.src2]);
                 break;
             }
             case ROP_NE_I64: {
-                int64_t a = AS_I64(rvm->registers[instr.src1]);
-                int64_t b = AS_I64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = BOOL_VAL(a != b);
+                rvm->registers[instr.dst] = BOOL_VAL(rvm->i64_regs[instr.src1] != rvm->i64_regs[instr.src2]);
                 break;
             }
             case ROP_EQUAL:
@@ -1832,28 +1850,28 @@ op_DIVIDE_NUMERIC: {
                 rvm->registers[instr.dst] = BOOL_VAL(a != b);
                 break;
             }
+            case ROP_EQ_F64: {
+                rvm->registers[instr.dst] = BOOL_VAL(rvm->f64_regs[instr.src1] == rvm->f64_regs[instr.src2]);
+                break;
+            }
+            case ROP_NE_F64: {
+                rvm->registers[instr.dst] = BOOL_VAL(rvm->f64_regs[instr.src1] != rvm->f64_regs[instr.src2]);
+                break;
+            }
             case ROP_LT_I64: {
-                int64_t a = AS_I64(rvm->registers[instr.src1]);
-                int64_t b = AS_I64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = BOOL_VAL(a < b);
+                rvm->registers[instr.dst] = BOOL_VAL(rvm->i64_regs[instr.src1] < rvm->i64_regs[instr.src2]);
                 break;
             }
             case ROP_LE_I64: {
-                int64_t a = AS_I64(rvm->registers[instr.src1]);
-                int64_t b = AS_I64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = BOOL_VAL(a <= b);
+                rvm->registers[instr.dst] = BOOL_VAL(rvm->i64_regs[instr.src1] <= rvm->i64_regs[instr.src2]);
                 break;
             }
             case ROP_GT_I64: {
-                int64_t a = AS_I64(rvm->registers[instr.src1]);
-                int64_t b = AS_I64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = BOOL_VAL(a > b);
+                rvm->registers[instr.dst] = BOOL_VAL(rvm->i64_regs[instr.src1] > rvm->i64_regs[instr.src2]);
                 break;
             }
             case ROP_GE_I64: {
-                int64_t a = AS_I64(rvm->registers[instr.src1]);
-                int64_t b = AS_I64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = BOOL_VAL(a >= b);
+                rvm->registers[instr.dst] = BOOL_VAL(rvm->i64_regs[instr.src1] >= rvm->i64_regs[instr.src2]);
                 break;
             }
             case ROP_GREATER_I32: {
@@ -1881,9 +1899,7 @@ op_DIVIDE_NUMERIC: {
                 break;
             }
             case ROP_GREATER_F64: {
-                double a = AS_F64(rvm->registers[instr.src1]);
-                double b = AS_F64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = BOOL_VAL(a > b);
+                rvm->registers[instr.dst] = BOOL_VAL(rvm->f64_regs[instr.src1] > rvm->f64_regs[instr.src2]);
                 break;
             }
             case ROP_GREATER_EQUAL_I32: {
@@ -1911,9 +1927,7 @@ op_DIVIDE_NUMERIC: {
                 break;
             }
             case ROP_GREATER_EQUAL_F64: {
-                double a = AS_F64(rvm->registers[instr.src1]);
-                double b = AS_F64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = BOOL_VAL(a >= b);
+                rvm->registers[instr.dst] = BOOL_VAL(rvm->f64_regs[instr.src1] >= rvm->f64_regs[instr.src2]);
                 break;
             }
             case ROP_GREATER_EQUAL_GENERIC: {
@@ -1958,9 +1972,7 @@ op_DIVIDE_NUMERIC: {
                 break;
             }
             case ROP_LESS_F64: {
-                double a = AS_F64(rvm->registers[instr.src1]);
-                double b = AS_F64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = BOOL_VAL(a < b);
+                rvm->registers[instr.dst] = BOOL_VAL(rvm->f64_regs[instr.src1] < rvm->f64_regs[instr.src2]);
                 break;
             }
             case ROP_LESS_EQUAL_I32: {
@@ -1988,9 +2000,7 @@ op_DIVIDE_NUMERIC: {
                 break;
             }
             case ROP_LESS_EQUAL_F64: {
-                double a = AS_F64(rvm->registers[instr.src1]);
-                double b = AS_F64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = BOOL_VAL(a <= b);
+                rvm->registers[instr.dst] = BOOL_VAL(rvm->f64_regs[instr.src1] <= rvm->f64_regs[instr.src2]);
                 break;
             }
             case ROP_LESS_EQUAL_GENERIC: {

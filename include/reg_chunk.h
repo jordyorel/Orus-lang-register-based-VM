@@ -234,6 +234,9 @@ typedef enum {
     ROP_U64_TO_BOOL,
     ROP_U64_TO_I64,
     ROP_U64_TO_STRING,
+    /* Newly added typed float comparisons */
+    ROP_EQ_F64,
+    ROP_NE_F64,
 } RegisterOp;
 
 typedef struct {
