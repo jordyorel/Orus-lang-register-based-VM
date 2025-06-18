@@ -3,6 +3,7 @@
 #include "../../include/memory.h"
 #include "../../include/vm_ops.h"
 #include "../../include/vm_ops.h"
+#include "../../include/value.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -23,104 +24,114 @@ Value runRegisterVM(RegisterVM* rvm) {
     RegisterInstr* ip = rvm->ip;
     Value* regs = rvm->registers;
 
-    static void* dispatch[] = {
-        &&op_NOP,
-        &&op_MOV,
-        &&op_LOAD_CONST,
-        &&op_ADD_RR,
-        &&op_SUB_RR,
-        &&op_MUL_RR,
-        &&op_DIV_RR,
-        &&op_EQ_I64,
-        &&op_NE_I64,
-        &&op_LT_I64,
-        &&op_LE_I64,
-        &&op_GT_I64,
-        &&op_GE_I64,
-        &&op_JUMP,
-        &&op_JZ,
-        &&op_CALL,
-        &&op_ADD_I32,
-        &&op_SUB_I32,
-        &&op_MUL_I32,
-        &&op_DIV_I32,
-        &&op_ADD_U32,
-        &&op_SUB_U32,
-        &&op_MUL_U32,
-        &&op_DIV_U32,
-        &&op_ADD_U64,
-        &&op_SUB_U64,
-        &&op_MUL_U64,
-        &&op_DIV_U64,
-        &&op_NEG_I32,
-        &&op_NEG_U32,
-        &&op_NEG_U64,
-        &&op_AND,
-        &&op_OR,
-        &&op_NOT,
-        &&op_BIT_AND_I32,
-        &&op_BIT_AND_U32,
-        &&op_BIT_OR_I32,
-        &&op_BIT_OR_U32,
-        &&op_BIT_XOR_I32,
-        &&op_BIT_XOR_U32,
-        &&op_BIT_NOT_I32,
-        &&op_BIT_NOT_U32,
-        &&op_SHIFT_LEFT_I32,
-        &&op_SHIFT_RIGHT_I32,
-        &&op_SHIFT_LEFT_U32,
-        &&op_SHIFT_RIGHT_U32,
-        &&op_I32_TO_BOOL,
-        &&op_U32_TO_BOOL,
-        &&op_BOOL_TO_I32,
-        &&op_BOOL_TO_U32,
-        &&op_BOOL_TO_F64,
-        &&op_F64_TO_BOOL,
-        &&op_I32_TO_F64,
-        &&op_U32_TO_F64,
-        &&op_I32_TO_U32,
-        &&op_U32_TO_I32,
-        &&op_I32_TO_I64,
-        &&op_U32_TO_I64,
-        &&op_I64_TO_I32,
-        &&op_I64_TO_U32,
-        &&op_I32_TO_U64,
-        &&op_U32_TO_U64,
-        &&op_U64_TO_I32,
-        &&op_U64_TO_U32,
-        &&op_U64_TO_F64,
-        &&op_F64_TO_U64,
-        &&op_F64_TO_I32,
-        &&op_F64_TO_U32,
-        &&op_I64_TO_F64,
-        &&op_F64_TO_I64,
-        &&op_I32_TO_STRING,
-        &&op_U32_TO_STRING,
-        &&op_F64_TO_STRING,
-        &&op_BOOL_TO_STRING,
-        &&op_ARRAY_TO_STRING,
-        &&op_ARRAY_RESERVE,
-        &&op_CONCAT,
-        &&op_TYPE_OF_I32,
-        &&op_TYPE_OF_I64,
-        &&op_TYPE_OF_U32,
-        &&op_TYPE_OF_U64,
-        &&op_TYPE_OF_F64,
-        &&op_TYPE_OF_BOOL,
-        &&op_TYPE_OF_STRING,
-        &&op_TYPE_OF_ARRAY,
-        &&op_GC_PAUSE,
-        &&op_GC_RESUME,
-        &&op_ADD_GENERIC,
-        &&op_ADD_I64,
-        &&op_ADD_NUMERIC,
-        &&op_BOOL_TO_I64,
-        &&op_BOOL_TO_U64,
-        &&op_BREAK,
-        &&op_CALL_NATIVE,
-        &&op_CONSTANT,
-        &&op_CONSTANT_LONG,
-        &&op_CONTINUE,
+    static void* dispatch[ROP_U64_TO_STRING + 1] = {
+        [0 ... ROP_U64_TO_STRING] = &&op_UNIMPL,
+        [ROP_NOP] = &&op_NOP,
+        [ROP_MOV] = &&op_MOV,
+        [ROP_LOAD_CONST] = &&op_LOAD_CONST,
+        [ROP_ADD_RR] = &&op_ADD_RR,
+        [ROP_SUB_RR] = &&op_SUB_RR,
+        [ROP_MUL_RR] = &&op_MUL_RR,
+        [ROP_DIV_RR] = &&op_DIV_RR,
+        [ROP_EQ_I64] = &&op_EQ_I64,
+        [ROP_NE_I64] = &&op_NE_I64,
+        [ROP_LT_I64] = &&op_LT_I64,
+        [ROP_LE_I64] = &&op_LE_I64,
+        [ROP_GT_I64] = &&op_GT_I64,
+        [ROP_GE_I64] = &&op_GE_I64,
+        [ROP_JUMP] = &&op_JUMP,
+        [ROP_JZ] = &&op_JZ,
+        [ROP_CALL] = &&op_CALL,
+        [ROP_ADD_I32] = &&op_ADD_I32,
+        [ROP_SUB_I32] = &&op_SUB_I32,
+        [ROP_MUL_I32] = &&op_MUL_I32,
+        [ROP_DIV_I32] = &&op_DIV_I32,
+        [ROP_ADD_U32] = &&op_ADD_U32,
+        [ROP_SUB_U32] = &&op_SUB_U32,
+        [ROP_MUL_U32] = &&op_MUL_U32,
+        [ROP_DIV_U32] = &&op_DIV_U32,
+        [ROP_ADD_U64] = &&op_ADD_U64,
+        [ROP_SUB_U64] = &&op_SUB_U64,
+        [ROP_MUL_U64] = &&op_MUL_U64,
+        [ROP_DIV_U64] = &&op_DIV_U64,
+        [ROP_NEG_I32] = &&op_NEG_I32,
+        [ROP_NEG_U32] = &&op_NEG_U32,
+        [ROP_NEG_U64] = &&op_NEG_U64,
+        [ROP_AND] = &&op_AND,
+        [ROP_OR] = &&op_OR,
+        [ROP_NOT] = &&op_NOT,
+        [ROP_BIT_AND_I32] = &&op_BIT_AND_I32,
+        [ROP_BIT_AND_U32] = &&op_BIT_AND_U32,
+        [ROP_BIT_OR_I32] = &&op_BIT_OR_I32,
+        [ROP_BIT_OR_U32] = &&op_BIT_OR_U32,
+        [ROP_BIT_XOR_I32] = &&op_BIT_XOR_I32,
+        [ROP_BIT_XOR_U32] = &&op_BIT_XOR_U32,
+        [ROP_BIT_NOT_I32] = &&op_BIT_NOT_I32,
+        [ROP_BIT_NOT_U32] = &&op_BIT_NOT_U32,
+        [ROP_SHIFT_LEFT_I32] = &&op_SHIFT_LEFT_I32,
+        [ROP_SHIFT_RIGHT_I32] = &&op_SHIFT_RIGHT_I32,
+        [ROP_SHIFT_LEFT_U32] = &&op_SHIFT_LEFT_U32,
+        [ROP_SHIFT_RIGHT_U32] = &&op_SHIFT_RIGHT_U32,
+        [ROP_I32_TO_BOOL] = &&op_I32_TO_BOOL,
+        [ROP_U32_TO_BOOL] = &&op_U32_TO_BOOL,
+        [ROP_BOOL_TO_I32] = &&op_BOOL_TO_I32,
+        [ROP_BOOL_TO_U32] = &&op_BOOL_TO_U32,
+        [ROP_BOOL_TO_F64] = &&op_BOOL_TO_F64,
+        [ROP_F64_TO_BOOL] = &&op_F64_TO_BOOL,
+        [ROP_I32_TO_F64] = &&op_I32_TO_F64,
+        [ROP_U32_TO_F64] = &&op_U32_TO_F64,
+        [ROP_I32_TO_U32] = &&op_I32_TO_U32,
+        [ROP_U32_TO_I32] = &&op_U32_TO_I32,
+        [ROP_I32_TO_I64] = &&op_I32_TO_I64,
+        [ROP_U32_TO_I64] = &&op_U32_TO_I64,
+        [ROP_I64_TO_I32] = &&op_I64_TO_I32,
+        [ROP_I64_TO_U32] = &&op_I64_TO_U32,
+        [ROP_I32_TO_U64] = &&op_I32_TO_U64,
+        [ROP_U32_TO_U64] = &&op_U32_TO_U64,
+        [ROP_U64_TO_I32] = &&op_U64_TO_I32,
+        [ROP_U64_TO_U32] = &&op_U64_TO_U32,
+        [ROP_U64_TO_F64] = &&op_U64_TO_F64,
+        [ROP_F64_TO_U64] = &&op_F64_TO_U64,
+        [ROP_F64_TO_I32] = &&op_F64_TO_I32,
+        [ROP_F64_TO_U32] = &&op_F64_TO_U32,
+        [ROP_I64_TO_F64] = &&op_I64_TO_F64,
+        [ROP_F64_TO_I64] = &&op_F64_TO_I64,
+        [ROP_I32_TO_STRING] = &&op_I32_TO_STRING,
+        [ROP_U32_TO_STRING] = &&op_U32_TO_STRING,
+        [ROP_F64_TO_STRING] = &&op_F64_TO_STRING,
+        [ROP_BOOL_TO_STRING] = &&op_BOOL_TO_STRING,
+        [ROP_ARRAY_TO_STRING] = &&op_ARRAY_TO_STRING,
+        [ROP_ARRAY_RESERVE] = &&op_ARRAY_RESERVE,
+        [ROP_CONCAT] = &&op_CONCAT,
+        [ROP_TYPE_OF_I32] = &&op_TYPE_OF_I32,
+        [ROP_TYPE_OF_I64] = &&op_TYPE_OF_I64,
+        [ROP_TYPE_OF_U32] = &&op_TYPE_OF_U32,
+        [ROP_TYPE_OF_U64] = &&op_TYPE_OF_U64,
+        [ROP_TYPE_OF_F64] = &&op_TYPE_OF_F64,
+        [ROP_TYPE_OF_BOOL] = &&op_TYPE_OF_BOOL,
+        [ROP_TYPE_OF_STRING] = &&op_TYPE_OF_STRING,
+        [ROP_TYPE_OF_ARRAY] = &&op_TYPE_OF_ARRAY,
+        [ROP_GC_PAUSE] = &&op_GC_PAUSE,
+        [ROP_GC_RESUME] = &&op_GC_RESUME,
+        [ROP_ADD_GENERIC] = &&op_ADD_GENERIC,
+        [ROP_ADD_I64] = &&op_ADD_I64,
+        [ROP_ADD_NUMERIC] = &&op_ADD_NUMERIC,
+        [ROP_SUBTRACT_GENERIC] = &&op_SUBTRACT_GENERIC,
+        [ROP_MULTIPLY_GENERIC] = &&op_MULTIPLY_GENERIC,
+        [ROP_DIVIDE_GENERIC] = &&op_DIVIDE_GENERIC,
+        [ROP_MODULO_GENERIC] = &&op_MODULO_GENERIC,
+        [ROP_NEGATE_GENERIC] = &&op_NEGATE_GENERIC,
+        [ROP_SUBTRACT_I64] = &&op_SUBTRACT_I64,
+        [ROP_NEGATE_I64] = &&op_NEGATE_I64,
+        [ROP_BOOL_TO_I64] = &&op_BOOL_TO_I64,
+        [ROP_BOOL_TO_U64] = &&op_BOOL_TO_U64,
+        [ROP_BREAK] = &&op_BREAK,
+        [ROP_CALL_NATIVE] = &&op_CALL_NATIVE,
+        [ROP_CONSTANT] = &&op_CONSTANT,
+        [ROP_CONSTANT_LONG] = &&op_CONSTANT_LONG,
+        [ROP_CONTINUE] = &&op_CONTINUE,
+        [ROP_EQUAL] = &&op_EQUAL,
+        [ROP_NOT_EQUAL] = &&op_NOT_EQUAL,
     };
 
 #define DISPATCH()                                             \
@@ -860,6 +871,110 @@ op_ADD_NUMERIC: {
     ip++; DISPATCH();
 }
 
+op_SUBTRACT_GENERIC: {
+    Value a = regs[ip->src1];
+    Value b = regs[ip->src2];
+    if (a.type != b.type) {
+        regs[ip->dst] = NIL_VAL;
+    } else {
+        switch (a.type) {
+            case VAL_I32: regs[ip->dst] = I32_VAL(AS_I32(a) - AS_I32(b)); break;
+            case VAL_I64: regs[ip->dst] = I64_VAL(AS_I64(a) - AS_I64(b)); break;
+            case VAL_U32: regs[ip->dst] = U32_VAL(AS_U32(a) - AS_U32(b)); break;
+            case VAL_U64: regs[ip->dst] = U64_VAL(AS_U64(a) - AS_U64(b)); break;
+            case VAL_F64: regs[ip->dst] = F64_VAL(AS_F64(a) - AS_F64(b)); break;
+            default: regs[ip->dst] = NIL_VAL; break;
+        }
+    }
+    ip++; DISPATCH();
+}
+
+op_MULTIPLY_GENERIC: {
+    Value a = regs[ip->src1];
+    Value b = regs[ip->src2];
+    if (a.type != b.type) {
+        regs[ip->dst] = NIL_VAL;
+    } else {
+        switch (a.type) {
+            case VAL_I32: regs[ip->dst] = I32_VAL(AS_I32(a) * AS_I32(b)); break;
+            case VAL_I64: regs[ip->dst] = I64_VAL(AS_I64(a) * AS_I64(b)); break;
+            case VAL_U32: regs[ip->dst] = U32_VAL(AS_U32(a) * AS_U32(b)); break;
+            case VAL_U64: regs[ip->dst] = U64_VAL(AS_U64(a) * AS_U64(b)); break;
+            case VAL_F64: regs[ip->dst] = F64_VAL(AS_F64(a) * AS_F64(b)); break;
+            default: regs[ip->dst] = NIL_VAL; break;
+        }
+    }
+    ip++; DISPATCH();
+}
+
+op_DIVIDE_GENERIC: {
+    Value a = regs[ip->src1];
+    Value b = regs[ip->src2];
+    if (a.type != b.type) {
+        regs[ip->dst] = NIL_VAL;
+    } else {
+        switch (a.type) {
+            case VAL_I32: {
+                int32_t bv = AS_I32(b); regs[ip->dst] = bv == 0 ? NIL_VAL : I32_VAL(AS_I32(a) / bv); break; }
+            case VAL_I64: {
+                int64_t bv = AS_I64(b); regs[ip->dst] = bv == 0 ? NIL_VAL : I64_VAL(AS_I64(a) / bv); break; }
+            case VAL_U32: {
+                uint32_t bv = AS_U32(b); regs[ip->dst] = bv == 0 ? NIL_VAL : U32_VAL(AS_U32(a) / bv); break; }
+            case VAL_U64: {
+                uint64_t bv = AS_U64(b); regs[ip->dst] = bv == 0 ? NIL_VAL : U64_VAL(AS_U64(a) / bv); break; }
+            case VAL_F64: {
+                double bv = AS_F64(b); regs[ip->dst] = bv == 0.0 ? NIL_VAL : F64_VAL(AS_F64(a) / bv); break; }
+            default: regs[ip->dst] = NIL_VAL; break;
+        }
+    }
+    ip++; DISPATCH();
+}
+
+op_MODULO_GENERIC: {
+    Value a = regs[ip->src1];
+    Value b = regs[ip->src2];
+    if (a.type != b.type) {
+        regs[ip->dst] = NIL_VAL;
+    } else {
+        switch (a.type) {
+            case VAL_I32: {
+                int32_t bv = AS_I32(b); regs[ip->dst] = bv == 0 ? NIL_VAL : I32_VAL(AS_I32(a) % bv); break; }
+            case VAL_I64: {
+                int64_t bv = AS_I64(b); regs[ip->dst] = bv == 0 ? NIL_VAL : I64_VAL(AS_I64(a) % bv); break; }
+            case VAL_U32: {
+                uint32_t bv = AS_U32(b); regs[ip->dst] = bv == 0 ? NIL_VAL : U32_VAL(AS_U32(a) % bv); break; }
+            case VAL_U64: {
+                uint64_t bv = AS_U64(b); regs[ip->dst] = bv == 0 ? NIL_VAL : U64_VAL(AS_U64(a) % bv); break; }
+            default: regs[ip->dst] = NIL_VAL; break;
+        }
+    }
+    ip++; DISPATCH();
+}
+
+op_NEGATE_GENERIC: {
+    Value a = regs[ip->src1];
+    switch (a.type) {
+        case VAL_I32: regs[ip->dst] = I32_VAL(-AS_I32(a)); break;
+        case VAL_I64: regs[ip->dst] = I64_VAL(-AS_I64(a)); break;
+        case VAL_U32: regs[ip->dst] = U32_VAL(-AS_U32(a)); break;
+        case VAL_U64: regs[ip->dst] = U64_VAL(-AS_U64(a)); break;
+        case VAL_F64: regs[ip->dst] = F64_VAL(-AS_F64(a)); break;
+        default: regs[ip->dst] = NIL_VAL; break;
+    }
+    ip++; DISPATCH();
+}
+
+op_SUBTRACT_I64: {
+    int64_t a = AS_I64(regs[ip->src1]);
+    int64_t b = AS_I64(regs[ip->src2]);
+    regs[ip->dst] = I64_VAL(a - b);
+    ip++; DISPATCH();
+}
+
+op_NEGATE_I64:
+    regs[ip->dst] = I64_VAL(-AS_I64(regs[ip->src1]));
+    ip++; DISPATCH();
+
 op_BOOL_TO_I64:
     regs[ip->dst] = I64_VAL(AS_BOOL(regs[ip->src1]) ? 1 : 0);
     ip++; DISPATCH();
@@ -883,6 +998,18 @@ op_CONSTANT_LONG:
     ip++; DISPATCH();
 
 op_CONTINUE:
+    ip++; DISPATCH();
+
+op_UNIMPL:
+    fprintf(stderr, "Unimplemented register opcode %d\n", ip->opcode);
+    return NIL_VAL;
+
+op_EQUAL:
+    regs[ip->dst] = BOOL_VAL(valuesEqual(regs[ip->src1], regs[ip->src2]));
+    ip++; DISPATCH();
+
+op_NOT_EQUAL:
+    regs[ip->dst] = BOOL_VAL(!valuesEqual(regs[ip->src1], regs[ip->src2]));
     ip++; DISPATCH();
 
 #else
@@ -941,6 +1068,14 @@ op_CONTINUE:
                 rvm->registers[instr.dst] = BOOL_VAL(a != b);
                 break;
             }
+            case ROP_EQUAL:
+                rvm->registers[instr.dst] = BOOL_VAL(valuesEqual(rvm->registers[instr.src1],
+                                                                rvm->registers[instr.src2]));
+                break;
+            case ROP_NOT_EQUAL:
+                rvm->registers[instr.dst] = BOOL_VAL(!valuesEqual(rvm->registers[instr.src1],
+                                                                 rvm->registers[instr.src2]));
+                break;
             case ROP_LT_I64: {
                 int64_t a = AS_I64(rvm->registers[instr.src1]);
                 int64_t b = AS_I64(rvm->registers[instr.src2]);
@@ -1192,6 +1327,156 @@ op_CONTINUE:
                 }
                 break;
             }
+            case ROP_SUBTRACT_GENERIC: {
+                Value a = rvm->registers[instr.src1];
+                Value b = rvm->registers[instr.src2];
+                if (a.type != b.type) {
+                    rvm->registers[instr.dst] = NIL_VAL;
+                } else {
+                    switch (a.type) {
+                        case VAL_I32:
+                            rvm->registers[instr.dst] = I32_VAL(AS_I32(a) - AS_I32(b));
+                            break;
+                        case VAL_I64:
+                            rvm->registers[instr.dst] = I64_VAL(AS_I64(a) - AS_I64(b));
+                            break;
+                        case VAL_U32:
+                            rvm->registers[instr.dst] = U32_VAL(AS_U32(a) - AS_U32(b));
+                            break;
+                        case VAL_U64:
+                            rvm->registers[instr.dst] = U64_VAL(AS_U64(a) - AS_U64(b));
+                            break;
+                        case VAL_F64:
+                            rvm->registers[instr.dst] = F64_VAL(AS_F64(a) - AS_F64(b));
+                            break;
+                        default:
+                            rvm->registers[instr.dst] = NIL_VAL;
+                    }
+                }
+                break;
+            }
+            case ROP_MULTIPLY_GENERIC: {
+                Value a = rvm->registers[instr.src1];
+                Value b = rvm->registers[instr.src2];
+                if (a.type != b.type) {
+                    rvm->registers[instr.dst] = NIL_VAL;
+                } else {
+                    switch (a.type) {
+                        case VAL_I32:
+                            rvm->registers[instr.dst] = I32_VAL(AS_I32(a) * AS_I32(b));
+                            break;
+                        case VAL_I64:
+                            rvm->registers[instr.dst] = I64_VAL(AS_I64(a) * AS_I64(b));
+                            break;
+                        case VAL_U32:
+                            rvm->registers[instr.dst] = U32_VAL(AS_U32(a) * AS_U32(b));
+                            break;
+                        case VAL_U64:
+                            rvm->registers[instr.dst] = U64_VAL(AS_U64(a) * AS_U64(b));
+                            break;
+                        case VAL_F64:
+                            rvm->registers[instr.dst] = F64_VAL(AS_F64(a) * AS_F64(b));
+                            break;
+                        default:
+                            rvm->registers[instr.dst] = NIL_VAL;
+                    }
+                }
+                break;
+            }
+            case ROP_DIVIDE_GENERIC: {
+                Value a = rvm->registers[instr.src1];
+                Value b = rvm->registers[instr.src2];
+                if (a.type != b.type) {
+                    rvm->registers[instr.dst] = NIL_VAL;
+                } else {
+                    switch (a.type) {
+                        case VAL_I32: {
+                            int32_t bv = AS_I32(b);
+                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : I32_VAL(AS_I32(a) / bv);
+                            break; }
+                        case VAL_I64: {
+                            int64_t bv = AS_I64(b);
+                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : I64_VAL(AS_I64(a) / bv);
+                            break; }
+                        case VAL_U32: {
+                            uint32_t bv = AS_U32(b);
+                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : U32_VAL(AS_U32(a) / bv);
+                            break; }
+                        case VAL_U64: {
+                            uint64_t bv = AS_U64(b);
+                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : U64_VAL(AS_U64(a) / bv);
+                            break; }
+                        case VAL_F64: {
+                            double bv = AS_F64(b);
+                            rvm->registers[instr.dst] = bv == 0.0 ? NIL_VAL : F64_VAL(AS_F64(a) / bv);
+                            break; }
+                        default:
+                            rvm->registers[instr.dst] = NIL_VAL;
+                    }
+                }
+                break;
+            }
+            case ROP_MODULO_GENERIC: {
+                Value a = rvm->registers[instr.src1];
+                Value b = rvm->registers[instr.src2];
+                if (a.type != b.type) {
+                    rvm->registers[instr.dst] = NIL_VAL;
+                } else {
+                    switch (a.type) {
+                        case VAL_I32: {
+                            int32_t bv = AS_I32(b);
+                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : I32_VAL(AS_I32(a) % bv);
+                            break; }
+                        case VAL_I64: {
+                            int64_t bv = AS_I64(b);
+                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : I64_VAL(AS_I64(a) % bv);
+                            break; }
+                        case VAL_U32: {
+                            uint32_t bv = AS_U32(b);
+                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : U32_VAL(AS_U32(a) % bv);
+                            break; }
+                        case VAL_U64: {
+                            uint64_t bv = AS_U64(b);
+                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : U64_VAL(AS_U64(a) % bv);
+                            break; }
+                        default:
+                            rvm->registers[instr.dst] = NIL_VAL;
+                    }
+                }
+                break;
+            }
+            case ROP_NEGATE_GENERIC: {
+                Value a = rvm->registers[instr.src1];
+                switch (a.type) {
+                    case VAL_I32:
+                        rvm->registers[instr.dst] = I32_VAL(-AS_I32(a));
+                        break;
+                    case VAL_I64:
+                        rvm->registers[instr.dst] = I64_VAL(-AS_I64(a));
+                        break;
+                    case VAL_U32:
+                        rvm->registers[instr.dst] = U32_VAL(-AS_U32(a));
+                        break;
+                    case VAL_U64:
+                        rvm->registers[instr.dst] = U64_VAL(-AS_U64(a));
+                        break;
+                    case VAL_F64:
+                        rvm->registers[instr.dst] = F64_VAL(-AS_F64(a));
+                        break;
+                    default:
+                        rvm->registers[instr.dst] = NIL_VAL;
+                }
+                break;
+            }
+            case ROP_SUBTRACT_I64: {
+                int64_t a = AS_I64(rvm->registers[instr.src1]);
+                int64_t b = AS_I64(rvm->registers[instr.src2]);
+                rvm->registers[instr.dst] = I64_VAL(a - b);
+                break;
+            }
+            case ROP_NEGATE_I64:
+                rvm->registers[instr.dst] = I64_VAL(-AS_I64(rvm->registers[instr.src1]));
+                break;
             case ROP_BOOL_TO_I64:
                 rvm->registers[instr.dst] = I64_VAL(AS_BOOL(rvm->registers[instr.src1]) ? 1 : 0);
                 break;
