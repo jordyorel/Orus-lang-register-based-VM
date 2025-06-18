@@ -707,6 +707,8 @@ static const char* registerOpNames[] = {
     OP(ROP_U64_TO_BOOL)
     OP(ROP_U64_TO_I64)
     OP(ROP_U64_TO_STRING)
+    OP(ROP_EQ_F64)
+    OP(ROP_NE_F64)
 #undef OP
 };
 
