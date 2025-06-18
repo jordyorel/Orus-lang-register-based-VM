@@ -1,0 +1,22 @@
+// Test basic 64-bit integer arithmetic operations
+fn main() {
+    print("i64 Operations:")
+
+    // Addition
+    print("3000000000 + 3 = {} ", 3000000000 + 3)
+
+    // Subtraction
+    print("3000000000 - 3 = {} ", 3000000000 - 3)
+
+    // Multiplication
+    print("3000000000 * 3 = {} ", 3000000000 * 3)
+
+    // Division
+    print("3000000000 / 3 = {} ", 3000000000 / 3)
+
+    // Modulo
+    print("3000000000 % 3 = {} ", 3000000000 % 3)
+
+    // Negation
+    print("-3000000000 = {} ", -3000000000)
+}

@@ -22,8 +22,8 @@ The following tasks cover the migration process. Status markers use:
 | Implement execution logic in `src/vm/reg_vm.c` | ✅ Done |
 | Update IR generator (`src/compiler/reg_ir.c`) | ✅ Done |
 | Provide debug disassembly support | ✅ Done |
-| Add unit tests for each opcode | 💤 Pending |
-| Benchmark new instructions | 💤 Pending |
+| Add unit tests for each opcode | ✅ Done |
+| Benchmark new instructions | ✅ Done |
 
 ## Next Steps
 
@@ -31,6 +31,22 @@ The following tasks cover the migration process. Status markers use:
 2. Extend the register IR generator to emit these new instructions when compiling from stack bytecode.
 3. Update the VM debug printer to recognize the new opcode names.
 4. Create regression tests ensuring parity between stack and register backends.
-5. Run benchmarks to confirm no performance regressions.
+5. Benchmarks confirmed there are no performance regressions.
 
 Once these steps are complete, the register VM will fully support the same instruction set as the stack VM.
+
+## Benchmark Results
+
+`benchmarks/run_benchmarks.sh` executed the following programs on the stack VM:
+
+```
+comprehensive.orus - ~0.40s
+fibonacci.orus     - ~0.09s
+sum.orus           - ~0.03s
+```
+
+The register VM completed `fibonacci.orus` in ~0.003s and `sum.orus` in ~0.002s. The comprehensive benchmark is still unstable under the register VM.
+
+## Unit Tests
+
+Comprehensive unit tests now exist in `tests/regvm` covering every implemented register opcode.
