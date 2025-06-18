@@ -5,6 +5,8 @@
 #include "scanner.h"
 #include "type.h"
 #include "value.h"
+#include "reg_vm.h"
+#include "reg_chunk.h"
 #include <stdbool.h>
 
 #define STACK_INIT_CAPACITY 2048
@@ -101,6 +103,10 @@ typedef struct {
     bool gcPaused;
     bool trace;
     unsigned long instruction_count;
+
+    bool useRegisterVM;
+    RegisterChunk regChunk;
+    RegisterVM regVM;
 } VM;
 
 typedef enum {

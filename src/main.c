@@ -184,7 +184,7 @@ static void repl() {
 }
 
 
-static void runFile(const char* path, bool useRegVM) {
+static void runFile(const char* path) {
     char* source = readFile(path);
     if (source == NULL) {
         // readFile already prints an error message when it fails
@@ -314,7 +314,7 @@ static void search_for_main(const char* base, const char* sub, int* count,
     closedir(d);
 }
 
-static void runProject(const char* dir, bool useRegVM) {
+static void runProject(const char* dir) {
     char manifestPath[PATH_MAX];
     snprintf(manifestPath, sizeof(manifestPath), "%s/orus.json", dir);
     char* json = readFile(manifestPath);
@@ -366,7 +366,7 @@ static void runProject(const char* dir, bool useRegVM) {
     }
 
     chdir(dir);
-    runFile(entry, useRegVM);
+    runFile(entry);
 
     free(json);
     if (entryAlloc) free(entryAlloc);
@@ -444,12 +444,13 @@ int main(int argc, const char* argv[]) {
         return 0;
     }
 
+    vm.useRegisterVM = regVMFlag;
     if (projectDir) {
-        runProject(projectDir, regVMFlag);
+        runProject(projectDir);
     } else if (!path) {
         repl();
     } else {
-        runFile(path, regVMFlag);
+        runFile(path);
     }
 
     freeVM();

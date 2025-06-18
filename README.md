@@ -78,6 +78,9 @@ After building, run the interpreter in two ways:
 # Execute a script file
 ./orusc path/to/script.orus
 
+# Run using the experimental register-based VM
+./orusc --regvm path/to/script.orus
+
 # Execute a project directory
 ./orusc --project path/to/project
 
