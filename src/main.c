@@ -197,7 +197,7 @@ static void runFile(const char* path) {
         exit(65);
     }
     InterpretResult result = INTERPRET_OK;
-    if (useRegVM) {
+    if (vm.useRegisterVM) {
         RegisterChunk rchunk;
         initRegisterChunk(&rchunk);
         vm.filePath = path;
