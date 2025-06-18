@@ -84,197 +84,528 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
-            case OP_MULTIPLY_I64: {
+            case OP_ADD_I32: {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_MUL_RR, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                RegisterInstr instr = {ROP_ADD_I32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(src2);
                 offset += 1;
                 break;
             }
-            case OP_DIVIDE_I64: {
+            case OP_SUBTRACT_I32: {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_DIV_RR, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                RegisterInstr instr = {ROP_SUB_I32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(src2);
                 offset += 1;
                 break;
             }
-            case OP_ADD_F64: {
+            case OP_MULTIPLY_I32: {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_ADD_F64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                RegisterInstr instr = {ROP_MUL_I32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(src2);
                 offset += 1;
                 break;
             }
-            case OP_SUBTRACT_F64: {
+            case OP_DIVIDE_I32: {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_SUB_F64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                RegisterInstr instr = {ROP_DIV_I32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(src2);
                 offset += 1;
                 break;
             }
-            case OP_MULTIPLY_F64: {
+            case OP_ADD_U32: {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_MUL_F64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                RegisterInstr instr = {ROP_ADD_U32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(src2);
                 offset += 1;
                 break;
             }
-            case OP_DIVIDE_F64: {
+            case OP_SUBTRACT_U32: {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_DIV_F64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                RegisterInstr instr = {ROP_SUB_U32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(src2);
                 offset += 1;
                 break;
             }
-            case OP_MODULO_I64: {
+            case OP_MULTIPLY_U32: {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_MOD_I64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                RegisterInstr instr = {ROP_MUL_U32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(src2);
                 offset += 1;
                 break;
             }
-            case OP_BIT_AND_I64: {
+            case OP_DIVIDE_U32: {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_BIT_AND_I64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                RegisterInstr instr = {ROP_DIV_U32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(src2);
                 offset += 1;
                 break;
             }
-            case OP_BIT_OR_I64: {
+            case OP_ADD_U64: {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_BIT_OR_I64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                RegisterInstr instr = {ROP_ADD_U64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(src2);
                 offset += 1;
                 break;
             }
-            case OP_BIT_XOR_I64: {
+            case OP_SUBTRACT_U64: {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_BIT_XOR_I64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                RegisterInstr instr = {ROP_SUB_U64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(src2);
                 offset += 1;
                 break;
             }
-            case OP_BIT_NOT_I64: {
+            case OP_MULTIPLY_U64: {
+                if (sp < 2) { offset++; break; }
+                int src2 = stackRegs[--sp];
+                int src1 = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_MUL_U64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src2);
+                offset += 1;
+                break;
+            }
+            case OP_DIVIDE_U64: {
+                if (sp < 2) { offset++; break; }
+                int src2 = stackRegs[--sp];
+                int src1 = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_DIV_U64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src2);
+                offset += 1;
+                break;
+            }
+            case OP_NEGATE_I32: {
                 if (sp < 1) { offset++; break; }
                 int reg = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_BIT_NOT_I64, (uint8_t)reg, (uint8_t)reg, 0};
+                RegisterInstr instr = {ROP_NEG_I32, (uint8_t)reg, (uint8_t)reg, 0};
                 writeRegisterInstr(out, instr);
                 offset += 1;
                 break;
             }
-            case OP_SHIFT_LEFT_I64: {
+            case OP_NEGATE_U32: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_NEG_U32, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_NEGATE_U64: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_NEG_U64, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_BIT_AND_I32: {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_SHL_I64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                RegisterInstr instr = {ROP_BIT_AND_I32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(src2);
                 offset += 1;
                 break;
             }
-            case OP_SHIFT_RIGHT_I64: {
+            case OP_BIT_AND_U32: {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_SHR_I64, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                RegisterInstr instr = {ROP_BIT_AND_U32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(src2);
                 offset += 1;
                 break;
             }
-            case OP_MAKE_ARRAY: {
-                uint8_t count = chunk->code[offset + 1];
-                int dst = ALLOC_REG();
-                RegisterInstr instr = {ROP_MAKE_ARRAY, (uint8_t)dst, count, 0};
-                writeRegisterInstr(out, instr);
-                for (int i = count - 1; i >= 0; i--) {
-                    int src = stackRegs[--sp];
-                    RegisterInstr mov = {ROP_ARRAY_PUSH, (uint8_t)dst, (uint8_t)dst, (uint8_t)src};
-                    writeRegisterInstr(out, mov);
-                    RELEASE_REG(src);
-                }
-                stackRegs[sp++] = dst;
-                offset += 2;
-                break;
-            }
-            case OP_ARRAY_GET: {
+            case OP_BIT_OR_I32: {
                 if (sp < 2) { offset++; break; }
-                int index = stackRegs[--sp];
-                int array = stackRegs[--sp];
-                int dst = ALLOC_REG();
-                RegisterInstr instr = {ROP_ARRAY_GET, (uint8_t)dst, (uint8_t)array, (uint8_t)index};
+                int src2 = stackRegs[--sp];
+                int src1 = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_BIT_OR_I32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
-                RELEASE_REG(array);
-                RELEASE_REG(index);
+                RELEASE_REG(src2);
+                offset += 1;
+                break;
+            }
+            case OP_BIT_OR_U32: {
+                if (sp < 2) { offset++; break; }
+                int src2 = stackRegs[--sp];
+                int src1 = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_BIT_OR_U32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src2);
+                offset += 1;
+                break;
+            }
+            case OP_BIT_XOR_I32: {
+                if (sp < 2) { offset++; break; }
+                int src2 = stackRegs[--sp];
+                int src1 = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_BIT_XOR_I32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src2);
+                offset += 1;
+                break;
+            }
+            case OP_BIT_XOR_U32: {
+                if (sp < 2) { offset++; break; }
+                int src2 = stackRegs[--sp];
+                int src1 = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_BIT_XOR_U32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src2);
+                offset += 1;
+                break;
+            }
+            case OP_BIT_NOT_I32: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_BIT_NOT_I32, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_BIT_NOT_U32: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_BIT_NOT_U32, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_SHIFT_LEFT_I32: {
+                if (sp < 2) { offset++; break; }
+                int src2 = stackRegs[--sp];
+                int src1 = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_SHIFT_LEFT_I32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src2);
+                offset += 1;
+                break;
+            }
+            case OP_SHIFT_RIGHT_I32: {
+                if (sp < 2) { offset++; break; }
+                int src2 = stackRegs[--sp];
+                int src1 = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_SHIFT_RIGHT_I32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src2);
+                offset += 1;
+                break;
+            }
+            case OP_SHIFT_LEFT_U32: {
+                if (sp < 2) { offset++; break; }
+                int src2 = stackRegs[--sp];
+                int src1 = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_SHIFT_LEFT_U32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src2);
+                offset += 1;
+                break;
+            }
+            case OP_SHIFT_RIGHT_U32: {
+                if (sp < 2) { offset++; break; }
+                int src2 = stackRegs[--sp];
+                int src1 = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_SHIFT_RIGHT_U32, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src2);
+                offset += 1;
+                break;
+            }
+            case OP_I32_TO_BOOL: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_I32_TO_BOOL, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_U32_TO_BOOL: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_U32_TO_BOOL, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_BOOL_TO_I32: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_BOOL_TO_I32, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_BOOL_TO_U32: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_BOOL_TO_U32, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_BOOL_TO_F64: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_BOOL_TO_F64, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_F64_TO_BOOL: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_F64_TO_BOOL, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_I32_TO_F64: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_I32_TO_F64, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_U32_TO_F64: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_U32_TO_F64, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_I32_TO_U32: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_I32_TO_U32, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_U32_TO_I32: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_U32_TO_I32, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_I32_TO_I64: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_I32_TO_I64, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_U32_TO_I64: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_U32_TO_I64, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_I64_TO_I32: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_I64_TO_I32, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_I64_TO_U32: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_I64_TO_U32, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_I32_TO_U64: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_I32_TO_U64, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_U32_TO_U64: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_U32_TO_U64, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_U64_TO_I32: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_U64_TO_I32, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_U64_TO_U32: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_U64_TO_U32, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_U64_TO_F64: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_U64_TO_F64, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_F64_TO_U64: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_F64_TO_U64, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_F64_TO_I32: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_F64_TO_I32, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_F64_TO_U32: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_F64_TO_U32, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_I64_TO_F64: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_I64_TO_F64, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_F64_TO_I64: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_F64_TO_I64, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_I32_TO_STRING: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_I32_TO_STRING, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_U32_TO_STRING: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_U32_TO_STRING, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_F64_TO_STRING: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_F64_TO_STRING, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_BOOL_TO_STRING: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_BOOL_TO_STRING, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_ARRAY_TO_STRING: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_ARRAY_TO_STRING, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_AND: {
+                if (sp < 2) { offset++; break; }
+                int src2 = stackRegs[--sp];
+                int src1 = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_AND, (uint8_t)dst, (uint8_t)src1, (uint8_t)src2};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src1);
+                RELEASE_REG(src2);
                 stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
-            case OP_ARRAY_SET: {
-                if (sp < 3) { offset++; break; }
-                int value = stackRegs[--sp];
-                int index = stackRegs[--sp];
-                int array = stackRegs[--sp];
-                RegisterInstr instr = {ROP_ARRAY_SET, (uint8_t)array, (uint8_t)index, (uint8_t)value};
-                writeRegisterInstr(out, instr);
-                RELEASE_REG(index);
-                RELEASE_REG(value);
-                stackRegs[sp++] = array;
-                offset += 1;
-                break;
-            }
-            case OP_ARRAY_PUSH: {
+            case OP_OR: {
                 if (sp < 2) { offset++; break; }
-                int value = stackRegs[--sp];
-                int array = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_ARRAY_PUSH, (uint8_t)array, (uint8_t)array, (uint8_t)value};
+                int src2 = stackRegs[--sp];
+                int src1 = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_OR, (uint8_t)dst, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
-                RELEASE_REG(value);
+                RELEASE_REG(src1);
+                RELEASE_REG(src2);
+                stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
-            case OP_LEN: {
+            case OP_NOT: {
                 if (sp < 1) { offset++; break; }
                 int src = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_LEN, (uint8_t)src, (uint8_t)src, 0};
-                writeRegisterInstr(out, instr);
-                offset += 1;
-                break;
-            }
-            case OP_I64_TO_STRING: {
-                if (sp < 1) { offset++; break; }
-                int src = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_I64_TO_STRING, (uint8_t)src, (uint8_t)src, 0};
+                RegisterInstr instr = {ROP_NOT, (uint8_t)src, (uint8_t)src, 0};
                 writeRegisterInstr(out, instr);
                 offset += 1;
                 break;
