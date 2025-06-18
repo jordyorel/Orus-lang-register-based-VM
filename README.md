@@ -153,6 +153,8 @@ bash benchmarks/compare_vms.sh
   - `LANGUAGE.md` – Overview of the language syntax and best practices
   - `GENERICS.md` – Notes on the generic programming capabilities
   - `COMPILATION_ROADMAP.md` – Planning for future compilation features
+  - `REGISTER_VM_ROADMAP.md` – Steps for migrating to a register-based VM
+  - `REGISTER_OPCODE_ROADMAP.md` – Progress on implementing missing opcodes
   - `DEBUGGING_GUIDE.md` – Tips for diagnosing and fixing issues
   - `ADVANCED_GENERICS_TUTORIAL.md` – In-depth guide for generic code
   - `EXAMPLE_SNIPPETS.md` – Short sample programs
