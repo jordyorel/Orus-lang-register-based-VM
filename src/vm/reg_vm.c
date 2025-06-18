@@ -99,6 +99,28 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_F64_TO_STRING,
         &&op_BOOL_TO_STRING,
         &&op_ARRAY_TO_STRING,
+        &&op_ARRAY_RESERVE,
+        &&op_CONCAT,
+        &&op_TYPE_OF_I32,
+        &&op_TYPE_OF_I64,
+        &&op_TYPE_OF_U32,
+        &&op_TYPE_OF_U64,
+        &&op_TYPE_OF_F64,
+        &&op_TYPE_OF_BOOL,
+        &&op_TYPE_OF_STRING,
+        &&op_TYPE_OF_ARRAY,
+        &&op_GC_PAUSE,
+        &&op_GC_RESUME,
+        &&op_ADD_GENERIC,
+        &&op_ADD_I64,
+        &&op_ADD_NUMERIC,
+        &&op_BOOL_TO_I64,
+        &&op_BOOL_TO_U64,
+        &&op_BREAK,
+        &&op_CALL_NATIVE,
+        &&op_CONSTANT,
+        &&op_CONSTANT_LONG,
+        &&op_CONTINUE,
     };
 
 #define DISPATCH()                                             \
@@ -727,6 +749,142 @@ op_ARRAY_TO_STRING:
     ip++;
     DISPATCH();
 
+op_ARRAY_RESERVE: {
+    ObjArray* arr = AS_ARRAY(regs[ip->dst]);
+    int cap = (int)AS_I64(regs[ip->src2]);
+    if (cap > arr->capacity) {
+        int oldCap = arr->capacity;
+        arr->capacity = cap;
+        arr->elements = GROW_ARRAY(Value, arr->elements, oldCap, arr->capacity);
+        vm.bytesAllocated += sizeof(Value) * (arr->capacity - oldCap);
+    }
+    ip++; DISPATCH();
+}
+
+op_CONCAT: {
+    Value a = regs[ip->src1];
+    Value b = regs[ip->src2];
+    if (!IS_STRING(a)) a = convertToString(a);
+    if (!IS_STRING(b)) b = convertToString(b);
+    int len = AS_STRING(a)->length + AS_STRING(b)->length;
+    char* chars = (char*)malloc(len + 1);
+    memcpy(chars, AS_STRING(a)->chars, AS_STRING(a)->length);
+    memcpy(chars + AS_STRING(a)->length, AS_STRING(b)->chars, AS_STRING(b)->length);
+    chars[len] = '\0';
+    ObjString* result = allocateString(chars, len);
+    free(chars);
+    regs[ip->dst] = STRING_VAL(result);
+    ip++; DISPATCH();
+}
+
+op_TYPE_OF_I32:
+    regs[ip->dst] = STRING_VAL(allocateString("i32", 3));
+    ip++; DISPATCH();
+
+op_TYPE_OF_I64:
+    regs[ip->dst] = STRING_VAL(allocateString("i64", 3));
+    ip++; DISPATCH();
+
+op_TYPE_OF_U32:
+    regs[ip->dst] = STRING_VAL(allocateString("u32", 3));
+    ip++; DISPATCH();
+
+op_TYPE_OF_U64:
+    regs[ip->dst] = STRING_VAL(allocateString("u64", 3));
+    ip++; DISPATCH();
+
+op_TYPE_OF_F64:
+    regs[ip->dst] = STRING_VAL(allocateString("f64", 3));
+    ip++; DISPATCH();
+
+op_TYPE_OF_BOOL:
+    regs[ip->dst] = STRING_VAL(allocateString("bool", 4));
+    ip++; DISPATCH();
+
+op_TYPE_OF_STRING:
+    regs[ip->dst] = STRING_VAL(allocateString("string", 6));
+    ip++; DISPATCH();
+
+op_TYPE_OF_ARRAY:
+    regs[ip->dst] = STRING_VAL(allocateString("array", 5));
+    ip++; DISPATCH();
+
+op_GC_PAUSE:
+    pauseGC();
+    ip++; DISPATCH();
+
+op_GC_RESUME:
+    resumeGC();
+    ip++; DISPATCH();
+
+op_ADD_GENERIC: {
+    Value a = regs[ip->src1];
+    Value b = regs[ip->src2];
+    if (a.type != b.type) {
+        regs[ip->dst] = NIL_VAL;
+    } else {
+        switch (a.type) {
+            case VAL_I32: regs[ip->dst] = I32_VAL(AS_I32(a) + AS_I32(b)); break;
+            case VAL_I64: regs[ip->dst] = I64_VAL(AS_I64(a) + AS_I64(b)); break;
+            case VAL_U32: regs[ip->dst] = U32_VAL(AS_U32(a) + AS_U32(b)); break;
+            case VAL_U64: regs[ip->dst] = U64_VAL(AS_U64(a) + AS_U64(b)); break;
+            case VAL_F64: regs[ip->dst] = F64_VAL(AS_F64(a) + AS_F64(b)); break;
+            default: regs[ip->dst] = NIL_VAL; break;
+        }
+    }
+    ip++; DISPATCH();
+}
+
+op_ADD_I64: {
+    int64_t a = AS_I64(regs[ip->src1]);
+    int64_t b = AS_I64(regs[ip->src2]);
+    regs[ip->dst] = I64_VAL(a + b);
+    ip++; DISPATCH();
+}
+
+op_ADD_NUMERIC: {
+    Value a = regs[ip->src1];
+    Value b = regs[ip->src2];
+    if (a.type != b.type) {
+        regs[ip->dst] = NIL_VAL;
+    } else {
+        switch (a.type) {
+            case VAL_I32: regs[ip->dst] = I32_VAL(AS_I32(a) + AS_I32(b)); break;
+            case VAL_I64: regs[ip->dst] = I64_VAL(AS_I64(a) + AS_I64(b)); break;
+            case VAL_U32: regs[ip->dst] = U32_VAL(AS_U32(a) + AS_U32(b)); break;
+            case VAL_U64: regs[ip->dst] = U64_VAL(AS_U64(a) + AS_U64(b)); break;
+            case VAL_F64: regs[ip->dst] = F64_VAL(AS_F64(a) + AS_F64(b)); break;
+            default: regs[ip->dst] = NIL_VAL; break;
+        }
+    }
+    ip++; DISPATCH();
+}
+
+op_BOOL_TO_I64:
+    regs[ip->dst] = I64_VAL(AS_BOOL(regs[ip->src1]) ? 1 : 0);
+    ip++; DISPATCH();
+
+op_BOOL_TO_U64:
+    regs[ip->dst] = U64_VAL(AS_BOOL(regs[ip->src1]) ? 1u : 0u);
+    ip++; DISPATCH();
+
+op_BREAK:
+    ip++; DISPATCH();
+
+op_CALL_NATIVE:
+    ip++; DISPATCH();
+
+op_CONSTANT:
+    regs[ip->dst] = rvm->chunk->constants.values[ip->src1];
+    ip++; DISPATCH();
+
+op_CONSTANT_LONG:
+    regs[ip->dst] = rvm->chunk->constants.values[ip->src1];
+    ip++; DISPATCH();
+
+op_CONTINUE:
+    ip++; DISPATCH();
+
 #else
     while (true) {
         RegisterInstr instr = *vm->ip++;
@@ -915,6 +1073,142 @@ op_ARRAY_TO_STRING:
                 break;
             case ROP_I64_TO_STRING:
                 rvm->registers[instr.dst] = convertToString(rvm->registers[instr.src1]);
+                break;
+            case ROP_ARRAY_RESERVE: {
+                ObjArray* arr = AS_ARRAY(rvm->registers[instr.dst]);
+                int cap = (int)AS_I64(rvm->registers[instr.src2]);
+                if (cap > arr->capacity) {
+                    int oldCap = arr->capacity;
+                    arr->capacity = cap;
+                    arr->elements = GROW_ARRAY(Value, arr->elements, oldCap, arr->capacity);
+                    vm.bytesAllocated += sizeof(Value) * (arr->capacity - oldCap);
+                }
+                break;
+            }
+            case ROP_CONCAT: {
+                Value a = rvm->registers[instr.src1];
+                Value b = rvm->registers[instr.src2];
+                if (!IS_STRING(a)) a = convertToString(a);
+                if (!IS_STRING(b)) b = convertToString(b);
+                int len = AS_STRING(a)->length + AS_STRING(b)->length;
+                char* chars = (char*)malloc(len + 1);
+                memcpy(chars, AS_STRING(a)->chars, AS_STRING(a)->length);
+                memcpy(chars + AS_STRING(a)->length, AS_STRING(b)->chars, AS_STRING(b)->length);
+                chars[len] = '\0';
+                ObjString* result = allocateString(chars, len);
+                free(chars);
+                rvm->registers[instr.dst] = STRING_VAL(result);
+                break;
+            }
+            case ROP_TYPE_OF_I32:
+                rvm->registers[instr.dst] = STRING_VAL(allocateString("i32", 3));
+                break;
+            case ROP_TYPE_OF_I64:
+                rvm->registers[instr.dst] = STRING_VAL(allocateString("i64", 3));
+                break;
+            case ROP_TYPE_OF_U32:
+                rvm->registers[instr.dst] = STRING_VAL(allocateString("u32", 3));
+                break;
+            case ROP_TYPE_OF_U64:
+                rvm->registers[instr.dst] = STRING_VAL(allocateString("u64", 3));
+                break;
+            case ROP_TYPE_OF_F64:
+                rvm->registers[instr.dst] = STRING_VAL(allocateString("f64", 3));
+                break;
+            case ROP_TYPE_OF_BOOL:
+                rvm->registers[instr.dst] = STRING_VAL(allocateString("bool", 4));
+                break;
+            case ROP_TYPE_OF_STRING:
+                rvm->registers[instr.dst] = STRING_VAL(allocateString("string", 6));
+                break;
+            case ROP_TYPE_OF_ARRAY:
+                rvm->registers[instr.dst] = STRING_VAL(allocateString("array", 5));
+                break;
+            case ROP_GC_PAUSE:
+                pauseGC();
+                break;
+            case ROP_GC_RESUME:
+                resumeGC();
+                break;
+            case ROP_ADD_GENERIC: {
+                Value a = rvm->registers[instr.src1];
+                Value b = rvm->registers[instr.src2];
+                if (a.type != b.type) {
+                    rvm->registers[instr.dst] = NIL_VAL;
+                } else {
+                    switch (a.type) {
+                        case VAL_I32:
+                            rvm->registers[instr.dst] = I32_VAL(AS_I32(a) + AS_I32(b));
+                            break;
+                        case VAL_I64:
+                            rvm->registers[instr.dst] = I64_VAL(AS_I64(a) + AS_I64(b));
+                            break;
+                        case VAL_U32:
+                            rvm->registers[instr.dst] = U32_VAL(AS_U32(a) + AS_U32(b));
+                            break;
+                        case VAL_U64:
+                            rvm->registers[instr.dst] = U64_VAL(AS_U64(a) + AS_U64(b));
+                            break;
+                        case VAL_F64:
+                            rvm->registers[instr.dst] = F64_VAL(AS_F64(a) + AS_F64(b));
+                            break;
+                        default:
+                            rvm->registers[instr.dst] = NIL_VAL;
+                    }
+                }
+                break;
+            }
+            case ROP_ADD_I64: {
+                int64_t a = AS_I64(rvm->registers[instr.src1]);
+                int64_t b = AS_I64(rvm->registers[instr.src2]);
+                rvm->registers[instr.dst] = I64_VAL(a + b);
+                break;
+            }
+            case ROP_ADD_NUMERIC: {
+                Value a = rvm->registers[instr.src1];
+                Value b = rvm->registers[instr.src2];
+                if (a.type != b.type) {
+                    rvm->registers[instr.dst] = NIL_VAL;
+                } else {
+                    switch (a.type) {
+                        case VAL_I32:
+                            rvm->registers[instr.dst] = I32_VAL(AS_I32(a) + AS_I32(b));
+                            break;
+                        case VAL_I64:
+                            rvm->registers[instr.dst] = I64_VAL(AS_I64(a) + AS_I64(b));
+                            break;
+                        case VAL_U32:
+                            rvm->registers[instr.dst] = U32_VAL(AS_U32(a) + AS_U32(b));
+                            break;
+                        case VAL_U64:
+                            rvm->registers[instr.dst] = U64_VAL(AS_U64(a) + AS_U64(b));
+                            break;
+                        case VAL_F64:
+                            rvm->registers[instr.dst] = F64_VAL(AS_F64(a) + AS_F64(b));
+                            break;
+                        default:
+                            rvm->registers[instr.dst] = NIL_VAL;
+                    }
+                }
+                break;
+            }
+            case ROP_BOOL_TO_I64:
+                rvm->registers[instr.dst] = I64_VAL(AS_BOOL(rvm->registers[instr.src1]) ? 1 : 0);
+                break;
+            case ROP_BOOL_TO_U64:
+                rvm->registers[instr.dst] = U64_VAL(AS_BOOL(rvm->registers[instr.src1]) ? 1u : 0u);
+                break;
+            case ROP_BREAK:
+                break;
+            case ROP_CALL_NATIVE:
+                break;
+            case ROP_CONSTANT:
+                rvm->registers[instr.dst] = rvm->chunk->constants.values[instr.src1];
+                break;
+            case ROP_CONSTANT_LONG:
+                rvm->registers[instr.dst] = rvm->chunk->constants.values[instr.src1];
+                break;
+            case ROP_CONTINUE:
                 break;
             case ROP_JUMP:
                 rvm->ip = rvm->chunk->code + instr.dst;
