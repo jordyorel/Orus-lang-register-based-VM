@@ -1021,6 +1021,32 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
+            case OP_EQUAL: {
+                if (sp < 2) { offset++; break; }
+                int src2 = stackRegs[--sp];
+                int src1 = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_EQUAL, (uint8_t)dst, (uint8_t)src1, (uint8_t)src2};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src1);
+                RELEASE_REG(src2);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
+            case OP_NOT_EQUAL: {
+                if (sp < 2) { offset++; break; }
+                int src2 = stackRegs[--sp];
+                int src1 = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_NOT_EQUAL, (uint8_t)dst, (uint8_t)src1, (uint8_t)src2};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src1);
+                RELEASE_REG(src2);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
             case OP_LESS_I64: {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
@@ -1101,7 +1127,7 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
             case OP_JUMP_IF_FALSE: {
                 uint16_t off = (uint16_t)(chunk->code[offset + 1] << 8 | chunk->code[offset + 2]);
                 int cond = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_JZ, 0, (uint8_t)cond, 0};
+                RegisterInstr instr = {ROP_JUMP_IF_FALSE, 0, (uint8_t)cond, 0};
                 writeRegisterInstr(out, instr);
                 patches[patchCount++] = (Patch){out->count - 1, offset + 3 + off};
                 offset += 3;
@@ -1110,19 +1136,15 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
             case OP_JUMP_IF_TRUE: {
                 uint16_t off = (uint16_t)(chunk->code[offset + 1] << 8 | chunk->code[offset + 2]);
                 int cond = stackRegs[sp - 1];
-                int tmp = ALLOC_REG();
-                RegisterInstr notInstr = {ROP_NOT, (uint8_t)tmp, (uint8_t)cond, 0};
-                writeRegisterInstr(out, notInstr);
-                RegisterInstr jzInstr = {ROP_JZ, 0, (uint8_t)tmp, 0};
-                writeRegisterInstr(out, jzInstr);
+                RegisterInstr instr = {ROP_JUMP_IF_TRUE, 0, (uint8_t)cond, 0};
+                writeRegisterInstr(out, instr);
                 patches[patchCount++] = (Patch){out->count - 1, offset + 3 + off};
-                RELEASE_REG(tmp);
                 offset += 3;
                 break;
             }
             case OP_LOOP: {
                 uint16_t off = (uint16_t)(chunk->code[offset + 1] << 8 | chunk->code[offset + 2]);
-                RegisterInstr instr = {ROP_JUMP, 0, 0, 0};
+                RegisterInstr instr = {ROP_LOOP, 0, 0, 0};
                 writeRegisterInstr(out, instr);
                 patches[patchCount++] = (Patch){out->count - 1, offset - off};
                 offset += 3;
@@ -1224,6 +1246,23 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
             case OP_CONTINUE: {
                 RegisterInstr instr = {ROP_CONTINUE, 0, 0, 0};
                 writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_POP: {
+                if (sp < 1) { offset++; break; }
+                int dst = stackRegs[--sp];
+                RegisterInstr instr = {ROP_POP, (uint8_t)dst, 0, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(dst);
+                offset += 1;
+                break;
+            }
+            case OP_RETURN: {
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_RETURN, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
                 offset += 1;
                 break;
             }

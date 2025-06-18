@@ -1,0 +1,9 @@
+fn main() {
+    let a: i32 = 5
+    let b: i32 = 5
+    if a == b {
+        print("eq")
+    } else {
+        print("neq")
+    }
+}

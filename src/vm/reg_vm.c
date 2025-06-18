@@ -121,6 +121,13 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_CONSTANT,
         &&op_CONSTANT_LONG,
         &&op_CONTINUE,
+        &&op_EQUAL,
+        &&op_NOT_EQUAL,
+        &&op_JUMP_IF_FALSE,
+        &&op_JUMP_IF_TRUE,
+        &&op_LOOP,
+        &&op_POP,
+        &&op_RETURN,
     };
 
 #define DISPATCH()                                             \
@@ -885,6 +892,44 @@ op_CONSTANT_LONG:
 op_CONTINUE:
     ip++; DISPATCH();
 
+op_EQUAL:
+    regs[ip->dst] = BOOL_VAL(valuesEqual(regs[ip->src1], regs[ip->src2]));
+    ip++; DISPATCH();
+
+op_NOT_EQUAL:
+    regs[ip->dst] = BOOL_VAL(!valuesEqual(regs[ip->src1], regs[ip->src2]));
+    ip++; DISPATCH();
+
+op_JUMP_IF_FALSE:
+    if ((IS_BOOL(regs[ip->src1]) && !AS_BOOL(regs[ip->src1])) ||
+        (IS_I64(regs[ip->src1]) && AS_I64(regs[ip->src1]) == 0)) {
+        ip = rvm->chunk->code + ip->dst;
+    } else {
+        ip++;
+    }
+    DISPATCH();
+
+op_JUMP_IF_TRUE:
+    if ((IS_BOOL(regs[ip->src1]) && AS_BOOL(regs[ip->src1])) ||
+        (IS_I64(regs[ip->src1]) && AS_I64(regs[ip->src1]) != 0)) {
+        ip = rvm->chunk->code + ip->dst;
+    } else {
+        ip++;
+    }
+    DISPATCH();
+
+op_LOOP:
+    ip = rvm->chunk->code + ip->dst;
+    DISPATCH();
+
+op_POP:
+    regs[ip->dst] = NIL_VAL;
+    ip++; DISPATCH();
+
+op_RETURN:
+    rvm->ip = ip + 1;
+    return regs[ip->src1];
+
 #else
     while (true) {
         RegisterInstr instr = *vm->ip++;
@@ -1210,6 +1255,32 @@ op_CONTINUE:
                 break;
             case ROP_CONTINUE:
                 break;
+            case ROP_EQUAL:
+                rvm->registers[instr.dst] = BOOL_VAL(valuesEqual(rvm->registers[instr.src1], rvm->registers[instr.src2]));
+                break;
+            case ROP_NOT_EQUAL:
+                rvm->registers[instr.dst] = BOOL_VAL(!valuesEqual(rvm->registers[instr.src1], rvm->registers[instr.src2]));
+                break;
+            case ROP_JUMP_IF_FALSE:
+                if ((IS_BOOL(rvm->registers[instr.src1]) && !AS_BOOL(rvm->registers[instr.src1])) ||
+                    (IS_I64(rvm->registers[instr.src1]) && AS_I64(rvm->registers[instr.src1]) == 0)) {
+                    rvm->ip = rvm->chunk->code + instr.dst;
+                }
+                break;
+            case ROP_JUMP_IF_TRUE:
+                if ((IS_BOOL(rvm->registers[instr.src1]) && AS_BOOL(rvm->registers[instr.src1])) ||
+                    (IS_I64(rvm->registers[instr.src1]) && AS_I64(rvm->registers[instr.src1]) != 0)) {
+                    rvm->ip = rvm->chunk->code + instr.dst;
+                }
+                break;
+            case ROP_LOOP:
+                rvm->ip = rvm->chunk->code + instr.dst;
+                break;
+            case ROP_POP:
+                rvm->registers[instr.dst] = NIL_VAL;
+                break;
+            case ROP_RETURN:
+                return rvm->registers[instr.src1];
             case ROP_JUMP:
                 rvm->ip = rvm->chunk->code + instr.dst;
                 break;

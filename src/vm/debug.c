@@ -476,3 +476,18 @@ static int jumpInstruction(const char* name, int sign, Chunk* chunk, int offset)
     printf("%-16s %4d -> %d\n", name, offset, offset + 3 + sign * jump);
     return offset + 3;  // Skip the opcode and the 2-byte operand
 }
+
+/* Register VM disassembly */
+void disassembleRegisterChunk(RegisterChunk* chunk, const char* name) {
+    printf("== %s ==\n", name);
+    for (int offset = 0; offset < chunk->count;) {
+        offset = disassembleRegisterInstruction(chunk, offset);
+    }
+}
+
+int disassembleRegisterInstruction(RegisterChunk* chunk, int offset) {
+    RegisterInstr instr = chunk->code[offset];
+    printf("%04d  op:%3d dst:%3d src1:%3d src2:%3d\n", offset, instr.opcode,
+           instr.dst, instr.src1, instr.src2);
+    return offset + 1;
+}
