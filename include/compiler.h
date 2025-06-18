@@ -3,6 +3,7 @@
 
 #include "ast.h"
 #include "chunk.h"
+#include "reg_chunk.h"
 #include "symtable.h"
 #include "type.h"
 #include "value.h"
@@ -47,6 +48,9 @@ typedef struct {
 void initCompiler(Compiler* compiler, Chunk* chunk,
                   const char* filePath, const char* sourceCode);
 bool compile(ASTNode* ast, Compiler* compiler, bool requireMain);
+bool compileToRegister(ASTNode* ast, RegisterChunk* rchunk,
+                       const char* filePath, const char* sourceCode,
+                       bool requireMain);
 uint8_t resolveVariable(Compiler* compiler, Token name);       // Added
 uint8_t addLocal(Compiler* compiler, Token name, Type* type, bool isMutable, bool isConst);  // Added
 uint8_t defineVariable(Compiler* compiler, Token name, Type* type);  // Added

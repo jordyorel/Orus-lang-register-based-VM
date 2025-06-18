@@ -12,6 +12,8 @@ typedef enum {
     ROP_LOAD_CONST,
     ROP_ADD_RR,
     ROP_SUB_RR,
+    ROP_MUL_RR,
+    ROP_DIV_RR,
     ROP_EQ_I64,
     ROP_NE_I64,
     ROP_LT_I64,

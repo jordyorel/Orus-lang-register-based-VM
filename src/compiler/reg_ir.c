@@ -30,6 +30,28 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
         offsetMap[offset] = out->count;
         uint8_t op = chunk->code[offset];
         switch (op) {
+            case OP_CONSTANT: {
+                uint8_t constIndex = chunk->code[offset + 1];
+                int ridx = addRegisterConstant(out, chunk->constants.values[constIndex]);
+                int reg = ALLOC_REG();
+                RegisterInstr instr = {ROP_LOAD_CONST, (uint8_t)reg, (uint8_t)ridx, 0};
+                writeRegisterInstr(out, instr);
+                stackRegs[sp++] = reg;
+                offset += 2;
+                break;
+            }
+            case OP_CONSTANT_LONG: {
+                uint32_t idx = (uint32_t)(chunk->code[offset + 1] << 16) |
+                                (uint32_t)(chunk->code[offset + 2] << 8) |
+                                (uint32_t)(chunk->code[offset + 3]);
+                int ridx = addRegisterConstant(out, chunk->constants.values[idx]);
+                int reg = ALLOC_REG();
+                RegisterInstr instr = {ROP_LOAD_CONST, (uint8_t)reg, (uint8_t)ridx, 0};
+                writeRegisterInstr(out, instr);
+                stackRegs[sp++] = reg;
+                offset += 4;
+                break;
+            }
             case OP_I64_CONST: {
                 uint8_t constIndex = chunk->code[offset + 1];
                 if (nextReg >= REGISTER_COUNT) return; // out of registers
@@ -719,6 +741,78 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 writeRegisterInstr(out, instr);
                 patches[patchCount++] = (Patch){out->count - 1, offset - off};
                 offset += 3;
+                break;
+            }
+            case OP_PRINT: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
+            case OP_PRINT_NO_NL: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT_NO_NL, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
+            case OP_PRINT_I64:
+            case OP_PRINT_F64:
+            case OP_PRINT_U64:
+            case OP_PRINT_BOOL:
+            case OP_PRINT_STRING: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
+            case OP_PRINT_I64_NO_NL:
+            case OP_PRINT_F64_NO_NL:
+            case OP_PRINT_U64_NO_NL:
+            case OP_PRINT_BOOL_NO_NL:
+            case OP_PRINT_STRING_NO_NL: {
+                if (sp < 1) { offset++; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_PRINT_NO_NL, 0, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 1;
+                break;
+            }
+            case OP_DEFINE_GLOBAL: {
+                uint8_t idx = chunk->code[offset + 1];
+                if (sp < 1) { offset += 2; break; }
+                int src = stackRegs[--sp];
+                RegisterInstr instr = {ROP_STORE_GLOBAL, idx, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
+                offset += 2;
+                break;
+            }
+            case OP_GET_GLOBAL: {
+                uint8_t idx = chunk->code[offset + 1];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_LOAD_GLOBAL, (uint8_t)dst, idx, 0};
+                writeRegisterInstr(out, instr);
+                stackRegs[sp++] = dst;
+                offset += 2;
+                break;
+            }
+            case OP_SET_GLOBAL: {
+                uint8_t idx = chunk->code[offset + 1];
+                if (sp < 1) { offset += 2; break; }
+                int src = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_STORE_GLOBAL, idx, (uint8_t)src, 0};
+                writeRegisterInstr(out, instr);
+                offset += 2;
                 break;
             }
             case OP_CALL: {
