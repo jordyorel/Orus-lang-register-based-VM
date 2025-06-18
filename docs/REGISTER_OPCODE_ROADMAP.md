@@ -20,8 +20,8 @@ The following tasks cover the migration process. Status markers use:
 | ---- | ------ |
 | Enumerate missing opcodes in `include/reg_chunk.h` | ✅ Done |
 | Implement execution logic in `src/vm/reg_vm.c` | ✅ Done |
-| Update IR generator (`src/compiler/reg_ir.c`) | 🔄 In progress |
-| Provide debug disassembly support | 💤 Pending |
+| Update IR generator (`src/compiler/reg_ir.c`) | ✅ Done |
+| Provide debug disassembly support | ✅ Done |
 | Add unit tests for each opcode | 💤 Pending |
 | Benchmark new instructions | 💤 Pending |
 
