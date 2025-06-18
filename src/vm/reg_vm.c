@@ -464,7 +464,13 @@ op_LESS_I32: {
 op_MOD_I64: {
     int64_t a = AS_I64(regs[ip->src1]);
     int64_t b = AS_I64(regs[ip->src2]);
-    regs[ip->dst] = b == 0 ? NIL_VAL : I64_VAL(a % b);
+    if (b == 0) {
+        regs[ip->dst] = NIL_VAL;
+    } else {
+        int64_t r = a % b;
+        if (r < 0) r += (b < 0) ? -b : b;
+        regs[ip->dst] = I64_VAL(r);
+    }
     ip++; DISPATCH();
 }
 
@@ -1183,8 +1189,16 @@ op_BOOL_TO_U64:
 op_BREAK:
     ip++; DISPATCH();
 
-op_CALL_NATIVE:
+op_CALL_NATIVE: {
+    NativeFunction* nf = &vm.nativeFunctions[ip->src1];
+    uint8_t argc = ip->src2;
+    Value* args = &regs[ip->dst];
+    Value result = nf->function(argc, args);
+    regs[ip->dst] = result;
+    if (IS_I64(result)) i64_regs[ip->dst] = AS_I64(result);
+    if (IS_F64(result)) f64_regs[ip->dst] = AS_F64(result);
     ip++; DISPATCH();
+}
 
 op_CONSTANT:
     regs[ip->dst] = rvm->chunk->constants.values[ip->src1];
@@ -2061,7 +2075,13 @@ op_DIVIDE_NUMERIC: {
             case ROP_MOD_I64: {
                 int64_t a = AS_I64(rvm->registers[instr.src1]);
                 int64_t b = AS_I64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = b == 0 ? NIL_VAL : I64_VAL(a % b);
+                if (b == 0) {
+                    rvm->registers[instr.dst] = NIL_VAL;
+                } else {
+                    int64_t r = a % b;
+                    if (r < 0) r += (b < 0) ? -b : b;
+                    rvm->registers[instr.dst] = I64_VAL(r);
+                }
                 break;
             }
             case ROP_BIT_AND_I64: {
@@ -2484,8 +2504,16 @@ op_DIVIDE_NUMERIC: {
                 break;
             case ROP_BREAK:
                 break;
-            case ROP_CALL_NATIVE:
+            case ROP_CALL_NATIVE: {
+                NativeFunction* nf = &vm.nativeFunctions[instr.src1];
+                uint8_t argc = instr.src2;
+                Value* args = &rvm->registers[instr.dst];
+                Value result = nf->function(argc, args);
+                rvm->registers[instr.dst] = result;
+                if (IS_I64(result)) rvm->i64_regs[instr.dst] = AS_I64(result);
+                if (IS_F64(result)) rvm->f64_regs[instr.dst] = AS_F64(result);
                 break;
+            }
             case ROP_CONSTANT:
                 rvm->registers[instr.dst] = rvm->chunk->constants.values[instr.src1];
                 break;
