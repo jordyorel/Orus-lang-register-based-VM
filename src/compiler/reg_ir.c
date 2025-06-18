@@ -10,7 +10,14 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
     // Simple stack to register mapping
     int stackRegs[REGISTER_COUNT];
     int sp = 0;
+
+    // Register allocator state
     int nextReg = 0;
+    int freeRegs[REGISTER_COUNT];
+    int freeCount = 0;
+
+#define ALLOC_REG() (freeCount > 0 ? freeRegs[--freeCount] : nextReg++)
+#define RELEASE_REG(r) do { if (freeCount < REGISTER_COUNT) freeRegs[freeCount++] = (r); } while (0)
 
     // Mapping from bytecode offsets to register instruction indices
     int* offsetMap = (int*)malloc(sizeof(int) * (chunk->count + 1));
@@ -28,9 +35,10 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 if (nextReg >= REGISTER_COUNT) return; // out of registers
                 Value v = chunk->constants.values[constIndex];
                 int ridx = addRegisterConstant(out, v);
-                RegisterInstr instr = {ROP_LOAD_CONST, (uint8_t)nextReg, (uint8_t)ridx, 0};
+                int reg = ALLOC_REG();
+                RegisterInstr instr = {ROP_LOAD_CONST, (uint8_t)reg, (uint8_t)ridx, 0};
                 writeRegisterInstr(out, instr);
-                stackRegs[sp++] = nextReg++;
+                stackRegs[sp++] = reg;
                 offset += 2;
                 break;
             }
@@ -40,6 +48,7 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 int src1 = stackRegs[sp - 1];
                 RegisterInstr instr = {ROP_ADD_RR, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
+                RELEASE_REG(src2);
                 offset += 1;
                 break;
             }
@@ -49,6 +58,7 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 int src1 = stackRegs[sp - 1];
                 RegisterInstr instr = {ROP_SUB_RR, (uint8_t)src1, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
+                RELEASE_REG(src2);
                 offset += 1;
                 break;
             }
@@ -56,11 +66,12 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 if (sp < 1) { offset++; break; }
                 int reg = stackRegs[sp - 1];
                 int constIndex = addRegisterConstant(out, I64_VAL(1));
-                RegisterInstr load = {ROP_LOAD_CONST, (uint8_t)nextReg, (uint8_t)constIndex, 0};
+                int tmp = ALLOC_REG();
+                RegisterInstr load = {ROP_LOAD_CONST, (uint8_t)tmp, (uint8_t)constIndex, 0};
                 writeRegisterInstr(out, load);
-                RegisterInstr add = {ROP_ADD_RR, (uint8_t)reg, (uint8_t)reg, (uint8_t)nextReg};
+                RegisterInstr add = {ROP_ADD_RR, (uint8_t)reg, (uint8_t)reg, (uint8_t)tmp};
                 writeRegisterInstr(out, add);
-                nextReg++;
+                RELEASE_REG(tmp);
                 offset += 1;
                 break;
             }
@@ -68,9 +79,12 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[--sp];
-                RegisterInstr instr = {ROP_EQ_I64, (uint8_t)nextReg, (uint8_t)src1, (uint8_t)src2};
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_EQ_I64, (uint8_t)dst, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
-                stackRegs[sp++] = nextReg++;
+                RELEASE_REG(src1);
+                RELEASE_REG(src2);
+                stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
@@ -78,9 +92,12 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[--sp];
-                RegisterInstr instr = {ROP_NE_I64, (uint8_t)nextReg, (uint8_t)src1, (uint8_t)src2};
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_NE_I64, (uint8_t)dst, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
-                stackRegs[sp++] = nextReg++;
+                RELEASE_REG(src1);
+                RELEASE_REG(src2);
+                stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
@@ -88,9 +105,12 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[--sp];
-                RegisterInstr instr = {ROP_LT_I64, (uint8_t)nextReg, (uint8_t)src1, (uint8_t)src2};
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_LT_I64, (uint8_t)dst, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
-                stackRegs[sp++] = nextReg++;
+                RELEASE_REG(src1);
+                RELEASE_REG(src2);
+                stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
@@ -98,9 +118,12 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[--sp];
-                RegisterInstr instr = {ROP_LE_I64, (uint8_t)nextReg, (uint8_t)src1, (uint8_t)src2};
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_LE_I64, (uint8_t)dst, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
-                stackRegs[sp++] = nextReg++;
+                RELEASE_REG(src1);
+                RELEASE_REG(src2);
+                stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
@@ -108,9 +131,12 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[--sp];
-                RegisterInstr instr = {ROP_GT_I64, (uint8_t)nextReg, (uint8_t)src1, (uint8_t)src2};
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_GT_I64, (uint8_t)dst, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
-                stackRegs[sp++] = nextReg++;
+                RELEASE_REG(src1);
+                RELEASE_REG(src2);
+                stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
@@ -118,9 +144,12 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[--sp];
-                RegisterInstr instr = {ROP_GE_I64, (uint8_t)nextReg, (uint8_t)src1, (uint8_t)src2};
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_GE_I64, (uint8_t)dst, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, instr);
-                stackRegs[sp++] = nextReg++;
+                RELEASE_REG(src1);
+                RELEASE_REG(src2);
+                stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
@@ -129,12 +158,15 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 if (sp < 2) { offset += 3; break; }
                 int src2 = stackRegs[--sp];
                 int src1 = stackRegs[--sp];
-                RegisterInstr cmp = {ROP_LT_I64, (uint8_t)nextReg, (uint8_t)src1, (uint8_t)src2};
+                int tmp = ALLOC_REG();
+                RegisterInstr cmp = {ROP_LT_I64, (uint8_t)tmp, (uint8_t)src1, (uint8_t)src2};
                 writeRegisterInstr(out, cmp);
-                RegisterInstr jz = {ROP_JZ, 0, (uint8_t)nextReg, 0};
+                RegisterInstr jz = {ROP_JZ, 0, (uint8_t)tmp, 0};
                 writeRegisterInstr(out, jz);
                 patches[patchCount++] = (Patch){out->count - 1, offset + 3 + off};
-                nextReg++;
+                RELEASE_REG(src1);
+                RELEASE_REG(src2);
+                RELEASE_REG(tmp);
                 offset += 3;
                 break;
             }

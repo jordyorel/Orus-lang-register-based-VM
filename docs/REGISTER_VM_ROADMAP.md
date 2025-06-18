@@ -52,10 +52,10 @@ Design and implement a high-performance, register-based virtual machine for Orus
 
 | Task                                               | Status  |
 | -------------------------------------------------- | ------- |
-| Rewrite dispatch loop for register-based execution | Planned |
-| Implement register allocator and lifetime analysis | Planned |
-| Optimize dispatch table (e.g., direct threading)   | Planned |
-| Benchmark vs current stack-based VM                | Planned |
+| Rewrite dispatch loop for register-based execution | Done |
+| Implement register allocator and lifetime analysis | Done |
+| Optimize dispatch table (e.g., direct threading)   | Done |
+| Benchmark vs current stack-based VM                | Done |
 
 ---
 

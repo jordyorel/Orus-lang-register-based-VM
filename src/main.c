@@ -9,6 +9,8 @@
 #include "../include/parser.h"
 #include "../include/file_utils.h"
 #include "../include/vm.h"
+#include "../include/reg_ir.h"
+#include "../include/reg_vm.h"
 #include "../include/modules.h"
 #include "../include/builtin_stdlib.h"
 #include "../include/error.h"
@@ -182,7 +184,7 @@ static void repl() {
 }
 
 
-static void runFile(const char* path) {
+static void runFile(const char* path, bool useRegVM) {
     char* source = readFile(path);
     if (source == NULL) {
         // readFile already prints an error message when it fails
@@ -208,7 +210,19 @@ static void runFile(const char* path) {
         exit(65);
     }
     vm.astRoot = NULL;
-    InterpretResult result = runChunk(&chunk);
+    InterpretResult result = INTERPRET_OK;
+    if (useRegVM) {
+        RegisterChunk rchunk;
+        initRegisterChunk(&rchunk);
+        chunkToRegisterIR(&chunk, &rchunk);
+        RegisterVM rvm;
+        initRegisterVM(&rvm, &rchunk);
+        (void)runRegisterVM(&rvm);
+        freeRegisterVM(&rvm);
+        freeRegisterChunk(&rchunk);
+    } else {
+        result = runChunk(&chunk);
+    }
     freeChunk(&chunk);  // Free chunk after execution
     free(source);
     vm.filePath = NULL;
@@ -290,7 +304,7 @@ static void search_for_main(const char* base, const char* sub, int* count,
     closedir(d);
 }
 
-static void runProject(const char* dir) {
+static void runProject(const char* dir, bool useRegVM) {
     char manifestPath[PATH_MAX];
     snprintf(manifestPath, sizeof(manifestPath), "%s/orus.json", dir);
     char* json = readFile(manifestPath);
@@ -342,7 +356,7 @@ static void runProject(const char* dir) {
     }
 
     chdir(dir);
-    runFile(entry);
+    runFile(entry, useRegVM);
 
     free(json);
     if (entryAlloc) free(entryAlloc);
@@ -353,6 +367,7 @@ int main(int argc, const char* argv[]) {
     bool traceImportsFlag = false;
     bool devFlag = false;
     bool dumpStdlib = false;
+    bool regVMFlag = false;
     const char* cliStdPath = NULL;
     char defaultStdPath[PATH_MAX];
     const char* path = NULL;
@@ -376,6 +391,8 @@ int main(int argc, const char* argv[]) {
             dumpStdlib = true;
         } else if (strcmp(argv[i], "--dev") == 0) {
             devFlag = true;
+        } else if (strcmp(argv[i], "--regvm") == 0) {
+            regVMFlag = true;
         } else if (strcmp(argv[i], "--project") == 0) {
             if (i + 1 >= argc) {
                 fprintf(stderr, "Usage: orusc --project <dir>\n");
@@ -385,7 +402,7 @@ int main(int argc, const char* argv[]) {
         } else if (!path) {
             path = argv[i];
         } else {
-            fprintf(stderr, "Usage: orusc [--trace] [--trace-imports] [--std-path dir] [--dump-stdlib] [--dev] [--project dir] [path]\n");
+            fprintf(stderr, "Usage: orusc [--trace] [--trace-imports] [--std-path dir] [--dump-stdlib] [--dev] [--regvm] [--project dir] [path]\n");
             return 64;
         }
     }
@@ -418,11 +435,11 @@ int main(int argc, const char* argv[]) {
     }
 
     if (projectDir) {
-        runProject(projectDir);
+        runProject(projectDir, regVMFlag);
     } else if (!path) {
         repl();
     } else {
-        runFile(path);
+        runFile(path, regVMFlag);
     }
 
     freeVM();

@@ -12,6 +12,127 @@ void freeRegisterVM(RegisterVM* vm) {
 }
 
 Value runRegisterVM(RegisterVM* vm) {
+#if defined(__GNUC__) || defined(__clang__)
+    RegisterInstr* ip = vm->ip;
+    Value* regs = vm->registers;
+
+    static void* dispatch[] = {
+        &&op_NOP,
+        &&op_MOV,
+        &&op_LOAD_CONST,
+        &&op_ADD_RR,
+        &&op_SUB_RR,
+        &&op_EQ_I64,
+        &&op_NE_I64,
+        &&op_LT_I64,
+        &&op_LE_I64,
+        &&op_GT_I64,
+        &&op_GE_I64,
+        &&op_JUMP,
+        &&op_JZ,
+        &&op_CALL,
+    };
+
+#define DISPATCH() goto *dispatch[ip->opcode]
+
+    DISPATCH();
+
+op_NOP:
+    ip++;
+    DISPATCH();
+
+op_MOV:
+    regs[ip->dst] = regs[ip->src1];
+    ip++;
+    DISPATCH();
+
+op_LOAD_CONST:
+    regs[ip->dst] = vm->chunk->constants.values[ip->src1];
+    ip++;
+    DISPATCH();
+
+op_ADD_RR: {
+    Value a = regs[ip->src1];
+    Value b = regs[ip->src2];
+    regs[ip->dst] = I64_VAL(AS_I64(a) + AS_I64(b));
+    ip++;
+    DISPATCH();
+}
+
+op_SUB_RR: {
+    Value a = regs[ip->src1];
+    Value b = regs[ip->src2];
+    regs[ip->dst] = I64_VAL(AS_I64(a) - AS_I64(b));
+    ip++;
+    DISPATCH();
+}
+
+op_EQ_I64: {
+    int64_t a = AS_I64(regs[ip->src1]);
+    int64_t b = AS_I64(regs[ip->src2]);
+    regs[ip->dst] = BOOL_VAL(a == b);
+    ip++;
+    DISPATCH();
+}
+
+op_NE_I64: {
+    int64_t a = AS_I64(regs[ip->src1]);
+    int64_t b = AS_I64(regs[ip->src2]);
+    regs[ip->dst] = BOOL_VAL(a != b);
+    ip++;
+    DISPATCH();
+}
+
+op_LT_I64: {
+    int64_t a = AS_I64(regs[ip->src1]);
+    int64_t b = AS_I64(regs[ip->src2]);
+    regs[ip->dst] = BOOL_VAL(a < b);
+    ip++;
+    DISPATCH();
+}
+
+op_LE_I64: {
+    int64_t a = AS_I64(regs[ip->src1]);
+    int64_t b = AS_I64(regs[ip->src2]);
+    regs[ip->dst] = BOOL_VAL(a <= b);
+    ip++;
+    DISPATCH();
+}
+
+op_GT_I64: {
+    int64_t a = AS_I64(regs[ip->src1]);
+    int64_t b = AS_I64(regs[ip->src2]);
+    regs[ip->dst] = BOOL_VAL(a > b);
+    ip++;
+    DISPATCH();
+}
+
+op_GE_I64: {
+    int64_t a = AS_I64(regs[ip->src1]);
+    int64_t b = AS_I64(regs[ip->src2]);
+    regs[ip->dst] = BOOL_VAL(a >= b);
+    ip++;
+    DISPATCH();
+}
+
+op_JUMP:
+    ip = vm->chunk->code + ip->dst;
+    DISPATCH();
+
+op_JZ:
+    if ((IS_BOOL(regs[ip->src1]) && !AS_BOOL(regs[ip->src1])) ||
+        (IS_I64(regs[ip->src1]) && AS_I64(regs[ip->src1]) == 0)) {
+        ip = vm->chunk->code + ip->dst;
+    } else {
+        ip++;
+    }
+    DISPATCH();
+
+op_CALL:
+    vm->ip = ip + 1;
+    return regs[ip->src1];
+
+#else
     while (true) {
         RegisterInstr instr = *vm->ip++;
         switch (instr.opcode) {
@@ -86,4 +207,5 @@ Value runRegisterVM(RegisterVM* vm) {
         }
     }
     return NIL_VAL;
+#endif
 }
