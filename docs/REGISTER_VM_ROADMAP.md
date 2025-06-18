@@ -63,10 +63,10 @@ Design and implement a high-performance, register-based virtual machine for Orus
 
 | Task                                               | Status  |
 | -------------------------------------------------- | ------- |
-| Enable dual-backend (stack/register) for testing   | Planned |
+| Enable dual-backend (stack/register) for testing   | Done |
 | Port all built-in functions to register model      | Planned |
-| Update compiler backend to emit register bytecode  | Planned |
-| Ensure GC compatibility with register-based frames | Planned |
+| Update compiler backend to emit register bytecode  | In Progress |
+| Ensure GC compatibility with register-based frames | Done |
 
 ---
 

@@ -338,6 +338,14 @@ void collectGarbage() {
             markValue(vm.chunk->constants.values[i]);
         }
     }
+    if (vm.useRegisterVM) {
+        for (int i = 0; i < REGISTER_COUNT; i++) {
+            markValue(vm.regVM.registers[i]);
+        }
+        for (int i = 0; i < vm.regChunk.constants.count; i++) {
+            markValue(vm.regChunk.constants.values[i]);
+        }
+    }
     if (vm.astRoot != NULL) {
         markObject((Obj*)vm.astRoot);
     }
