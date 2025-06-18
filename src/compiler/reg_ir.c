@@ -1102,32 +1102,6 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
-            case OP_EQUAL: {
-                if (sp < 2) { offset++; break; }
-                int src2 = stackRegs[--sp];
-                int src1 = stackRegs[--sp];
-                int dst = ALLOC_REG();
-                RegisterInstr instr = {ROP_EQUAL, (uint8_t)dst, (uint8_t)src1, (uint8_t)src2};
-                writeRegisterInstr(out, instr);
-                RELEASE_REG(src1);
-                RELEASE_REG(src2);
-                stackRegs[sp++] = dst;
-                offset += 1;
-                break;
-            }
-            case OP_NOT_EQUAL: {
-                if (sp < 2) { offset++; break; }
-                int src2 = stackRegs[--sp];
-                int src1 = stackRegs[--sp];
-                int dst = ALLOC_REG();
-                RegisterInstr instr = {ROP_NOT_EQUAL, (uint8_t)dst, (uint8_t)src1, (uint8_t)src2};
-                writeRegisterInstr(out, instr);
-                RELEASE_REG(src1);
-                RELEASE_REG(src2);
-                stackRegs[sp++] = dst;
-                offset += 1;
-                break;
-            }
             case OP_LESS_I64: {
                 if (sp < 2) { offset++; break; }
                 int src2 = stackRegs[--sp];
