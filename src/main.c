@@ -196,31 +196,44 @@ static void runFile(const char* path) {
         free(source);
         exit(65);
     }
-    Chunk chunk;
-    initChunk(&chunk);
-    Compiler compiler;
-    initCompiler(&compiler, &chunk, path, source);
-    vm.filePath = path;
-    vm.astRoot = ast;
-    if (!compile(ast, &compiler, true)) {
-        fprintf(stderr, "Compilation failed for \"%s\".\n", path);
-        vm.astRoot = NULL;
-        freeChunk(&chunk);
-        free(source);
-        exit(65);
-    }
-    vm.astRoot = NULL;
     InterpretResult result = INTERPRET_OK;
-    if (vm.useRegisterVM) {
-        freeRegisterChunk(&vm.regChunk);
-        initRegisterChunk(&vm.regChunk);
-        chunkToRegisterIR(&chunk, &vm.regChunk);
-        initRegisterVM(&vm.regVM, &vm.regChunk);
-        (void)runRegisterVM(&vm.regVM);
+    if (useRegVM) {
+        RegisterChunk rchunk;
+        initRegisterChunk(&rchunk);
+        vm.filePath = path;
+        vm.astRoot = ast;
+        if (!compileToRegister(ast, &rchunk, path, source, true)) {
+            fprintf(stderr, "Compilation failed for \"%s\".\n", path);
+            vm.astRoot = NULL;
+            freeRegisterChunk(&rchunk);
+            free(source);
+            exit(65);
+        }
+        vm.astRoot = NULL;
+        RegisterVM rvm;
+        initRegisterVM(&rvm, &rchunk);
+        (void)runRegisterVM(&rvm);
+        freeRegisterVM(&rvm);
+        freeRegisterChunk(&rchunk);
     } else {
+        Chunk chunk;
+        initChunk(&chunk);
+        Compiler compiler;
+        initCompiler(&compiler, &chunk, path, source);
+        vm.filePath = path;
+        vm.astRoot = ast;
+        if (!compile(ast, &compiler, true)) {
+            fprintf(stderr, "Compilation failed for \"%s\".\n", path);
+            vm.astRoot = NULL;
+            freeChunk(&chunk);
+            free(source);
+            exit(65);
+        }
+        vm.astRoot = NULL;
         result = runChunk(&chunk);
+        freeChunk(&chunk);  // Free chunk after execution
     }
-    freeChunk(&chunk);  // Free chunk after execution
+    
     free(source);
     vm.filePath = NULL;
     if (result == INTERPRET_RUNTIME_ERROR) {

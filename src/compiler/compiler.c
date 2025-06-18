@@ -8,6 +8,7 @@
 
 #include "../../include/memory.h"
 #include "../../include/chunk.h"
+#include "../../include/reg_ir.h"
 #include "../../include/value.h"
 #include "../../include/ast.h"
 #include "../../include/vm.h"
@@ -4208,3 +4209,18 @@ bool compile(ASTNode* ast, Compiler* compiler, bool requireMain) {
     freeCompiler(compiler);
     return !compiler->hadError;
 }
+
+// Compile AST to register bytecode
+bool compileToRegister(ASTNode* ast, RegisterChunk* rchunk, const char* filePath, const char* sourceCode, bool requireMain) {
+    Chunk chunk;
+    initChunk(&chunk);
+    Compiler compiler;
+    initCompiler(&compiler, &chunk, filePath, sourceCode);
+    bool ok = compile(ast, &compiler, requireMain);
+    if (ok) {
+        chunkToRegisterIR(&chunk, rchunk);
+    }
+    freeChunk(&chunk);
+    return ok;
+}
+
