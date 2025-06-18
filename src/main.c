@@ -184,7 +184,7 @@ static void repl() {
 }
 
 
-static void runFile(const char* path, bool useRegVM) {
+static void runFile(const char* path) {
     char* source = readFile(path);
     if (source == NULL) {
         // readFile already prints an error message when it fails
@@ -211,15 +211,12 @@ static void runFile(const char* path, bool useRegVM) {
     }
     vm.astRoot = NULL;
     InterpretResult result = INTERPRET_OK;
-    if (useRegVM) {
-        RegisterChunk rchunk;
-        initRegisterChunk(&rchunk);
-        chunkToRegisterIR(&chunk, &rchunk);
-        RegisterVM rvm;
-        initRegisterVM(&rvm, &rchunk);
-        (void)runRegisterVM(&rvm);
-        freeRegisterVM(&rvm);
-        freeRegisterChunk(&rchunk);
+    if (vm.useRegisterVM) {
+        freeRegisterChunk(&vm.regChunk);
+        initRegisterChunk(&vm.regChunk);
+        chunkToRegisterIR(&chunk, &vm.regChunk);
+        initRegisterVM(&vm.regVM, &vm.regChunk);
+        (void)runRegisterVM(&vm.regVM);
     } else {
         result = runChunk(&chunk);
     }
@@ -304,7 +301,7 @@ static void search_for_main(const char* base, const char* sub, int* count,
     closedir(d);
 }
 
-static void runProject(const char* dir, bool useRegVM) {
+static void runProject(const char* dir) {
     char manifestPath[PATH_MAX];
     snprintf(manifestPath, sizeof(manifestPath), "%s/orus.json", dir);
     char* json = readFile(manifestPath);
@@ -356,7 +353,7 @@ static void runProject(const char* dir, bool useRegVM) {
     }
 
     chdir(dir);
-    runFile(entry, useRegVM);
+    runFile(entry);
 
     free(json);
     if (entryAlloc) free(entryAlloc);
@@ -434,12 +431,13 @@ int main(int argc, const char* argv[]) {
         return 0;
     }
 
+    vm.useRegisterVM = regVMFlag;
     if (projectDir) {
-        runProject(projectDir, regVMFlag);
+        runProject(projectDir);
     } else if (!path) {
         repl();
     } else {
-        runFile(path, regVMFlag);
+        runFile(path);
     }
 
     freeVM();

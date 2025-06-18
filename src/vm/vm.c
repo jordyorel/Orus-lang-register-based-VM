@@ -23,6 +23,7 @@
 #include "../../include/vm_ops.h"
 #include "../../include/modules.h"
 #include "../../include/type.h"
+#include "../../include/reg_ir.h"
 #include "../../include/builtin_stdlib.h"
 #include <sys/stat.h>
 /**
@@ -119,6 +120,10 @@ void initVM() {
     vm.cachePath = envCache && envCache[0] != '\0' ? envCache : NULL;
     const char* envDev = getenv("ORUS_DEV_MODE");
     vm.devMode = envDev && envDev[0] != '\0';
+
+    vm.useRegisterVM = false;
+    initRegisterChunk(&vm.regChunk);
+    initRegisterVM(&vm.regVM, &vm.regChunk);
     for (int i = 0; i < UINT8_COUNT; i++) {
         vm.loadedModules[i] = NULL;
     }
@@ -161,6 +166,8 @@ void freeVM() {
         vm.stackI64 = NULL;
         vm.stackI64Top = NULL;
     }
+    freeRegisterVM(&vm.regVM);
+    freeRegisterChunk(&vm.regChunk);
     freeObjects();
     vm.tryFrameCount = 0;
     vm.lastError = NIL_VAL;
@@ -378,15 +385,27 @@ static InterpretResult interpretModule(const char* path) {
 
         Chunk* prevChunk = vm.chunk;
         uint8_t* prevIp = vm.ip;
-        vm.chunk = cached->bytecode;
-        vm.ip = cached->bytecode->code;
-        InterpretResult res = run();
+        InterpretResult res;
+        if (vm.useRegisterVM) {
+            freeRegisterChunk(&vm.regChunk);
+            initRegisterChunk(&vm.regChunk);
+            chunkToRegisterIR(cached->bytecode, &vm.regChunk);
+            initRegisterVM(&vm.regVM, &vm.regChunk);
+            runRegisterVM(&vm.regVM);
+            res = INTERPRET_OK;
+        } else {
+            vm.chunk = cached->bytecode;
+            vm.ip = cached->bytecode->code;
+            res = run();
+        }
         for (int i = 0; i < cached->export_count; i++) {
             cached->exports[i].value = vm.globals[cached->exports[i].index];
         }
         cached->executed = true;
-        vm.chunk = prevChunk;
-        vm.ip = prevIp;
+        if (!vm.useRegisterVM) {
+            vm.chunk = prevChunk;
+            vm.ip = prevIp;
+        }
         runtimeStackCount--;
         return res;
     }
@@ -449,10 +468,19 @@ static InterpretResult interpretModule(const char* path) {
 
     Chunk* prevChunk = vm.chunk;
     uint8_t* prevIp = vm.ip;
-
-    vm.chunk = chunk;
-    vm.ip = chunk->code;
-    InterpretResult result = run();
+    InterpretResult result;
+    if (vm.useRegisterVM) {
+        freeRegisterChunk(&vm.regChunk);
+        initRegisterChunk(&vm.regChunk);
+        chunkToRegisterIR(chunk, &vm.regChunk);
+        initRegisterVM(&vm.regVM, &vm.regChunk);
+        runRegisterVM(&vm.regVM);
+        result = INTERPRET_OK;
+    } else {
+        vm.chunk = chunk;
+        vm.ip = chunk->code;
+        result = run();
+    }
 
     for (int i = startGlobals; i < vm.variableCount && mod.export_count < UINT8_MAX; i++) {
         Export ex;
@@ -466,8 +494,10 @@ static InterpretResult interpretModule(const char* path) {
     }
 
     register_module(&mod);
-    vm.chunk = prevChunk;
-    vm.ip = prevIp;
+    if (!vm.useRegisterVM) {
+        vm.chunk = prevChunk;
+        vm.ip = prevIp;
+    }
 
     runtimeStackCount--;
     free(source);
