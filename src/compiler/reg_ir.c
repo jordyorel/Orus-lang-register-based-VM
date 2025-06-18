@@ -619,6 +619,22 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
+            case OP_I64_TO_BOOL: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_I64_TO_BOOL, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_U64_TO_BOOL: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_U64_TO_BOOL, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
             case OP_BOOL_TO_I32: {
                 if (sp < 1) { offset++; break; }
                 int reg = stackRegs[sp - 1];
@@ -795,6 +811,22 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
+            case OP_I64_TO_U64: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_I64_TO_U64, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_U64_TO_I64: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_U64_TO_I64, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
             case OP_I64_TO_F64: {
                 if (sp < 1) { offset++; break; }
                 int reg = stackRegs[sp - 1];
@@ -839,6 +871,14 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 if (sp < 1) { offset++; break; }
                 int reg = stackRegs[sp - 1];
                 RegisterInstr instr = {ROP_I64_TO_STRING, (uint8_t)reg, (uint8_t)reg, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_U64_TO_STRING: {
+                if (sp < 1) { offset++; break; }
+                int reg = stackRegs[sp - 1];
+                RegisterInstr instr = {ROP_U64_TO_STRING, (uint8_t)reg, (uint8_t)reg, 0};
                 writeRegisterInstr(out, instr);
                 offset += 1;
                 break;
