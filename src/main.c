@@ -212,6 +212,9 @@ static void runFile(const char* path) {
     RegisterVM rvm;
     initRegisterVM(&rvm, &rchunk);
     (void)runRegisterVM(&rvm);
+    if (IS_ERROR(vm.lastError)) {
+        result = INTERPRET_RUNTIME_ERROR;
+    }
     freeRegisterVM(&rvm);
     freeRegisterChunk(&rchunk);
     
