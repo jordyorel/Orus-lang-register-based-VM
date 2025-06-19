@@ -1578,6 +1578,13 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 2;
                 break;
             }
+            case OP_IMPORT: {
+                uint8_t cidx = chunk->code[offset + 1];
+                RegisterInstr instr = {ROP_IMPORT, 0, cidx, 0};
+                writeRegisterInstr(out, instr);
+                offset += 2;
+                break;
+            }
             case OP_CALL: {
                 uint8_t idx = chunk->code[offset + 1];
                 uint8_t argc = chunk->code[offset + 2];
