@@ -362,10 +362,10 @@ op_DIV_RR: {
     Value a = regs[ip->src1];
     Value b = regs[ip->src2];
     if (AS_I64(b) == 0) {
-        regs[ip->dst] = NIL_VAL;
-    } else {
-        regs[ip->dst] = I64_VAL(AS_I64(a) / AS_I64(b));
+        vmRuntimeError("Division by zero.");
+        return NIL_VAL;
     }
+    regs[ip->dst] = I64_VAL(AS_I64(a) / AS_I64(b));
     ip++;
     DISPATCH();
 }
@@ -481,7 +481,11 @@ op_DIV_F64: {
     uint8_t s1 = ip->src1;
     uint8_t s2 = ip->src2;
     double b = f64_regs[s2];
-    f64_regs[dest] = b == 0.0 ? 0.0 : f64_regs[s1] / b;
+    if (b == 0.0) {
+        vmRuntimeError("Division by zero.");
+        return NIL_VAL;
+    }
+    f64_regs[dest] = f64_regs[s1] / b;
     SYNC_F64_REG(dest);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] f64_regs[R%d] = %f\n", dest, f64_regs[dest]);
@@ -570,7 +574,11 @@ op_DIVIDE_I64: {
     uint8_t s1 = ip->src1;
     uint8_t s2 = ip->src2;
     int64_t b = i64_regs[s2];
-    i64_regs[dest] = b == 0 ? 0 : i64_regs[s1] / b;
+    if (b == 0) {
+        vmRuntimeError("Division by zero.");
+        return NIL_VAL;
+    }
+    i64_regs[dest] = i64_regs[s1] / b;
     SYNC_I64_REG(dest);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] i64_regs[R%d] = %lld\n", dest, (long long)i64_regs[dest]);
@@ -783,7 +791,11 @@ op_MUL_I32: {
 op_DIV_I32: {
     int32_t b = AS_I32(regs[ip->src2]);
     int32_t a = AS_I32(regs[ip->src1]);
-    regs[ip->dst] = I32_VAL(b == 0 ? 0 : a / b);
+    if (b == 0) {
+        vmRuntimeError("Division by zero.");
+        return NIL_VAL;
+    }
+    regs[ip->dst] = I32_VAL(a / b);
     ip++;
     DISPATCH();
 }
@@ -815,7 +827,11 @@ op_MUL_U32: {
 op_DIV_U32: {
     uint32_t b = AS_U32(regs[ip->src2]);
     uint32_t a = AS_U32(regs[ip->src1]);
-    regs[ip->dst] = U32_VAL(b == 0 ? 0 : a / b);
+    if (b == 0) {
+        vmRuntimeError("Division by zero.");
+        return NIL_VAL;
+    }
+    regs[ip->dst] = U32_VAL(a / b);
     ip++;
     DISPATCH();
 }
@@ -847,7 +863,11 @@ op_MUL_U64: {
 op_DIV_U64: {
     uint64_t b = AS_U64(regs[ip->src2]);
     uint64_t a = AS_U64(regs[ip->src1]);
-    regs[ip->dst] = U64_VAL(b == 0 ? 0 : a / b);
+    if (b == 0) {
+        vmRuntimeError("Division by zero.");
+        return NIL_VAL;
+    }
+    regs[ip->dst] = U64_VAL(a / b);
     ip++;
     DISPATCH();
 }
@@ -1299,15 +1319,25 @@ op_DIVIDE_GENERIC: {
     } else {
         switch (a.type) {
             case VAL_I32: {
-                int32_t bv = AS_I32(b); regs[ip->dst] = bv == 0 ? NIL_VAL : I32_VAL(AS_I32(a) / bv); break; }
+                int32_t bv = AS_I32(b);
+                if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                regs[ip->dst] = I32_VAL(AS_I32(a) / bv); break; }
             case VAL_I64: {
-                int64_t bv = AS_I64(b); regs[ip->dst] = bv == 0 ? NIL_VAL : I64_VAL(AS_I64(a) / bv); break; }
+                int64_t bv = AS_I64(b);
+                if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                regs[ip->dst] = I64_VAL(AS_I64(a) / bv); break; }
             case VAL_U32: {
-                uint32_t bv = AS_U32(b); regs[ip->dst] = bv == 0 ? NIL_VAL : U32_VAL(AS_U32(a) / bv); break; }
+                uint32_t bv = AS_U32(b);
+                if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                regs[ip->dst] = U32_VAL(AS_U32(a) / bv); break; }
             case VAL_U64: {
-                uint64_t bv = AS_U64(b); regs[ip->dst] = bv == 0 ? NIL_VAL : U64_VAL(AS_U64(a) / bv); break; }
+                uint64_t bv = AS_U64(b);
+                if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                regs[ip->dst] = U64_VAL(AS_U64(a) / bv); break; }
             case VAL_F64: {
-                double bv = AS_F64(b); regs[ip->dst] = bv == 0.0 ? NIL_VAL : F64_VAL(AS_F64(a) / bv); break; }
+                double bv = AS_F64(b);
+                if (bv == 0.0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                regs[ip->dst] = F64_VAL(AS_F64(a) / bv); break; }
             default: regs[ip->dst] = NIL_VAL; break;
         }
     }
@@ -1999,28 +2029,44 @@ op_MULTIPLY_NUMERIC: {
 op_DIVIDE_F64: {
     double a = AS_F64(regs[ip->src1]);
     double b = AS_F64(regs[ip->src2]);
-    regs[ip->dst] = F64_VAL(b == 0.0 ? 0.0 : a / b);
+    if (b == 0.0) {
+        vmRuntimeError("Division by zero.");
+        return NIL_VAL;
+    }
+    regs[ip->dst] = F64_VAL(a / b);
     ip++; DISPATCH();
 }
 
 op_DIVIDE_I32: {
     int32_t b = AS_I32(regs[ip->src2]);
     int32_t a = AS_I32(regs[ip->src1]);
-    regs[ip->dst] = b == 0 ? NIL_VAL : I32_VAL(a / b);
+    if (b == 0) {
+        vmRuntimeError("Division by zero.");
+        return NIL_VAL;
+    }
+    regs[ip->dst] = I32_VAL(a / b);
     ip++; DISPATCH();
 }
 
 op_DIVIDE_U32: {
     uint32_t b = AS_U32(regs[ip->src2]);
     uint32_t a = AS_U32(regs[ip->src1]);
-    regs[ip->dst] = b == 0 ? NIL_VAL : U32_VAL(a / b);
+    if (b == 0) {
+        vmRuntimeError("Division by zero.");
+        return NIL_VAL;
+    }
+    regs[ip->dst] = U32_VAL(a / b);
     ip++; DISPATCH();
 }
 
 op_DIVIDE_U64: {
     uint64_t b = AS_U64(regs[ip->src2]);
     uint64_t a = AS_U64(regs[ip->src1]);
-    regs[ip->dst] = b == 0 ? NIL_VAL : U64_VAL(a / b);
+    if (b == 0) {
+        vmRuntimeError("Division by zero.");
+        return NIL_VAL;
+    }
+    regs[ip->dst] = U64_VAL(a / b);
     ip++; DISPATCH();
 }
 
@@ -2033,23 +2079,28 @@ op_DIVIDE_NUMERIC: {
         switch (a.type) {
             case VAL_I32: {
                 int32_t bv = AS_I32(b);
-                regs[ip->dst] = bv == 0 ? NIL_VAL : I32_VAL(AS_I32(a) / bv);
+                if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                regs[ip->dst] = I32_VAL(AS_I32(a) / bv);
                 break; }
             case VAL_I64: {
                 int64_t bv = AS_I64(b);
-                regs[ip->dst] = bv == 0 ? NIL_VAL : I64_VAL(AS_I64(a) / bv);
+                if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                regs[ip->dst] = I64_VAL(AS_I64(a) / bv);
                 break; }
             case VAL_U32: {
                 uint32_t bv = AS_U32(b);
-                regs[ip->dst] = bv == 0 ? NIL_VAL : U32_VAL(AS_U32(a) / bv);
+                if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                regs[ip->dst] = U32_VAL(AS_U32(a) / bv);
                 break; }
             case VAL_U64: {
                 uint64_t bv = AS_U64(b);
-                regs[ip->dst] = bv == 0 ? NIL_VAL : U64_VAL(AS_U64(a) / bv);
+                if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                regs[ip->dst] = U64_VAL(AS_U64(a) / bv);
                 break; }
             case VAL_F64: {
                 double bv = AS_F64(b);
-                regs[ip->dst] = bv == 0.0 ? NIL_VAL : F64_VAL(AS_F64(a) / bv);
+                if (bv == 0.0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                regs[ip->dst] = F64_VAL(AS_F64(a) / bv);
                 break; }
             default:
                 regs[ip->dst] = NIL_VAL;
@@ -2096,10 +2147,10 @@ op_DIVIDE_NUMERIC: {
                 Value a = rvm->registers[instr.src1];
                 Value b = rvm->registers[instr.src2];
                 if (AS_I64(b) == 0) {
-                    rvm->registers[instr.dst] = NIL_VAL;
-                } else {
-                    rvm->registers[instr.dst] = I64_VAL(AS_I64(a) / AS_I64(b));
+                    vmRuntimeError("Division by zero.");
+                    return NIL_VAL;
                 }
+                rvm->registers[instr.dst] = I64_VAL(AS_I64(a) / AS_I64(b));
                 break;
             }
             case ROP_EQ_I64: {
@@ -2335,7 +2386,11 @@ op_DIVIDE_NUMERIC: {
             case ROP_DIV_F64: {
                 double a = AS_F64(rvm->registers[instr.src1]);
                 double b = AS_F64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = F64_VAL(b == 0.0 ? 0.0 : a / b);
+                if (b == 0.0) {
+                    vmRuntimeError("Division by zero.");
+                    return NIL_VAL;
+                }
+                rvm->registers[instr.dst] = F64_VAL(a / b);
                 break;
             }
             case ROP_MOD_I64: {
@@ -2616,23 +2671,28 @@ op_DIVIDE_NUMERIC: {
                     switch (a.type) {
                         case VAL_I32: {
                             int32_t bv = AS_I32(b);
-                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : I32_VAL(AS_I32(a) / bv);
+                            if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                            rvm->registers[instr.dst] = I32_VAL(AS_I32(a) / bv);
                             break; }
                         case VAL_I64: {
                             int64_t bv = AS_I64(b);
-                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : I64_VAL(AS_I64(a) / bv);
+                            if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                            rvm->registers[instr.dst] = I64_VAL(AS_I64(a) / bv);
                             break; }
                         case VAL_U32: {
                             uint32_t bv = AS_U32(b);
-                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : U32_VAL(AS_U32(a) / bv);
+                            if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                            rvm->registers[instr.dst] = U32_VAL(AS_U32(a) / bv);
                             break; }
                         case VAL_U64: {
                             uint64_t bv = AS_U64(b);
-                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : U64_VAL(AS_U64(a) / bv);
+                            if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                            rvm->registers[instr.dst] = U64_VAL(AS_U64(a) / bv);
                             break; }
                         case VAL_F64: {
                             double bv = AS_F64(b);
-                            rvm->registers[instr.dst] = bv == 0.0 ? NIL_VAL : F64_VAL(AS_F64(a) / bv);
+                            if (bv == 0.0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                            rvm->registers[instr.dst] = F64_VAL(AS_F64(a) / bv);
                             break; }
                         default:
                             rvm->registers[instr.dst] = NIL_VAL;
@@ -2909,7 +2969,8 @@ op_DIVIDE_NUMERIC: {
             case ROP_DIV_I32: {
                 int32_t b = AS_I32(rvm->registers[instr.src2]);
                 int32_t a = AS_I32(rvm->registers[instr.src1]);
-                rvm->registers[instr.dst] = I32_VAL(b == 0 ? 0 : a / b);
+                if (b == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                rvm->registers[instr.dst] = I32_VAL(a / b);
                 break;
             }
             case ROP_ADD_U32: {
@@ -2933,7 +2994,8 @@ op_DIVIDE_NUMERIC: {
             case ROP_DIV_U32: {
                 uint32_t b = AS_U32(rvm->registers[instr.src2]);
                 uint32_t a = AS_U32(rvm->registers[instr.src1]);
-                rvm->registers[instr.dst] = U32_VAL(b == 0 ? 0 : a / b);
+                if (b == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                rvm->registers[instr.dst] = U32_VAL(a / b);
                 break;
             }
             case ROP_ADD_U64: {
@@ -3016,12 +3078,20 @@ op_DIVIDE_NUMERIC: {
             case ROP_DIV_U64: {
                 uint64_t b = AS_U64(rvm->registers[instr.src2]);
                 uint64_t a = AS_U64(rvm->registers[instr.src1]);
-                rvm->registers[instr.dst] = U64_VAL(b == 0 ? 0 : a / b);
+                if (b == 0) {
+                    vmRuntimeError("Division by zero.");
+                    return NIL_VAL;
+                }
+                rvm->registers[instr.dst] = U64_VAL(a / b);
                 break;
             }
             case ROP_DIVIDE_I64: {
                 int64_t b = i64_regs[instr.src2];
-                i64_regs[instr.dst] = b == 0 ? 0 : i64_regs[instr.src1] / b;
+                if (b == 0) {
+                    vmRuntimeError("Division by zero.");
+                    return NIL_VAL;
+                }
+                i64_regs[instr.dst] = i64_regs[instr.src1] / b;
 #ifdef DEBUG_TRACE_EXECUTION
                 printf("[Debug] i64_regs[R%d] = %lld\n", instr.dst, (long long)i64_regs[instr.dst]);
 #endif
@@ -3030,25 +3100,41 @@ op_DIVIDE_NUMERIC: {
             case ROP_DIVIDE_F64: {
                 double a = AS_F64(rvm->registers[instr.src1]);
                 double b = AS_F64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = F64_VAL(b == 0.0 ? 0.0 : a / b);
+                if (b == 0.0) {
+                    vmRuntimeError("Division by zero.");
+                    return NIL_VAL;
+                }
+                rvm->registers[instr.dst] = F64_VAL(a / b);
                 break;
             }
             case ROP_DIVIDE_I32: {
                 int32_t b = AS_I32(rvm->registers[instr.src2]);
                 int32_t a = AS_I32(rvm->registers[instr.src1]);
-                rvm->registers[instr.dst] = b == 0 ? NIL_VAL : I32_VAL(a / b);
+                if (b == 0) {
+                    vmRuntimeError("Division by zero.");
+                    return NIL_VAL;
+                }
+                rvm->registers[instr.dst] = I32_VAL(a / b);
                 break;
             }
             case ROP_DIVIDE_U32: {
                 uint32_t b = AS_U32(rvm->registers[instr.src2]);
                 uint32_t a = AS_U32(rvm->registers[instr.src1]);
-                rvm->registers[instr.dst] = b == 0 ? NIL_VAL : U32_VAL(a / b);
+                if (b == 0) {
+                    vmRuntimeError("Division by zero.");
+                    return NIL_VAL;
+                }
+                rvm->registers[instr.dst] = U32_VAL(a / b);
                 break;
             }
             case ROP_DIVIDE_U64: {
                 uint64_t b = AS_U64(rvm->registers[instr.src2]);
                 uint64_t a = AS_U64(rvm->registers[instr.src1]);
-                rvm->registers[instr.dst] = b == 0 ? NIL_VAL : U64_VAL(a / b);
+                if (b == 0) {
+                    vmRuntimeError("Division by zero.");
+                    return NIL_VAL;
+                }
+                rvm->registers[instr.dst] = U64_VAL(a / b);
                 break;
             }
             case ROP_DIVIDE_NUMERIC: {
@@ -3060,23 +3146,28 @@ op_DIVIDE_NUMERIC: {
                     switch (a.type) {
                         case VAL_I32: {
                             int32_t bv = AS_I32(b);
-                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : I32_VAL(AS_I32(a) / bv);
+                            if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                            rvm->registers[instr.dst] = I32_VAL(AS_I32(a) / bv);
                             break; }
                         case VAL_I64: {
                             int64_t bv = AS_I64(b);
-                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : I64_VAL(AS_I64(a) / bv);
+                            if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                            rvm->registers[instr.dst] = I64_VAL(AS_I64(a) / bv);
                             break; }
                         case VAL_U32: {
                             uint32_t bv = AS_U32(b);
-                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : U32_VAL(AS_U32(a) / bv);
+                            if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                            rvm->registers[instr.dst] = U32_VAL(AS_U32(a) / bv);
                             break; }
                         case VAL_U64: {
                             uint64_t bv = AS_U64(b);
-                            rvm->registers[instr.dst] = bv == 0 ? NIL_VAL : U64_VAL(AS_U64(a) / bv);
+                            if (bv == 0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                            rvm->registers[instr.dst] = U64_VAL(AS_U64(a) / bv);
                             break; }
                         case VAL_F64: {
                             double bv = AS_F64(b);
-                            rvm->registers[instr.dst] = bv == 0.0 ? NIL_VAL : F64_VAL(AS_F64(a) / bv);
+                            if (bv == 0.0) { vmRuntimeError("Division by zero."); return NIL_VAL; }
+                            rvm->registers[instr.dst] = F64_VAL(AS_F64(a) / bv);
                             break; }
                         default:
                             rvm->registers[instr.dst] = NIL_VAL;
