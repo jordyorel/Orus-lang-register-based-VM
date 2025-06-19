@@ -665,22 +665,37 @@ op_MAKE_ARRAY: {
 }
 
 op_ARRAY_GET: {
-    ObjArray* arr = AS_ARRAY(regs[ip->src1]);
-    int idx = (int)AS_I64(regs[ip->src2]);
-    regs[ip->dst] = (idx >=0 && idx < arr->length) ? arr->elements[idx] : NIL_VAL;
+    ObjArray* arr = IS_ARRAY(regs[ip->src1]) ? AS_ARRAY(regs[ip->src1]) : NULL;
+    if (!arr || !arr->elements) {
+        regs[ip->dst] = NIL_VAL;
+    } else {
+        int idx = (int)AS_I64(regs[ip->src2]);
+        regs[ip->dst] = (idx >= 0 && idx < arr->length) ? arr->elements[idx] : NIL_VAL;
+    }
     ip++; DISPATCH();
 }
 
 op_ARRAY_SET:
-    AS_ARRAY(regs[ip->dst])->elements[ip->src1] = regs[ip->src2];
+    if (IS_ARRAY(regs[ip->dst])) {
+        ObjArray* arr = AS_ARRAY(regs[ip->dst]);
+        if (arr && arr->elements && ip->src1 >= 0 && ip->src1 < arr->length) {
+            arr->elements[ip->src1] = regs[ip->src2];
+        }
+    }
     ip++; DISPATCH();
 
 op_ARRAY_PUSH:
-    arrayPush(&vm, AS_ARRAY(regs[ip->dst]), regs[ip->src2]);
+    if (IS_ARRAY(regs[ip->dst])) {
+        arrayPush(&vm, AS_ARRAY(regs[ip->dst]), regs[ip->src2]);
+    }
     ip++; DISPATCH();
 
 op_ARRAY_POP:
-    regs[ip->dst] = arrayPop(AS_ARRAY(regs[ip->dst]));
+    if (IS_ARRAY(regs[ip->dst])) {
+        regs[ip->dst] = arrayPop(AS_ARRAY(regs[ip->dst]));
+    } else {
+        regs[ip->dst] = NIL_VAL;
+    }
     ip++; DISPATCH();
 
 op_LEN:
@@ -2350,19 +2365,34 @@ op_DIVIDE_NUMERIC: {
                 break;
             }
             case ROP_ARRAY_GET: {
-                ObjArray* arr = AS_ARRAY(rvm->registers[instr.src1]);
-                int idx = (int)AS_I64(rvm->registers[instr.src2]);
-                rvm->registers[instr.dst] = (idx >=0 && idx < arr->length) ? arr->elements[idx] : NIL_VAL;
+                ObjArray* arr = IS_ARRAY(rvm->registers[instr.src1]) ? AS_ARRAY(rvm->registers[instr.src1]) : NULL;
+                if (!arr || !arr->elements) {
+                    rvm->registers[instr.dst] = NIL_VAL;
+                } else {
+                    int idx = (int)AS_I64(rvm->registers[instr.src2]);
+                    rvm->registers[instr.dst] = (idx >=0 && idx < arr->length) ? arr->elements[idx] : NIL_VAL;
+                }
                 break;
             }
             case ROP_ARRAY_SET:
-                AS_ARRAY(rvm->registers[instr.dst])->elements[instr.src1] = rvm->registers[instr.src2];
+                if (IS_ARRAY(rvm->registers[instr.dst])) {
+                    ObjArray* arr = AS_ARRAY(rvm->registers[instr.dst]);
+                    if (arr && arr->elements && instr.src1 < arr->length && instr.src1 >= 0) {
+                        arr->elements[instr.src1] = rvm->registers[instr.src2];
+                    }
+                }
                 break;
             case ROP_ARRAY_PUSH:
-                arrayPush(&vm, AS_ARRAY(rvm->registers[instr.dst]), rvm->registers[instr.src2]);
+                if (IS_ARRAY(rvm->registers[instr.dst])) {
+                    arrayPush(&vm, AS_ARRAY(rvm->registers[instr.dst]), rvm->registers[instr.src2]);
+                }
                 break;
             case ROP_ARRAY_POP:
-                rvm->registers[instr.dst] = arrayPop(AS_ARRAY(rvm->registers[instr.dst]));
+                if (IS_ARRAY(rvm->registers[instr.dst])) {
+                    rvm->registers[instr.dst] = arrayPop(AS_ARRAY(rvm->registers[instr.dst]));
+                } else {
+                    rvm->registers[instr.dst] = NIL_VAL;
+                }
                 break;
             case ROP_LEN:
                 if (IS_ARRAY(rvm->registers[instr.src1]))

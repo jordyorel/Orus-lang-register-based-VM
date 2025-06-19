@@ -86,6 +86,9 @@ ObjArray* allocateArray(int length) {
     array->capacity = length > 0 ? length : 8;
     vm.bytesAllocated += sizeof(Value) * array->capacity;
     array->elements = (Value*)malloc(sizeof(Value) * array->capacity);
+    for (int i = 0; i < array->capacity; i++) {
+        array->elements[i] = NIL_VAL;
+    }
     return array;
 }
 
@@ -100,6 +103,7 @@ ObjIntArray* allocateIntArray(int length) {
     array->length = length;
     vm.bytesAllocated += sizeof(int64_t) * length;
     array->elements = (int64_t*)malloc(sizeof(int64_t) * length);
+    memset(array->elements, 0, sizeof(int64_t) * length);
     return array;
 }
 
