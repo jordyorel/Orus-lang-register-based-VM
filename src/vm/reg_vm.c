@@ -462,15 +462,20 @@ op_LESS_I32: {
 }
 
 op_MOD_I64: {
-    int64_t a = AS_I64(regs[ip->src1]);
-    int64_t b = AS_I64(regs[ip->src2]);
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    int64_t b = i64_regs[s2];
     if (b == 0) {
-        regs[ip->dst] = NIL_VAL;
+        i64_regs[dest] = 0;
     } else {
-        int64_t r = a % b;
+        int64_t r = i64_regs[s1] % b;
         if (r < 0) r += (b < 0) ? -b : b;
-        regs[ip->dst] = I64_VAL(r);
+        i64_regs[dest] = r;
     }
+#ifdef DEBUG_TRACE_EXECUTION
+    printf("[Debug] i64_regs[R%d] = %lld\n", dest, (long long)i64_regs[dest]);
+#endif
     ip++; DISPATCH();
 }
 
@@ -1644,9 +1649,15 @@ op_MODULO_NUMERIC: {
     ip++; DISPATCH();
 }
 
-op_NEGATE_F64:
-    regs[ip->dst] = F64_VAL(-AS_F64(regs[ip->src1]));
+op_NEGATE_F64: {
+    uint8_t dest = ip->dst;
+    uint8_t src = ip->src1;
+    f64_regs[dest] = -f64_regs[src];
+#ifdef DEBUG_TRACE_EXECUTION
+    printf("[Debug] f64_regs[R%d] = %f\n", dest, f64_regs[dest]);
+#endif
     ip++; DISPATCH();
+}
 
 op_NEGATE_I32:
     regs[ip->dst] = I32_VAL(-AS_I32(regs[ip->src1]));
@@ -2073,15 +2084,17 @@ op_DIVIDE_NUMERIC: {
                 break;
             }
             case ROP_MOD_I64: {
-                int64_t a = AS_I64(rvm->registers[instr.src1]);
-                int64_t b = AS_I64(rvm->registers[instr.src2]);
+                int64_t b = rvm->i64_regs[instr.src2];
                 if (b == 0) {
-                    rvm->registers[instr.dst] = NIL_VAL;
+                    rvm->i64_regs[instr.dst] = 0;
                 } else {
-                    int64_t r = a % b;
+                    int64_t r = rvm->i64_regs[instr.src1] % b;
                     if (r < 0) r += (b < 0) ? -b : b;
-                    rvm->registers[instr.dst] = I64_VAL(r);
+                    rvm->i64_regs[instr.dst] = r;
                 }
+#ifdef DEBUG_TRACE_EXECUTION
+                printf("[Debug] i64_regs[R%d] = %lld\n", instr.dst, (long long)rvm->i64_regs[instr.dst]);
+#endif
                 break;
             }
             case ROP_BIT_AND_I64: {
@@ -2463,7 +2476,10 @@ op_DIVIDE_NUMERIC: {
                 break;
             }
             case ROP_NEGATE_F64:
-                rvm->registers[instr.dst] = F64_VAL(-AS_F64(rvm->registers[instr.src1]));
+                rvm->f64_regs[instr.dst] = -rvm->f64_regs[instr.src1];
+#ifdef DEBUG_TRACE_EXECUTION
+                printf("[Debug] f64_regs[R%d] = %f\n", instr.dst, rvm->f64_regs[instr.dst]);
+#endif
                 break;
             case ROP_NEGATE_I32:
                 rvm->registers[instr.dst] = I32_VAL(-AS_I32(rvm->registers[instr.src1]));
