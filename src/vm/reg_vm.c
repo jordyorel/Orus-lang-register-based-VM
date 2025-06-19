@@ -565,27 +565,6 @@ op_DIVIDE_I64: {
     ip++; DISPATCH();
 }
 
-op_MOD_I32: {
-    int32_t b = AS_I32(regs[ip->src2]);
-    int32_t a = AS_I32(regs[ip->src1]);
-    regs[ip->dst] = b == 0 ? NIL_VAL : I32_VAL(a % b);
-    ip++; DISPATCH();
-}
-
-op_MOD_U32: {
-    uint32_t b = AS_U32(regs[ip->src2]);
-    uint32_t a = AS_U32(regs[ip->src1]);
-    regs[ip->dst] = b == 0 ? NIL_VAL : U32_VAL(a % b);
-    ip++; DISPATCH();
-}
-
-op_MOD_U64: {
-    uint64_t b = AS_U64(regs[ip->src2]);
-    uint64_t a = AS_U64(regs[ip->src1]);
-    regs[ip->dst] = b == 0 ? NIL_VAL : U64_VAL(a % b);
-    ip++; DISPATCH();
-}
-
 op_GREATER_I32: {
     int32_t a = AS_I32(regs[ip->src1]);
     int32_t b = AS_I32(regs[ip->src2]);
@@ -728,7 +707,7 @@ op_CALL:
         uint8_t globalIndex = ip->dst;
         uint8_t base = ip->src1;
         uint8_t argc = ip->src2;
-        if (globalIndex >= UINT8_COUNT || !IS_I32(vm.globals[globalIndex])) {
+        if ((int)globalIndex >= UINT8_COUNT || !IS_I32(vm.globals[globalIndex])) {
             vmRuntimeError("Attempt to call a non-function.");
             return NIL_VAL;
         }
@@ -2830,7 +2809,7 @@ op_DIVIDE_NUMERIC: {
                 uint8_t globalIndex = instr.dst;
                 uint8_t base = instr.src1;
                 uint8_t argc = instr.src2;
-                if (globalIndex >= UINT8_COUNT || !IS_I32(vm.globals[globalIndex])) {
+                if ((int)globalIndex >= UINT8_COUNT || !IS_I32(vm.globals[globalIndex])) {
                     vmRuntimeError("Attempt to call a non-function.");
                     return NIL_VAL;
                 }
