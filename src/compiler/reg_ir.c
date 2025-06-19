@@ -1,8 +1,11 @@
 #include "../../include/reg_ir.h"
 #include "../../include/chunk.h"
 #include "../../include/value.h"
+#include "../../include/vm.h"
 #include <string.h>
 #include <stdlib.h>
+
+extern VM vm;
 
 void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
     initRegisterChunk(out);
@@ -11,12 +14,19 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
     int stackRegs[REGISTER_COUNT];
     int sp = 0;
 
+    int currentFunc = -1;
+    int funcMax[UINT8_COUNT];
+    for (int i = 0; i < UINT8_COUNT; i++) funcMax[i] = 0;
+
     // Register allocator state
     int nextReg = 0;
     int freeRegs[REGISTER_COUNT];
     int freeCount = 0;
 
-#define ALLOC_REG() (freeCount > 0 ? freeRegs[--freeCount] : nextReg++)
+#define ALLOC_REG() ({ \
+    int r = (freeCount > 0 ? freeRegs[--freeCount] : nextReg++); \
+    if (currentFunc >= 0 && r + 1 > funcMax[currentFunc]) funcMax[currentFunc] = r + 1; \
+    r; })
 #define RELEASE_REG(r) do { if (freeCount < REGISTER_COUNT) freeRegs[freeCount++] = (r); } while (0)
 
     // Mapping from bytecode offsets to register instruction indices
@@ -27,6 +37,15 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
     int patchCount = 0;
 
     for (int offset = 0; offset < chunk->count; ) {
+        for (int fi = 0; fi < vm.functionCount; fi++) {
+            if (vm.functions[fi].chunk == chunk && vm.functions[fi].start == offset) {
+                currentFunc = fi;
+                nextReg = 0;
+                freeCount = 0;
+                sp = 0;
+                break;
+            }
+        }
         offsetMap[offset] = out->count;
         uint8_t op = chunk->code[offset];
         switch (op) {
@@ -1561,8 +1580,24 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
             }
             case OP_CALL: {
                 uint8_t idx = chunk->code[offset + 1];
-                RegisterInstr instr = {ROP_CALL, (uint8_t)idx, 0, chunk->code[offset + 2]};
+                uint8_t argc = chunk->code[offset + 2];
+                int base;
+                if (argc == 0) {
+                    base = ALLOC_REG();
+                } else {
+                    base = stackRegs[sp - argc];
+                }
+                RegisterInstr instr = {ROP_CALL, (uint8_t)base, idx, argc};
                 writeRegisterInstr(out, instr);
+                if (argc == 0) {
+                    stackRegs[sp++] = base;
+                } else {
+                    for (int i = 1; i < argc; i++) {
+                        RELEASE_REG(stackRegs[sp - argc + i]);
+                    }
+                    sp = sp - argc + 1;
+                    stackRegs[sp - 1] = base;
+                }
                 offset += 3;
                 break;
             }
@@ -1633,6 +1668,22 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
             out->code[patches[i].instr].dst = (uint8_t)offsetMap[target];
         } else {
             out->code[patches[i].instr].dst = 0;
+        }
+    }
+
+    out->functionCount = vm.functionCount;
+    for (int i = 0; i < vm.functionCount && i < UINT8_COUNT; i++) {
+        if (vm.functions[i].chunk == chunk) {
+            int off = vm.functions[i].start;
+            if (off >= 0 && off <= chunk->count) {
+                out->functionOffsets[i] = offsetMap[off];
+            } else {
+                out->functionOffsets[i] = -1;
+            }
+            out->functionRegCount[i] = (uint8_t)(funcMax[i] & 0xFF);
+        } else {
+            out->functionOffsets[i] = -1;
+            out->functionRegCount[i] = 0;
         }
     }
 
