@@ -197,42 +197,23 @@ static void runFile(const char* path) {
         exit(65);
     }
     InterpretResult result = INTERPRET_OK;
-    if (vm.useRegisterVM) {
-        RegisterChunk rchunk;
-        initRegisterChunk(&rchunk);
-        vm.filePath = path;
-        vm.astRoot = ast;
-        if (!compileToRegister(ast, &rchunk, path, source, true)) {
-            fprintf(stderr, "Compilation failed for \"%s\".\n", path);
-            vm.astRoot = NULL;
-            freeRegisterChunk(&rchunk);
-            free(source);
-            exit(65);
-        }
+    RegisterChunk rchunk;
+    initRegisterChunk(&rchunk);
+    vm.filePath = path;
+    vm.astRoot = ast;
+    if (!compileToRegister(ast, &rchunk, path, source, true)) {
+        fprintf(stderr, "Compilation failed for \"%s\".\n", path);
         vm.astRoot = NULL;
-        RegisterVM rvm;
-        initRegisterVM(&rvm, &rchunk);
-        (void)runRegisterVM(&rvm);
-        freeRegisterVM(&rvm);
         freeRegisterChunk(&rchunk);
-    } else {
-        Chunk chunk;
-        initChunk(&chunk);
-        Compiler compiler;
-        initCompiler(&compiler, &chunk, path, source);
-        vm.filePath = path;
-        vm.astRoot = ast;
-        if (!compile(ast, &compiler, true)) {
-            fprintf(stderr, "Compilation failed for \"%s\".\n", path);
-            vm.astRoot = NULL;
-            freeChunk(&chunk);
-            free(source);
-            exit(65);
-        }
-        vm.astRoot = NULL;
-        result = runChunk(&chunk);
-        freeChunk(&chunk);  // Free chunk after execution
+        free(source);
+        exit(65);
     }
+    vm.astRoot = NULL;
+    RegisterVM rvm;
+    initRegisterVM(&rvm, &rchunk);
+    (void)runRegisterVM(&rvm);
+    freeRegisterVM(&rvm);
+    freeRegisterChunk(&rchunk);
     
     free(source);
     vm.filePath = NULL;
@@ -377,7 +358,6 @@ int main(int argc, const char* argv[]) {
     bool traceImportsFlag = false;
     bool devFlag = false;
     bool dumpStdlib = false;
-    bool regVMFlag = false;
     const char* cliStdPath = NULL;
     char defaultStdPath[PATH_MAX];
     const char* path = NULL;
@@ -401,8 +381,6 @@ int main(int argc, const char* argv[]) {
             dumpStdlib = true;
         } else if (strcmp(argv[i], "--dev") == 0) {
             devFlag = true;
-        } else if (strcmp(argv[i], "--regvm") == 0) {
-            regVMFlag = true;
         } else if (strcmp(argv[i], "--project") == 0) {
             if (i + 1 >= argc) {
                 fprintf(stderr, "Usage: orusc --project <dir>\n");
@@ -412,7 +390,7 @@ int main(int argc, const char* argv[]) {
         } else if (!path) {
             path = argv[i];
         } else {
-            fprintf(stderr, "Usage: orusc [--trace] [--trace-imports] [--std-path dir] [--dump-stdlib] [--dev] [--regvm] [--project dir] [path]\n");
+            fprintf(stderr, "Usage: orusc [--trace] [--trace-imports] [--std-path dir] [--dump-stdlib] [--dev] [--project dir] [path]\n");
             return 64;
         }
     }
@@ -444,7 +422,7 @@ int main(int argc, const char* argv[]) {
         return 0;
     }
 
-    vm.useRegisterVM = regVMFlag;
+    vm.useRegisterVM = true;
     if (projectDir) {
         runProject(projectDir);
     } else if (!path) {
