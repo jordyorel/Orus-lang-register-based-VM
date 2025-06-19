@@ -5,6 +5,7 @@
 #include "../../include/vm_ops.h"
 #include "../../include/vm_ops.h"
 #include "../../include/value.h"
+#include "../../include/modules.h"
 #include "../../include/builtins.h"
 #include <assert.h>
 #include <string.h>
@@ -1631,7 +1632,31 @@ op_I64_TO_U64:
     ip++; DISPATCH();
 
 op_IMPORT:
-    ip++; DISPATCH();
+    {
+        uint8_t constantIndex = ip->src1;
+        Value pathVal = rvm->chunk->constants.values[constantIndex];
+        if (!IS_STRING(pathVal)) {
+            vmRuntimeError("Import path must be a string.");
+            return NIL_VAL;
+        }
+        ObjString* pathStr = AS_STRING(pathVal);
+        bool already = false;
+        for (int i = 0; i < vm.moduleCount; i++) {
+            if (strcmp(vm.loadedModules[i]->chars, pathStr->chars) == 0) {
+                already = true;
+                break;
+            }
+        }
+        if (already) {
+            vmRuntimeError("Module already executed.");
+            return NIL_VAL;
+        }
+        InterpretResult modRes = interpret_module(pathStr->chars);
+        if (modRes != INTERPRET_OK) return NIL_VAL;
+        if (vm.moduleCount < UINT8_MAX)
+            vm.loadedModules[vm.moduleCount++] = pathStr;
+        ip++; DISPATCH();
+    }
 
 op_INC_I64:
     i64_regs[ip->dst] += 1;
@@ -3403,6 +3428,30 @@ op_DIVIDE_NUMERIC: {
                 rvm->registers[instr.dst] = U64_VAL((uint64_t)AS_I64(rvm->registers[instr.src1]));
                 break;
             case ROP_IMPORT:
+                {
+                    uint8_t constantIndex = instr.src1;
+                    Value pathVal = rvm->chunk->constants.values[constantIndex];
+                    if (!IS_STRING(pathVal)) {
+                        vmRuntimeError("Import path must be a string.");
+                        return NIL_VAL;
+                    }
+                    ObjString* pathStr = AS_STRING(pathVal);
+                    bool already = false;
+                    for (int i = 0; i < vm.moduleCount; i++) {
+                        if (strcmp(vm.loadedModules[i]->chars, pathStr->chars) == 0) {
+                            already = true;
+                            break;
+                        }
+                    }
+                    if (already) {
+                        vmRuntimeError("Module already executed.");
+                        return NIL_VAL;
+                    }
+                    InterpretResult modRes = interpret_module(pathStr->chars);
+                    if (modRes != INTERPRET_OK) return NIL_VAL;
+                    if (vm.moduleCount < UINT8_MAX)
+                        vm.loadedModules[vm.moduleCount++] = pathStr;
+                }
                 break;
             case ROP_INC_I64:
                 i64_regs[instr.dst] += 1;
