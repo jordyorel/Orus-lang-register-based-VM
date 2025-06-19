@@ -14,6 +14,18 @@ typedef struct {
     Value   registers[REGISTER_COUNT];
 } RegisterVM;
 
+/*
+ * Call frame used by the register-based VM. Each frame owns a full
+ * register file so the GC must treat the registers as roots when
+ * scanning live objects. The frame also stores the return address and
+ * previous chunk information required to resume execution.
+ */
+typedef struct {
+    RegisterInstr* returnAddress;
+    RegisterChunk* previousChunk;
+    RegisterVM     vm;
+} RegisterFrame;
+
 void initRegisterVM(RegisterVM* vm, RegisterChunk* chunk);
 void freeRegisterVM(RegisterVM* vm);
 Value runRegisterVM(RegisterVM* vm);

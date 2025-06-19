@@ -100,6 +100,7 @@ void initVM() {
     vm.variableCount = 0;
     vm.functionCount = 0;
     vm.frameCount = 0;
+    vm.regFrameCount = 0;
     vm.tryFrameCount = 0;
     vm.lastError = NIL_VAL;
     vm.objects = NULL;
