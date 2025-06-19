@@ -42,9 +42,9 @@ mechanism and improve register allocation for the VM.
 
 | Task                                                         | Status  |
 | ------------------------------------------------------------ | ------- |
-| Add unit tests for nested and recursive function calls       | Planned |
-| Verify GC traces register frames correctly                   | Planned |
-| Re-run `benchmarks/compare_vms.sh` to measure improvements   | Planned |
+| Add unit tests for nested and recursive function calls       | Done |
+| Verify GC traces register frames correctly                   | Done |
+| Re-run `benchmarks/compare_vms.sh` to measure improvements   | Done |
 
 ---
 

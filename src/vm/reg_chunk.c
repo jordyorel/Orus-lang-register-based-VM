@@ -36,6 +36,11 @@ void writeRegisterInstr(RegisterChunk* chunk, RegisterInstr instr) {
 }
 
 int addRegisterConstant(RegisterChunk* chunk, Value value) {
+    for (int i = 0; i < chunk->constants.count; i++) {
+        if (valuesEqual(chunk->constants.values[i], value)) {
+            return i;
+        }
+    }
     writeValueArray(&chunk->constants, value);
     return chunk->constants.count - 1;
 }

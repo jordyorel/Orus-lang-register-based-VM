@@ -16,7 +16,13 @@ for bench in "$SCRIPT_DIR"/*.orus; do
     echo "Running $name (stack VM)"
     ( time -p "$ORUS_EXEC" "$bench" > /dev/null ) 2>&1
     echo "Running $name (register VM)"
-    ( time -p "$ORUS_EXEC" --regvm "$bench" > /dev/null ) 2>&1
+    output=$( ( time -p "$ORUS_EXEC" --regvm "$bench" > /dev/null ) 2>&1 )
+    status=$?
+    if [ $status -eq 0 ]; then
+        echo "$output"
+    else
+        echo "Register VM failed with status $status"
+    fi
     echo ""
 done
 
