@@ -7,6 +7,11 @@ void initRegisterChunk(RegisterChunk* chunk) {
     chunk->capacity = 0;
     chunk->code = NULL;
     initValueArray(&chunk->constants);
+    chunk->functionCount = 0;
+    for (int i = 0; i < UINT8_COUNT; i++) {
+        chunk->functionOffsets[i] = -1;
+        chunk->functionRegCount[i] = 0;
+    }
 }
 
 void freeRegisterChunk(RegisterChunk* chunk) {

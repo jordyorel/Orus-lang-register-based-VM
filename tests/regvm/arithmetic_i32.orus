@@ -1,7 +1,7 @@
 // Test basic integer arithmetic operations
 // Explicit operations instead of variable assignments
 fn main() {
-    print("i32 Operations:")
+    print("i64 Operations:")
 
     // Addition
     print("10 + 3 = {} ", 10 + 3)

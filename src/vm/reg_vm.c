@@ -6,13 +6,42 @@
 #include "../../include/vm_ops.h"
 #include "../../include/value.h"
 #include "../../include/builtins.h"
+#include <assert.h>
 #include <string.h>
+#include <stdio.h>
 #include <stdio.h>
 
 #define SYNC_I64_REG(r) do { regs[(r)] = I64_VAL(i64_regs[(r)]); } while (0)
 #define SYNC_F64_REG(r) do { regs[(r)] = F64_VAL(f64_regs[(r)]); } while (0)
 
 extern VM vm;
+
+static bool pushRegisterFrame(RegisterVM* rvm, RegisterInstr* ret,
+                              RegisterChunk* prev, uint8_t destReg) {
+    if (vm.regFrameCount >= FRAMES_MAX) {
+        vmRuntimeError("Register stack overflow.");
+        return false;
+    }
+    RegisterFrame* frame = &vm.regFrames[vm.regFrameCount++];
+    frame->returnAddress = ret;
+    frame->previousChunk = prev;
+    frame->retReg = destReg;
+    memcpy(&frame->vm, rvm, sizeof(RegisterVM));
+    return true;
+}
+
+static bool popRegisterFrame(RegisterVM* rvm, uint8_t* destReg) {
+    if (vm.regFrameCount == 0) {
+        vmRuntimeError("Register stack underflow.");
+        return false;
+    }
+    RegisterFrame* frame = &vm.regFrames[--vm.regFrameCount];
+    if (destReg) *destReg = frame->retReg;
+    memcpy(rvm, &frame->vm, sizeof(RegisterVM));
+    rvm->ip = frame->returnAddress;
+    rvm->chunk = frame->previousChunk;
+    return true;
+}
 
 void initRegisterVM(RegisterVM* rvm, RegisterChunk* chunk) {
     rvm->chunk = chunk;
@@ -680,8 +709,45 @@ op_JZ:
     DISPATCH();
 
 op_CALL:
-    rvm->ip = ip + 1;
-    return regs[ip->src1];
+    {
+        uint8_t globalIndex = ip->dst;
+        uint8_t base = ip->src1;
+        uint8_t argc = ip->src2;
+        if (globalIndex >= UINT8_COUNT || !IS_I32(vm.globals[globalIndex])) {
+            vmRuntimeError("Attempt to call a non-function.");
+            return NIL_VAL;
+        }
+        int funcIndex = AS_I32(vm.globals[globalIndex]);
+        if (funcIndex < 0 || funcIndex >= vm.regChunk.functionCount) {
+            vmRuntimeError("Invalid function index.");
+            return NIL_VAL;
+        }
+        int target = vm.regChunk.functionOffsets[funcIndex];
+        if (target < 0) {
+            vmRuntimeError("Missing register offset for function.");
+            return NIL_VAL;
+        }
+        if (!pushRegisterFrame(rvm, ip + 1, rvm->chunk, base)) {
+            return NIL_VAL;
+        }
+        rvm->chunk = &vm.regChunk;
+        rvm->ip = rvm->chunk->code + target;
+        for (int i = 0; i < argc && (i < REGISTER_COUNT); i++) {
+            rvm->registers[i] = regs[base + i];
+            rvm->i64_regs[i] = i64_regs[base + i];
+            rvm->f64_regs[i] = f64_regs[base + i];
+        }
+        for (int r = argc; r < REGISTER_COUNT; r++) {
+            rvm->registers[r] = NIL_VAL;
+            rvm->i64_regs[r] = 0;
+            rvm->f64_regs[r] = 0.0;
+        }
+        ip = rvm->ip;
+        regs = rvm->registers;
+        i64_regs = rvm->i64_regs;
+        f64_regs = rvm->f64_regs;
+    }
+    DISPATCH();
 
 op_ADD_I32: {
     int32_t a = AS_I32(regs[ip->src1]);
@@ -1382,8 +1448,23 @@ op_POP:
     ip++; DISPATCH();
 
 op_RETURN:
-    rvm->ip = ip + 1;
-    return regs[ip->src1];
+    {
+        Value ret = regs[ip->src1];
+        if (vm.regFrameCount == 0) {
+            rvm->ip = ip + 1;
+            return ret;
+        }
+        uint8_t dest;
+        popRegisterFrame(rvm, &dest);
+        regs = rvm->registers;
+        i64_regs = rvm->i64_regs;
+        f64_regs = rvm->f64_regs;
+        ip = rvm->ip;
+        regs[dest] = ret;
+        if (IS_I64(ret)) i64_regs[dest] = AS_I64(ret);
+        if (IS_F64(ret)) f64_regs[dest] = AS_F64(ret);
+    }
+    DISPATCH();
 
 op_NIL:
     regs[ip->dst] = NIL_VAL;
@@ -2694,8 +2775,18 @@ op_DIVIDE_NUMERIC: {
             case ROP_POP:
                 rvm->registers[instr.dst] = NIL_VAL;
                 break;
-            case ROP_RETURN:
-                return rvm->registers[instr.src1];
+            case ROP_RETURN: {
+                Value ret = rvm->registers[instr.src1];
+                if (vm.regFrameCount == 0) {
+                    return ret;
+                }
+                uint8_t dest;
+                popRegisterFrame(rvm, &dest);
+                rvm->registers[dest] = ret;
+                if (IS_I64(ret)) rvm->i64_regs[dest] = AS_I64(ret);
+                if (IS_F64(ret)) rvm->f64_regs[dest] = AS_F64(ret);
+                break;
+            }
             case ROP_JUMP:
                 rvm->ip = rvm->chunk->code + instr.dst;
                 break;
@@ -2705,9 +2796,41 @@ op_DIVIDE_NUMERIC: {
                     rvm->ip = rvm->chunk->code + instr.dst;
                 }
                 break;
-            case ROP_CALL:
-                /* Simple call to native stub for now */
-                return rvm->registers[instr.src1];
+            case ROP_CALL: {
+                uint8_t globalIndex = instr.dst;
+                uint8_t base = instr.src1;
+                uint8_t argc = instr.src2;
+                if (globalIndex >= UINT8_COUNT || !IS_I32(vm.globals[globalIndex])) {
+                    vmRuntimeError("Attempt to call a non-function.");
+                    return NIL_VAL;
+                }
+                int funcIndex = AS_I32(vm.globals[globalIndex]);
+                if (funcIndex < 0 || funcIndex >= vm.regChunk.functionCount) {
+                    vmRuntimeError("Invalid function index.");
+                    return NIL_VAL;
+                }
+                int target = vm.regChunk.functionOffsets[funcIndex];
+                if (target < 0) {
+                    vmRuntimeError("Missing register offset for function.");
+                    return NIL_VAL;
+                }
+                if (!pushRegisterFrame(rvm, rvm->ip + 1, rvm->chunk, base)) {
+                    return NIL_VAL;
+                }
+                rvm->chunk = &vm.regChunk;
+                rvm->ip = rvm->chunk->code + target;
+                for (int i = 0; i < argc && i < REGISTER_COUNT; i++) {
+                    rvm->registers[i] = rvm->registers[base + i];
+                    rvm->i64_regs[i] = rvm->i64_regs[base + i];
+                    rvm->f64_regs[i] = rvm->f64_regs[base + i];
+                }
+                for (int r = argc; r < REGISTER_COUNT; r++) {
+                    rvm->registers[r] = NIL_VAL;
+                    rvm->i64_regs[r] = 0;
+                    rvm->f64_regs[r] = 0.0;
+                }
+                break;
+            }
             case ROP_ADD_I32: {
                 int32_t a = AS_I32(rvm->registers[instr.src1]);
                 int32_t b = AS_I32(rvm->registers[instr.src2]);

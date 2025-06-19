@@ -266,6 +266,9 @@ typedef struct {
     int capacity;
     RegisterInstr* code;
     ValueArray constants;
+    int functionOffsets[UINT8_COUNT];
+    uint8_t functionRegCount[UINT8_COUNT];
+    int functionCount;
 } RegisterChunk;
 
 void initRegisterChunk(RegisterChunk* chunk);

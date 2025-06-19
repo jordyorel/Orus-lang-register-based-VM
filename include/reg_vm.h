@@ -21,9 +21,10 @@ typedef struct {
  * previous chunk information required to resume execution.
  */
 typedef struct {
-    RegisterInstr* returnAddress;
-    RegisterChunk* previousChunk;
-    RegisterVM     vm;
+    RegisterInstr* returnAddress; // Instruction after the call
+    RegisterChunk* previousChunk; // Chunk to resume
+    uint8_t        retReg;        // Register index for return value
+    RegisterVM     vm;            // Saved register file
 } RegisterFrame;
 
 void initRegisterVM(RegisterVM* vm, RegisterChunk* chunk);
