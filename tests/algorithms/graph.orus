@@ -107,42 +107,55 @@ impl Graph {
         return result
     }
     
-    // Depth-First Search traversal
-    fn dfs_util(self, v: i32, visited: [i32; 6]) -> string {
-        // Mark the current node as visited
-        visited[v] = 1 as i32
-        
-        // Start with the current vertex
-        let mut result: string = v + " "
-        
-        // Get all adjacent vertices
-        let mut adj: [i32; 6] = [0, 0, 0, 0, 0, 0]
-        let adj_count: i32 = self.get_adjacent(v, adj)
-        
-        // Process all adjacent vertices
-        let mut i: i32 = 0
-        while i < adj_count {
-            let adj_vertex: i32 = adj[i]
-            
-            // If not yet visited, visit recursively
-            if visited[adj_vertex] == (0 as i32) {
-                result = result + self.dfs_util(adj_vertex, visited)
-            }
-            i = i + (1 as i32)
-        }
-        
-        return result
-    }
-    
+    // Depth-First Search traversal (iterative to avoid recursion issues)
     fn dfs(self, start: i32) -> string {
         if start < (0 as i32) or start >= self.vertices {
             return "Invalid starting vertex"
         }
-        
+
         // Array to track visited vertices
         let mut visited: [i32; 6] = [0, 0, 0, 0, 0, 0]
-        
-        return self.dfs_util(start, visited)
+
+        // Simple stack for DFS
+        let mut stack: [i32; 6] = [0, 0, 0, 0, 0, 0]
+        let mut top: i32 = 0
+
+        // Result string to track traversal order
+        let mut result: string = ""
+
+        // Push starting vertex
+        stack[top] = start
+        top = top + (1 as i32)
+
+        while top > (0 as i32) {
+            // Pop vertex from stack
+            top = top - (1 as i32)
+            let current: i32 = stack[top]
+
+            if visited[current] == (1 as i32) {
+                continue
+            }
+
+            visited[current] = 1 as i32
+            result = result + current + " "
+
+            // Get adjacent vertices
+            let mut adj: [i32; 6] = [0, 0, 0, 0, 0, 0]
+            let adj_count: i32 = self.get_adjacent(current, adj)
+
+            // Push neighbors in reverse order to mimic recursive DFS order
+            let mut i: i32 = adj_count - (1 as i32)
+            while i >= (0 as i32) {
+                let adj_vertex: i32 = adj[i]
+                if visited[adj_vertex] == (0 as i32) {
+                    stack[top] = adj_vertex
+                    top = top + (1 as i32)
+                }
+                i = i - (1 as i32)
+            }
+        }
+
+        return result
     }
 }
 
