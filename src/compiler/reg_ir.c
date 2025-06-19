@@ -1636,6 +1636,23 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
+            case OP_SETUP_EXCEPT: {
+                uint16_t off = (uint16_t)(chunk->code[offset + 1] << 8 |
+                                        chunk->code[offset + 2]);
+                uint8_t var = chunk->code[offset + 3];
+                RegisterInstr instr = {ROP_SETUP_EXCEPT, 0, var, 0};
+                writeRegisterInstr(out, instr);
+                patches[patchCount++] = (Patch){out->count - 1,
+                                                offset + 4 + off};
+                offset += 4;
+                break;
+            }
+            case OP_POP_EXCEPT: {
+                RegisterInstr instr = {ROP_POP_EXCEPT, 0, 0, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
             case OP_POP: {
                 if (sp < 1) { offset++; break; }
                 int dst = stackRegs[--sp];

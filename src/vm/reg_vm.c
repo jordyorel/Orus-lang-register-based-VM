@@ -293,12 +293,24 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_NATIVE_POW,
         &&op_NATIVE_SQRT,
     };
-#define DISPATCH()                                             \
-    do {                                                      \
-        vm.instruction_count++;                               \
-        if (vm.instruction_count % 10000 == 0 && !vm.gcPaused) \
-            collectGarbage();                                 \
-        goto *dispatch[ip->opcode];                           \
+#define DISPATCH()                                                         \
+    do {                                                                  \
+        if (IS_ERROR(vm.lastError)) {                                     \
+            if (vm.tryFrameCount > 0) {                                   \
+                TryFrame frame = vm.tryFrames[--vm.tryFrameCount];         \
+                vm.stackTop = vm.stack + frame.stackDepth;                 \
+                vm.globals[frame.varIndex] = vm.lastError;                 \
+                ip = (RegisterInstr*)frame.handler;                        \
+                vm.lastError = NIL_VAL;                                    \
+            } else {                                                       \
+                rvm->ip = ip;                                              \
+                return NIL_VAL;                                            \
+            }                                                             \
+        }                                                                 \
+        vm.instruction_count++;                                           \
+        if (vm.instruction_count % 10000 == 0 && !vm.gcPaused)             \
+            collectGarbage();                                             \
+        goto *dispatch[ip->opcode];                                       \
     } while (0)
 
     DISPATCH();
@@ -1486,6 +1498,7 @@ op_NIL:
     ip++; DISPATCH();
 
 op_POP_EXCEPT:
+    if (vm.tryFrameCount > 0) vm.tryFrameCount--;
     ip++; DISPATCH();
 
 op_PRINT_BOOL:
@@ -1552,6 +1565,16 @@ op_PRINT_U64_NO_NL:
     ip++; DISPATCH();
 
 op_SETUP_EXCEPT:
+    if (vm.tryFrameCount < TRY_MAX) {
+        vm.tryFrames[vm.tryFrameCount].handler =
+            (uint8_t*)(rvm->chunk->code + ip->dst);
+        vm.tryFrames[vm.tryFrameCount].varIndex = ip->src1;
+        vm.tryFrames[vm.tryFrameCount].stackDepth =
+            (int)(vm.stackTop - vm.stack);
+        vm.tryFrameCount++;
+    } else {
+        vmRuntimeError("Too many nested try blocks.");
+    }
     ip++; DISPATCH();
 
 op_SET_GLOBAL:
@@ -3238,6 +3261,7 @@ op_DIVIDE_NUMERIC: {
                 rvm->registers[instr.dst] = NIL_VAL;
                 break;
             case ROP_POP_EXCEPT:
+                if (vm.tryFrameCount > 0) vm.tryFrameCount--;
                 break;
             case ROP_PRINT_BOOL:
                 printf("%s\n", AS_BOOL(rvm->registers[instr.src1]) ? "true" : "false");
@@ -3289,6 +3313,16 @@ op_DIVIDE_NUMERIC: {
                 fflush(stdout);
                 break;
             case ROP_SETUP_EXCEPT:
+                if (vm.tryFrameCount < TRY_MAX) {
+                    vm.tryFrames[vm.tryFrameCount].handler =
+                        (uint8_t*)(rvm->chunk->code + instr.dst);
+                    vm.tryFrames[vm.tryFrameCount].varIndex = instr.src1;
+                    vm.tryFrames[vm.tryFrameCount].stackDepth =
+                        (int)(vm.stackTop - vm.stack);
+                    vm.tryFrameCount++;
+                } else {
+                    vmRuntimeError("Too many nested try blocks.");
+                }
                 break;
             case ROP_SET_GLOBAL:
                 vm.globals[instr.dst] = rvm->registers[instr.src1];
