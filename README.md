@@ -75,11 +75,8 @@ After building, run the interpreter in two ways:
 # Start an interactive REPL
 ./orusc
 
-# Execute a script file
+# Execute a script file using the register-based VM
 ./orusc path/to/script.orus
-
-# Run using the experimental register-based VM
-./orusc --regvm path/to/script.orus
 
 # Execute a project directory
 ./orusc --project path/to/project
@@ -109,12 +106,6 @@ Tests are located in the `tests/` directory. After building the interpreter, run
 bash tests/run_all_tests.sh
 ```
 
-To verify that both the stack and register backends produce identical output, execute:
-
-```sh
-bash tests/check_vm_parity.sh
-```
-
 The script uses `bash`. On Windows, run it from WSL or Git Bash so that the
 shell utilities behave like they do on Unix systems.
 
@@ -133,7 +124,7 @@ The script executes each benchmark program and prints the time spent running it.
 Each benchmark also reports its own elapsed time using `timestamp()` so they can
 be executed individually and still provide timing information.
 
-To compare the stack-based VM with the register-based VM run:
+Run the benchmark suite with:
 
 ```sh
 bash benchmarks/compare_vms.sh

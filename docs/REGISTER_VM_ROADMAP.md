@@ -1,6 +1,6 @@
 # Orus Register-Based VM Roadmap
 
-This roadmap outlines the long-term migration of the Orus virtual machine architecture from a stack-based design to a **register-based VM**, enabling significantly faster execution of statically typed code.
+This roadmap outlines the long-term migration of the Orus virtual machine architecture from a stack-based design to a **register-based VM**, enabling significantly faster execution of statically typed code. The transition is now complete and the register-based VM is the default execution engine.
 
 ---
 
