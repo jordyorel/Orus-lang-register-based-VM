@@ -82,7 +82,8 @@ After building, run the interpreter in two ways:
 ./orusc --project path/to/project
 
 To trace individual register updates during execution, compile with
-`DEBUG_TRACE_EXECUTION` enabled in `reg_vm.c`.
+`DEBUG_TRACE_EXECUTION` enabled in `reg_vm.c` and run the interpreter with
+the `--trace` flag or by setting `ORUS_TRACE=1`.
 
 ```
 
