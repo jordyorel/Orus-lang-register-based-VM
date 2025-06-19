@@ -1,8 +1,0 @@
-fn id<T>(x: T) -> T {
-    return x
-}
-
-fn main() {
-    print(id(1))
-    print(id("hi"))
-}
