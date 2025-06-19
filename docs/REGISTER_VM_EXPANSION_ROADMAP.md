@@ -19,7 +19,7 @@ This document tracks capabilities still missing from the register-based virtual 
 | ✅ Comparison and branching | ✅ Done | EQ_I64, LT_I64, JUMP_IF, etc. |
 | ✅ Stack-based fallback or hybrid mode | ✅ Done | Mixed execution supported for legacy compatibility |
 | ✅ Error handling / traps | ✅ Done | Try/catch with SETUP_EXCEPT and POP_EXCEPT |
-| ❌ Debugging hooks / tracing | 💤 Planned | Could add TRACE, line numbers, or source tracking |
+| ✅ Debugging hooks / tracing | ✅ Done | Trace execution with `DEBUG_TRACE_EXECUTION` and `--trace` |
 | ❌ Opcode metadata or assembler tools | 💤 External tooling | Not essential now, but will matter for maintainability |
 
 ## 🛣️ Roadmap
@@ -42,7 +42,15 @@ This document tracks capabilities still missing from the register-based virtual 
 - ✅ Implement a register allocator to minimize unused registers.
 - ✅ Extend the VM to handle dynamic types like strings and booleans.
 - ✅ Introduce structs and field access operations.
-- ❌ Provide debugging hooks and execution tracing.
+- ✅ Provide debugging hooks and execution tracing.
+
+#### Debugging and Tracing
+
+The register VM now includes optional instruction tracing. Define
+`DEBUG_TRACE_EXECUTION` in `reg_vm.c` (enabled by default) and run the
+interpreter with the `--trace` flag or `ORUS_TRACE=1` environment variable.
+Each executed opcode and updated register value will be printed, making it
+easier to diagnose new instructions or runtime issues.
 
 ### Phase 4 – Tooling
 - ❌ Generate opcode metadata for assembler utilities.
