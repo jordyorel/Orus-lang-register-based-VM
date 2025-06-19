@@ -342,6 +342,11 @@ void collectGarbage() {
         for (int i = 0; i < REGISTER_COUNT; i++) {
             markValue(vm.regVM.registers[i]);
         }
+        for (int f = 0; f < vm.regFrameCount; f++) {
+            for (int r = 0; r < REGISTER_COUNT; r++) {
+                markValue(vm.regFrames[f].vm.registers[r]);
+            }
+        }
         for (int i = 0; i < vm.regChunk.constants.count; i++) {
             markValue(vm.regChunk.constants.values[i]);
         }

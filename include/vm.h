@@ -82,6 +82,10 @@ typedef struct {
     CallFrame frames[FRAMES_MAX];
     int frameCount;
 
+    // Register VM call frames for register-based execution
+    RegisterFrame regFrames[FRAMES_MAX];
+    int regFrameCount;
+
     TryFrame tryFrames[TRY_MAX];
     int tryFrameCount;
 
