@@ -736,6 +736,79 @@ static Value native_module_path(int argCount, Value* args) {
     return STRING_VAL(s);
 }
 
+// ---- Wrapper helpers for register VM ----
+Value builtin_range(Value start, Value end) {
+    Value args[2] = {start, end};
+    return native_range(2, args);
+}
+
+Value builtin_sum(Value array) {
+    Value args[1] = {array};
+    return native_sum(1, args);
+}
+
+Value builtin_min(Value array) {
+    Value args[1] = {array};
+    return native_min(1, args);
+}
+
+Value builtin_max(Value array) {
+    Value args[1] = {array};
+    return native_max(1, args);
+}
+
+Value builtin_is_type(Value value, Value type_name) {
+    Value args[2] = {value, type_name};
+    return native_is_type(2, args);
+}
+
+Value builtin_input(Value prompt) {
+    Value args[1] = {prompt};
+    return native_input(1, args);
+}
+
+Value builtin_int(Value text) {
+    Value args[1] = {text};
+    return native_int(1, args);
+}
+
+Value builtin_float(Value text) {
+    Value args[1] = {text};
+    return native_float(1, args);
+}
+
+Value builtin_timestamp(void) {
+    return native_timestamp(0, NULL);
+}
+
+Value builtin_sorted(Value array, Value key, Value reverse) {
+    Value args[3] = {array, key, reverse};
+    int argc = 1;
+    if (!IS_NIL(key)) argc = 2;
+    if (!IS_NIL(reverse)) argc = 3;
+    return native_sorted(argc, args);
+}
+
+Value builtin_module_name(Value path) {
+    Value args[1] = {path};
+    return native_module_name(1, args);
+}
+
+Value builtin_module_path(Value path) {
+    Value args[1] = {path};
+    return native_module_path(1, args);
+}
+
+Value builtin_native_pow(Value base, Value exp) {
+    Value args[2] = {base, exp};
+    return native_pow(2, args);
+}
+
+Value builtin_native_sqrt(Value value) {
+    Value args[1] = {value};
+    return native_sqrt(1, args);
+}
+
 /**
  * Table entry describing a builtin function.
  */

@@ -5,8 +5,12 @@
 #include "../../include/vm_ops.h"
 #include "../../include/vm_ops.h"
 #include "../../include/value.h"
+#include "../../include/builtins.h"
 #include <string.h>
 #include <stdio.h>
+
+#define SYNC_I64_REG(r) do { regs[(r)] = I64_VAL(i64_regs[(r)]); } while (0)
+#define SYNC_F64_REG(r) do { regs[(r)] = F64_VAL(f64_regs[(r)]); } while (0)
 
 extern VM vm;
 
@@ -28,7 +32,6 @@ Value runRegisterVM(RegisterVM* rvm) {
     Value* regs = rvm->registers;
     int64_t* i64_regs = rvm->i64_regs;
     double*  f64_regs = rvm->f64_regs;
-
     static void* dispatch[] = {
         &&op_NOP,
         &&op_MOV,
@@ -39,8 +42,6 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_DIV_RR,
         &&op_EQ_I64,
         &&op_NE_I64,
-        &&op_EQ_F64,
-        &&op_NE_F64,
         &&op_LT_I64,
         &&op_LE_I64,
         &&op_GT_I64,
@@ -107,6 +108,28 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_F64_TO_STRING,
         &&op_BOOL_TO_STRING,
         &&op_ARRAY_TO_STRING,
+        &&op_PRINT,
+        &&op_PRINT_NO_NL,
+        &&op_LOAD_GLOBAL,
+        &&op_STORE_GLOBAL,
+        &&op_ADD_F64,
+        &&op_SUB_F64,
+        &&op_MUL_F64,
+        &&op_DIV_F64,
+        &&op_MOD_I64,
+        &&op_BIT_AND_I64,
+        &&op_BIT_OR_I64,
+        &&op_BIT_XOR_I64,
+        &&op_BIT_NOT_I64,
+        &&op_SHL_I64,
+        &&op_SHR_I64,
+        &&op_MAKE_ARRAY,
+        &&op_ARRAY_GET,
+        &&op_ARRAY_SET,
+        &&op_ARRAY_PUSH,
+        &&op_ARRAY_POP,
+        &&op_LEN,
+        &&op_I64_TO_STRING,
         &&op_ARRAY_RESERVE,
         &&op_CONCAT,
         &&op_TYPE_OF_I32,
@@ -121,7 +144,6 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_GC_RESUME,
         &&op_ADD_GENERIC,
         &&op_ADD_I64,
-        &&op_MULTIPLY_I64,
         &&op_ADD_NUMERIC,
         &&op_BOOL_TO_I64,
         &&op_BOOL_TO_U64,
@@ -130,15 +152,73 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_CONSTANT,
         &&op_CONSTANT_LONG,
         &&op_CONTINUE,
+        &&op_DEFINE_GLOBAL,
+        &&op_DIVIDE_F64,
+        &&op_DIVIDE_GENERIC,
+        &&op_DIVIDE_I32,
+        &&op_DIVIDE_I64,
+        &&op_DIVIDE_NUMERIC,
+        &&op_DIVIDE_U32,
+        &&op_DIVIDE_U64,
         &&op_EQUAL,
+        &&op_EQUAL_I64,
+        &&op_GET_GLOBAL,
+        &&op_GREATER_EQUAL_F64,
+        &&op_GREATER_EQUAL_GENERIC,
+        &&op_GREATER_EQUAL_I32,
+        &&op_GREATER_EQUAL_I64,
+        &&op_GREATER_EQUAL_U32,
+        &&op_GREATER_EQUAL_U64,
+        &&op_GREATER_F64,
+        &&op_GREATER_GENERIC,
+        &&op_GREATER_I32,
+        &&op_GREATER_I64,
+        &&op_GREATER_U32,
+        &&op_GREATER_U64,
+        &&op_I64_CONST,
+        &&op_I64_TO_BOOL,
+        &&op_I64_TO_U64,
+        &&op_IMPORT,
+        &&op_INC_I64,
+        &&op_ITER_NEXT_I64,
+        &&op_JUMP_IF_FALSE,
+        &&op_JUMP_IF_LT_I64,
+        &&op_JUMP_IF_TRUE,
+        &&op_LEN_ARRAY,
+        &&op_LEN_STRING,
+        &&op_LESS_EQUAL_F64,
+        &&op_LESS_EQUAL_GENERIC,
+        &&op_LESS_EQUAL_I32,
+        &&op_LESS_EQUAL_I64,
+        &&op_LESS_EQUAL_U32,
+        &&op_LESS_EQUAL_U64,
+        &&op_LESS_F64,
+        &&op_LESS_GENERIC,
+        &&op_LESS_I32,
+        &&op_LESS_I64,
+        &&op_LESS_U32,
+        &&op_LESS_U64,
+        &&op_LOOP,
+        &&op_MODULO_GENERIC,
+        &&op_MODULO_NUMERIC,
+        &&op_MULTIPLY_F64,
+        &&op_MULTIPLY_GENERIC,
+        &&op_MULTIPLY_I32,
+        &&op_MULTIPLY_I64,
+        &&op_MULTIPLY_NUMERIC,
+        &&op_MULTIPLY_U32,
+        &&op_MULTIPLY_U64,
+        &&op_NEGATE_F64,
+        &&op_NEGATE_GENERIC,
+        &&op_NEGATE_I32,
+        &&op_NEGATE_I64,
+        &&op_NEGATE_NUMERIC,
+        &&op_NEGATE_U32,
+        &&op_NEGATE_U64,
+        &&op_NIL,
         &&op_NOT_EQUAL,
         &&op_NOT_EQUAL_I64,
-        &&op_JUMP_IF_FALSE,
-        &&op_JUMP_IF_TRUE,
-        &&op_LOOP,
         &&op_POP,
-        &&op_RETURN,
-        &&op_NIL,
         &&op_POP_EXCEPT,
         &&op_PRINT_BOOL,
         &&op_PRINT_BOOL_NO_NL,
@@ -154,75 +234,36 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_PRINT_U32_NO_NL,
         &&op_PRINT_U64,
         &&op_PRINT_U64_NO_NL,
+        &&op_RETURN,
         &&op_SETUP_EXCEPT,
         &&op_SET_GLOBAL,
         &&op_SHIFT_LEFT_I64,
         &&op_SHIFT_RIGHT_I64,
         &&op_SLICE,
         &&op_SUBSTRING,
-        &&op_SUB_F64,
         &&op_SUBTRACT_GENERIC,
-        &&op_SUB_I32,
         &&op_SUBTRACT_I64,
         &&op_SUBTRACT_NUMERIC,
-        &&op_SUB_U32,
-        &&op_SUB_U64,
         &&op_U64_TO_BOOL,
         &&op_U64_TO_I64,
         &&op_U64_TO_STRING,
-        &&op_DEFINE_GLOBAL,
-        &&op_GET_GLOBAL,
-        &&op_I64_CONST,
-        &&op_I64_TO_BOOL,
-        &&op_I64_TO_U64,
-        &&op_IMPORT,
-        &&op_INC_I64,
-        &&op_ITER_NEXT_I64,
-        &&op_JUMP_IF_LT_I64,
-        &&op_LEN_ARRAY,
-        &&op_LEN_STRING,
-        &&op_LESS_EQUAL_F64,
-        &&op_LESS_EQUAL_GENERIC,
-        &&op_LESS_EQUAL_I32,
-        &&op_LESS_EQUAL_I64,
-        &&op_LESS_EQUAL_U32,
-        &&op_LESS_EQUAL_U64,
-        &&op_LESS_F64,
-        &&op_LESS_GENERIC,
-        &&op_LESS_I32,
-        &&op_LESS_I64,
-        &&op_LESS_U32,
-        &&op_LESS_U64,
-        &&op_GREATER_I64,
-        &&op_GREATER_U32,
-        &&op_GREATER_U64,
-        &&op_GREATER_F64,
-        &&op_GREATER_EQUAL_I32,
-        &&op_GREATER_EQUAL_I64,
-        &&op_GREATER_EQUAL_U32,
-        &&op_GREATER_EQUAL_U64,
-        &&op_GREATER_EQUAL_F64,
-        &&op_GREATER_EQUAL_GENERIC,
-        &&op_GREATER_GENERIC,
-        &&op_EQUAL_I64,
-        &&op_MODULO_NUMERIC,
-        &&op_NEGATE_F64,
-        &&op_NEGATE_I32,
-        &&op_NEGATE_U32,
-        &&op_NEGATE_U64,
-        &&op_NEGATE_NUMERIC,
-        &&op_MULTIPLY_F64,
-        &&op_MULTIPLY_I32,
-        &&op_MULTIPLY_U32,
-        &&op_MULTIPLY_U64,
-        &&op_MULTIPLY_NUMERIC,
-        &&op_DIVIDE_F64,
-        &&op_DIVIDE_I32,
-        &&op_DIVIDE_U32,
-        &&op_DIVIDE_U64,
-        &&op_DIVIDE_NUMERIC,
+        &&op_EQ_F64,
+        &&op_NE_F64,
+        &&op_RANGE,
+        &&op_SUM,
+        &&op_MIN,
+        &&op_MAX,
+        &&op_IS_TYPE,
+        &&op_INPUT,
+        &&op_INT,
+        &&op_FLOAT,
+        &&op_TIMESTAMP,
+        &&op_SORTED,
+        &&op_MODULE_NAME,
+        &&op_MODULE_PATH,
+        &&op_NATIVE_POW,
+        &&op_NATIVE_SQRT,
     };
-
 #define DISPATCH()                                             \
     do {                                                      \
         vm.instruction_count++;                               \
@@ -239,11 +280,15 @@ op_NOP:
 
 op_MOV:
     regs[ip->dst] = regs[ip->src1];
+    if (IS_I64(regs[ip->dst])) i64_regs[ip->dst] = AS_I64(regs[ip->dst]);
+    if (IS_F64(regs[ip->dst])) f64_regs[ip->dst] = AS_F64(regs[ip->dst]);
     ip++;
     DISPATCH();
 
 op_LOAD_CONST:
     regs[ip->dst] = rvm->chunk->constants.values[ip->src1];
+    if (IS_I64(regs[ip->dst])) i64_regs[ip->dst] = AS_I64(regs[ip->dst]);
+    if (IS_F64(regs[ip->dst])) f64_regs[ip->dst] = AS_F64(regs[ip->dst]);
     ip++;
     DISPATCH();
 
@@ -358,6 +403,7 @@ op_ADD_F64: {
     uint8_t s1 = ip->src1;
     uint8_t s2 = ip->src2;
     f64_regs[dest] = f64_regs[s1] + f64_regs[s2];
+    SYNC_F64_REG(dest);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] f64_regs[R%d] = %f\n", dest, f64_regs[dest]);
 #endif
@@ -369,6 +415,7 @@ op_SUB_F64: {
     uint8_t s1 = ip->src1;
     uint8_t s2 = ip->src2;
     f64_regs[dest] = f64_regs[s1] - f64_regs[s2];
+    SYNC_F64_REG(dest);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] f64_regs[R%d] = %f\n", dest, f64_regs[dest]);
 #endif
@@ -380,6 +427,7 @@ op_MUL_F64: {
     uint8_t s1 = ip->src1;
     uint8_t s2 = ip->src2;
     f64_regs[dest] = f64_regs[s1] * f64_regs[s2];
+    SYNC_F64_REG(dest);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] f64_regs[R%d] = %f\n", dest, f64_regs[dest]);
 #endif
@@ -392,6 +440,7 @@ op_DIV_F64: {
     uint8_t s2 = ip->src2;
     double b = f64_regs[s2];
     f64_regs[dest] = b == 0.0 ? 0.0 : f64_regs[s1] / b;
+    SYNC_F64_REG(dest);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] f64_regs[R%d] = %f\n", dest, f64_regs[dest]);
 #endif
@@ -414,12 +463,73 @@ op_NE_F64: {
     ip++; DISPATCH();
 }
 
+op_RANGE:
+    regs[ip->dst] = builtin_range(regs[ip->src1], regs[ip->src2]);
+    ip++; DISPATCH();
+
+op_SUM:
+    regs[ip->dst] = builtin_sum(regs[ip->src1]);
+    ip++; DISPATCH();
+
+op_MIN:
+    regs[ip->dst] = builtin_min(regs[ip->src1]);
+    ip++; DISPATCH();
+
+op_MAX:
+    regs[ip->dst] = builtin_max(regs[ip->src1]);
+    ip++; DISPATCH();
+
+op_IS_TYPE:
+    regs[ip->dst] = builtin_is_type(regs[ip->src1], regs[ip->src2]);
+    ip++; DISPATCH();
+
+op_INPUT:
+    regs[ip->dst] = builtin_input(regs[ip->src1]);
+    ip++; DISPATCH();
+
+op_INT:
+    regs[ip->dst] = builtin_int(regs[ip->src1]);
+    ip++; DISPATCH();
+
+op_FLOAT:
+    regs[ip->dst] = builtin_float(regs[ip->src1]);
+    if (IS_F64(regs[ip->dst])) f64_regs[ip->dst] = AS_F64(regs[ip->dst]);
+    ip++; DISPATCH();
+
+op_TIMESTAMP:
+    regs[ip->dst] = builtin_timestamp();
+    if (IS_F64(regs[ip->dst])) f64_regs[ip->dst] = AS_F64(regs[ip->dst]);
+    ip++; DISPATCH();
+
+op_SORTED:
+    regs[ip->dst] = builtin_sorted(regs[ip->src1], NIL_VAL, regs[ip->src2]);
+    ip++; DISPATCH();
+
+op_MODULE_NAME:
+    regs[ip->dst] = builtin_module_name(regs[ip->src1]);
+    ip++; DISPATCH();
+
+op_MODULE_PATH:
+    regs[ip->dst] = builtin_module_path(regs[ip->src1]);
+    ip++; DISPATCH();
+
+op_NATIVE_POW:
+    regs[ip->dst] = builtin_native_pow(regs[ip->src1], regs[ip->src2]);
+    if (IS_F64(regs[ip->dst])) f64_regs[ip->dst] = AS_F64(regs[ip->dst]);
+    ip++; DISPATCH();
+
+op_NATIVE_SQRT:
+    regs[ip->dst] = builtin_native_sqrt(regs[ip->src1]);
+    if (IS_F64(regs[ip->dst])) f64_regs[ip->dst] = AS_F64(regs[ip->dst]);
+    ip++; DISPATCH();
+
 op_DIVIDE_I64: {
     uint8_t dest = ip->dst;
     uint8_t s1 = ip->src1;
     uint8_t s2 = ip->src2;
     int64_t b = i64_regs[s2];
     i64_regs[dest] = b == 0 ? 0 : i64_regs[s1] / b;
+    SYNC_I64_REG(dest);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] i64_regs[R%d] = %lld\n", dest, (long long)i64_regs[dest]);
 #endif
@@ -847,11 +957,13 @@ op_U32_TO_I32:
 
 op_I32_TO_I64:
     regs[ip->dst] = I64_VAL((int64_t)AS_I32(regs[ip->src1]));
+    i64_regs[ip->dst] = AS_I64(regs[ip->dst]);
     ip++;
     DISPATCH();
 
 op_U32_TO_I64:
     regs[ip->dst] = I64_VAL((int64_t)AS_U32(regs[ip->src1]));
+    i64_regs[ip->dst] = AS_I64(regs[ip->dst]);
     ip++;
     DISPATCH();
 
@@ -907,11 +1019,13 @@ op_F64_TO_U32:
 
 op_I64_TO_F64:
     regs[ip->dst] = F64_VAL((double)AS_I64(regs[ip->src1]));
+    f64_regs[ip->dst] = AS_F64(regs[ip->dst]);
     ip++;
     DISPATCH();
 
 op_F64_TO_I64:
     regs[ip->dst] = I64_VAL((int64_t)AS_F64(regs[ip->src1]));
+    i64_regs[ip->dst] = AS_I64(regs[ip->dst]);
     ip++;
     DISPATCH();
 
@@ -1031,6 +1145,7 @@ op_ADD_I64: {
     uint8_t s1 = ip->src1;
     uint8_t s2 = ip->src2;
     i64_regs[dest] = i64_regs[s1] + i64_regs[s2];
+    SYNC_I64_REG(dest);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] i64_regs[R%d] = %lld\n", dest, (long long)i64_regs[dest]);
 #endif
@@ -1042,6 +1157,7 @@ op_MULTIPLY_I64: {
     uint8_t s1 = ip->src1;
     uint8_t s2 = ip->src2;
     i64_regs[dest] = i64_regs[s1] * i64_regs[s2];
+    SYNC_I64_REG(dest);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] i64_regs[R%d] = %lld\n", dest, (long long)i64_regs[dest]);
 #endif
@@ -1164,6 +1280,7 @@ op_SUBTRACT_I64: {
     uint8_t s1 = ip->src1;
     uint8_t s2 = ip->src2;
     i64_regs[dest] = i64_regs[s1] - i64_regs[s2];
+    SYNC_I64_REG(dest);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] i64_regs[R%d] = %lld\n", dest, (long long)i64_regs[dest]);
 #endif
@@ -1172,6 +1289,7 @@ op_SUBTRACT_I64: {
 
 op_NEGATE_I64:
     i64_regs[ip->dst] = -i64_regs[ip->src1];
+    SYNC_I64_REG(ip->dst);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] i64_regs[R%d] = %lld\n", ip->dst, (long long)i64_regs[ip->dst]);
 #endif
@@ -1179,6 +1297,7 @@ op_NEGATE_I64:
 
 op_BOOL_TO_I64:
     i64_regs[ip->dst] = regs[ip->src1].type == VAL_BOOL && AS_BOOL(regs[ip->src1]) ? 1 : 0;
+    SYNC_I64_REG(ip->dst);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] i64_regs[R%d] = %lld\n", ip->dst, (long long)i64_regs[ip->dst]);
 #endif
@@ -1186,6 +1305,7 @@ op_BOOL_TO_I64:
 
 op_BOOL_TO_U64:
     i64_regs[ip->dst] = regs[ip->src1].type == VAL_BOOL && AS_BOOL(regs[ip->src1]) ? 1 : 0;
+    SYNC_I64_REG(ip->dst);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] i64_regs[R%d] = %lld\n", ip->dst, (long long)i64_regs[ip->dst]);
 #endif
@@ -1207,10 +1327,14 @@ op_CALL_NATIVE: {
 
 op_CONSTANT:
     regs[ip->dst] = rvm->chunk->constants.values[ip->src1];
+    if (IS_I64(regs[ip->dst])) i64_regs[ip->dst] = AS_I64(regs[ip->dst]);
+    if (IS_F64(regs[ip->dst])) f64_regs[ip->dst] = AS_F64(regs[ip->dst]);
     ip++; DISPATCH();
 
 op_CONSTANT_LONG:
     regs[ip->dst] = rvm->chunk->constants.values[ip->src1];
+    if (IS_I64(regs[ip->dst])) i64_regs[ip->dst] = AS_I64(regs[ip->dst]);
+    if (IS_F64(regs[ip->dst])) f64_regs[ip->dst] = AS_F64(regs[ip->dst]);
     ip++; DISPATCH();
 
 op_CONTINUE:
@@ -1340,10 +1464,12 @@ op_SET_GLOBAL:
 
 op_SHIFT_LEFT_I64:
     regs[ip->dst] = I64_VAL(AS_I64(regs[ip->src1]) << AS_I64(regs[ip->src2]));
+    i64_regs[ip->dst] = AS_I64(regs[ip->dst]);
     ip++; DISPATCH();
 
 op_SHIFT_RIGHT_I64:
     regs[ip->dst] = I64_VAL(AS_I64(regs[ip->src1]) >> AS_I64(regs[ip->src2]));
+    i64_regs[ip->dst] = AS_I64(regs[ip->dst]);
     ip++; DISPATCH();
 
 op_SLICE:
@@ -1376,6 +1502,7 @@ op_U64_TO_BOOL:
 
 op_U64_TO_I64:
     regs[ip->dst] = I64_VAL((int64_t)AS_U64(regs[ip->src1]));
+    i64_regs[ip->dst] = AS_I64(regs[ip->dst]);
     ip++; DISPATCH();
 
 op_U64_TO_STRING:
@@ -1392,6 +1519,8 @@ op_GET_GLOBAL:
 
 op_I64_CONST:
     regs[ip->dst] = rvm->chunk->constants.values[ip->src1];
+    if (IS_I64(regs[ip->dst])) i64_regs[ip->dst] = AS_I64(regs[ip->dst]);
+    if (IS_F64(regs[ip->dst])) f64_regs[ip->dst] = AS_F64(regs[ip->dst]);
     ip++; DISPATCH();
 
 op_I64_TO_BOOL:
@@ -1400,6 +1529,7 @@ op_I64_TO_BOOL:
 
 op_I64_TO_U64:
     regs[ip->dst] = U64_VAL((uint64_t)AS_I64(regs[ip->src1]));
+    i64_regs[ip->dst] = AS_I64(regs[ip->src1]);
     ip++; DISPATCH();
 
 op_IMPORT:
@@ -1407,6 +1537,7 @@ op_IMPORT:
 
 op_INC_I64:
     i64_regs[ip->dst] += 1;
+    SYNC_I64_REG(ip->dst);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] i64_regs[R%d] = %lld\n", ip->dst, (long long)i64_regs[ip->dst]);
 #endif
@@ -1653,6 +1784,7 @@ op_NEGATE_F64: {
     uint8_t dest = ip->dst;
     uint8_t src = ip->src1;
     f64_regs[dest] = -f64_regs[src];
+    SYNC_F64_REG(dest);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] f64_regs[R%d] = %f\n", dest, f64_regs[dest]);
 #endif
@@ -3123,6 +3255,52 @@ op_DIVIDE_NUMERIC: {
                 break;
             case ROP_LEN_STRING:
                 rvm->registers[instr.dst] = I32_VAL(AS_STRING(rvm->registers[instr.src1])->length);
+                break;
+            case ROP_RANGE:
+                rvm->registers[instr.dst] = builtin_range(rvm->registers[instr.src1], rvm->registers[instr.src2]);
+                break;
+            case ROP_SUM:
+                rvm->registers[instr.dst] = builtin_sum(rvm->registers[instr.src1]);
+                break;
+            case ROP_MIN:
+                rvm->registers[instr.dst] = builtin_min(rvm->registers[instr.src1]);
+                break;
+            case ROP_MAX:
+                rvm->registers[instr.dst] = builtin_max(rvm->registers[instr.src1]);
+                break;
+            case ROP_IS_TYPE:
+                rvm->registers[instr.dst] = builtin_is_type(rvm->registers[instr.src1], rvm->registers[instr.src2]);
+                break;
+            case ROP_INPUT:
+                rvm->registers[instr.dst] = builtin_input(rvm->registers[instr.src1]);
+                break;
+            case ROP_INT:
+                rvm->registers[instr.dst] = builtin_int(rvm->registers[instr.src1]);
+                break;
+            case ROP_FLOAT:
+                rvm->registers[instr.dst] = builtin_float(rvm->registers[instr.src1]);
+                if (IS_F64(rvm->registers[instr.dst])) rvm->f64_regs[instr.dst] = AS_F64(rvm->registers[instr.dst]);
+                break;
+            case ROP_TIMESTAMP:
+                rvm->registers[instr.dst] = builtin_timestamp();
+                if (IS_F64(rvm->registers[instr.dst])) rvm->f64_regs[instr.dst] = AS_F64(rvm->registers[instr.dst]);
+                break;
+            case ROP_SORTED:
+                rvm->registers[instr.dst] = builtin_sorted(rvm->registers[instr.src1], NIL_VAL, rvm->registers[instr.src2]);
+                break;
+            case ROP_MODULE_NAME:
+                rvm->registers[instr.dst] = builtin_module_name(rvm->registers[instr.src1]);
+                break;
+            case ROP_MODULE_PATH:
+                rvm->registers[instr.dst] = builtin_module_path(rvm->registers[instr.src1]);
+                break;
+            case ROP_NATIVE_POW:
+                rvm->registers[instr.dst] = builtin_native_pow(rvm->registers[instr.src1], rvm->registers[instr.src2]);
+                if (IS_F64(rvm->registers[instr.dst])) rvm->f64_regs[instr.dst] = AS_F64(rvm->registers[instr.dst]);
+                break;
+            case ROP_NATIVE_SQRT:
+                rvm->registers[instr.dst] = builtin_native_sqrt(rvm->registers[instr.src1]);
+                if (IS_F64(rvm->registers[instr.dst])) rvm->f64_regs[instr.dst] = AS_F64(rvm->registers[instr.dst]);
                 break;
         }
     }

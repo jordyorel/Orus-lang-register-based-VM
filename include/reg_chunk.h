@@ -237,6 +237,21 @@ typedef enum {
     /* Newly added typed float comparisons */
     ROP_EQ_F64,
     ROP_NE_F64,
+    /* Builtin function opcodes */
+    ROP_RANGE,
+    ROP_SUM,
+    ROP_MIN,
+    ROP_MAX,
+    ROP_IS_TYPE,
+    ROP_INPUT,
+    ROP_INT,
+    ROP_FLOAT,
+    ROP_TIMESTAMP,
+    ROP_SORTED,
+    ROP_MODULE_NAME,
+    ROP_MODULE_PATH,
+    ROP_NATIVE_POW,
+    ROP_NATIVE_SQRT,
 } RegisterOp;
 
 typedef struct {
