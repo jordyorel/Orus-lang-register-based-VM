@@ -1,4 +1,5 @@
-#define DEBUG_TRACE_EXECUTION
+/* DEBUG_TRACE_EXECUTION enables verbose register VM tracing. */
+/* #define DEBUG_TRACE_EXECUTION */
 #include "../../include/reg_vm.h"
 #include "../../include/vm.h"
 #include "../../include/memory.h"
