@@ -146,21 +146,28 @@ static void repl() {
             isPrintStmt = true;
         }
 
-        Chunk chunk;
-        initChunk(&chunk);
-        Compiler compiler;
-        initCompiler(&compiler, &chunk, "<repl>", buffer);
+        freeRegisterChunk(&vm.regChunk);
+        initRegisterChunk(&vm.regChunk);
+        vm.filePath = "<repl>";
         vm.astRoot = ast;
-        if (!compile(ast, &compiler, false)) {
+        if (!compileToRegister(ast, &vm.regChunk, "<repl>", buffer, false)) {
             printf("Compilation failed.\n");
             vm.astRoot = NULL;
-            freeChunk(&chunk);
+            freeRegisterChunk(&vm.regChunk);
             fflush(stdout);
             continue;
         }
         vm.astRoot = NULL;
 
-        InterpretResult result = runChunk(&chunk);
+        initRegisterVM(&vm.regVM, &vm.regChunk);
+        InterpretResult result = INTERPRET_OK;
+        runRegisterVM(&vm.regVM);
+        if (IS_ERROR(vm.lastError)) {
+            result = INTERPRET_RUNTIME_ERROR;
+        }
+        freeRegisterVM(&vm.regVM);
+        freeRegisterChunk(&vm.regChunk);
+        vm.filePath = NULL;
         if (result == INTERPRET_COMPILE_ERROR) {
             printf("Compile error.\n");
         } else if (result == INTERPRET_RUNTIME_ERROR) {
@@ -177,7 +184,6 @@ static void repl() {
             printf("\n");
         }
 
-        freeChunk(&chunk);
         vm.stackTop = vm.stack;  // Reset stack after execution
         fflush(stdout);
     }
@@ -197,26 +203,25 @@ static void runFile(const char* path) {
         exit(65);
     }
     InterpretResult result = INTERPRET_OK;
-    RegisterChunk rchunk;
-    initRegisterChunk(&rchunk);
+    freeRegisterChunk(&vm.regChunk);
+    initRegisterChunk(&vm.regChunk);
     vm.filePath = path;
     vm.astRoot = ast;
-    if (!compileToRegister(ast, &rchunk, path, source, true)) {
+    if (!compileToRegister(ast, &vm.regChunk, path, source, true)) {
         fprintf(stderr, "Compilation failed for \"%s\".\n", path);
         vm.astRoot = NULL;
-        freeRegisterChunk(&rchunk);
+        freeRegisterChunk(&vm.regChunk);
         free(source);
         exit(65);
     }
     vm.astRoot = NULL;
-    RegisterVM rvm;
-    initRegisterVM(&rvm, &rchunk);
-    (void)runRegisterVM(&rvm);
+    initRegisterVM(&vm.regVM, &vm.regChunk);
+    runRegisterVM(&vm.regVM);
     if (IS_ERROR(vm.lastError)) {
         result = INTERPRET_RUNTIME_ERROR;
     }
-    freeRegisterVM(&rvm);
-    freeRegisterChunk(&rchunk);
+    freeRegisterVM(&vm.regVM);
+    freeRegisterChunk(&vm.regChunk);
     
     free(source);
     vm.filePath = NULL;

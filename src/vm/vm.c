@@ -2436,22 +2436,28 @@ InterpretResult interpret(const char* source) {
         return INTERPRET_COMPILE_ERROR;
     }
 
-    Chunk chunk;
-    initChunk(&chunk);
-    Compiler compiler;
-    initCompiler(&compiler, &chunk, "<exec>", source);
+    freeRegisterChunk(&vm.regChunk);
+    initRegisterChunk(&vm.regChunk);
+    vm.filePath = "<exec>";
 
     vm.astRoot = ast;
 
-    bool success = compile(ast, &compiler, false);
+    bool success = compileToRegister(ast, &vm.regChunk, "<exec>", source, false);
     vm.astRoot = NULL;
 
     if (!success) {
-        freeChunk(&chunk);
+        freeRegisterChunk(&vm.regChunk);
         return INTERPRET_COMPILE_ERROR;
     }
 
-    InterpretResult result = runChunk(&chunk);
-    freeChunk(&chunk);
+    initRegisterVM(&vm.regVM, &vm.regChunk);
+    InterpretResult result = INTERPRET_OK;
+    runRegisterVM(&vm.regVM);
+    if (IS_ERROR(vm.lastError)) {
+        result = INTERPRET_RUNTIME_ERROR;
+    }
+    freeRegisterVM(&vm.regVM);
+    freeRegisterChunk(&vm.regChunk);
+    vm.filePath = NULL;
     return result;
 }

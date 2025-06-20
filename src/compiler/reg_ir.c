@@ -1594,6 +1594,9 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 } else {
                     base = stackRegs[sp - argc];
                 }
+                // For regular function calls, the register VM expects the
+                // base register containing the arguments in `dst` and the
+                // global function index in `src1`.
                 RegisterInstr instr = {ROP_CALL, (uint8_t)base, idx, argc};
                 writeRegisterInstr(out, instr);
                 if (argc == 0) {
