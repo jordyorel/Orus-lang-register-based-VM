@@ -715,7 +715,7 @@ op_ARRAY_GET: {
     ip++; DISPATCH();
 }
 
-op_ARRAY_SET:
+op_ARRAY_SET: {
     Value arrayVal = regs[ip->dst];
     Value indexVal = regs[ip->src1];
     int64_t index = 0;
@@ -746,6 +746,7 @@ op_ARRAY_SET:
 
     arr->elements[index] = value;
     ip++; DISPATCH();
+}
 
 op_ARRAY_PUSH:
     if (IS_ARRAY(regs[ip->dst])) {
