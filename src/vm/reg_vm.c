@@ -443,6 +443,8 @@ op_PRINT_NO_NL:
 
 op_LOAD_GLOBAL:
     regs[ip->dst] = vm.globals[ip->src1];
+    if (IS_I64(regs[ip->dst])) i64_regs[ip->dst] = AS_I64(regs[ip->dst]);
+    if (IS_F64(regs[ip->dst])) f64_regs[ip->dst] = AS_F64(regs[ip->dst]);
     ip++;
     DISPATCH();
 
@@ -2427,6 +2429,10 @@ op_DIVIDE_NUMERIC: {
                 break;
             case ROP_LOAD_GLOBAL:
                 rvm->registers[instr.dst] = vm.globals[instr.src1];
+                if (IS_I64(rvm->registers[instr.dst]))
+                    rvm->i64_regs[instr.dst] = AS_I64(rvm->registers[instr.dst]);
+                if (IS_F64(rvm->registers[instr.dst]))
+                    rvm->f64_regs[instr.dst] = AS_F64(rvm->registers[instr.dst]);
                 break;
             case ROP_STORE_GLOBAL:
                 vm.globals[instr.dst] = rvm->registers[instr.src1];
