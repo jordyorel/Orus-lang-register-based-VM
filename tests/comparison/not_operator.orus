@@ -1,0 +1,8 @@
+fn main() {
+    let flag = true
+    print("not true is {}", not flag)
+    if not false {
+        print("not keyword works")
+    }
+}
+

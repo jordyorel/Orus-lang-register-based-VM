@@ -1,0 +1,11 @@
+// Test try/catch error handling
+fn main() {
+    try {
+        let a: i32 = 10
+        let b: i32 = 0
+        let c = a / b
+        print(c)
+    } catch err {
+        print("Caught error: {}", err)
+    }
+}
