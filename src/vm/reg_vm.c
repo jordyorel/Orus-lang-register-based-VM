@@ -4,14 +4,15 @@
 #include "../../include/vm.h"
 #include "../../include/memory.h"
 #include "../../include/vm_ops.h"
-#include "../../include/vm_ops.h"
 #include "../../include/value.h"
 #include "../../include/modules.h"
 #include "../../include/builtins.h"
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
-#include <stdio.h>
+
+/* Enable to print array index details during execution */
+/* #define DEBUG_ARRAY_INDEX */
 
 #define SYNC_I64_REG(r) do { regs[(r)] = I64_VAL(i64_regs[(r)]); } while (0)
 #define SYNC_F64_REG(r) do { regs[(r)] = F64_VAL(f64_regs[(r)]); } while (0)
@@ -701,6 +702,10 @@ op_ARRAY_GET: {
     }
 
     ObjArray* arr = AS_ARRAY(arrayVal);
+#ifdef DEBUG_ARRAY_INDEX
+    printf("[DEBUG] GET index: i64[%d] = %ld, array length = %d\n",
+           ip->src2, index, arr->length);
+#endif
     if (index < 0 || index >= arr->length) {
         vmRuntimeError("Array index out of bounds.");
         goto HANDLE_RUNTIME_ERROR;
@@ -730,6 +735,10 @@ op_ARRAY_SET:
     }
 
     ObjArray* arr = AS_ARRAY(arrayVal);
+#ifdef DEBUG_ARRAY_INDEX
+    printf("[DEBUG] SET index: i64[%d] = %ld, array length = %d\n",
+           ip->src1, index, arr->length);
+#endif
     if (index < 0 || index >= arr->length) {
         vmRuntimeError("Array index out of bounds.");
         goto HANDLE_RUNTIME_ERROR;
@@ -2582,6 +2591,10 @@ op_DIVIDE_NUMERIC: {
                 }
 
                 ObjArray* arr = AS_ARRAY(arrayVal);
+#ifdef DEBUG_ARRAY_INDEX
+                printf("[DEBUG] GET index: i64[%d] = %ld, array length = %d\n",
+                       instr.src2, index, arr->length);
+#endif
                 if (index < 0 || index >= arr->length) {
                     vmRuntimeError("Array index out of bounds.");
                     goto check_error;
@@ -2610,6 +2623,10 @@ op_DIVIDE_NUMERIC: {
                 }
 
                 ObjArray* arr = AS_ARRAY(arrayVal);
+#ifdef DEBUG_ARRAY_INDEX
+                printf("[DEBUG] SET index: i64[%d] = %ld, array length = %d\n",
+                       instr.src1, index, arr->length);
+#endif
                 if (index < 0 || index >= arr->length) {
                     vmRuntimeError("Array index out of bounds.");
                     goto check_error;
