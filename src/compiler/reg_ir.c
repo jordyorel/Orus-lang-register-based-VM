@@ -22,12 +22,25 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
     int nextReg = 0;
     int freeRegs[REGISTER_COUNT];
     int freeCount = 0;
+    bool regHasConst[REGISTER_COUNT];
+    Value regConst[REGISTER_COUNT];
+    for (int i = 0; i < REGISTER_COUNT; i++) {
+        regHasConst[i] = false;
+        regConst[i] = NIL_VAL;
+    }
 
 #define ALLOC_REG() ({ \
     int r = (freeCount > 0 ? freeRegs[--freeCount] : nextReg++); \
     if (currentFunc >= 0 && r + 1 > funcMax[currentFunc]) funcMax[currentFunc] = r + 1; \
+    regHasConst[r] = false; \
     r; })
-#define RELEASE_REG(r) do { if (freeCount < REGISTER_COUNT) freeRegs[freeCount++] = (r); } while (0)
+#define RELEASE_REG(r) do { regHasConst[(r)] = false; if (freeCount < REGISTER_COUNT) freeRegs[freeCount++] = (r); } while (0)
+#define ALLOC_CONTIG(n) ({ \
+    int base = nextReg; \
+    nextReg += (n); \
+    if (currentFunc >= 0 && nextReg > funcMax[currentFunc]) funcMax[currentFunc] = nextReg; \
+    for (int _i=0; _i<(n); _i++) regHasConst[base+_i] = false; \
+    base; })
 
     // Mapping from bytecode offsets to register instruction indices
     int* offsetMap = (int*)malloc(sizeof(int) * (chunk->count + 1));
@@ -55,6 +68,8 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 int reg = ALLOC_REG();
                 RegisterInstr instr = {ROP_CONSTANT, (uint8_t)reg, (uint8_t)ridx, 0};
                 writeRegisterInstr(out, instr);
+                regHasConst[reg] = true;
+                regConst[reg] = chunk->constants.values[constIndex];
                 stackRegs[sp++] = reg;
                 offset += 2;
                 break;
@@ -67,6 +82,8 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 int reg = ALLOC_REG();
                 RegisterInstr instr = {ROP_CONSTANT_LONG, (uint8_t)reg, (uint8_t)ridx, 0};
                 writeRegisterInstr(out, instr);
+                regHasConst[reg] = true;
+                regConst[reg] = chunk->constants.values[idx];
                 stackRegs[sp++] = reg;
                 offset += 4;
                 break;
@@ -79,6 +96,8 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 int reg = ALLOC_REG();
                 RegisterInstr instr = {ROP_LOAD_CONST, (uint8_t)reg, (uint8_t)ridx, 0};
                 writeRegisterInstr(out, instr);
+                regHasConst[reg] = true;
+                regConst[reg] = v;
                 stackRegs[sp++] = reg;
                 offset += 2;
                 break;
@@ -1661,6 +1680,43 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
+            case OP_FORMAT_PRINT:
+            case OP_FORMAT_PRINT_NO_NL: {
+                if (sp < 2) { offset++; break; }
+                int countReg = stackRegs[--sp];
+                int argCount = 0;
+                if (regHasConst[countReg] && IS_I32(regConst[countReg])) {
+                    argCount = AS_I32(regConst[countReg]);
+                }
+                int formatIndex = sp - argCount - 1;
+                if (formatIndex < 0) { offset++; break; }
+                int formatReg = stackRegs[formatIndex];
+
+                int base = ALLOC_CONTIG(argCount + 1);
+                RegisterInstr mvf = {ROP_MOV, (uint8_t)base, (uint8_t)formatReg, 0};
+                writeRegisterInstr(out, mvf);
+                for (int i = 0; i < argCount; i++) {
+                    int src = stackRegs[formatIndex + 1 + i];
+                    RegisterInstr mv = {ROP_MOV, (uint8_t)(base + 1 + i), (uint8_t)src, 0};
+                    writeRegisterInstr(out, mv);
+                }
+
+                RegisterOp opCode = (op == OP_FORMAT_PRINT) ? ROP_FORMAT_PRINT : ROP_FORMAT_PRINT_NO_NL;
+                RegisterInstr instr = {opCode, (uint8_t)base, (uint8_t)argCount, 0};
+                writeRegisterInstr(out, instr);
+
+                RELEASE_REG(formatReg);
+                for (int i = 0; i < argCount; i++) {
+                    RELEASE_REG(stackRegs[formatIndex + 1 + i]);
+                }
+                RELEASE_REG(countReg);
+                for (int i = 0; i < argCount + 1; i++) {
+                    RELEASE_REG(base + i);
+                }
+                sp = formatIndex;
+                offset += 1;
+                break;
+            }
             case OP_DEFINE_GLOBAL: {
                 uint8_t idx = chunk->code[offset + 1];
                 if (sp < 1) { offset += 2; break; }
@@ -1700,49 +1756,32 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
             case OP_CALL: {
                 uint8_t idx = chunk->code[offset + 1];
                 uint8_t argc = chunk->code[offset + 2];
-                int base;
-                if (argc == 0) {
-                    base = ALLOC_REG();
-                } else {
-                    base = stackRegs[sp - argc];
+                int base = ALLOC_CONTIG(argc > 0 ? argc : 1);
+                for (int i = 0; i < argc; i++) {
+                    int src = stackRegs[sp - argc + i];
+                    RegisterInstr mv = {ROP_MOV, (uint8_t)(base + i), (uint8_t)src, 0};
+                    writeRegisterInstr(out, mv);
                 }
-                // For regular function calls, the register VM expects the
-                // base register containing the arguments in `dst` and the
-                // global function index in `src1`.
                 RegisterInstr instr = {ROP_CALL, (uint8_t)base, idx, argc};
                 writeRegisterInstr(out, instr);
-                if (argc == 0) {
-                    stackRegs[sp++] = base;
-                } else {
-                    for (int i = 1; i < argc; i++) {
-                        RELEASE_REG(stackRegs[sp - argc + i]);
-                    }
-                    sp = sp - argc + 1;
-                    stackRegs[sp - 1] = base;
-                }
+                sp = sp - argc + 1;
+                stackRegs[sp - 1] = base;
                 offset += 3;
                 break;
             }
             case OP_CALL_NATIVE: {
                 uint8_t idx = chunk->code[offset + 1];
                 uint8_t argc = chunk->code[offset + 2];
-                int base;
-                if (argc == 0) {
-                    base = ALLOC_REG();
-                } else {
-                    base = stackRegs[sp - argc];
+                int base = ALLOC_CONTIG(argc > 0 ? argc : 1);
+                for (int i = 0; i < argc; i++) {
+                    int src = stackRegs[sp - argc + i];
+                    RegisterInstr mv = {ROP_MOV, (uint8_t)(base + i), (uint8_t)src, 0};
+                    writeRegisterInstr(out, mv);
                 }
                 RegisterInstr instr = {ROP_CALL_NATIVE, (uint8_t)base, idx, argc};
                 writeRegisterInstr(out, instr);
-                if (argc == 0) {
-                    stackRegs[sp++] = base;
-                } else {
-                    for (int i = 1; i < argc; i++) {
-                        RELEASE_REG(stackRegs[sp - argc + i]);
-                    }
-                    sp = sp - argc + 1;
-                    stackRegs[sp - 1] = base;
-                }
+                sp = sp - argc + 1;
+                stackRegs[sp - 1] = base;
                 offset += 3;
                 break;
             }
