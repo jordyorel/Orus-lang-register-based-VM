@@ -1,0 +1,7 @@
+fn main() {
+    let a: string = 42 as string
+    let b: string = 3.5 as string
+    let c: string = true as string
+    let d: string = [1, 2, 3] as string
+    print(a + "," + b + "," + c + "," + d)
+}

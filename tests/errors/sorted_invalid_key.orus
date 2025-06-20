@@ -1,0 +1,4 @@
+fn main() {
+    let items = [1, 2]
+    print(sorted(items, 1, false))
+}
