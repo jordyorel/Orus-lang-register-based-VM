@@ -39,6 +39,8 @@ include:
   from `string` or `nil` to numeric types is disallowed.
 - Integer literals automatically use `i32`, `i64` or `u64` based on value. A
   trailing `u` suffix forces an unsigned type.
+- Local variables without an explicit type annotation default to `i64` when the
+  initializer is an integer expression.
 
 The repository contains the interpreter sources and a large suite of example programs. A quick tour of the syntax lives in [`docs/LANGUAGE.md`](docs/LANGUAGE.md) and a step-by-step introduction is provided in [`docs/TUTORIAL.md`](docs/TUTORIAL.md). Notes on generics appear in [`docs/GENERICS.md`](docs/GENERICS.md) and more examples are spread throughout the test suite. See [`docs/TESTS_OVERVIEW.md`](docs/TESTS_OVERVIEW.md) for a list of categories. A potential compilation roadmap is outlined in [`docs/COMPILATION_ROADMAP.md`](docs/COMPILATION_ROADMAP.md). For a summary of built-in functions consult [`docs/BUILTINS.md`](docs/BUILTINS.md).
 
@@ -84,6 +86,10 @@ After building, run the interpreter in two ways:
 To trace individual register updates during execution, compile with
 `DEBUG_TRACE_EXECUTION` enabled in `reg_vm.c` and run the interpreter with
 the `--trace` flag or by setting `ORUS_TRACE=1`.
+
+When debugging array access issues you can additionally enable
+`DEBUG_ARRAY_INDEX` in `reg_vm.c` to log the chosen index and array length
+for every `ROP_ARRAY_GET` or `ROP_ARRAY_SET` instruction.
 
 ```
 

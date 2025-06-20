@@ -924,9 +924,14 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 writeRegisterInstr(out, instr);
                 for (int i = count - 1; i >= 0; i--) {
                     int val = stackRegs[--sp];
-                    RegisterInstr set = {ROP_ARRAY_SET, (uint8_t)dst, (uint8_t)i, (uint8_t)val};
+                    int idxReg = ALLOC_REG();
+                    int idxConst = addRegisterConstant(out, I64_VAL(i));
+                    RegisterInstr loadIdx = {ROP_LOAD_CONST, (uint8_t)idxReg, (uint8_t)idxConst, 0};
+                    writeRegisterInstr(out, loadIdx);
+                    RegisterInstr set = {ROP_ARRAY_SET, (uint8_t)dst, (uint8_t)idxReg, (uint8_t)val};
                     writeRegisterInstr(out, set);
                     RELEASE_REG(val);
+                    RELEASE_REG(idxReg);
                 }
                 stackRegs[sp++] = dst;
                 offset += 2;
@@ -937,6 +942,7 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 int index = stackRegs[--sp];
                 int array = stackRegs[--sp];
                 int dst = ALLOC_REG();
+                /* Index registers must contain 64-bit integers. */
                 RegisterInstr instr = {ROP_ARRAY_GET, (uint8_t)dst, (uint8_t)array, (uint8_t)index};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(array);
@@ -950,6 +956,7 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 int value = stackRegs[--sp];
                 int index = stackRegs[--sp];
                 int array = stackRegs[--sp];
+                /* Index registers must contain 64-bit integers. */
                 RegisterInstr instr = {ROP_ARRAY_SET, (uint8_t)array, (uint8_t)index, (uint8_t)value};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(array);
@@ -1316,12 +1323,64 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
+            case OP_LESS_I32: {
+                if (sp < 2) { offset++; break; }
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_LESS_I32, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
+            case OP_LESS_U32: {
+                if (sp < 2) { offset++; break; }
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_LESS_U32, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
             case OP_LESS_EQUAL_GENERIC: {
                 if (sp < 2) { offset++; break; }
                 int b = stackRegs[--sp];
                 int a = stackRegs[--sp];
                 int dst = ALLOC_REG();
                 RegisterInstr instr = {ROP_LESS_EQUAL_GENERIC, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
+            case OP_LESS_EQUAL_I32: {
+                if (sp < 2) { offset++; break; }
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_LESS_EQUAL_I32, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
+            case OP_LESS_EQUAL_U32: {
+                if (sp < 2) { offset++; break; }
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_LESS_EQUAL_U32, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(a);
                 RELEASE_REG(b);
@@ -1342,12 +1401,64 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
+            case OP_GREATER_I32: {
+                if (sp < 2) { offset++; break; }
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_GREATER_I32, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
+            case OP_GREATER_U32: {
+                if (sp < 2) { offset++; break; }
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_GREATER_U32, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
             case OP_GREATER_EQUAL_GENERIC: {
                 if (sp < 2) { offset++; break; }
                 int b = stackRegs[--sp];
                 int a = stackRegs[--sp];
                 int dst = ALLOC_REG();
                 RegisterInstr instr = {ROP_GREATER_EQUAL_GENERIC, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
+            case OP_GREATER_EQUAL_I32: {
+                if (sp < 2) { offset++; break; }
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_GREATER_EQUAL_I32, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
+            case OP_GREATER_EQUAL_U32: {
+                if (sp < 2) { offset++; break; }
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_GREATER_EQUAL_U32, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(a);
                 RELEASE_REG(b);
