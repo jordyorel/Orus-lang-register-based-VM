@@ -726,8 +726,8 @@ op_JZ:
 
 op_CALL:
     {
-        uint8_t globalIndex = ip->dst;
-        uint8_t base = ip->src1;
+        uint8_t base = ip->dst;
+        uint8_t globalIndex = ip->src1;
         uint8_t argc = ip->src2;
         if ((int)globalIndex >= UINT8_COUNT || !IS_I32(vm.globals[globalIndex])) {
             vmRuntimeError("Attempt to call a non-function.");
@@ -2915,8 +2915,8 @@ op_DIVIDE_NUMERIC: {
                 }
                 break;
             case ROP_CALL: {
-                uint8_t globalIndex = instr.dst;
-                uint8_t base = instr.src1;
+                uint8_t base = instr.dst;
+                uint8_t globalIndex = instr.src1;
                 uint8_t argc = instr.src2;
                 if ((int)globalIndex >= UINT8_COUNT || !IS_I32(vm.globals[globalIndex])) {
                     vmRuntimeError("Attempt to call a non-function.");
