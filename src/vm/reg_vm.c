@@ -193,6 +193,8 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_DIVIDE_U64,
         &&op_EQUAL,
         &&op_EQUAL_I64,
+        &&op_FORMAT_PRINT,
+        &&op_FORMAT_PRINT_NO_NL,
         &&op_GET_GLOBAL,
         &&op_GREATER_EQUAL_F64,
         &&op_GREATER_EQUAL_GENERIC,
@@ -231,7 +233,11 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_LESS_U64,
         &&op_LOOP,
         &&op_MODULO_GENERIC,
+        &&op_MODULO_I32,
+        &&op_MODULO_I64,
         &&op_MODULO_NUMERIC,
+        &&op_MODULO_U32,
+        &&op_MODULO_U64,
         &&op_MULTIPLY_F64,
         &&op_MULTIPLY_GENERIC,
         &&op_MULTIPLY_I32,
@@ -272,9 +278,13 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_SHIFT_RIGHT_I64,
         &&op_SLICE,
         &&op_SUBSTRING,
+        &&op_SUBTRACT_F64,
         &&op_SUBTRACT_GENERIC,
+        &&op_SUBTRACT_I32,
         &&op_SUBTRACT_I64,
         &&op_SUBTRACT_NUMERIC,
+        &&op_SUBTRACT_U32,
+        &&op_SUBTRACT_U64,
         &&op_U64_TO_BOOL,
         &&op_U64_TO_I64,
         &&op_U64_TO_STRING,
@@ -1276,23 +1286,6 @@ op_ADD_NUMERIC: {
     ip++; DISPATCH();
 }
 
-op_SUBTRACT_GENERIC: {
-    Value a = regs[ip->src1];
-    Value b = regs[ip->src2];
-    if (a.type != b.type) {
-        regs[ip->dst] = NIL_VAL;
-    } else {
-        switch (a.type) {
-            case VAL_I32: regs[ip->dst] = I32_VAL(AS_I32(a) - AS_I32(b)); break;
-            case VAL_I64: regs[ip->dst] = I64_VAL(AS_I64(a) - AS_I64(b)); break;
-            case VAL_U32: regs[ip->dst] = U32_VAL(AS_U32(a) - AS_U32(b)); break;
-            case VAL_U64: regs[ip->dst] = U64_VAL(AS_U64(a) - AS_U64(b)); break;
-            case VAL_F64: regs[ip->dst] = F64_VAL(AS_F64(a) - AS_F64(b)); break;
-            default: regs[ip->dst] = NIL_VAL; break;
-        }
-    }
-    ip++; DISPATCH();
-}
 
 op_MULTIPLY_GENERIC: {
     Value a = regs[ip->src1];
@@ -1366,6 +1359,38 @@ op_MODULO_GENERIC: {
     ip++; DISPATCH();
 }
 
+op_MODULO_I32:
+    {
+        int32_t b = AS_I32(regs[ip->src2]);
+        int32_t a = AS_I32(regs[ip->src1]);
+        regs[ip->dst] = b == 0 ? NIL_VAL : I32_VAL(a % b);
+    }
+    ip++; DISPATCH();
+
+op_MODULO_I64:
+    {
+        int64_t b = AS_I64(regs[ip->src2]);
+        int64_t a = AS_I64(regs[ip->src1]);
+        regs[ip->dst] = b == 0 ? NIL_VAL : I64_VAL(a % b);
+    }
+    ip++; DISPATCH();
+
+op_MODULO_U32:
+    {
+        uint32_t b = AS_U32(regs[ip->src2]);
+        uint32_t a = AS_U32(regs[ip->src1]);
+        regs[ip->dst] = b == 0 ? NIL_VAL : U32_VAL(a % b);
+    }
+    ip++; DISPATCH();
+
+op_MODULO_U64:
+    {
+        uint64_t b = AS_U64(regs[ip->src2]);
+        uint64_t a = AS_U64(regs[ip->src1]);
+        regs[ip->dst] = b == 0 ? NIL_VAL : U64_VAL(a % b);
+    }
+    ip++; DISPATCH();
+
 op_NEGATE_GENERIC: {
     Value a = regs[ip->src1];
     switch (a.type) {
@@ -1376,18 +1401,6 @@ op_NEGATE_GENERIC: {
         case VAL_F64: regs[ip->dst] = F64_VAL(-AS_F64(a)); break;
         default: regs[ip->dst] = NIL_VAL; break;
     }
-    ip++; DISPATCH();
-}
-
-op_SUBTRACT_I64: {
-    uint8_t dest = ip->dst;
-    uint8_t s1 = ip->src1;
-    uint8_t s2 = ip->src2;
-    i64_regs[dest] = i64_regs[s1] - i64_regs[s2];
-    SYNC_I64_REG(dest);
-#ifdef DEBUG_TRACE_EXECUTION
-    printf("[Debug] i64_regs[R%d] = %lld\n", dest, (long long)i64_regs[dest]);
-#endif
     ip++; DISPATCH();
 }
 
@@ -1575,6 +1588,12 @@ op_PRINT_U64_NO_NL:
     fflush(stdout);
     ip++; DISPATCH();
 
+op_FORMAT_PRINT:
+    ip++; DISPATCH();
+
+op_FORMAT_PRINT_NO_NL:
+    ip++; DISPATCH();
+
 op_SETUP_EXCEPT:
     if (vm.tryFrameCount < TRY_MAX) {
         vm.tryFrames[vm.tryFrameCount].handler =
@@ -1608,6 +1627,44 @@ op_SLICE:
 op_SUBSTRING:
     ip++; DISPATCH();
 
+op_SUBTRACT_F64:
+    regs[ip->dst] = F64_VAL(AS_F64(regs[ip->src1]) - AS_F64(regs[ip->src2]));
+    ip++; DISPATCH();
+
+op_SUBTRACT_GENERIC: {
+    Value a = regs[ip->src1];
+    Value b = regs[ip->src2];
+    if (a.type != b.type) {
+        regs[ip->dst] = NIL_VAL;
+    } else {
+        switch (a.type) {
+            case VAL_I32: regs[ip->dst] = I32_VAL(AS_I32(a) - AS_I32(b)); break;
+            case VAL_I64: regs[ip->dst] = I64_VAL(AS_I64(a) - AS_I64(b)); break;
+            case VAL_U32: regs[ip->dst] = U32_VAL(AS_U32(a) - AS_U32(b)); break;
+            case VAL_U64: regs[ip->dst] = U64_VAL(AS_U64(a) - AS_U64(b)); break;
+            case VAL_F64: regs[ip->dst] = F64_VAL(AS_F64(a) - AS_F64(b)); break;
+            default: regs[ip->dst] = NIL_VAL; break;
+        }
+    }
+    ip++; DISPATCH();
+}
+
+op_SUBTRACT_I32:
+    regs[ip->dst] = I32_VAL(AS_I32(regs[ip->src1]) - AS_I32(regs[ip->src2]));
+    ip++; DISPATCH();
+
+op_SUBTRACT_I64: {
+    uint8_t dest = ip->dst;
+    uint8_t s1 = ip->src1;
+    uint8_t s2 = ip->src2;
+    i64_regs[dest] = i64_regs[s1] - i64_regs[s2];
+    SYNC_I64_REG(dest);
+#ifdef DEBUG_TRACE_EXECUTION
+    printf("[Debug] i64_regs[R%d] = %lld\n", dest, (long long)i64_regs[dest]);
+#endif
+    ip++; DISPATCH();
+}
+
 op_SUBTRACT_NUMERIC: {
     Value a = regs[ip->src1];
     Value b = regs[ip->src2];
@@ -1625,6 +1682,14 @@ op_SUBTRACT_NUMERIC: {
     }
     ip++; DISPATCH();
 }
+
+op_SUBTRACT_U32:
+    regs[ip->dst] = U32_VAL(AS_U32(regs[ip->src1]) - AS_U32(regs[ip->src2]));
+    ip++; DISPATCH();
+
+op_SUBTRACT_U64:
+    regs[ip->dst] = U64_VAL(AS_U64(regs[ip->src1]) - AS_U64(regs[ip->src2]));
+    ip++; DISPATCH();
 
 op_U64_TO_BOOL:
     regs[ip->dst] = BOOL_VAL(AS_U64(regs[ip->src1]) != 0);
@@ -2903,6 +2968,7 @@ op_DIVIDE_NUMERIC: {
                 rvm->registers[dest] = ret;
                 if (IS_I64(ret)) rvm->i64_regs[dest] = AS_I64(ret);
                 if (IS_F64(ret)) rvm->f64_regs[dest] = AS_F64(ret);
+                rvm->ip = rvm->ip; // ensure ip restored
                 break;
             }
             case ROP_JUMP:
