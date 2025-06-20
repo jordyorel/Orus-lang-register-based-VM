@@ -1,5 +1,5 @@
 /* DEBUG_TRACE_EXECUTION enables verbose register VM tracing. */
-/* #define DEBUG_TRACE_EXECUTION */
+#define DEBUG_TRACE_EXECUTION
 #include "../../include/reg_vm.h"
 #include "../../include/vm.h"
 #include "../../include/memory.h"
@@ -63,6 +63,7 @@ Value runRegisterVM(RegisterVM* rvm) {
     Value* regs = rvm->registers;
     int64_t* i64_regs = rvm->i64_regs;
     double*  f64_regs = rvm->f64_regs;
+    static int loop_guard = 0;
     static void* dispatch[] = {
         &&op_NOP,
         &&op_MOV,
@@ -307,6 +308,10 @@ Value runRegisterVM(RegisterVM* rvm) {
     };
 #define DISPATCH()                                                         \
     do {                                                                  \
+        if (++loop_guard > 1000000000) {                                  \
+            fprintf(stderr, "[VM] Infinite loop guard triggered.\n");    \
+            exit(1);                                                      \
+        }                                                                 \
         if (IS_ERROR(vm.lastError)) {                                     \
             if (vm.tryFrameCount > 0) {                                   \
                 TryFrame frame = vm.tryFrames[--vm.tryFrameCount];         \
@@ -678,23 +683,41 @@ op_MAKE_ARRAY: {
 }
 
 op_ARRAY_GET: {
-    ObjArray* arr = IS_ARRAY(regs[ip->src1]) ? AS_ARRAY(regs[ip->src1]) : NULL;
-    if (!arr || !arr->elements) {
-        regs[ip->dst] = NIL_VAL;
-    } else {
-        int idx = (int)AS_I64(regs[ip->src2]);
-        regs[ip->dst] = (idx >= 0 && idx < arr->length) ? arr->elements[idx] : NIL_VAL;
+    Value arrayVal = regs[ip->src1];
+    int64_t index = i64_regs[ip->src2];
+
+    if (!IS_ARRAY(arrayVal)) {
+        vmRuntimeError("Expected array for indexing.");
+        goto HANDLE_RUNTIME_ERROR;
     }
+
+    ObjArray* arr = AS_ARRAY(arrayVal);
+    if (index < 0 || index >= arr->length) {
+        vmRuntimeError("Array index out of bounds.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
+
+    regs[ip->dst] = arr->elements[index];
     ip++; DISPATCH();
 }
 
 op_ARRAY_SET:
-    if (IS_ARRAY(regs[ip->dst])) {
-        ObjArray* arr = AS_ARRAY(regs[ip->dst]);
-        if (arr && arr->elements && ip->src1 >= 0 && ip->src1 < arr->length) {
-            arr->elements[ip->src1] = regs[ip->src2];
-        }
+    Value arrayVal = regs[ip->dst];
+    int64_t index = i64_regs[ip->src1];
+    Value value = regs[ip->src2];
+
+    if (!IS_ARRAY(arrayVal)) {
+        vmRuntimeError("Expected array for assignment.");
+        goto HANDLE_RUNTIME_ERROR;
     }
+
+    ObjArray* arr = AS_ARRAY(arrayVal);
+    if (index < 0 || index >= arr->length) {
+        vmRuntimeError("Array index out of bounds.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
+
+    arr->elements[index] = value;
     ip++; DISPATCH();
 
 op_ARRAY_PUSH:
@@ -2179,6 +2202,10 @@ op_DIVIDE_NUMERIC: {
 
 #else
     while (true) {
+        if (++loop_guard > 1000000000) {
+            fprintf(stderr, "[VM] Infinite loop guard triggered.\n");
+            exit(1);
+        }
         RegisterInstr instr = *vm->ip++;
         vm.instruction_count++;
         if (vm.instruction_count % 10000 == 0 && !vm.gcPaused) {
@@ -2519,23 +2546,42 @@ op_DIVIDE_NUMERIC: {
                 break;
             }
             case ROP_ARRAY_GET: {
-                ObjArray* arr = IS_ARRAY(rvm->registers[instr.src1]) ? AS_ARRAY(rvm->registers[instr.src1]) : NULL;
-                if (!arr || !arr->elements) {
-                    rvm->registers[instr.dst] = NIL_VAL;
-                } else {
-                    int idx = (int)AS_I64(rvm->registers[instr.src2]);
-                    rvm->registers[instr.dst] = (idx >=0 && idx < arr->length) ? arr->elements[idx] : NIL_VAL;
+                Value arrayVal = rvm->registers[instr.src1];
+                int64_t index = rvm->i64_regs[instr.src2];
+
+                if (!IS_ARRAY(arrayVal)) {
+                    vmRuntimeError("Expected array for indexing.");
+                    goto check_error;
                 }
+
+                ObjArray* arr = AS_ARRAY(arrayVal);
+                if (index < 0 || index >= arr->length) {
+                    vmRuntimeError("Array index out of bounds.");
+                    goto check_error;
+                }
+
+                rvm->registers[instr.dst] = arr->elements[index];
                 break;
             }
-            case ROP_ARRAY_SET:
-                if (IS_ARRAY(rvm->registers[instr.dst])) {
-                    ObjArray* arr = AS_ARRAY(rvm->registers[instr.dst]);
-                    if (arr && arr->elements && instr.src1 < arr->length && instr.src1 >= 0) {
-                        arr->elements[instr.src1] = rvm->registers[instr.src2];
-                    }
+            case ROP_ARRAY_SET: {
+                Value arrayVal = rvm->registers[instr.dst];
+                int64_t index = rvm->i64_regs[instr.src1];
+                Value value = rvm->registers[instr.src2];
+
+                if (!IS_ARRAY(arrayVal)) {
+                    vmRuntimeError("Expected array for assignment.");
+                    goto check_error;
                 }
+
+                ObjArray* arr = AS_ARRAY(arrayVal);
+                if (index < 0 || index >= arr->length) {
+                    vmRuntimeError("Array index out of bounds.");
+                    goto check_error;
+                }
+
+                arr->elements[index] = value;
                 break;
+            }
             case ROP_ARRAY_PUSH:
                 if (IS_ARRAY(rvm->registers[instr.dst])) {
                     arrayPush(&vm, AS_ARRAY(rvm->registers[instr.dst]), rvm->registers[instr.src2]);
@@ -3370,9 +3416,11 @@ op_DIVIDE_NUMERIC: {
                 break;
             case ROP_I32_TO_I64:
                 rvm->registers[instr.dst] = I64_VAL((int64_t)AS_I32(rvm->registers[instr.src1]));
+                rvm->i64_regs[instr.dst] = AS_I32(rvm->registers[instr.src1]);
                 break;
             case ROP_U32_TO_I64:
                 rvm->registers[instr.dst] = I64_VAL((int64_t)AS_U32(rvm->registers[instr.src1]));
+                rvm->i64_regs[instr.dst] = (int64_t)AS_U32(rvm->registers[instr.src1]);
                 break;
             case ROP_I64_TO_I32:
                 rvm->registers[instr.dst] = I32_VAL((int32_t)AS_I64(rvm->registers[instr.src1]));
@@ -3683,20 +3731,27 @@ op_DIVIDE_NUMERIC: {
                 break;
         }
 
+#endif
+
+HANDLE_RUNTIME_ERROR:
+    goto check_error;
 check_error:
-        if (IS_ERROR(vm.lastError)) {
-            if (vm.tryFrameCount > 0) {
-                TryFrame frame = vm.tryFrames[--vm.tryFrameCount];
-                vm.stackTop = vm.stack + frame.stackDepth;
-                vm.globals[frame.varIndex] = vm.lastError;
-                vm.lastError = NIL_VAL;
-                rvm->ip = (RegisterInstr*)frame.handler;
-                continue;
-            } else {
-                return NIL_VAL;
-            }
+    if (IS_ERROR(vm.lastError)) {
+        if (vm.tryFrameCount > 0) {
+            TryFrame frame = vm.tryFrames[--vm.tryFrameCount];
+            vm.stackTop = vm.stack + frame.stackDepth;
+            vm.globals[frame.varIndex] = vm.lastError;
+            vm.lastError = NIL_VAL;
+            rvm->ip = (RegisterInstr*)frame.handler;
+#if defined(__GNUC__) || defined(__clang__)
+            ip = rvm->ip;
+            goto *dispatch[ip->opcode];
+#else
+            continue;
+#endif
+        } else {
+            return NIL_VAL;
         }
     }
     return NIL_VAL;
-#endif
 }
