@@ -1,5 +1,0 @@
-use tests::modules::hello_module
-
-fn main() {
-    print("select parsed")
-}

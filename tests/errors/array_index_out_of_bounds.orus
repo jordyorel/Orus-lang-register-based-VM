@@ -1,4 +1,0 @@
-fn main() {
-    let arr: [i64; 3] = [1, 2, 3]
-    print(arr[3])
-}

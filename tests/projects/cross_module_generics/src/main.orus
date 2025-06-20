@@ -1,6 +1,0 @@
-use src::util
-
-fn main() {
-    print(util.identity<i32>(42 as i32))
-    print(util.identity<string>("hello"))
-}

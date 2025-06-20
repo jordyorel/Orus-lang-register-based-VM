@@ -1,5 +1,0 @@
-use tests::constants::math
-
-fn main() {
-    print("Value: {}", math.PI)
-}

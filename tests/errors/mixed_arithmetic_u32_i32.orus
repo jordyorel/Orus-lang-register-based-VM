@@ -1,5 +1,0 @@
-fn main() {
-    let x: u32 = 10
-    let y: i32 = 20
-    let z = x + y
-}

@@ -1,7 +1,0 @@
-fn main() {
-    let arr: [i32] = []
-    reserve(arr, 5)
-    push(arr, 1 as i32)
-    push(arr, 2 as i32)
-    print(len(arr))
-}

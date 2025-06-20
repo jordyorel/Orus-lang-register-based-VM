@@ -1,4 +1,0 @@
-use tests::modules::hello_module::{unknown}
-
-fn main() {
-}

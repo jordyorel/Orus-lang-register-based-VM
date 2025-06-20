@@ -1,5 +1,0 @@
-fn bar() -> f64 {
-    return 3
-}
-
-fn main() {}

@@ -1,6 +1,0 @@
-use tests::modules::pub_module
-
-fn main() {
-    private_fn()
-}
-

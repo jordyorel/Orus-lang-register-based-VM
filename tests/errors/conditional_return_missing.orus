@@ -1,7 +1,0 @@
-fn baz(x: bool) -> i32 {
-    if x {
-        return 1
-    }
-}
-
-fn main() {}

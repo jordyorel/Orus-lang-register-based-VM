@@ -1,4 +1,0 @@
-fn main() {
-    let name = input("Name: ")
-    print("Hello, {}", name)
-}

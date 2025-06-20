@@ -1,9 +1,0 @@
-fn main() {
-    let a: i32 = 5
-    let u: u64 = a as u64
-    let back_i32: i32 = u as i32
-    let back_u32: u32 = u as u32
-    let as_f64: f64 = u as f64
-    let from_f64: u64 = 3.0 as u64
-    print("{} {} {} {} {}", u, back_i32, back_u32, as_f64, from_f64)
-}

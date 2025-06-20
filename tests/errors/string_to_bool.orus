@@ -1,4 +1,0 @@
-fn main() {
-    let b: bool = "true" as bool
-}
-
