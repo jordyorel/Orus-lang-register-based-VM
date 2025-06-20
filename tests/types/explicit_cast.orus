@@ -1,0 +1,10 @@
+fn main() {
+    let mut a = -42 as i32
+    let b: u32 = a as u32
+    let x: u32 = 123456
+    let y: f64 = x as f64
+    let z: f64 = -15.9
+    let q: i32 = z as i32
+    let r: u32 = z as u32
+    print("{} {} {} {}", b, y, q, r)
+}

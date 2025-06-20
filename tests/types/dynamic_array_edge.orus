@@ -1,0 +1,15 @@
+fn main() {
+    let arr: [i32; 1] = [1 as i32]
+    push(arr, 2 as i32)
+    push(arr, 3 as i32)
+    print(len(arr))
+    let a = pop(arr)
+    print(a)
+    let b = pop(arr)
+    print(b)
+    let c = pop(arr)
+    print(c)
+    let d = pop(arr)
+    print(d)
+    print(len(arr))
+}

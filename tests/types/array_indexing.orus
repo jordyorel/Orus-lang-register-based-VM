@@ -1,0 +1,15 @@
+// Test nested arrays (2D array)
+fn main() {
+    let matrix: [[i32; 3]; 2] = [[1 as i32, 2 as i32, 3 as i32], [4 as i32, 5 as i32, 6 as i32]]
+
+    // Print the entire matrix
+    print(matrix)
+
+    // Print each row
+    print(matrix[0 as i32])
+    print(matrix[1 as i32])
+
+    // Access and print individual elements
+    print(matrix[0 as i32][2 as i32]) // Should be 3
+    print(matrix[1 as i32][0 as i32]) // Should be 4
+}
