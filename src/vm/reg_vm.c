@@ -14,6 +14,73 @@
 /* Enable to print array index details during execution */
 /* #define DEBUG_ARRAY_INDEX */
 
+static bool appendStringDynamic(const char* src, char** buffer,
+                                int* length, int* capacity) {
+    int srcLen = (int)strlen(src);
+    if (*length + srcLen >= *capacity) {
+        *capacity = (*length + srcLen) * 2;
+        char* newBuf = (char*)realloc(*buffer, *capacity);
+        if (!newBuf) {
+            vmRuntimeError("Memory reallocation failed during string append.");
+            return false;
+        }
+        *buffer = newBuf;
+    }
+    memcpy(*buffer + *length, src, srcLen);
+    *length += srcLen;
+    return true;
+}
+
+static bool appendValueString(Value value, char** buffer, int* length,
+                              int* capacity) {
+    char tmp[100];
+    switch (value.type) {
+        case VAL_I32:
+            snprintf(tmp, sizeof(tmp), "%d", AS_I32(value));
+            return appendStringDynamic(tmp, buffer, length, capacity);
+        case VAL_I64:
+            snprintf(tmp, sizeof(tmp), "%lld", (long long)AS_I64(value));
+            return appendStringDynamic(tmp, buffer, length, capacity);
+        case VAL_U32:
+            snprintf(tmp, sizeof(tmp), "%u", AS_U32(value));
+            return appendStringDynamic(tmp, buffer, length, capacity);
+        case VAL_U64:
+            snprintf(tmp, sizeof(tmp), "%llu", (unsigned long long)AS_U64(value));
+            return appendStringDynamic(tmp, buffer, length, capacity);
+        case VAL_F64:
+            snprintf(tmp, sizeof(tmp), "%g", AS_F64(value));
+            return appendStringDynamic(tmp, buffer, length, capacity);
+        case VAL_BOOL:
+            return appendStringDynamic(AS_BOOL(value) ? "true" : "false",
+                                       buffer, length, capacity);
+        case VAL_NIL:
+            return appendStringDynamic("nil", buffer, length, capacity);
+        case VAL_STRING:
+            return appendStringDynamic(AS_STRING(value)->chars, buffer, length,
+                                       capacity);
+        case VAL_ARRAY: {
+            if (!appendStringDynamic("[", buffer, length, capacity)) return false;
+            ObjArray* arr = AS_ARRAY(value);
+            for (int i = 0; i < arr->length; i++) {
+                if (!appendValueString(arr->elements[i], buffer, length, capacity))
+                    return false;
+                if (i < arr->length - 1) {
+                    if (!appendStringDynamic(", ", buffer, length, capacity))
+                        return false;
+                }
+            }
+            if (!appendStringDynamic("]", buffer, length, capacity)) return false;
+            return true;
+        }
+        case VAL_ERROR:
+            snprintf(tmp, sizeof(tmp), "Error(%d): %s", AS_ERROR(value)->type,
+                     AS_ERROR(value)->message->chars);
+            return appendStringDynamic(tmp, buffer, length, capacity);
+        default:
+            return appendStringDynamic("unknown", buffer, length, capacity);
+    }
+}
+
 #define SYNC_I64_REG(r) do { regs[(r)] = I64_VAL(i64_regs[(r)]); } while (0)
 #define SYNC_F64_REG(r) do { regs[(r)] = F64_VAL(f64_regs[(r)]); } while (0)
 
@@ -1564,9 +1631,11 @@ op_RETURN:
         i64_regs = rvm->i64_regs;
         f64_regs = rvm->f64_regs;
         ip = rvm->ip;
-        regs[dest] = ret;
-        if (IS_I64(ret)) i64_regs[dest] = AS_I64(ret);
-        if (IS_F64(ret)) f64_regs[dest] = AS_F64(ret);
+        if (!IS_NIL(ret)) {
+            regs[dest] = ret;
+            if (IS_I64(ret)) i64_regs[dest] = AS_I64(ret);
+            if (IS_F64(ret)) f64_regs[dest] = AS_F64(ret);
+        }
     }
     DISPATCH();
 
@@ -1642,10 +1711,244 @@ op_PRINT_U64_NO_NL:
     ip++; DISPATCH();
 
 op_FORMAT_PRINT:
-    ip++; DISPATCH();
+    {
+        uint8_t base = ip->dst;
+        uint8_t argc = ip->src1;
+        if (!IS_STRING(regs[base])) {
+            vmRuntimeError("Format string must be a string.");
+            goto HANDLE_RUNTIME_ERROR;
+        }
+        ObjString* formatStr = AS_STRING(regs[base]);
+        int resultCapacity = formatStr->length * 2;
+        char* resultBuffer = (char*)malloc(resultCapacity);
+        if (!resultBuffer) {
+            vmRuntimeError("Memory allocation failed for print buffer.");
+            goto HANDLE_RUNTIME_ERROR;
+        }
+        int resultLength = 0;
+        int formatIndex = 0;
+        int argIndex = 0;
+        while (formatIndex < formatStr->length) {
+            if (formatIndex + 1 < formatStr->length &&
+                formatStr->chars[formatIndex] == '{' &&
+                formatStr->chars[formatIndex + 1] == '}') {
+                if (argIndex >= argc) {
+                    vmRuntimeError("Too few arguments for string interpolation.");
+                    free(resultBuffer);
+                    goto HANDLE_RUNTIME_ERROR;
+                }
+                Value arg = regs[base + 1 + argIndex];
+                char valueStr[100];
+                int valueLen = 0;
+                switch (arg.type) {
+                    case VAL_I32:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "%d", AS_I32(arg));
+                        break;
+                    case VAL_I64:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "%lld", (long long)AS_I64(arg));
+                        break;
+                    case VAL_U32:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "%u", AS_U32(arg));
+                        break;
+                    case VAL_U64:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "%llu", (unsigned long long)AS_U64(arg));
+                        break;
+                    case VAL_F64:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "%g", AS_F64(arg));
+                        break;
+                    case VAL_BOOL:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "%s", AS_BOOL(arg) ? "true" : "false");
+                        break;
+                    case VAL_NIL:
+                        valueLen = 0;
+                        break;
+                    case VAL_STRING: {
+                        valueLen = AS_STRING(arg)->length;
+                        if (resultLength + valueLen >= resultCapacity) {
+                            resultCapacity = (resultLength + valueLen) * 2;
+                            char* newBuf = (char*)realloc(resultBuffer, resultCapacity);
+                            if (!newBuf) { free(resultBuffer); vmRuntimeError("Memory reallocation failed for string argument."); goto HANDLE_RUNTIME_ERROR; }
+                            resultBuffer = newBuf;
+                        }
+                        memcpy(resultBuffer + resultLength, AS_STRING(arg)->chars, valueLen);
+                        resultLength += valueLen;
+                        valueLen = 0;
+                        break;
+                    }
+                    case VAL_ARRAY: {
+                        if (!appendValueString(arg, &resultBuffer, &resultLength, &resultCapacity)) {
+                            free(resultBuffer);
+                            goto HANDLE_RUNTIME_ERROR;
+                        }
+                        valueLen = 0;
+                        break;
+                    }
+                    case VAL_ERROR:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "Error(%d): %s", AS_ERROR(arg)->type, AS_ERROR(arg)->message->chars);
+                        break;
+                    case VAL_RANGE_ITERATOR:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "<range %lld..%lld>", (long long)AS_RANGE_ITERATOR(arg)->current, (long long)AS_RANGE_ITERATOR(arg)->end);
+                        break;
+                }
+                if (valueLen > 0) {
+                    if (resultLength + valueLen >= resultCapacity) {
+                        resultCapacity = (resultLength + valueLen) * 2;
+                        char* newBuf = (char*)realloc(resultBuffer, resultCapacity);
+                        if (!newBuf) { free(resultBuffer); vmRuntimeError("Memory reallocation failed for value conversion."); goto HANDLE_RUNTIME_ERROR; }
+                        resultBuffer = newBuf;
+                    }
+                    memcpy(resultBuffer + resultLength, valueStr, valueLen);
+                    resultLength += valueLen;
+                }
+                formatIndex += 2;
+                argIndex++;
+            } else {
+                if (resultLength + 1 >= resultCapacity) {
+                    resultCapacity = (resultLength + 1) * 2;
+                    char* newBuf = (char*)realloc(resultBuffer, resultCapacity);
+                    if (!newBuf) { free(resultBuffer); vmRuntimeError("Memory reallocation failed while copying character."); goto HANDLE_RUNTIME_ERROR; }
+                    resultBuffer = newBuf;
+                }
+                resultBuffer[resultLength++] = formatStr->chars[formatIndex++];
+            }
+        }
+        if (argIndex < argc) {
+            vmRuntimeError("Too many arguments for string interpolation.");
+            free(resultBuffer);
+            goto HANDLE_RUNTIME_ERROR;
+        }
+        if (resultLength + 1 >= resultCapacity) {
+            resultCapacity = (resultLength + 1) * 2;
+            char* newBuf = (char*)realloc(resultBuffer, resultCapacity);
+            if (!newBuf) { free(resultBuffer); vmRuntimeError("Memory reallocation failed during final null-termination."); goto HANDLE_RUNTIME_ERROR; }
+            resultBuffer = newBuf;
+        }
+        resultBuffer[resultLength] = '\0';
+        printf("%s\n", resultBuffer);
+        fflush(stdout);
+        free(resultBuffer);
+        ip++; DISPATCH();
+    }
 
 op_FORMAT_PRINT_NO_NL:
-    ip++; DISPATCH();
+    {
+        uint8_t base = ip->dst;
+        uint8_t argc = ip->src1;
+        if (!IS_STRING(regs[base])) {
+            vmRuntimeError("Format string must be a string.");
+            goto HANDLE_RUNTIME_ERROR;
+        }
+        ObjString* formatStr = AS_STRING(regs[base]);
+        int resultCapacity = formatStr->length * 2;
+        char* resultBuffer = (char*)malloc(resultCapacity);
+        if (!resultBuffer) {
+            vmRuntimeError("Memory allocation failed for print buffer.");
+            goto HANDLE_RUNTIME_ERROR;
+        }
+        int resultLength = 0;
+        int formatIndex = 0;
+        int argIndex = 0;
+        while (formatIndex < formatStr->length) {
+            if (formatIndex + 1 < formatStr->length &&
+                formatStr->chars[formatIndex] == '{' &&
+                formatStr->chars[formatIndex + 1] == '}') {
+                if (argIndex >= argc) {
+                    vmRuntimeError("Too few arguments for string interpolation.");
+                    free(resultBuffer);
+                    goto HANDLE_RUNTIME_ERROR;
+                }
+                Value arg = regs[base + 1 + argIndex];
+                char valueStr[100];
+                int valueLen = 0;
+                switch (arg.type) {
+                    case VAL_I32:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "%d", AS_I32(arg));
+                        break;
+                    case VAL_I64:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "%lld", (long long)AS_I64(arg));
+                        break;
+                    case VAL_U32:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "%u", AS_U32(arg));
+                        break;
+                    case VAL_U64:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "%llu", (unsigned long long)AS_U64(arg));
+                        break;
+                    case VAL_F64:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "%g", AS_F64(arg));
+                        break;
+                    case VAL_BOOL:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "%s", AS_BOOL(arg) ? "true" : "false");
+                        break;
+                    case VAL_NIL:
+                        valueLen = 0;
+                        break;
+                    case VAL_STRING: {
+                        valueLen = AS_STRING(arg)->length;
+                        if (resultLength + valueLen >= resultCapacity) {
+                            resultCapacity = (resultLength + valueLen) * 2;
+                            char* newBuf = (char*)realloc(resultBuffer, resultCapacity);
+                            if (!newBuf) { free(resultBuffer); vmRuntimeError("Memory reallocation failed for string argument."); goto HANDLE_RUNTIME_ERROR; }
+                            resultBuffer = newBuf;
+                        }
+                        memcpy(resultBuffer + resultLength, AS_STRING(arg)->chars, valueLen);
+                        resultLength += valueLen;
+                        valueLen = 0;
+                        break;
+                    }
+                    case VAL_ARRAY: {
+                        if (!appendValueString(arg, &resultBuffer, &resultLength, &resultCapacity)) {
+                            free(resultBuffer);
+                            goto HANDLE_RUNTIME_ERROR;
+                        }
+                        valueLen = 0;
+                        break;
+                    }
+                    case VAL_ERROR:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "Error(%d): %s", AS_ERROR(arg)->type, AS_ERROR(arg)->message->chars);
+                        break;
+                    case VAL_RANGE_ITERATOR:
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "<range %lld..%lld>", (long long)AS_RANGE_ITERATOR(arg)->current, (long long)AS_RANGE_ITERATOR(arg)->end);
+                        break;
+                }
+                if (valueLen > 0) {
+                    if (resultLength + valueLen >= resultCapacity) {
+                        resultCapacity = (resultLength + valueLen) * 2;
+                        char* newBuf = (char*)realloc(resultBuffer, resultCapacity);
+                        if (!newBuf) { free(resultBuffer); vmRuntimeError("Memory reallocation failed for value conversion."); goto HANDLE_RUNTIME_ERROR; }
+                        resultBuffer = newBuf;
+                    }
+                    memcpy(resultBuffer + resultLength, valueStr, valueLen);
+                    resultLength += valueLen;
+                }
+                formatIndex += 2;
+                argIndex++;
+            } else {
+                if (resultLength + 1 >= resultCapacity) {
+                    resultCapacity = (resultLength + 1) * 2;
+                    char* newBuf = (char*)realloc(resultBuffer, resultCapacity);
+                    if (!newBuf) { free(resultBuffer); vmRuntimeError("Memory reallocation failed while copying character."); goto HANDLE_RUNTIME_ERROR; }
+                    resultBuffer = newBuf;
+                }
+                resultBuffer[resultLength++] = formatStr->chars[formatIndex++];
+            }
+        }
+        if (argIndex < argc) {
+            vmRuntimeError("Too many arguments for string interpolation.");
+            free(resultBuffer);
+            goto HANDLE_RUNTIME_ERROR;
+        }
+        if (resultLength + 1 >= resultCapacity) {
+            resultCapacity = (resultLength + 1) * 2;
+            char* newBuf = (char*)realloc(resultBuffer, resultCapacity);
+            if (!newBuf) { free(resultBuffer); vmRuntimeError("Memory reallocation failed during final null-termination."); goto HANDLE_RUNTIME_ERROR; }
+            resultBuffer = newBuf;
+        }
+        resultBuffer[resultLength] = '\0';
+        printf("%s", resultBuffer);
+        fflush(stdout);
+        free(resultBuffer);
+        ip++; DISPATCH();
+    }
 
 op_SETUP_EXCEPT:
     if (vm.tryFrameCount < TRY_MAX) {
