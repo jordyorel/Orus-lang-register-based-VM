@@ -1,0 +1,23 @@
+// Test floating point arithmetic operations
+// Explicit operations instead of variable assignments
+fn main() {
+    print("f64 Operations:")
+
+    // Addition
+    print("10.5 + 3.2 = {} ", 10.5 + 3.2)
+
+    // Subtraction
+    print("10.5 - 3.2 = {} ", 10.5 - 3.2)
+
+    // Multiplication
+    print("10.5 * 3.2 = {} ", 10.5 * 3.2)
+
+    // Division
+    print("10.5 / 3.2 = {} ", 10.5 / 3.2)
+
+    // Negation
+    print("-10.5 = {} ", -10.5)
+
+    // End of test
+}
+
