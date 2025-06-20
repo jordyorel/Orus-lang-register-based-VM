@@ -684,7 +684,16 @@ op_MAKE_ARRAY: {
 
 op_ARRAY_GET: {
     Value arrayVal = regs[ip->src1];
-    int64_t index = i64_regs[ip->src2];
+    Value indexVal = regs[ip->src2];
+    int64_t index = 0;
+    if (IS_I64(indexVal))       index = AS_I64(indexVal);
+    else if (IS_I32(indexVal))  index = AS_I32(indexVal);
+    else if (IS_U32(indexVal))  index = (int64_t)AS_U32(indexVal);
+    else if (IS_U64(indexVal))  index = (int64_t)AS_U64(indexVal);
+    else {
+        vmRuntimeError("Expected integer index.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
 
     if (!IS_ARRAY(arrayVal)) {
         vmRuntimeError("Expected array for indexing.");
@@ -703,7 +712,16 @@ op_ARRAY_GET: {
 
 op_ARRAY_SET:
     Value arrayVal = regs[ip->dst];
-    int64_t index = i64_regs[ip->src1];
+    Value indexVal = regs[ip->src1];
+    int64_t index = 0;
+    if (IS_I64(indexVal))       index = AS_I64(indexVal);
+    else if (IS_I32(indexVal))  index = AS_I32(indexVal);
+    else if (IS_U32(indexVal))  index = (int64_t)AS_U32(indexVal);
+    else if (IS_U64(indexVal))  index = (int64_t)AS_U64(indexVal);
+    else {
+        vmRuntimeError("Expected integer index.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
     Value value = regs[ip->src2];
 
     if (!IS_ARRAY(arrayVal)) {
@@ -2547,7 +2565,16 @@ op_DIVIDE_NUMERIC: {
             }
             case ROP_ARRAY_GET: {
                 Value arrayVal = rvm->registers[instr.src1];
-                int64_t index = rvm->i64_regs[instr.src2];
+                Value indexVal = rvm->registers[instr.src2];
+                int64_t index = 0;
+                if (IS_I64(indexVal))       index = AS_I64(indexVal);
+                else if (IS_I32(indexVal))  index = AS_I32(indexVal);
+                else if (IS_U32(indexVal))  index = (int64_t)AS_U32(indexVal);
+                else if (IS_U64(indexVal))  index = (int64_t)AS_U64(indexVal);
+                else {
+                    vmRuntimeError("Expected integer index.");
+                    goto check_error;
+                }
 
                 if (!IS_ARRAY(arrayVal)) {
                     vmRuntimeError("Expected array for indexing.");
@@ -2565,7 +2592,16 @@ op_DIVIDE_NUMERIC: {
             }
             case ROP_ARRAY_SET: {
                 Value arrayVal = rvm->registers[instr.dst];
-                int64_t index = rvm->i64_regs[instr.src1];
+                Value indexVal = rvm->registers[instr.src1];
+                int64_t index = 0;
+                if (IS_I64(indexVal))       index = AS_I64(indexVal);
+                else if (IS_I32(indexVal))  index = AS_I32(indexVal);
+                else if (IS_U32(indexVal))  index = (int64_t)AS_U32(indexVal);
+                else if (IS_U64(indexVal))  index = (int64_t)AS_U64(indexVal);
+                else {
+                    vmRuntimeError("Expected integer index.");
+                    goto check_error;
+                }
                 Value value = rvm->registers[instr.src2];
 
                 if (!IS_ARRAY(arrayVal)) {
