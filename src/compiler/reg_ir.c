@@ -1402,7 +1402,7 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 uint16_t off = (uint16_t)(chunk->code[offset + 1] << 8 | chunk->code[offset + 2]);
                 RegisterInstr instr = {ROP_LOOP, 0, 0, 0};
                 writeRegisterInstr(out, instr);
-                patches[patchCount++] = (Patch){out->count - 1, offset - off};
+                patches[patchCount++] = (Patch){out->count - 1, offset + 3 - off};
                 offset += 3;
                 break;
             }
