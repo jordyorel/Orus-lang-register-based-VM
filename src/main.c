@@ -216,6 +216,15 @@ static void runFile(const char* path) {
     }
     vm.astRoot = NULL;
     initRegisterVM(&vm.regVM, &vm.regChunk);
+    if (vm.trace) {
+#ifdef DEBUG_TRACE_EXECUTION
+        disassembleRegisterChunk(&vm.regChunk, "register chunk");
+        printf("Function offsets:\n");
+        for (int i = 0; i < vm.regChunk.functionCount; i++) {
+            printf("%d -> %d\n", i, vm.regChunk.functionOffsets[i]);
+        }
+#endif
+    }
     runRegisterVM(&vm.regVM);
     if (IS_ERROR(vm.lastError)) {
         result = INTERPRET_RUNTIME_ERROR;
