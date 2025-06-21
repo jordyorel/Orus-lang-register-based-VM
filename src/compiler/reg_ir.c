@@ -22,19 +22,32 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
         firstParamGlobal[i] = UINT8_MAX; // Invalid global index
     }
 
-    // Register allocator state
+    // Enhanced register allocator state
     int nextReg = 0;
     int freeRegs[REGISTER_COUNT];
     int freeCount = 0;
     bool regHasConst[REGISTER_COUNT];
     Value regConst[REGISTER_COUNT];
+    
+    // Register lifetime tracking
+    int regLastUse[REGISTER_COUNT];  // Last instruction that used this register
+    int regRefCount[REGISTER_COUNT]; // Reference count for each register
+    bool regSpilled[REGISTER_COUNT]; // Whether register has been spilled
+    int spillSlots[REGISTER_COUNT];  // Spill slot assignments
+    int nextSpillSlot = 0;
+    
     for (int i = 0; i < REGISTER_COUNT; i++) {
         regHasConst[i] = false;
         regConst[i] = NIL_VAL;
+        regLastUse[i] = -1;
+        regRefCount[i] = 0;
+        regSpilled[i] = false;
+        spillSlots[i] = -1;
     }
 
 #define ALLOC_REG() ({ \
     int r; \
+    /* First try to find a free register */ \
     if (freeCount > 0) { \
         r = freeRegs[--freeCount]; \
         /* Don't reuse register 0 if we've allocated higher registers (likely in a method) */ \
@@ -43,13 +56,44 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
             freeRegs[freeCount++] = r; \
             r = nextReg++; \
         } \
-    } else { \
+    } else if (nextReg < REGISTER_COUNT - 16) { /* Reserve last 16 for spill temps */ \
         r = nextReg++; \
+    } else { \
+        /* Need to spill - find the register with oldest last use */ \
+        r = 1; /* Don't spill register 0 (often self parameter) */ \
+        int oldestUse = regLastUse[1]; \
+        for (int i = 2; i < nextReg; i++) { \
+            if (regLastUse[i] < oldestUse && regRefCount[i] == 0) { \
+                r = i; \
+                oldestUse = regLastUse[i]; \
+            } \
+        } \
+        /* Generate spill instruction */ \
+        if (!regSpilled[r]) { \
+            spillSlots[r] = nextSpillSlot++; \
+            RegisterInstr spillInstr = {ROP_SPILL_REG, (uint8_t)spillSlots[r], (uint8_t)r, 0}; \
+            writeRegisterInstr(out, spillInstr); \
+            regSpilled[r] = true; \
+        } \
     } \
     if (currentFunc >= 0 && r + 1 > funcMax[currentFunc]) funcMax[currentFunc] = r + 1; \
     regHasConst[r] = false; \
+    regRefCount[r] = 1; \
+    regLastUse[r] = out->count; \
     r; })
-#define RELEASE_REG(r) do { regHasConst[(r)] = false; if (freeCount < REGISTER_COUNT) freeRegs[freeCount++] = (r); } while (0)
+#define RELEASE_REG(r) do { \
+    regHasConst[(r)] = false; \
+    if (regRefCount[(r)] > 0) regRefCount[(r)]--; \
+    if (regRefCount[(r)] == 0) { \
+        if (regSpilled[(r)]) { \
+            /* Generate unspill instruction */ \
+            RegisterInstr unspillInstr = {ROP_UNSPILL_REG, (uint8_t)(r), (uint8_t)spillSlots[(r)], 0}; \
+            writeRegisterInstr(out, unspillInstr); \
+            regSpilled[(r)] = false; \
+        } \
+        if (freeCount < REGISTER_COUNT) freeRegs[freeCount++] = (r); \
+    } \
+} while (0)
 #define ALLOC_CONTIG(n) ({ \
     int base = nextReg; \
     nextReg += (n); \
@@ -1882,26 +1926,25 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
             }
             case OP_SLICE: {
                 // OP_SLICE: stack has [array, start, end] -> [result]
-                // Since RegisterInstr only supports 2 source operands, we need a multi-instruction approach
+                // Use the original ROP_SLICE but store end value in temp register
                 int endReg = stackRegs[--sp];     // pop end 
                 int startReg = stackRegs[--sp];   // pop start
                 int arrayReg = stackRegs[--sp];   // pop array
                 int resultReg = ALLOC_REG();      // allocate result
                 stackRegs[sp++] = resultReg;      // push result
                 
-                // Approach: Use a temporary register for the end value and implement slice as:
-                // 1. Move end to a known temporary register (register 255)
-                RegisterInstr storeEndInstr = {ROP_MOV, 255, (uint8_t)endReg, 0};
-                writeRegisterInstr(out, storeEndInstr);
+                // Store end value in a known register (250) for ROP_SLICE to access
+                RegisterInstr storeEnd = {ROP_MOV, 250, (uint8_t)endReg, 0};
+                writeRegisterInstr(out, storeEnd);
                 
-                // 2. Execute slice: result = slice(array, start, temp_reg_255)
+                // Execute slice: result = slice(array, start, temp_reg_250)
                 RegisterInstr sliceInstr = {ROP_SLICE, (uint8_t)resultReg, (uint8_t)arrayReg, (uint8_t)startReg};
                 writeRegisterInstr(out, sliceInstr);
                 
                 RELEASE_REG(endReg);
                 RELEASE_REG(startReg);
                 RELEASE_REG(arrayReg);
-                offset += 2; // Two instructions
+                offset += 2; // Two instructions: MOV + SLICE
                 break;
             }
             default:

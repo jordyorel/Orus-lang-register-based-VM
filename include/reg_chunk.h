@@ -252,6 +252,9 @@ typedef enum {
     ROP_MODULE_PATH,
     ROP_NATIVE_POW,
     ROP_NATIVE_SQRT,
+    ROP_CALL_BUILTIN_SLICE,
+    ROP_SPILL_REG,
+    ROP_UNSPILL_REG,
 } RegisterOp;
 
 typedef struct {

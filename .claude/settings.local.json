@@ -5,7 +5,8 @@
       "Bash(make:*)",
       "Bash(./orusc:*)",
       "Bash(grep:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

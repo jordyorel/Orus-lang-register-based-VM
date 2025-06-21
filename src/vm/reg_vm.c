@@ -3912,10 +3912,10 @@ op_DIVIDE_NUMERIC: {
                 break; }
             case ROP_SLICE: {
                 // ROP_SLICE: dst = slice(src1, src2, reg255)
-                // where src1=array, src2=start, reg255=end (stored there by previous MOV)
+                // where src1=array, src2=start, reg255=end (stored by previous MOV)
                 Value arrayVal = rvm->registers[instr.src1]; // Array register
-                Value startVal = rvm->registers[instr.src2]; // Start index  
-                Value endVal = rvm->registers[255];          // End index (stored in temp reg)
+                Value startVal = rvm->registers[instr.src2]; // Start index
+                Value endVal = rvm->registers[250];          // End index from temp register
 
                 if (!IS_ARRAY(arrayVal) ||
                     !(IS_I32(startVal) || IS_U32(startVal) || IS_NIL(startVal)) ||
@@ -3943,7 +3943,15 @@ op_DIVIDE_NUMERIC: {
                 for (int i = 0; i < len; i++) {
                     result->elements[i] = src->elements[start + i];
                 }
-                rvm->registers[instr.dst] = ARRAY_VAL(result);
+                
+                // Ensure the result is properly tagged as an array
+                Value resultValue = ARRAY_VAL(result);
+                if (!IS_ARRAY(resultValue)) {
+                    vmRuntimeError("Failed to create array result in slice operation.");
+                    goto check_error;
+                }
+                
+                rvm->registers[instr.dst] = resultValue;
                 break;
             }
             case ROP_SUBSTRING:
@@ -4120,6 +4128,70 @@ op_DIVIDE_NUMERIC: {
                 rvm->registers[instr.dst] = builtin_native_sqrt(rvm->registers[instr.src1]);
                 if (IS_F64(rvm->registers[instr.dst])) rvm->f64_regs[instr.dst] = AS_F64(rvm->registers[instr.dst]);
                 break;
+            case ROP_CALL_BUILTIN_SLICE: {
+                // Call builtin slice function: slice(array, start, end)
+                // Arguments are in registers 0, 1, 2
+                // src1 contains the argument count (should be 3)
+                Value arrayVal = rvm->registers[0];
+                Value startVal = rvm->registers[1];
+                Value endVal = rvm->registers[2];
+                
+                if (!IS_ARRAY(arrayVal) ||
+                    !(IS_I32(startVal) || IS_U32(startVal) || IS_NIL(startVal)) ||
+                    !(IS_I32(endVal) || IS_U32(endVal) || IS_NIL(endVal))) {
+                    vmRuntimeError("slice expects (array, i32?, i32?).");
+                    goto check_error;
+                }
+
+                ObjArray* src = AS_ARRAY(arrayVal);
+                int start = 0;
+                int end = src->length;
+                if (!IS_NIL(startVal)) {
+                    start = IS_I32(startVal) ? AS_I32(startVal) : (int)AS_U32(startVal);
+                }
+                if (!IS_NIL(endVal)) {
+                    end = IS_I32(endVal) ? AS_I32(endVal) : (int)AS_U32(endVal);
+                }
+                if (start < 0) start = 0;
+                if (end > src->length) end = src->length;
+                if (start > end) start = end;
+                int len = end - start;
+
+                ObjArray* result = allocateArray(len);
+                result->length = len;
+                for (int i = 0; i < len; i++) {
+                    result->elements[i] = src->elements[start + i];
+                }
+                
+                rvm->registers[instr.dst] = ARRAY_VAL(result);
+                break;
+            }
+            case ROP_SPILL_REG: {
+                // Spill register to memory slot
+                // dst = spill slot index, src1 = register to spill
+                int spillSlot = instr.dst;
+                int regToSpill = instr.src1;
+                
+                // For simplicity, use high registers as spill storage
+                // In a real implementation, this would use dedicated memory
+                int spillReg = 240 + spillSlot; // Use registers 240-255 as spill area
+                if (spillReg < REGISTER_COUNT) {
+                    rvm->registers[spillReg] = rvm->registers[regToSpill];
+                }
+                break;
+            }
+            case ROP_UNSPILL_REG: {
+                // Restore register from memory slot
+                // dst = register to restore, src1 = spill slot index
+                int regToRestore = instr.dst;
+                int spillSlot = instr.src1;
+                
+                int spillReg = 240 + spillSlot;
+                if (spillReg < REGISTER_COUNT) {
+                    rvm->registers[regToRestore] = rvm->registers[spillReg];
+                }
+                break;
+            }
         }
 
 #endif
