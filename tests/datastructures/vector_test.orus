@@ -1,0 +1,23 @@
+// Test: Vector edge cases and integration in Orus
+
+fn main() {
+    // Pop from empty vector
+    let v = []
+    print("Pop from empty:")
+    let popped = v.pop() // Should handle gracefully (runtime error or nil)
+    print("Result: " + popped)
+
+    // Type safety: mixing types
+    let vi = []
+    vi.push(1)
+    // vi.push("string") // Uncomment to test type error
+
+    // Nested vectors
+    let vv = []
+    vv.push([1,2,3])
+    vv.push([4,5])
+    print("Nested vector: " + vv)
+    for i in (0 as i32)..len(vv) {
+        print("vv[" + i + "]: " + vv[i])
+    }
+}

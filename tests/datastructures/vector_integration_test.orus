@@ -1,0 +1,26 @@
+// Test: Vector integration with structs and mutation in Orus
+
+struct Point {
+    x: i32
+    y: i32
+}
+
+fn main() {
+    let points = []
+    points.push(Point{x: 1 as i32, y: 2 as i32})
+    points.push(Point{x: 3 as i32, y: 4 as i32})
+    print("Points vector: " + points)
+    for i in (0 as i32)..len(points) {
+        let p = points[i]
+        print("Point " + (i as string) + ": (" + (p.x as string) + ", " + (p.y as string) + ")")
+    }
+    // Mutate a point
+    points[0 as i32].x = 10 as i32
+    print("After mutation: " + points[0 as i32])
+    // Remove all
+    while len(points) > (0 as i32) {
+        let removed = points.pop()
+        print("Removed: " + (removed as string))
+    }
+    print("Points now: " + points)
+}

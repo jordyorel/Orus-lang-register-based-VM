@@ -16,7 +16,11 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
 
     int currentFunc = -1;
     int funcMax[UINT8_COUNT];
-    for (int i = 0; i < UINT8_COUNT; i++) funcMax[i] = 0;
+    uint8_t firstParamGlobal[UINT8_COUNT]; // Track which global is the first param
+    for (int i = 0; i < UINT8_COUNT; i++) {
+        funcMax[i] = 0;
+        firstParamGlobal[i] = UINT8_MAX; // Invalid global index
+    }
 
     // Register allocator state
     int nextReg = 0;
@@ -30,7 +34,18 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
     }
 
 #define ALLOC_REG() ({ \
-    int r = (freeCount > 0 ? freeRegs[--freeCount] : nextReg++); \
+    int r; \
+    if (freeCount > 0) { \
+        r = freeRegs[--freeCount]; \
+        /* Don't reuse register 0 if we've allocated higher registers (likely in a method) */ \
+        if (r == 0 && nextReg > 1) { \
+            /* Put register 0 back and use a new register instead */ \
+            freeRegs[freeCount++] = r; \
+            r = nextReg++; \
+        } \
+    } else { \
+        r = nextReg++; \
+    } \
     if (currentFunc >= 0 && r + 1 > funcMax[currentFunc]) funcMax[currentFunc] = r + 1; \
     regHasConst[r] = false; \
     r; })
@@ -53,9 +68,15 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
         for (int fi = 0; fi < vm.functionCount; fi++) {
             if (vm.functions[fi].chunk == chunk && vm.functions[fi].start == offset) {
                 currentFunc = fi;
-                nextReg = 0;
+                // If function has parameters, reserve register 0 for the first parameter (often 'self')
+                if (vm.functions[fi].arity > 0) {
+                    nextReg = vm.functions[fi].arity; // Start allocation after parameter registers
+                } else {
+                    nextReg = 0;
+                }
                 freeCount = 0;
                 sp = 0;
+                firstParamGlobal[fi] = UINT8_MAX;
                 break;
             }
         }
@@ -1729,7 +1750,27 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
             }
             case OP_GET_GLOBAL: {
                 uint8_t idx = chunk->code[offset + 1];
-                int dst = ALLOC_REG();
+                int dst;
+                
+                // Check if this global corresponds to the first parameter
+                if (currentFunc >= 0 && vm.functions[currentFunc].arity > 0) {
+                    if (firstParamGlobal[currentFunc] == UINT8_MAX) {
+                        // First global access in this function - assume it's the first parameter
+                        firstParamGlobal[currentFunc] = idx;
+                        dst = 0; // Use register 0 for first parameter
+                        stackRegs[sp++] = dst;
+                        offset += 2;
+                        break;
+                    } else if (firstParamGlobal[currentFunc] == idx) {
+                        // Subsequent access to the same global (first parameter)
+                        dst = 0; // Always use register 0 for first parameter
+                        stackRegs[sp++] = dst;
+                        offset += 2;
+                        break;
+                    }
+                }
+                
+                dst = ALLOC_REG();
                 RegisterInstr instr = {ROP_LOAD_GLOBAL, (uint8_t)dst, idx, 0};
                 writeRegisterInstr(out, instr);
                 stackRegs[sp++] = dst;
@@ -1756,7 +1797,15 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
             case OP_CALL: {
                 uint8_t idx = chunk->code[offset + 1];
                 uint8_t argc = chunk->code[offset + 2];
-                int base = ALLOC_CONTIG(argc > 0 ? argc : 1);
+                // For method calls (argc > 0), arguments should start at register 0
+                // For regular function calls (argc == 0), we can use any register
+                int base;
+                if (argc > 0) {
+                    base = 0; // Method calls: put arguments starting at register 0
+                } else {
+                    base = ALLOC_CONTIG(1); // Regular function calls: allocate a register
+                }
+                
                 for (int i = 0; i < argc; i++) {
                     int src = stackRegs[sp - argc + i];
                     RegisterInstr mv = {ROP_MOV, (uint8_t)(base + i), (uint8_t)src, 0};
@@ -1829,6 +1878,30 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(src);
                 offset += 1;
+                break;
+            }
+            case OP_SLICE: {
+                // OP_SLICE: stack has [array, start, end] -> [result]
+                // Since RegisterInstr only supports 2 source operands, we need a multi-instruction approach
+                int endReg = stackRegs[--sp];     // pop end 
+                int startReg = stackRegs[--sp];   // pop start
+                int arrayReg = stackRegs[--sp];   // pop array
+                int resultReg = ALLOC_REG();      // allocate result
+                stackRegs[sp++] = resultReg;      // push result
+                
+                // Approach: Use a temporary register for the end value and implement slice as:
+                // 1. Move end to a known temporary register (register 255)
+                RegisterInstr storeEndInstr = {ROP_MOV, 255, (uint8_t)endReg, 0};
+                writeRegisterInstr(out, storeEndInstr);
+                
+                // 2. Execute slice: result = slice(array, start, temp_reg_255)
+                RegisterInstr sliceInstr = {ROP_SLICE, (uint8_t)resultReg, (uint8_t)arrayReg, (uint8_t)startReg};
+                writeRegisterInstr(out, sliceInstr);
+                
+                RELEASE_REG(endReg);
+                RELEASE_REG(startReg);
+                RELEASE_REG(arrayReg);
+                offset += 2; // Two instructions
                 break;
             }
             default:

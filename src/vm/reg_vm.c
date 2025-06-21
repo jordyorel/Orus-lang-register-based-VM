@@ -131,7 +131,7 @@ Value runRegisterVM(RegisterVM* rvm) {
     Value* regs = rvm->registers;
     int64_t* i64_regs = rvm->i64_regs;
     double*  f64_regs = rvm->f64_regs;
-    static int loop_guard = 0;
+    static long long loop_guard = 0;
     static void* dispatch[] = {
         &&op_NOP,
         &&op_MOV,
@@ -376,7 +376,7 @@ Value runRegisterVM(RegisterVM* rvm) {
     };
 #define DISPATCH()                                                         \
     do {                                                                  \
-        if (++loop_guard > 1000000000) {                                  \
+        if (++loop_guard > 10000000000LL) {                               \
             fprintf(stderr, "[VM] Infinite loop guard triggered.\n");    \
             exit(1);                                                      \
         }                                                                 \
@@ -2533,7 +2533,7 @@ op_DIVIDE_NUMERIC: {
 
 #else
     while (true) {
-        if (++loop_guard > 1000000000) {
+        if (++loop_guard > 10000000000LL) {
             fprintf(stderr, "[VM] Infinite loop guard triggered.\n");
             exit(1);
         }
@@ -3910,8 +3910,42 @@ op_DIVIDE_NUMERIC: {
                 int64_t b = AS_I64(rvm->registers[instr.src2]);
                 rvm->registers[instr.dst] = I64_VAL(a >> b);
                 break; }
-            case ROP_SLICE:
+            case ROP_SLICE: {
+                // ROP_SLICE: dst = slice(src1, src2, reg255)
+                // where src1=array, src2=start, reg255=end (stored there by previous MOV)
+                Value arrayVal = rvm->registers[instr.src1]; // Array register
+                Value startVal = rvm->registers[instr.src2]; // Start index  
+                Value endVal = rvm->registers[255];          // End index (stored in temp reg)
+
+                if (!IS_ARRAY(arrayVal) ||
+                    !(IS_I32(startVal) || IS_U32(startVal) || IS_NIL(startVal)) ||
+                    !(IS_I32(endVal) || IS_U32(endVal) || IS_NIL(endVal))) {
+                    vmRuntimeError("slice expects (array, i32?, i32?).");
+                    goto check_error;
+                }
+
+                ObjArray* src = AS_ARRAY(arrayVal);
+                int start = 0;
+                int end = src->length;
+                if (!IS_NIL(startVal)) {
+                    start = IS_I32(startVal) ? AS_I32(startVal) : (int)AS_U32(startVal);
+                }
+                if (!IS_NIL(endVal)) {
+                    end = IS_I32(endVal) ? AS_I32(endVal) : (int)AS_U32(endVal);
+                }
+                if (start < 0) start = 0;
+                if (end > src->length) end = src->length;
+                if (start > end) start = end;
+                int len = end - start;
+
+                ObjArray* result = allocateArray(len);
+                result->length = len;
+                for (int i = 0; i < len; i++) {
+                    result->elements[i] = src->elements[start + i];
+                }
+                rvm->registers[instr.dst] = ARRAY_VAL(result);
                 break;
+            }
             case ROP_SUBSTRING:
                 break;
             case ROP_SUBTRACT_F64: {
