@@ -1,0 +1,19 @@
+fn main() {
+    let count: i64 = 1
+    match count {
+        0 => print("zero"),
+        1 => print("one"),
+        _ => print("many")
+    }
+
+    let word = "maybe"
+    match word {
+        "yes" => print("yes"),
+        "no" => print("no"),
+        "maybe" => {
+            print("maybe yes")
+            print("maybe no")
+        },
+        _ => print("unknown")
+    }
+}

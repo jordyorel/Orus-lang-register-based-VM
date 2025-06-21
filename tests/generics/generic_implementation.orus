@@ -1,0 +1,63 @@
+// Tests for Generic Type Implementation
+// This test verifies the compiler and VM correctly handle generics
+
+// Test the DEFINE_ARRAY_TYPE macro implementation
+struct GenericTest<T> {
+    array: [T]
+}
+
+// Function to test generic type instantiation
+fn createGenericInstance<T>(value: T) -> GenericTest<T> {
+    let instance = GenericTest<T>{
+        array: []
+    }
+    instance.array.push(value)
+    return instance
+}
+
+// Test interactions between different generic types
+struct Pair<A, B> {
+    first: A
+    second: B
+}
+
+fn createPair<A, B>(a: A, b: B) -> Pair<A, B> {
+    return Pair<A, B>{
+        first: a,
+        second: b
+    }
+}
+
+// Test function with multiple generic type parameters
+fn swapPair<A, B>(pair: Pair<A, B>) -> Pair<B, A> {
+    return Pair<B, A>{
+        first: pair.second,
+        second: pair.first
+    }
+}
+
+fn main() {
+    // Test creating different instances of the same generic type
+    let intTest = createGenericInstance(42)
+    let stringTest = createGenericInstance("string value")
+    let floatTest = createGenericInstance(3.14)
+    let boolTest = createGenericInstance(true)
+    
+    print("Int generic: {}", intTest.array[0 as i32])
+    print("String generic: {}", stringTest.array[0 as i32])
+    print("Float generic: {}", floatTest.array[0 as i32])
+    print("Bool generic: {}", boolTest.array[0 as i32])
+    
+    // Test pairs and swapping
+    let numberStringPair = createPair(100, "hundred")
+    print("Original pair: {}, {}", numberStringPair.first, numberStringPair.second)
+    
+    let swapped = swapPair(numberStringPair)
+    print("Swapped pair: {}, {}", swapped.first, swapped.second)
+    
+    // Test nested generic types using simple values
+    let nestedPair: Pair<GenericTest<i32>, GenericTest<string> > = createPair<GenericTest<i32>, GenericTest<string> >(createGenericInstance(1 as i32), createGenericInstance("a"))
+
+    print("Nested first: {}", nestedPair.first.array[0 as i32])
+    print("Nested second: {}", nestedPair.second.array[0 as i32])
+}
