@@ -35,7 +35,7 @@ static void deriveRuntimeHelp(const char* message,
         *helpOut = strdup("check that every operator has enough input values");
         *noteOut = "this usually means a value was not pushed before the operation";
     } else if (strstr(message, "Operand must") || strstr(message, "Operands must")) {
-        *helpOut = strdup("verify the value types or use explicit casts like 'as i32'");
+        *helpOut = strdup("verify the value types or use explicit casts");
         *noteOut = "the operation expected a different type";
     } else if (strstr(message, "Module") && strstr(message, "not found")) {
         *helpOut = strdup("check the module path or adjust the ORUS_STD_PATH environment variable");

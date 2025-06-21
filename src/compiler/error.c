@@ -269,12 +269,12 @@ void emitTypeMismatchError(Compiler* compiler,
     // Provide specific help based on the mismatched types
     if (strstr(expectedType, "i32") && strstr(actualType, "f64")) {
         snprintf(helpBuffer, sizeof(helpBuffer),
-                "try using `as i32` to convert the float to an integer");
+                "try using an explicit cast to convert the float to an integer");
         note = "floating-point to integer conversions may lose precision";
-    } 
+    }
     else if (strstr(expectedType, "f64") && (strstr(actualType, "i32") || strstr(actualType, "u32"))) {
         snprintf(helpBuffer, sizeof(helpBuffer),
-                "try using `as f64` to convert the integer to a float");
+                "try using an explicit cast to convert the integer to a float");
     }
     else if (strstr(expectedType, "bool")) {
         snprintf(helpBuffer, sizeof(helpBuffer),

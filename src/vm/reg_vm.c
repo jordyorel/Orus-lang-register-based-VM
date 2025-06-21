@@ -1,5 +1,6 @@
-/* DEBUG_TRACE_EXECUTION enables verbose register VM tracing. */
-#define DEBUG_TRACE_EXECUTION
+/* DEBUG_TRACE_EXECUTION enables verbose register VM tracing.
+ * Keep undefined for normal execution to avoid polluting program output. */
+/* #define DEBUG_TRACE_EXECUTION */
 #include "../../include/reg_vm.h"
 #include "../../include/vm.h"
 #include "../../include/memory.h"
@@ -13,6 +14,39 @@
 
 /* Enable to print array index details during execution */
 /* #define DEBUG_ARRAY_INDEX */
+
+typedef struct {
+    Value registers[REGISTER_COUNT];
+    int64_t i64_cache[REGISTER_COUNT];
+    double f64_cache[REGISTER_COUNT];
+    bool i64_valid[REGISTER_COUNT];
+    bool f64_valid[REGISTER_COUNT];
+} RegisterState;
+
+typedef struct {
+    Value lastError;
+    TryFrame* tryFrames;
+    int tryFrameCount;
+    int maxTryFrames;
+} VMErrorState;
+
+typedef struct {
+    RegisterChunk* chunk;
+    RegisterInstr* instructionPointer;
+    RegisterState registerState;
+    VMErrorState errorState;
+    unsigned long instructionCount;
+    bool garbageCollectionPaused;
+} RegisterVM2;
+
+typedef enum {
+    VM_OK,
+    VM_RUNTIME_ERROR,
+    VM_STACK_OVERFLOW,
+    VM_OUT_OF_MEMORY
+} VMResult;
+
+typedef VMResult (*InstructionHandler)(RegisterVM2* machine, RegisterInstr* instruction);
 
 static bool appendStringDynamic(const char* src, char** buffer,
                                 int* length, int* capacity) {
@@ -4218,3 +4252,151 @@ check_error:
     }
     return NIL_VAL;
 }
+
+/* --- Refactored register-based VM implementation --- */
+
+static inline void setRegisterI64(RegisterState* state, uint8_t index, int64_t value) {
+    state->registers[index] = I64_VAL(value);
+    state->i64_cache[index] = value;
+    state->i64_valid[index] = true;
+    state->f64_valid[index] = false;
+}
+
+static inline void setRegisterF64(RegisterState* state, uint8_t index, double value) {
+    state->registers[index] = F64_VAL(value);
+    state->f64_cache[index] = value;
+    state->f64_valid[index] = true;
+    state->i64_valid[index] = false;
+}
+
+static inline int64_t getRegisterI64(RegisterState* state, uint8_t index) {
+    if (!state->i64_valid[index]) {
+        state->i64_cache[index] = AS_I64(state->registers[index]);
+        state->i64_valid[index] = true;
+    }
+    return state->i64_cache[index];
+}
+
+static inline double getRegisterF64(RegisterState* state, uint8_t index) {
+    if (!state->f64_valid[index]) {
+        state->f64_cache[index] = AS_F64(state->registers[index]);
+        state->f64_valid[index] = true;
+    }
+    return state->f64_cache[index];
+}
+
+static VMResult setVMError(VMErrorState* errorState, const char* message) {
+    ObjError* err = allocateError(ERROR_RUNTIME, message, (SrcLocation){NULL, 0, 0});
+    if (!err) return VM_OUT_OF_MEMORY;
+    errorState->lastError = ERROR_VAL(err);
+    return VM_RUNTIME_ERROR;
+}
+
+static bool handleVMError(RegisterVM2* machine, VMResult result) {
+    if (machine->errorState.tryFrameCount == 0) return false;
+    TryFrame frame = machine->errorState.tryFrames[--machine->errorState.tryFrameCount];
+    machine->instructionPointer = (RegisterInstr*)frame.handler;
+    machine->registerState.registers[frame.varIndex] = machine->errorState.lastError;
+    machine->errorState.lastError = NIL_VAL;
+    return true;
+}
+
+static VMResult handleAddI64(RegisterVM2* machine, RegisterInstr* instruction) {
+    int64_t a = getRegisterI64(&machine->registerState, instruction->src1);
+    int64_t b = getRegisterI64(&machine->registerState, instruction->src2);
+    setRegisterI64(&machine->registerState, instruction->dst, a + b);
+    return VM_OK;
+}
+
+static VMResult handleDivI64(RegisterVM2* machine, RegisterInstr* instruction) {
+    int64_t a = getRegisterI64(&machine->registerState, instruction->src1);
+    int64_t b = getRegisterI64(&machine->registerState, instruction->src2);
+    if (b == 0) {
+        return setVMError(&machine->errorState, "Division by zero");
+    }
+    setRegisterI64(&machine->registerState, instruction->dst, a / b);
+    return VM_OK;
+}
+
+static int64_t normalizeArrayIndex(Value indexValue, int length) {
+    int64_t index;
+    switch (indexValue.type) {
+        case VAL_I32: index = AS_I32(indexValue); break;
+        case VAL_I64: index = AS_I64(indexValue); break;
+        case VAL_U32: index = (int64_t)AS_U32(indexValue); break;
+        case VAL_U64:
+            if (AS_U64(indexValue) > INT64_MAX) return -1;
+            index = (int64_t)AS_U64(indexValue);
+            break;
+        default:
+            return -1;
+    }
+    if (index < 0) index += length;
+    return (index >= 0 && index < length) ? index : -1;
+}
+
+static VMResult handleArrayGet(RegisterVM2* machine, RegisterInstr* instruction) {
+    Value arrayValue = machine->registerState.registers[instruction->src1];
+    Value indexValue = machine->registerState.registers[instruction->src2];
+    if (!IS_ARRAY(arrayValue)) {
+        return setVMError(&machine->errorState, "Expected array for indexing");
+    }
+    ObjArray* array = AS_ARRAY(arrayValue);
+    int64_t index = normalizeArrayIndex(indexValue, array->length);
+    if (index < 0) {
+        return setVMError(&machine->errorState, "Array index out of bounds");
+    }
+    machine->registerState.registers[instruction->dst] = array->elements[index];
+    machine->registerState.i64_valid[instruction->dst] = false;
+    machine->registerState.f64_valid[instruction->dst] = false;
+    return VM_OK;
+}
+
+static VMResult unhandledOpcode(RegisterVM2* machine, RegisterInstr* instruction) {
+    (void)instruction;
+    return setVMError(&machine->errorState, "Invalid or unimplemented opcode");
+}
+
+void initRegisterVM2(RegisterVM2* machine, RegisterChunk* chunk) {
+    memset(machine, 0, sizeof(RegisterVM2));
+    machine->chunk = chunk;
+    machine->instructionPointer = chunk->code;
+    machine->errorState.tryFrames = vm.tryFrames;
+    machine->errorState.tryFrameCount = 0;
+    machine->errorState.maxTryFrames = TRY_MAX;
+}
+
+VMResult runRegisterVM2(RegisterVM2* machine) {
+    static InstructionHandler handlers[256];
+    static bool initialized = false;
+    if (!initialized) {
+        for (int i = 0; i < 256; i++) handlers[i] = unhandledOpcode;
+        handlers[ROP_ADD_I64] = handleAddI64;
+        handlers[ROP_DIVIDE_I64] = handleDivI64;
+        handlers[ROP_ARRAY_GET] = handleArrayGet;
+        initialized = true;
+    }
+
+    while (true) {
+        RegisterInstr* instruction = machine->instructionPointer++;
+        if (instruction->opcode >= 256) {
+            return setVMError(&machine->errorState, "Invalid opcode");
+        }
+
+        VMResult result = handlers[instruction->opcode](machine, instruction);
+        if (result != VM_OK) {
+            if (handleVMError(machine, result)) {
+                continue;
+            }
+            return result;
+        }
+
+        if (++machine->instructionCount % 10000 == 0) {
+            if (!machine->garbageCollectionPaused) collectGarbage();
+            if (machine->instructionCount > 100000000) {
+                return setVMError(&machine->errorState, "Infinite loop detected");
+            }
+        }
+    }
+}
+
