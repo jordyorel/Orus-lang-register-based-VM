@@ -1750,8 +1750,16 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 if (sp < 2) { offset++; break; }
                 int countReg = stackRegs[--sp];
                 int argCount = 0;
-                if (regHasConst[countReg] && IS_I32(regConst[countReg])) {
-                    argCount = AS_I32(regConst[countReg]);
+                if (regHasConst[countReg]) {
+                    if (IS_I32(regConst[countReg])) {
+                        argCount = AS_I32(regConst[countReg]);
+                    } else if (IS_I64(regConst[countReg])) {
+                        argCount = (int)AS_I64(regConst[countReg]);
+                    } else if (IS_U32(regConst[countReg])) {
+                        argCount = (int)AS_U32(regConst[countReg]);
+                    } else if (IS_U64(regConst[countReg])) {
+                        argCount = (int)AS_U64(regConst[countReg]);
+                    }
                 }
                 int formatIndex = sp - argCount - 1;
                 if (formatIndex < 0) { offset++; break; }
