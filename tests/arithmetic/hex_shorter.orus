@@ -1,0 +1,9 @@
+fn main() {
+    let hex1 = 0xABCDu64
+    print("0xABCDu64 type:")
+    print(type_of(hex1))
+    
+    let hex2 = 0x123456u64  
+    print("0x123456u64 type:")
+    print(type_of(hex2))
+}

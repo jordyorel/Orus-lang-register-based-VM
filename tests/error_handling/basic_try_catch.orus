@@ -1,0 +1,15 @@
+// Basic try-catch error handling test
+fn main() {
+    print("Testing basic try-catch...")
+    
+    try {
+        let x = 10
+        let y = 0
+        let result = x / y  // This should cause division by zero error
+        print("Result: {}", result)
+    } catch error {
+        print("Caught division by zero: {}", error)
+    }
+    
+    print("Program continues after error handling")
+}

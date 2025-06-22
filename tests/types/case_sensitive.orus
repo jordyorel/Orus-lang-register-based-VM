@@ -1,0 +1,9 @@
+fn main() {
+    let upper_e = 0xEu64
+    print("0xEu64:")
+    print(type_of(upper_e))
+    
+    let lower_e = 0xeu64
+    print("0xeu64:")
+    print(type_of(lower_e))
+}

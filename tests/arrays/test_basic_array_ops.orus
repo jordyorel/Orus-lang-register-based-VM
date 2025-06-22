@@ -1,0 +1,28 @@
+// Basic array operations test
+// Tests core functionality that should work with current implementation
+
+fn main() {
+    print("Testing basic array operations...")
+    
+    // Test array literal
+    let arr: [i32] = [1, 2, 3]
+    print("{}", arr)
+    
+    // Test length
+    print("Length:")
+    print("{}", len(arr))
+    
+    // Test indexing
+    print("First element:")
+    print("{}", arr[0])
+    
+    print("Last element:")
+    print("{}", arr[2])
+    
+    // Test modification
+    arr[1] = 42
+    print("After modification:")
+    print("{}", arr)
+    
+    print("Array test complete!")
+}

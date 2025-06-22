@@ -1,0 +1,26 @@
+// Working generic function test
+fn identity<T>(value: T) -> T {
+    return value
+}
+
+fn swap<T>(a: T, b: T) -> T {
+    return b  // Just return second value for simplicity
+}
+
+fn main() {
+    // Test with different types
+    let int_result = identity<i32>(42)
+    print("identity<i32>(42) = {}", int_result)
+    
+    let float_result = identity<f64>(3.14)
+    print("identity<f64>(3.14) = {}", float_result)
+    
+    let string_result = identity<string>("hello")
+    print("identity<string>(\"hello\") = {}", string_result)
+    
+    // Test swap function
+    let swapped = swap<i32>(10, 20)
+    print("swap<i32>(10, 20) = {}", swapped)
+    
+    print("Basic generics working!")
+}

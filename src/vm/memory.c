@@ -148,6 +148,34 @@ Type* allocateType() {
     return (Type*)allocateObject(sizeof(Type), OBJ_TYPE);
 }
 
+/**
+ * Allocate an enum value object.
+ *
+ * @param variantIndex Index of the variant being created
+ * @param data Array of values carried by this variant
+ * @param dataCount Number of values in the data array
+ * @param typeName Name of the enum type
+ * @return Newly allocated enum object
+ */
+ObjEnum* allocateEnum(int variantIndex, Value* data, int dataCount, ObjString* typeName) {
+    ObjEnum* enumValue = (ObjEnum*)allocateObject(sizeof(ObjEnum), OBJ_ENUM);
+    enumValue->variantIndex = variantIndex;
+    enumValue->dataCount = dataCount;
+    enumValue->typeName = typeName;
+    
+    if (dataCount > 0) {
+        vm.bytesAllocated += sizeof(Value) * dataCount;
+        enumValue->data = (Value*)malloc(sizeof(Value) * dataCount);
+        for (int i = 0; i < dataCount; i++) {
+            enumValue->data[i] = data[i];
+        }
+    } else {
+        enumValue->data = NULL;
+    }
+    
+    return enumValue;
+}
+
 void markObject(Obj* object);
 static void freeObject(Obj* object);
 
@@ -163,6 +191,8 @@ void markValue(Value value) {
         markObject((Obj*)AS_ARRAY(value));
     } else if (IS_ERROR(value)) {
         markObject((Obj*)AS_ERROR(value));
+    } else if (IS_ENUM(value)) {
+        markObject((Obj*)AS_ENUM(value));
     }
 }
 
@@ -197,6 +227,14 @@ void markObject(Obj* object) {
         }
         case OBJ_RANGE_ITERATOR: {
             // Range iterators have no referenced objects
+            break;
+        }
+        case OBJ_ENUM: {
+            ObjEnum* enumValue = (ObjEnum*)object;
+            markObject((Obj*)enumValue->typeName);
+            for (int i = 0; i < enumValue->dataCount; i++) {
+                markValue(enumValue->data[i]);
+            }
             break;
         }
         case OBJ_AST: {
@@ -447,12 +485,26 @@ static void freeObject(Obj* object) {
                     free(type->info.structure.fields);
                     free(type->info.structure.genericParams);
                     break;
+                case TYPE_ENUM:
+                    free(type->info.enumeration.variants);
+                    free(type->info.enumeration.genericParams);
+                    break;
                 case TYPE_GENERIC:
                     break;
                 default:
                     break;
             }
             free(type);
+            break;
+        }
+        case OBJ_ENUM: {
+            ObjEnum* enumValue = (ObjEnum*)object;
+            if (enumValue->data) {
+                vm.bytesAllocated -= sizeof(Value) * enumValue->dataCount;
+                free(enumValue->data);
+            }
+            vm.bytesAllocated -= sizeof(ObjEnum);
+            free(enumValue);
             break;
         }
     }

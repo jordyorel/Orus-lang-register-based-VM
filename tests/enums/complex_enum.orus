@@ -1,0 +1,74 @@
+// Complex enum test with multiple data types
+enum Message {
+    Quit,
+    Move(i32, i32),
+    Write(string),
+    ChangeColor(i32, i32, i32)
+}
+
+enum Vehicle {
+    Car(string, i32),      // brand, year
+    Bike(string),          // type
+    Plane(string, i32),    // model, capacity
+    Boat
+}
+
+fn handle_message(msg: Message) {
+    match msg {
+        Message.Quit => {
+            print("Quit message received")
+        }
+        Message.Move(x, y) => {
+            print("Move to position ({}, {})", x, y)
+        }
+        Message.Write(text) => {
+            print("Write message: {}", text)
+        }
+        Message.ChangeColor(r, g, b) => {
+            print("Change color to RGB({}, {}, {})", r, g, b)
+        }
+    }
+}
+
+fn describe_vehicle(vehicle: Vehicle) {
+    match vehicle {
+        Vehicle.Car(brand, year) => {
+            print("Car: {} from year {}", brand, year)
+        }
+        Vehicle.Bike(bike_type) => {
+            print("Bike: {}", bike_type)
+        }
+        Vehicle.Plane(model, capacity) => {
+            print("Plane: {} with capacity {}", model, capacity)
+        }
+        Vehicle.Boat => {
+            print("A boat")
+        }
+    }
+}
+
+fn main() {
+    let messages = [
+        Message.Quit,
+        Message.Move(10, 20),
+        Message.Write("Hello World"),
+        Message.ChangeColor(255, 128, 0)
+    ]
+    
+    let vehicles = [
+        Vehicle.Car("Toyota", 2023),
+        Vehicle.Bike("Mountain"),
+        Vehicle.Plane("Boeing 747", 400),
+        Vehicle.Boat
+    ]
+    
+    print("Processing messages:")
+    for msg in messages {
+        handle_message(msg)
+    }
+    
+    print("Describing vehicles:")
+    for vehicle in vehicles {
+        describe_vehicle(vehicle)
+    }
+}

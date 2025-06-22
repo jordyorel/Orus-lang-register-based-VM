@@ -1,0 +1,7 @@
+fn main() {
+    print("Testing modulo...")
+    let a = 3
+    let b = 2
+    let result = a % b
+    print("3 % 2 = {}", result)
+}

@@ -35,7 +35,8 @@ typedef enum {
     AST_BREAK,
     AST_CONTINUE,
     AST_IMPORT,
-    AST_USE
+    AST_USE,
+    AST_ENUM
 } ASTNodeType;
 
 typedef struct {
@@ -178,6 +179,13 @@ typedef struct {
     Type* type;              // Target type for cast
 } CastData;
 
+typedef struct {
+    Token name;                    // Enum type name
+    struct ASTNode* variants;      // Linked list of variant names
+    int variantCount;              // Number of variants
+    bool isPublic;                 // Whether enum is public
+} EnumData;
+
 typedef struct ASTNode {
     Obj obj;
     ASTNodeType type;
@@ -220,6 +228,7 @@ typedef struct ASTNode {
         ImportData importStmt;
         UseData useStmt;
         CastData cast;
+        EnumData enumDecl;
     } data;
     Type* valueType;
     int line; // Source line number for diagnostics
@@ -258,6 +267,7 @@ ASTNode* createBreakNode();
 ASTNode* createContinueNode();
 ASTNode* createImportNode(Token path);
 ASTNode* createUseNode(UseData data);
+ASTNode* createEnumNode(Token name, ASTNode* variants, int variantCount, bool isPublic);
 ASTNode* createCastNode(ASTNode* expr, Type* type);
 
 void freeASTNode(ASTNode* node);

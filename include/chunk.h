@@ -208,6 +208,8 @@ typedef enum {
     OP_GET_GLOBAL,
     OP_SET_GLOBAL,
     OP_IMPORT,
+    OP_MODULE_CALL,
+    OP_MODULE_ACCESS,
     OP_NIL,
     OP_MAKE_ARRAY,
     OP_ARRAY_GET,
@@ -235,6 +237,15 @@ typedef enum {
     OP_ITER_NEXT_I64,
     OP_GC_PAUSE,
     OP_GC_RESUME,
+    // Enum operations - Phase 2.1
+    OP_ENUM_LITERAL,
+    OP_ENUM_VARIANT,
+    OP_ENUM_CHECK,
+    // Pattern matching operations - Phase 2.1
+    OP_MATCH_BEGIN,
+    OP_MATCH_END,
+    // Generic operations - Phase 3.1
+    OP_CALL_GENERIC,
 } opCode;
 
 typedef struct {

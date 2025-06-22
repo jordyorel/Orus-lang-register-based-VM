@@ -17,9 +17,15 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
     int currentFunc = -1;
     int funcMax[UINT8_COUNT];
     uint8_t firstParamGlobal[UINT8_COUNT]; // Track which global is the first param
+    uint8_t paramGlobals[UINT8_COUNT][16]; // Track globals for each parameter (max 16 params)
+    int paramCount[UINT8_COUNT]; // Number of parameters per function
     for (int i = 0; i < UINT8_COUNT; i++) {
         funcMax[i] = 0;
         firstParamGlobal[i] = UINT8_MAX; // Invalid global index
+        paramCount[i] = 0;
+        for (int j = 0; j < 16; j++) {
+            paramGlobals[i][j] = UINT8_MAX;
+        }
     }
 
     // Enhanced register allocator state
@@ -112,9 +118,10 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
         for (int fi = 0; fi < vm.functionCount; fi++) {
             if (vm.functions[fi].chunk == chunk && vm.functions[fi].start == offset) {
                 currentFunc = fi;
-                // If function has parameters, reserve register 0 for the first parameter (often 'self')
+                // If function has parameters, reserve registers 0..arity-1 for parameters
                 if (vm.functions[fi].arity > 0) {
                     nextReg = vm.functions[fi].arity; // Start allocation after parameter registers
+                    paramCount[fi] = vm.functions[fi].arity;
                 } else {
                     nextReg = 0;
                 }
@@ -407,12 +414,51 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
+            case OP_MODULO_I32: {
+                if (sp < 2) { offset++; break; }
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_MODULO_I32, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
             case OP_MODULO_I64: {
                 if (sp < 2) { offset++; break; }
                 int b = stackRegs[--sp];
                 int a = stackRegs[--sp];
                 int dst = ALLOC_REG();
-                RegisterInstr instr = {ROP_MOD_I64, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                RegisterInstr instr = {ROP_MODULO_I64, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
+            case OP_MODULO_U32: {
+                if (sp < 2) { offset++; break; }
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_MODULO_U32, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(a);
+                RELEASE_REG(b);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
+            case OP_MODULO_NUMERIC: {
+                if (sp < 2) { offset++; break; }
+                int b = stackRegs[--sp];
+                int a = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_MODULO_NUMERIC, (uint8_t)dst, (uint8_t)a, (uint8_t)b};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(a);
                 RELEASE_REG(b);
@@ -927,20 +973,22 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
+            
+            /* Array operations - translate stack VM to register VM */
             case OP_MAKE_ARRAY: {
                 uint8_t count = chunk->code[offset + 1];
                 if (sp < count) { offset += 2; break; }
                 int dst = ALLOC_REG();
-                RegisterInstr instr = {ROP_MAKE_ARRAY, (uint8_t)dst, count, 0};
+                RegisterInstr instr = {ROP_ARRAY_NEW, (uint8_t)dst, 0, 0};
                 writeRegisterInstr(out, instr);
                 for (int i = count - 1; i >= 0; i--) {
                     int val = stackRegs[--sp];
                     int idxReg = ALLOC_REG();
-                    int idxConst = addRegisterConstant(out, I64_VAL(i));
+                    int idxConst = addRegisterConstant(out, I32_VAL(i));
                     RegisterInstr loadIdx = {ROP_LOAD_CONST, (uint8_t)idxReg, (uint8_t)idxConst, 0};
                     writeRegisterInstr(out, loadIdx);
-                    RegisterInstr set = {ROP_ARRAY_SET, (uint8_t)dst, (uint8_t)idxReg, (uint8_t)val};
-                    writeRegisterInstr(out, set);
+                    RegisterInstr push = {ROP_ARRAY_PUSH, (uint8_t)dst, (uint8_t)val, 0};
+                    writeRegisterInstr(out, push);
                     RELEASE_REG(val);
                     RELEASE_REG(idxReg);
                 }
@@ -948,12 +996,12 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 2;
                 break;
             }
+            
             case OP_ARRAY_GET: {
                 if (sp < 2) { offset++; break; }
                 int index = stackRegs[--sp];
                 int array = stackRegs[--sp];
                 int dst = ALLOC_REG();
-                /* Index registers must contain 64-bit integers. */
                 RegisterInstr instr = {ROP_ARRAY_GET, (uint8_t)dst, (uint8_t)array, (uint8_t)index};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(array);
@@ -962,12 +1010,12 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
+            
             case OP_ARRAY_SET: {
                 if (sp < 3) { offset++; break; }
                 int value = stackRegs[--sp];
                 int index = stackRegs[--sp];
                 int array = stackRegs[--sp];
-                /* Index registers must contain 64-bit integers. */
                 RegisterInstr instr = {ROP_ARRAY_SET, (uint8_t)array, (uint8_t)index, (uint8_t)value};
                 writeRegisterInstr(out, instr);
                 RELEASE_REG(array);
@@ -976,25 +1024,14 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 1;
                 break;
             }
-            case OP_ARRAY_PUSH: {
-                if (sp < 2) { offset++; break; }
-                int value = stackRegs[--sp];
-                int array = stackRegs[--sp];
-                RegisterInstr instr = {ROP_ARRAY_PUSH, (uint8_t)array, 0, (uint8_t)value};
-                writeRegisterInstr(out, instr);
-                RELEASE_REG(value);
-                stackRegs[sp++] = array;
-                offset += 1;
-                break;
-            }
-            case OP_ARRAY_POP: {
-                if (sp < 1) { offset++; break; }
-                int array = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_ARRAY_POP, (uint8_t)array, (uint8_t)array, 0};
-                writeRegisterInstr(out, instr);
-                offset += 1;
-                break;
-            }
+            
+            /* 
+             * NOTE: Struct operations (ROP_STRUCT_LITERAL, ROP_FIELD_GET, ROP_FIELD_SET) 
+             * are not directly translated here because the stack VM uses array opcodes
+             * for struct operations. The struct register opcodes are implemented in
+             * reg_vm.c and will be available for future compiler optimizations that
+             * can distinguish between struct and array operations at compile time.
+             */
             case OP_LEN: {
                 if (sp < 1) { offset++; break; }
                 int reg = stackRegs[sp - 1];
@@ -1006,7 +1043,7 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
             case OP_LEN_ARRAY: {
                 if (sp < 1) { offset++; break; }
                 int reg = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_LEN_ARRAY, (uint8_t)reg, (uint8_t)reg, 0};
+                RegisterInstr instr = {ROP_ARRAY_LEN, (uint8_t)reg, (uint8_t)reg, 0};
                 writeRegisterInstr(out, instr);
                 offset += 1;
                 break;
@@ -1016,16 +1053,6 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 int reg = stackRegs[sp - 1];
                 RegisterInstr instr = {ROP_LEN_STRING, (uint8_t)reg, (uint8_t)reg, 0};
                 writeRegisterInstr(out, instr);
-                offset += 1;
-                break;
-            }
-            case OP_ARRAY_RESERVE: {
-                if (sp < 2) { offset++; break; }
-                int cap = stackRegs[--sp];
-                int array = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_ARRAY_RESERVE, (uint8_t)array, (uint8_t)array, (uint8_t)cap};
-                writeRegisterInstr(out, instr);
-                RELEASE_REG(cap);
                 offset += 1;
                 break;
             }
@@ -1043,65 +1070,89 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 break;
             }
             case OP_TYPE_OF_I32: {
+                if (sp < 1) { offset += 1; break; }
+                int src = stackRegs[--sp];  // Consume the argument
                 int dst = ALLOC_REG();
-                RegisterInstr instr = {ROP_TYPE_OF_I32, (uint8_t)dst, 0, 0};
+                RegisterInstr instr = {ROP_TYPE_OF_I32, (uint8_t)dst, (uint8_t)src, 0};
                 writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
                 stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
             case OP_TYPE_OF_I64: {
+                if (sp < 1) { offset += 1; break; }
+                int src = stackRegs[--sp];  // Consume the argument
                 int dst = ALLOC_REG();
-                RegisterInstr instr = {ROP_TYPE_OF_I64, (uint8_t)dst, 0, 0};
+                RegisterInstr instr = {ROP_TYPE_OF_I64, (uint8_t)dst, (uint8_t)src, 0};
                 writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
                 stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
             case OP_TYPE_OF_U32: {
+                if (sp < 1) { offset += 1; break; }
+                int src = stackRegs[--sp];  // Consume the argument
                 int dst = ALLOC_REG();
-                RegisterInstr instr = {ROP_TYPE_OF_U32, (uint8_t)dst, 0, 0};
+                RegisterInstr instr = {ROP_TYPE_OF_U32, (uint8_t)dst, (uint8_t)src, 0};
                 writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
                 stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
             case OP_TYPE_OF_U64: {
+                if (sp < 1) { offset += 1; break; }
+                int src = stackRegs[--sp];  // Consume the argument
                 int dst = ALLOC_REG();
-                RegisterInstr instr = {ROP_TYPE_OF_U64, (uint8_t)dst, 0, 0};
+                RegisterInstr instr = {ROP_TYPE_OF_U64, (uint8_t)dst, (uint8_t)src, 0};
                 writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
                 stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
             case OP_TYPE_OF_F64: {
+                if (sp < 1) { offset += 1; break; }
+                int src = stackRegs[--sp];  // Consume the argument
                 int dst = ALLOC_REG();
-                RegisterInstr instr = {ROP_TYPE_OF_F64, (uint8_t)dst, 0, 0};
+                RegisterInstr instr = {ROP_TYPE_OF_F64, (uint8_t)dst, (uint8_t)src, 0};
                 writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
                 stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
             case OP_TYPE_OF_BOOL: {
+                if (sp < 1) { offset += 1; break; }
+                int src = stackRegs[--sp];  // Consume the argument
                 int dst = ALLOC_REG();
-                RegisterInstr instr = {ROP_TYPE_OF_BOOL, (uint8_t)dst, 0, 0};
+                RegisterInstr instr = {ROP_TYPE_OF_BOOL, (uint8_t)dst, (uint8_t)src, 0};
                 writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
                 stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
             case OP_TYPE_OF_STRING: {
+                if (sp < 1) { offset += 1; break; }
+                int src = stackRegs[--sp];  // Consume the argument
                 int dst = ALLOC_REG();
-                RegisterInstr instr = {ROP_TYPE_OF_STRING, (uint8_t)dst, 0, 0};
+                RegisterInstr instr = {ROP_TYPE_OF_STRING, (uint8_t)dst, (uint8_t)src, 0};
                 writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
                 stackRegs[sp++] = dst;
                 offset += 1;
                 break;
             }
             case OP_TYPE_OF_ARRAY: {
+                if (sp < 1) { offset += 1; break; }
+                int src = stackRegs[--sp];  // Consume the argument
                 int dst = ALLOC_REG();
-                RegisterInstr instr = {ROP_TYPE_OF_ARRAY, (uint8_t)dst, 0, 0};
+                RegisterInstr instr = {ROP_TYPE_OF_ARRAY, (uint8_t)dst, (uint8_t)src, 0};
                 writeRegisterInstr(out, instr);
+                RELEASE_REG(src);
                 stackRegs[sp++] = dst;
                 offset += 1;
                 break;
@@ -1679,21 +1730,41 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 uint8_t idx = chunk->code[offset + 1];
                 int dst;
                 
-                // Check if this global corresponds to the first parameter
-                if (currentFunc >= 0 && vm.functions[currentFunc].arity > 0) {
-                    if (firstParamGlobal[currentFunc] == UINT8_MAX) {
-                        // First global access in this function - assume it's the first parameter
-                        firstParamGlobal[currentFunc] = idx;
-                        dst = 0; // Use register 0 for first parameter
+                // Check if this global corresponds to a function parameter
+                if (currentFunc >= 0 && paramCount[currentFunc] > 0) {
+                    // Check if we already know this global as a parameter
+                    int paramIndex = -1;
+                    for (int i = 0; i < paramCount[currentFunc]; i++) {
+                        if (paramGlobals[currentFunc][i] == idx) {
+                            paramIndex = i;
+                            break;
+                        }
+                    }
+                    
+                    if (paramIndex >= 0) {
+                        // This is a known parameter - use its reserved register
+                        dst = paramIndex;
                         stackRegs[sp++] = dst;
                         offset += 2;
                         break;
-                    } else if (firstParamGlobal[currentFunc] == idx) {
-                        // Subsequent access to the same global (first parameter)
-                        dst = 0; // Always use register 0 for first parameter
-                        stackRegs[sp++] = dst;
-                        offset += 2;
-                        break;
+                    } else {
+                        // This might be a new parameter - find the next available parameter slot
+                        int nextParamSlot = -1;
+                        for (int i = 0; i < paramCount[currentFunc]; i++) {
+                            if (paramGlobals[currentFunc][i] == UINT8_MAX) {
+                                nextParamSlot = i;
+                                break;
+                            }
+                        }
+                        
+                        if (nextParamSlot >= 0) {
+                            // This is a new parameter - assign it to the next parameter register
+                            paramGlobals[currentFunc][nextParamSlot] = idx;
+                            dst = nextParamSlot;
+                            stackRegs[sp++] = dst;
+                            offset += 2;
+                            break;
+                        }
                     }
                 }
                 
@@ -1713,25 +1784,11 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 2;
                 break;
             }
-            case OP_IMPORT: {
-                uint8_t constantIndex = chunk->code[offset + 1];
-                int registerIndex = addRegisterConstant(out, chunk->constants.values[constantIndex]);
-                RegisterInstr instr = {ROP_IMPORT, 0, (uint8_t)registerIndex, 0};
-                writeRegisterInstr(out, instr);
-                offset += 2;
-                break;
-            }
             case OP_CALL: {
                 uint8_t idx = chunk->code[offset + 1];
                 uint8_t argc = chunk->code[offset + 2];
-                // For method calls (argc > 0), arguments should start at register 0
-                // For regular function calls (argc == 0), we can use any register
-                int base;
-                if (argc > 0) {
-                    base = 0; // Method calls: put arguments starting at register 0
-                } else {
-                    base = ALLOC_CONTIG(1); // Regular function calls: allocate a register
-                }
+                // Allocate contiguous registers for function arguments and return value
+                int base = ALLOC_CONTIG(argc > 0 ? argc : 1);
                 
                 for (int i = 0; i < argc; i++) {
                     int src = stackRegs[sp - argc + i];
@@ -1830,6 +1887,124 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
                 offset += 2; // Two instructions: MOV + SLICE
                 break;
             }
+            
+            // Enum operations - Phase 2.1.2
+            case OP_ENUM_LITERAL: {
+                if (sp < 2) { offset += 1; break; }
+                int typeNameReg = stackRegs[--sp]; // Type name string
+                int variantReg = stackRegs[--sp];  // Variant index
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_ENUM_LITERAL, (uint8_t)dst, (uint8_t)variantReg, (uint8_t)typeNameReg};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(typeNameReg);
+                RELEASE_REG(variantReg);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
+            case OP_ENUM_VARIANT: {
+                // For now, treat like enum literal - proper implementation needed
+                if (sp < 2) { offset += 1; break; }
+                int typeNameReg = stackRegs[--sp];
+                int variantReg = stackRegs[--sp];
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_ENUM_VARIANT, (uint8_t)dst, (uint8_t)variantReg, (uint8_t)typeNameReg};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(typeNameReg);
+                RELEASE_REG(variantReg);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
+            case OP_ENUM_CHECK: {
+                if (sp < 2) { offset += 1; break; }
+                int variantReg = stackRegs[--sp];   // Variant index to check
+                int enumReg = stackRegs[--sp];      // Enum value
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_ENUM_CHECK, (uint8_t)dst, (uint8_t)enumReg, (uint8_t)variantReg};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(variantReg);
+                RELEASE_REG(enumReg);
+                stackRegs[sp++] = dst;
+                offset += 1;
+                break;
+            }
+            case OP_MATCH_BEGIN: {
+                // Pattern matching begin - placeholder
+                RegisterInstr instr = {ROP_MATCH_BEGIN, 0, 0, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            case OP_MATCH_END: {
+                // Pattern matching end - placeholder
+                RegisterInstr instr = {ROP_MATCH_END, 0, 0, 0};
+                writeRegisterInstr(out, instr);
+                offset += 1;
+                break;
+            }
+            
+            // Generic operations - Phase 3.1.2
+            case OP_CALL_GENERIC: {
+                // Generic function call translation
+                if (sp < 3) { offset += 1; break; }
+                int argcReg = stackRegs[--sp];      // Argument count
+                int funcIndexReg = stackRegs[--sp];  // Function index
+                int baseReg = stackRegs[--sp];       // Base register for arguments
+                RegisterInstr instr = {ROP_CALL_GENERIC, (uint8_t)baseReg, (uint8_t)funcIndexReg, (uint8_t)argcReg};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(argcReg);
+                RELEASE_REG(funcIndexReg);
+                RELEASE_REG(baseReg);
+                // Generic call result goes to baseReg
+                stackRegs[sp++] = baseReg;
+                offset += 1;
+                break;
+            }
+            
+            // Module operations - Phase 4.1.1
+            case OP_IMPORT: {
+                if (sp < 2) { offset += 1; break; }
+                int aliasReg = stackRegs[--sp];      // Import alias (optional)
+                int moduleNameReg = stackRegs[--sp]; // Module name string
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_IMPORT, (uint8_t)dst, (uint8_t)moduleNameReg, (uint8_t)aliasReg};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(moduleNameReg);
+                RELEASE_REG(aliasReg);
+                stackRegs[sp++] = dst; // Module object result
+                offset += 1;
+                break;
+            }
+            
+            case OP_MODULE_CALL: {
+                if (sp < 2) { offset += 1; break; }
+                int functionNameReg = stackRegs[--sp]; // Function name
+                int moduleReg = stackRegs[--sp];       // Module object
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_MODULE_CALL, (uint8_t)dst, (uint8_t)moduleReg, (uint8_t)functionNameReg};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(moduleReg);
+                RELEASE_REG(functionNameReg);
+                stackRegs[sp++] = dst; // Function call result base
+                offset += 1;
+                break;
+            }
+            
+            case OP_MODULE_ACCESS: {
+                if (sp < 2) { offset += 1; break; }
+                int memberNameReg = stackRegs[--sp]; // Member name
+                int moduleReg = stackRegs[--sp];     // Module object
+                int dst = ALLOC_REG();
+                RegisterInstr instr = {ROP_MODULE_ACCESS, (uint8_t)dst, (uint8_t)moduleReg, (uint8_t)memberNameReg};
+                writeRegisterInstr(out, instr);
+                RELEASE_REG(moduleReg);
+                RELEASE_REG(memberNameReg);
+                stackRegs[sp++] = dst; // Member access result
+                offset += 1;
+                break;
+            }
+            
             default:
                 // Unsupported opcode -> NOP
                 writeRegisterInstr(out, (RegisterInstr){ROP_NOP, 0, 0, 0});

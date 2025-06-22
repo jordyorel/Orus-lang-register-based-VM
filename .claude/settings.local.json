@@ -6,7 +6,24 @@
       "Bash(./orusc:*)",
       "Bash(grep:*)",
       "Bash(rm:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(../../orusc hello_module.orus)",
+      "Bash(../../orusc use_bind.orus)",
+      "Bash(./orus:*)",
+      "Bash(mkdir:*)",
+      "Bash(ORUS_DEBUG_REGISTER_IR=1 ./orusc debug_method_call.orus)",
+      "Bash(ORUS_DEBUG_REGISTER=1 ./orusc debug_method_call.orus)",
+      "Bash(chmod:*)",
+      "Bash(sed:*)",
+      "Bash(mv:*)",
+      "Bash(./move_tests.sh)",
+      "Bash(../../orusc basic_enum.orus)",
+      "Bash(../../orusc manual_enum_test.orus)",
+      "Bash(../../orusc simple_test.orus)",
+      "Bash(../../orusc:*)",
+      "Bash(bash:*)"
     ],
     "deny": []
   }

@@ -7,6 +7,7 @@
 
 #include "../../include/common.h"
 #include "../../include/memory.h"
+#include "../../include/value.h"
 
 /**
  * @file parser.c
@@ -41,6 +42,7 @@ static ASTNode* parseVariable(Parser* parser);
 static ASTNode* parseNil(Parser* parser);
 static ASTNode* parseArray(Parser* parser);
 static void structDeclaration(Parser* parser, ASTNode** ast, bool isPublic);
+static void enumDeclaration(Parser* parser, ASTNode** ast, bool isPublic);
 static void implBlock(Parser* parser, ASTNode** ast);
 static Type* parseType(Parser* parser);
 static void expression(Parser* parser, ASTNode** ast);
@@ -260,8 +262,40 @@ static ASTNode* parseNumber(Parser* parser) {
         }
     }
 
-    bool hasSuffix = (start[length - 1] == 'u' || start[length - 1] == 'U');
-    int copyLen = hasSuffix ? length - 1 : length;
+    // Determine suffix type and length
+    int suffixLen = 0;
+    enum {
+        SUFFIX_NONE,
+        SUFFIX_U,
+        SUFFIX_U32,
+        SUFFIX_U64,
+        SUFFIX_I32,
+        SUFFIX_I64,
+        SUFFIX_F64
+    } suffixType = SUFFIX_NONE;
+    
+    if (length >= 1 && (start[length - 1] == 'u' || start[length - 1] == 'U')) {
+        suffixType = SUFFIX_U;
+        suffixLen = 1;
+    } else if (length >= 3 && strncmp(&start[length - 3], "u32", 3) == 0) {
+        suffixType = SUFFIX_U32;
+        suffixLen = 3;
+    } else if (length >= 3 && strncmp(&start[length - 3], "u64", 3) == 0) {
+        suffixType = SUFFIX_U64;
+        suffixLen = 3;
+    } else if (length >= 3 && strncmp(&start[length - 3], "i32", 3) == 0) {
+        suffixType = SUFFIX_I32;
+        suffixLen = 3;
+    } else if (length >= 3 && strncmp(&start[length - 3], "i64", 3) == 0) {
+        suffixType = SUFFIX_I64;
+        suffixLen = 3;
+    } else if (length >= 3 && strncmp(&start[length - 3], "f64", 3) == 0) {
+        suffixType = SUFFIX_F64;
+        suffixLen = 3;
+        isFloat = true; // Force float parsing
+    }
+    
+    int copyLen = length - suffixLen;
 
     char* numStr = (char*)malloc(copyLen + 1);
     int j = 0;
@@ -287,20 +321,64 @@ static ASTNode* parseNumber(Parser* parser) {
         char* endptr;
         uint64_t uval = strtoull(numStr, &endptr, base);
 
-        if (hasSuffix) {
-            if (uval <= UINT32_MAX) {
-                node = createLiteralNode(U32_VAL((uint32_t)uval));
+        // Handle explicit type suffixes
+        switch (suffixType) {
+            case SUFFIX_I32:
+                if (uval > INT32_MAX) {
+                    errorAt(parser, &parser->previous, "Integer literal too large for i32 type");
+                    node = createLiteralNode(I32_VAL(0));
+                } else {
+                    node = createLiteralNode(I32_VAL((int32_t)uval));
+                }
+                node->valueType = createPrimitiveType(TYPE_I32);
+                break;
+            case SUFFIX_I64:
+                if (uval > INT64_MAX) {
+                    errorAt(parser, &parser->previous, "Integer literal too large for i64 type");
+                    node = createLiteralNode(I64_VAL(0));
+                } else {
+                    node = createLiteralNode(I64_VAL((int64_t)uval));
+                }
+                node->valueType = createPrimitiveType(TYPE_I64);
+                break;
+            case SUFFIX_U32:
+                if (uval > UINT32_MAX) {
+                    errorAt(parser, &parser->previous, "Integer literal too large for u32 type");
+                    node = createLiteralNode(U32_VAL(0));
+                } else {
+                    node = createLiteralNode(U32_VAL((uint32_t)uval));
+                }
                 node->valueType = createPrimitiveType(TYPE_U32);
-            } else {
+                break;
+            case SUFFIX_U64:
                 node = createLiteralNode(U64_VAL(uval));
                 node->valueType = createPrimitiveType(TYPE_U64);
-            }
-        } else if (uval <= INT64_MAX) {
-            node = createLiteralNode(I64_VAL((int64_t)uval));
-            node->valueType = createPrimitiveType(TYPE_I64);
-        } else {
-            node = createLiteralNode(U64_VAL(uval));
-            node->valueType = createPrimitiveType(TYPE_U64);
+                break;
+            case SUFFIX_U:
+                // Legacy 'u' suffix: choose U32 or U64 based on value size
+                if (uval <= UINT32_MAX) {
+                    node = createLiteralNode(U32_VAL((uint32_t)uval));
+                    node->valueType = createPrimitiveType(TYPE_U32);
+                } else {
+                    node = createLiteralNode(U64_VAL(uval));
+                    node->valueType = createPrimitiveType(TYPE_U64);
+                }
+                break;
+            case SUFFIX_NONE:
+            default:
+                // No suffix: default to i32 for small values, i64 for large values
+                if (uval <= INT32_MAX) {
+                    node = createLiteralNode(I32_VAL((int32_t)uval));
+                    node->valueType = createPrimitiveType(TYPE_I32);
+                } else if (uval <= INT64_MAX) {
+                    node = createLiteralNode(I64_VAL((int64_t)uval));
+                    node->valueType = createPrimitiveType(TYPE_I64);
+                } else {
+                    // Value too large for signed types, use u64
+                    node = createLiteralNode(U64_VAL(uval));
+                    node->valueType = createPrimitiveType(TYPE_U64);
+                }
+                break;
         }
     }
 
@@ -1184,9 +1262,17 @@ static void functionDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
             Token paramName = parser->previous;
 
             Type* paramType = NULL;
+            ASTNode* defaultValue = NULL;
+            
             if (match(parser, TOKEN_COLON)) {
                 paramType = parseType(parser);
                 if (parser->hadError) return;
+                
+                // Check for default parameter value
+                if (match(parser, TOKEN_EQUAL)) {
+                    expression(parser, &defaultValue);
+                    if (parser->hadError) return;
+                }
             } else if (paramName.length == 4 &&
                        strncmp(paramName.start, "self", 4) == 0 &&
                        parser->currentImplType != NULL) {
@@ -1200,7 +1286,7 @@ static void functionDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
             }
 
             // Create parameter node (using let node for now)
-            ASTNode* param = createLetNode(paramName, paramType, NULL, false, false);
+            ASTNode* param = createLetNode(paramName, paramType, defaultValue, false, false);
             param->line = paramName.line;
 
             // Add to parameter list
@@ -1443,6 +1529,75 @@ static void structDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
 }
 
 /**
+ * Parse an `enum` type declaration.
+ */
+static void enumDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
+    consume(parser, TOKEN_IDENTIFIER, "Expect enum name.");
+    Token nameTok = parser->previous;
+    
+    consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after enum name.");
+    
+    // Parse enum variants
+    ASTNode* variants = NULL;
+    ASTNode* lastVariant = NULL;
+    int variantCount = 0;
+    
+    while (!check(parser, TOKEN_RIGHT_BRACE) && !check(parser, TOKEN_EOF)) {
+        // Skip any newlines between variants
+        if (match(parser, TOKEN_NEWLINE)) {
+            continue;
+        }
+        
+        consume(parser, TOKEN_IDENTIFIER, "Expect variant name.");
+        Token variantTok = parser->previous;
+        
+        // Create a literal node for the variant name
+        ASTNode* variant = createLiteralNode(STRING_VAL(allocateString(variantTok.start, variantTok.length)));
+        variant->line = variantTok.line;
+        
+        if (variants == NULL) {
+            variants = variant;
+            lastVariant = variant;
+        } else {
+            lastVariant->next = variant;
+            lastVariant = variant;
+        }
+        variantCount++;
+        
+        // Handle optional newlines after variant
+        while (match(parser, TOKEN_NEWLINE)) {
+            // Skip newlines
+        }
+        
+        if (!match(parser, TOKEN_COMMA)) {
+            break;
+        }
+    }
+    
+    consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after enum variants.");
+    
+    // Create VariantInfo structures for the enum
+    VariantInfo* variantInfos = malloc(sizeof(VariantInfo) * variantCount);
+    ASTNode* currentVariant = variants;
+    for (int i = 0; i < variantCount; i++) {
+        ObjString* variantName = AS_STRING(currentVariant->data.literal);
+        variantInfos[i].name = variantName;
+        variantInfos[i].fieldTypes = NULL;     // Simple enums have no fields
+        variantInfos[i].fieldNames = NULL;
+        variantInfos[i].fieldCount = 0;
+        currentVariant = currentVariant->next;
+    }
+    
+    // Register the enum type
+    ObjString* enumName = allocateString(nameTok.start, nameTok.length);
+    Type* enumType = createEnumType(enumName, variantInfos, variantCount, NULL, 0);
+    
+    // Create an enum AST node
+    *ast = createEnumNode(nameTok, variants, variantCount, isPublic);
+    (*ast)->line = nameTok.line;
+}
+
+/**
  * Parse an `impl` block containing method definitions.
  */
 static void implBlock(Parser* parser, ASTNode** ast) {
@@ -1618,6 +1773,9 @@ static void statement(Parser* parser, ASTNode** ast) {
     } else if (match(parser, TOKEN_STRUCT)) {
         structDeclaration(parser, ast, false);
 
+    } else if (match(parser, TOKEN_ENUM)) {
+        enumDeclaration(parser, ast, false);
+
     } else if (match(parser, TOKEN_IMPL)) {
         implBlock(parser, ast);
 
@@ -1649,6 +1807,8 @@ static void statement(Parser* parser, ASTNode** ast) {
             (*ast)->line = name.line;
         } else if (match(parser, TOKEN_STRUCT)) {
             structDeclaration(parser, ast, true);
+        } else if (match(parser, TOKEN_ENUM)) {
+            enumDeclaration(parser, ast, true);
         } else {
             error(parser, "Expected 'fn' or 'const' after 'pub'.");
         }

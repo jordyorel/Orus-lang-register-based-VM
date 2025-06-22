@@ -94,22 +94,39 @@ static bool appendValueString(Value value, char** buffer, int* length,
                                        capacity);
         case VAL_ARRAY: {
             if (!appendStringDynamic("[", buffer, length, capacity)) return false;
-            ObjArray* arr = AS_ARRAY(value);
-            for (int i = 0; i < arr->length; i++) {
-                if (!appendValueString(arr->elements[i], buffer, length, capacity))
+            ObjArray* array = AS_ARRAY(value);
+            for (int i = 0; i < array->length; i++) {
+                if (!appendValueString(array->elements[i], buffer, length, capacity))
                     return false;
-                if (i < arr->length - 1) {
+                if (i < array->length - 1) {
                     if (!appendStringDynamic(", ", buffer, length, capacity))
                         return false;
                 }
             }
-            if (!appendStringDynamic("]", buffer, length, capacity)) return false;
-            return true;
+            return appendStringDynamic("]", buffer, length, capacity);
         }
         case VAL_ERROR:
             snprintf(tmp, sizeof(tmp), "Error(%d): %s", AS_ERROR(value)->type,
                      AS_ERROR(value)->message->chars);
             return appendStringDynamic(tmp, buffer, length, capacity);
+        case VAL_ENUM: {
+            ObjEnum* enumValue = AS_ENUM(value);
+            snprintf(tmp, sizeof(tmp), "%s::%d", enumValue->typeName->chars, enumValue->variantIndex);
+            if (!appendStringDynamic(tmp, buffer, length, capacity)) return false;
+            if (enumValue->dataCount > 0) {
+                if (!appendStringDynamic("(", buffer, length, capacity)) return false;
+                for (int i = 0; i < enumValue->dataCount; i++) {
+                    if (!appendValueString(enumValue->data[i], buffer, length, capacity))
+                        return false;
+                    if (i < enumValue->dataCount - 1) {
+                        if (!appendStringDynamic(", ", buffer, length, capacity))
+                            return false;
+                    }
+                }
+                if (!appendStringDynamic(")", buffer, length, capacity)) return false;
+            }
+            return true;
+        }
         default:
             return appendStringDynamic("unknown", buffer, length, capacity);
     }
@@ -310,7 +327,6 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_I64_CONST,
         &&op_I64_TO_BOOL,
         &&op_I64_TO_U64,
-        &&op_IMPORT,
         &&op_INC_I64,
         &&op_ITER_NEXT_I64,
         &&op_JUMP_IF_FALSE,
@@ -393,10 +409,26 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_FLOAT,
         &&op_TIMESTAMP,
         &&op_SORTED,
-        &&op_MODULE_NAME,
-        &&op_MODULE_PATH,
         &&op_NATIVE_POW,
         &&op_NATIVE_SQRT,
+        &&op_CALL_BUILTIN_SLICE,
+        &&op_SPILL_REG,
+        &&op_UNSPILL_REG,
+        /* Struct operations - Phase 1.1.3 */
+        &&op_STRUCT_LITERAL,
+        &&op_FIELD_GET,
+        &&op_FIELD_SET,
+        /* Method call operations - Phase 1.2.1 */
+        &&op_CALL_METHOD,
+        /* Enum operations - Phase 2.1.2 */
+        &&op_ENUM_LITERAL,
+        &&op_ENUM_VARIANT,
+        &&op_ENUM_CHECK,
+        /* Pattern matching operations - Phase 2.1.3 */
+        &&op_MATCH_BEGIN,
+        &&op_MATCH_END,
+        /* Generic operations - Phase 3.1.2 */
+        &&op_CALL_GENERIC,
     };
 #define DISPATCH()                                                         \
     do {                                                                  \
@@ -430,8 +462,11 @@ op_NOP:
 
 op_MOV:
     regs[ip->dst] = regs[ip->src1];
-    if (IS_I64(regs[ip->dst])) i64_regs[ip->dst] = AS_I64(regs[ip->dst]);
-    if (IS_F64(regs[ip->dst])) f64_regs[ip->dst] = AS_F64(regs[ip->dst]);
+    i64_regs[ip->dst] = i64_regs[ip->src1];
+    f64_regs[ip->dst] = f64_regs[ip->src1];
+    #ifdef DEBUG_TRACE_EXECUTION
+    printf("[DEBUG] MOV: r%d <- r%d, type=%d, i64=%lld\n", ip->dst, ip->src1, regs[ip->dst].type, i64_regs[ip->dst]);
+    #endif
     ip++;
     DISPATCH();
 
@@ -661,13 +696,6 @@ op_SORTED:
     regs[ip->dst] = builtin_sorted(regs[ip->src1], NIL_VAL, regs[ip->src2]);
     ip++; DISPATCH();
 
-op_MODULE_NAME:
-    regs[ip->dst] = builtin_module_name(regs[ip->src1]);
-    ip++; DISPATCH();
-
-op_MODULE_PATH:
-    regs[ip->dst] = builtin_module_path(regs[ip->src1]);
-    ip++; DISPATCH();
 
 op_NATIVE_POW:
     regs[ip->dst] = builtin_native_pow(regs[ip->src1], regs[ip->src2]);
@@ -677,6 +705,19 @@ op_NATIVE_POW:
 op_NATIVE_SQRT:
     regs[ip->dst] = builtin_native_sqrt(regs[ip->src1]);
     if (IS_F64(regs[ip->dst])) f64_regs[ip->dst] = AS_F64(regs[ip->dst]);
+    ip++; DISPATCH();
+
+op_CALL_BUILTIN_SLICE:
+    // Placeholder for builtin slice - not yet implemented in direct threading
+    regs[ip->dst] = NIL_VAL;
+    ip++; DISPATCH();
+
+op_SPILL_REG:
+    // Placeholder for register spilling - not yet implemented in direct threading
+    ip++; DISPATCH();
+
+op_UNSPILL_REG:
+    // Placeholder for register unspilling - not yet implemented in direct threading
     ip++; DISPATCH();
 
 op_DIVIDE_I64: {
@@ -853,6 +894,267 @@ op_ARRAY_POP:
     }
     ip++; DISPATCH();
 
+/* Struct operations - Phase 1.1.3 
+ * Struct operations are implemented as optimized versions of array operations
+ * since structs are internally represented as arrays with compile-time field indexing.
+ */
+op_STRUCT_LITERAL: {
+    int count = ip->src1;
+    uint8_t firstFieldReg = ip->src2;
+    
+    ObjArray* structObj = allocateArray(count);
+    structObj->length = count;
+    
+    // Copy field values from consecutive registers
+    for (int i = 0; i < count; i++) {
+        uint8_t fieldReg = firstFieldReg + i;
+        if (fieldReg < REGISTER_COUNT) {
+            structObj->elements[i] = regs[fieldReg];
+        } else {
+            structObj->elements[i] = NIL_VAL;  // Fallback for invalid register
+        }
+    }
+    
+    regs[ip->dst] = ARRAY_VAL(structObj);
+    ip++; DISPATCH();
+}
+
+op_FIELD_GET: {
+    Value structVal = regs[ip->src1];
+    Value indexVal = regs[ip->src2];
+    
+    // Extract field index (should be a compile-time constant)
+    int64_t fieldIndex = 0;
+    if (IS_I64(indexVal))       fieldIndex = AS_I64(indexVal);
+    else if (IS_I32(indexVal))  fieldIndex = AS_I32(indexVal);
+    else if (IS_U32(indexVal))  fieldIndex = (int64_t)AS_U32(indexVal);
+    else if (IS_U64(indexVal))  fieldIndex = (int64_t)AS_U64(indexVal);
+    else {
+        vmRuntimeError("Expected integer field index.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
+
+    if (!IS_ARRAY(structVal)) {
+        vmRuntimeError("Expected struct for field access.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
+
+    ObjArray* structObj = AS_ARRAY(structVal);
+    if (fieldIndex < 0 || fieldIndex >= structObj->length) {
+        vmRuntimeError("Struct field index out of bounds.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
+
+    regs[ip->dst] = structObj->elements[fieldIndex];
+    ip++; DISPATCH();
+}
+
+op_FIELD_SET: {
+    Value structVal = regs[ip->dst];
+    Value indexVal = regs[ip->src1];
+    Value newValue = regs[ip->src2];
+    
+    // Extract field index (should be a compile-time constant)
+    int64_t fieldIndex = 0;
+    if (IS_I64(indexVal))       fieldIndex = AS_I64(indexVal);
+    else if (IS_I32(indexVal))  fieldIndex = AS_I32(indexVal);
+    else if (IS_U32(indexVal))  fieldIndex = (int64_t)AS_U32(indexVal);
+    else if (IS_U64(indexVal))  fieldIndex = (int64_t)AS_U64(indexVal);
+    else {
+        vmRuntimeError("Expected integer field index.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
+
+    if (!IS_ARRAY(structVal)) {
+        vmRuntimeError("Expected struct for field assignment.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
+
+    ObjArray* structObj = AS_ARRAY(structVal);
+    if (fieldIndex < 0 || fieldIndex >= structObj->length) {
+        vmRuntimeError("Struct field index out of bounds.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
+
+    structObj->elements[fieldIndex] = newValue;
+    ip++; DISPATCH();
+}
+
+op_CALL_METHOD: {
+    uint8_t base = ip->dst;        // Base register where arguments start (self + args)
+    uint8_t globalIndex = ip->src1; // Index in global array for method function
+    uint8_t argc = ip->src2;        // Total number of arguments (including self)
+    
+    if (argc == 0) {
+        vmRuntimeError("Method call requires at least 'self' parameter.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
+    
+    // Validate the global index and ensure it contains a function
+    if ((int)globalIndex >= UINT8_COUNT || !IS_I32(vm.globals[globalIndex])) {
+        vmRuntimeError("Attempt to call a non-function method.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
+    
+    // Get the function index from the global
+    int funcIndex = AS_I32(vm.globals[globalIndex]);
+    if (funcIndex < 0 || funcIndex >= vm.regChunk.functionCount) {
+        vmRuntimeError("Invalid method function index.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
+    
+    // Get the function's code offset
+    int target = vm.regChunk.functionOffsets[funcIndex];
+    if (target < 0) {
+        vmRuntimeError("Missing register offset for method function.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
+    
+    // Push a new call frame
+    if (!pushRegisterFrame(rvm, ip + 1, rvm->chunk, base)) {
+        goto HANDLE_RUNTIME_ERROR;
+    }
+    
+    // Set up execution context
+    rvm->chunk = &vm.regChunk;
+    ip = rvm->chunk->code + target;
+    
+    // Copy arguments to the first registers of the new frame
+    // First argument (self) goes to register 0, subsequent args to registers 1, 2, etc.
+    for (int i = 0; i < argc && i < REGISTER_COUNT; i++) {
+        regs[i] = regs[base + i];
+        i64_regs[i] = i64_regs[base + i];
+        f64_regs[i] = f64_regs[base + i];
+    }
+    
+    // Clear unused registers
+    for (int r = argc; r < REGISTER_COUNT; r++) {
+        regs[r] = NIL_VAL;
+        i64_regs[r] = 0;
+        f64_regs[r] = 0.0;
+    }
+    
+    DISPATCH();
+}
+
+/* Enum operations - Phase 2.1.2 */
+op_ENUM_LITERAL: {
+    // Create an enum value literal
+    // src1: variant index, src2: type name string index, dst: result register
+    int variantIndex = AS_I32(regs[ip->src1]);
+    ObjString* typeName = AS_STRING(regs[ip->src2]);
+    
+    // Create enum with no data (unit variant)
+    ObjEnum* enumValue = allocateEnum(variantIndex, NULL, 0, typeName);
+    regs[ip->dst] = ENUM_VAL(enumValue);
+    
+    ip++; DISPATCH();
+}
+
+op_ENUM_VARIANT: {
+    // Create an enum variant with data
+    // src1: variant index, src2: data count, dst: base register for data values
+    int variantIndex = AS_I32(regs[ip->src1]);
+    int dataCount = AS_I32(regs[ip->src2]);
+    uint8_t baseReg = ip->dst;
+    
+    // The type name is expected in register baseReg + dataCount
+    ObjString* typeName = AS_STRING(regs[baseReg + dataCount]);
+    
+    // Collect data from consecutive registers starting at baseReg
+    Value* data = NULL;
+    if (dataCount > 0) {
+        data = &regs[baseReg];
+    }
+    
+    ObjEnum* enumValue = allocateEnum(variantIndex, data, dataCount, typeName);
+    regs[baseReg] = ENUM_VAL(enumValue);
+    
+    ip++; DISPATCH();
+}
+
+op_ENUM_CHECK: {
+    // Check if enum value matches a specific variant
+    // src1: enum value register, src2: variant index to check, dst: result register
+    Value enumVal = regs[ip->src1];
+    int expectedVariant = AS_I32(regs[ip->src2]);
+    
+    if (!IS_ENUM(enumVal)) {
+        regs[ip->dst] = BOOL_VAL(false);
+    } else {
+        ObjEnum* enumValue = AS_ENUM(enumVal);
+        regs[ip->dst] = BOOL_VAL(enumValue->variantIndex == expectedVariant);
+    }
+    
+    ip++; DISPATCH();
+}
+
+/* Pattern matching operations - Phase 2.1.3 */
+op_MATCH_BEGIN: {
+    // Begin pattern matching - placeholder for now
+    ip++; DISPATCH();
+}
+
+op_MATCH_END: {
+    // End pattern matching - placeholder for now
+    ip++; DISPATCH();
+}
+
+/* Generic operations - Phase 3.1.2 */
+op_CALL_GENERIC: {
+    // Generic function call with type instantiation
+    // dst: base register for arguments, src1: global function index, src2: argument count
+    uint8_t base = ip->dst;        // Base register where arguments start
+    uint8_t globalIndex = ip->src1; // Index in global array for generic function
+    uint8_t argc = ip->src2;        // Number of arguments
+    
+    // Validate the global index and ensure it contains a function
+    if ((int)globalIndex >= UINT8_COUNT || !IS_I32(vm.globals[globalIndex])) {
+        vmRuntimeError("Attempt to call a non-function generic.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
+    
+    // Get the function index from the global
+    int funcIndex = AS_I32(vm.globals[globalIndex]);
+    if (funcIndex < 0 || funcIndex >= vm.regChunk.functionCount) {
+        vmRuntimeError("Invalid generic function index.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
+    
+    // For now, treat generic calls like regular calls
+    // TODO: Add generic type instantiation logic
+    int target = vm.regChunk.functionOffsets[funcIndex];
+    if (target < 0) {
+        vmRuntimeError("Missing register offset for generic function.");
+        goto HANDLE_RUNTIME_ERROR;
+    }
+    
+    // Push a new call frame
+    if (!pushRegisterFrame(rvm, ip + 1, rvm->chunk, base)) {
+        goto HANDLE_RUNTIME_ERROR;
+    }
+    
+    // Set up execution context
+    rvm->chunk = &vm.regChunk;
+    ip = rvm->chunk->code + target;
+    
+    // Copy arguments to the first registers of the new frame
+    for (int i = 0; i < argc && i < REGISTER_COUNT; i++) {
+        regs[i] = regs[base + i];
+        i64_regs[i] = i64_regs[base + i];
+        f64_regs[i] = f64_regs[base + i];
+    }
+    
+    // Clear unused registers
+    for (int r = argc; r < REGISTER_COUNT; r++) {
+        regs[r] = NIL_VAL;
+        i64_regs[r] = 0;
+        f64_regs[r] = 0.0;
+    }
+    
+    DISPATCH();
+}
+
 op_LEN:
     if (IS_ARRAY(regs[ip->src1]))
         regs[ip->dst] = I32_VAL(AS_ARRAY(regs[ip->src1])->length);
@@ -906,6 +1208,9 @@ op_CALL:
             rvm->registers[i] = regs[base + i];
             rvm->i64_regs[i] = i64_regs[base + i];
             rvm->f64_regs[i] = f64_regs[base + i];
+            #ifdef DEBUG_TRACE_EXECUTION
+            printf("[DEBUG] CALL: param[%d] = r%d, type=%d, i64=%lld\n", i, base + i, regs[base + i].type, i64_regs[base + i]);
+            #endif
         }
         for (int r = argc; r < REGISTER_COUNT; r++) {
             rvm->registers[r] = NIL_VAL;
@@ -1719,6 +2024,11 @@ op_FORMAT_PRINT:
                     case VAL_RANGE_ITERATOR:
                         valueLen = snprintf(valueStr, sizeof(valueStr), "<range %lld..%lld>", (long long)AS_RANGE_ITERATOR(arg)->current, (long long)AS_RANGE_ITERATOR(arg)->end);
                         break;
+                    case VAL_ENUM: {
+                        ObjEnum* enumValue = AS_ENUM(arg);
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "%s::%d", enumValue->typeName->chars, enumValue->variantIndex);
+                        break;
+                    }
                 }
                 if (valueLen > 0) {
                     if (resultLength + valueLen >= resultCapacity) {
@@ -1839,6 +2149,11 @@ op_FORMAT_PRINT_NO_NL:
                     case VAL_RANGE_ITERATOR:
                         valueLen = snprintf(valueStr, sizeof(valueStr), "<range %lld..%lld>", (long long)AS_RANGE_ITERATOR(arg)->current, (long long)AS_RANGE_ITERATOR(arg)->end);
                         break;
+                    case VAL_ENUM: {
+                        ObjEnum* enumValue = AS_ENUM(arg);
+                        valueLen = snprintf(valueStr, sizeof(valueStr), "%s::%d", enumValue->typeName->chars, enumValue->variantIndex);
+                        break;
+                    }
                 }
                 if (valueLen > 0) {
                     if (resultLength + valueLen >= resultCapacity) {
@@ -1996,32 +2311,6 @@ op_I64_TO_U64:
     i64_regs[ip->dst] = AS_I64(regs[ip->src1]);
     ip++; DISPATCH();
 
-op_IMPORT:
-    {
-        uint8_t constantIndex = ip->src1;
-        Value pathVal = rvm->chunk->constants.values[constantIndex];
-        if (!IS_STRING(pathVal)) {
-            vmRuntimeError("Import path must be a string.");
-            return NIL_VAL;
-        }
-        ObjString* pathStr = AS_STRING(pathVal);
-        bool already = false;
-        for (int i = 0; i < vm.moduleCount; i++) {
-            if (strcmp(vm.loadedModules[i]->chars, pathStr->chars) == 0) {
-                already = true;
-                break;
-            }
-        }
-        if (already) {
-            vmRuntimeError("Module already executed.");
-            return NIL_VAL;
-        }
-        InterpretResult modRes = interpret_module(pathStr->chars);
-        if (modRes != INTERPRET_OK) return NIL_VAL;
-        if (vm.moduleCount < UINT8_MAX)
-            vm.loadedModules[vm.moduleCount++] = pathStr;
-        ip++; DISPATCH();
-    }
 
 op_INC_I64:
     i64_regs[ip->dst] += 1;
@@ -2412,6 +2701,8 @@ op_DIVIDE_NUMERIC: {
                 break;
             case ROP_MOV:
                 rvm->registers[instr.dst] = rvm->registers[instr.src1];
+                rvm->i64_regs[instr.dst] = rvm->i64_regs[instr.src1];
+                rvm->f64_regs[instr.dst] = rvm->f64_regs[instr.src1];
                 break;
             case ROP_LOAD_CONST:
                 rvm->registers[instr.dst] = rvm->chunk->constants.values[instr.src1];
@@ -2701,91 +2992,8 @@ op_DIVIDE_NUMERIC: {
                 rvm->registers[instr.dst] = I64_VAL(a >> b);
                 break;
             }
-            case ROP_MAKE_ARRAY: {
-                int count = instr.src1;
-                ObjArray* arr = allocateArray(count);
-                rvm->registers[instr.dst] = ARRAY_VAL(arr);
-                break;
-            }
-            case ROP_ARRAY_GET: {
-                Value arrayVal = rvm->registers[instr.src1];
-                Value indexVal = rvm->registers[instr.src2];
-                int64_t index = 0;
-                if (IS_I64(indexVal))       index = AS_I64(indexVal);
-                else if (IS_I32(indexVal))  index = AS_I32(indexVal);
-                else if (IS_U32(indexVal))  index = (int64_t)AS_U32(indexVal);
-                else if (IS_U64(indexVal))  index = (int64_t)AS_U64(indexVal);
-                else {
-                    vmRuntimeError("Expected integer index.");
-                    goto check_error;
-                }
-
-                if (!IS_ARRAY(arrayVal)) {
-                    vmRuntimeError("Expected array for indexing.");
-                    goto check_error;
-                }
-
-                ObjArray* arr = AS_ARRAY(arrayVal);
-#ifdef DEBUG_ARRAY_INDEX
-                printf("[DEBUG] GET index: i64[%d] = %ld, array length = %d\n",
-                       instr.src2, index, arr->length);
-#endif
-                if (index < 0 || index >= arr->length) {
-                    vmRuntimeError("Array index out of bounds.");
-                    goto check_error;
-                }
-
-                rvm->registers[instr.dst] = arr->elements[index];
-                break;
-            }
-            case ROP_ARRAY_SET: {
-                Value arrayVal = rvm->registers[instr.dst];
-                Value indexVal = rvm->registers[instr.src1];
-                int64_t index = 0;
-                if (IS_I64(indexVal))       index = AS_I64(indexVal);
-                else if (IS_I32(indexVal))  index = AS_I32(indexVal);
-                else if (IS_U32(indexVal))  index = (int64_t)AS_U32(indexVal);
-                else if (IS_U64(indexVal))  index = (int64_t)AS_U64(indexVal);
-                else {
-                    vmRuntimeError("Expected integer index.");
-                    goto check_error;
-                }
-                Value value = rvm->registers[instr.src2];
-
-                if (!IS_ARRAY(arrayVal)) {
-                    vmRuntimeError("Expected array for assignment.");
-                    goto check_error;
-                }
-
-                ObjArray* arr = AS_ARRAY(arrayVal);
-#ifdef DEBUG_ARRAY_INDEX
-                printf("[DEBUG] SET index: i64[%d] = %ld, array length = %d\n",
-                       instr.src1, index, arr->length);
-#endif
-                if (index < 0 || index >= arr->length) {
-                    vmRuntimeError("Array index out of bounds.");
-                    goto check_error;
-                }
-
-                arr->elements[index] = value;
-                break;
-            }
-            case ROP_ARRAY_PUSH:
-                if (IS_ARRAY(rvm->registers[instr.dst])) {
-                    arrayPush(&vm, AS_ARRAY(rvm->registers[instr.dst]), rvm->registers[instr.src2]);
-                }
-                break;
-            case ROP_ARRAY_POP:
-                if (IS_ARRAY(rvm->registers[instr.dst])) {
-                    rvm->registers[instr.dst] = arrayPop(AS_ARRAY(rvm->registers[instr.dst]));
-                } else {
-                    rvm->registers[instr.dst] = NIL_VAL;
-                }
-                break;
             case ROP_LEN:
-                if (IS_ARRAY(rvm->registers[instr.src1]))
-                    rvm->registers[instr.dst] = I32_VAL(AS_ARRAY(rvm->registers[instr.src1])->length);
-                else if (IS_STRING(rvm->registers[instr.src1]))
+                if (IS_STRING(rvm->registers[instr.src1]))
                     rvm->registers[instr.dst] = I32_VAL(AS_STRING(rvm->registers[instr.src1])->length);
                 else
                     rvm->registers[instr.dst] = I32_VAL(0);
@@ -2793,17 +3001,6 @@ op_DIVIDE_NUMERIC: {
             case ROP_I64_TO_STRING:
                 rvm->registers[instr.dst] = convertToString(rvm->registers[instr.src1]);
                 break;
-            case ROP_ARRAY_RESERVE: {
-                ObjArray* arr = AS_ARRAY(rvm->registers[instr.dst]);
-                int cap = (int)AS_I64(rvm->registers[instr.src2]);
-                if (cap > arr->capacity) {
-                    int oldCap = arr->capacity;
-                    arr->capacity = cap;
-                    arr->elements = GROW_ARRAY(Value, arr->elements, oldCap, arr->capacity);
-                    vm.bytesAllocated += sizeof(Value) * (arr->capacity - oldCap);
-                }
-                break;
-            }
             case ROP_CONCAT: {
                 Value a = rvm->registers[instr.src1];
                 Value b = rvm->registers[instr.src2];
@@ -2839,9 +3036,6 @@ op_DIVIDE_NUMERIC: {
                 break;
             case ROP_TYPE_OF_STRING:
                 rvm->registers[instr.dst] = STRING_VAL(allocateString("string", 6));
-                break;
-            case ROP_TYPE_OF_ARRAY:
-                rvm->registers[instr.dst] = STRING_VAL(allocateString("array", 5));
                 break;
             case ROP_GC_PAUSE:
                 pauseGC();
@@ -3813,32 +4007,6 @@ op_DIVIDE_NUMERIC: {
             case ROP_I64_TO_U64:
                 rvm->registers[instr.dst] = U64_VAL((uint64_t)AS_I64(rvm->registers[instr.src1]));
                 break;
-            case ROP_IMPORT:
-                {
-                    uint8_t constantIndex = instr.src1;
-                    Value pathVal = rvm->chunk->constants.values[constantIndex];
-                    if (!IS_STRING(pathVal)) {
-                        vmRuntimeError("Import path must be a string.");
-                        return NIL_VAL;
-                    }
-                    ObjString* pathStr = AS_STRING(pathVal);
-                    bool already = false;
-                    for (int i = 0; i < vm.moduleCount; i++) {
-                        if (strcmp(vm.loadedModules[i]->chars, pathStr->chars) == 0) {
-                            already = true;
-                            break;
-                        }
-                    }
-                    if (already) {
-                        vmRuntimeError("Module already executed.");
-                        return NIL_VAL;
-                    }
-                    InterpretResult modRes = interpret_module(pathStr->chars);
-                    if (modRes != INTERPRET_OK) return NIL_VAL;
-                    if (vm.moduleCount < UINT8_MAX)
-                        vm.loadedModules[vm.moduleCount++] = pathStr;
-                }
-                break;
             case ROP_INC_I64:
                 i64_regs[instr.dst] += 1;
 #ifdef DEBUG_TRACE_EXECUTION
@@ -3850,9 +4018,6 @@ op_DIVIDE_NUMERIC: {
             case ROP_JUMP_IF_LT_I64:
                 if (i64_regs[instr.src1] < i64_regs[instr.src2])
                     rvm->ip = rvm->chunk->code + instr.dst;
-                break;
-            case ROP_LEN_ARRAY:
-                rvm->registers[instr.dst] = I32_VAL(AS_ARRAY(rvm->registers[instr.src1])->length);
                 break;
             case ROP_LEN_STRING:
                 rvm->registers[instr.dst] = I32_VAL(AS_STRING(rvm->registers[instr.src1])->length);
@@ -3888,12 +4053,6 @@ op_DIVIDE_NUMERIC: {
                 break;
             case ROP_SORTED:
                 rvm->registers[instr.dst] = builtin_sorted(rvm->registers[instr.src1], NIL_VAL, rvm->registers[instr.src2]);
-                break;
-            case ROP_MODULE_NAME:
-                rvm->registers[instr.dst] = builtin_module_name(rvm->registers[instr.src1]);
-                break;
-            case ROP_MODULE_PATH:
-                rvm->registers[instr.dst] = builtin_module_path(rvm->registers[instr.src1]);
                 break;
             case ROP_NATIVE_POW:
                 rvm->registers[instr.dst] = builtin_native_pow(rvm->registers[instr.src1], rvm->registers[instr.src2]);
@@ -3966,6 +4125,948 @@ op_DIVIDE_NUMERIC: {
                     rvm->registers[regToRestore] = rvm->registers[spillReg];
                 }
                 break;
+            }
+            /* Struct operations - Phase 1.1.3 (Switch-based implementation) */
+            case ROP_STRUCT_LITERAL: {
+                int count = instr.src1;
+                uint8_t firstFieldReg = instr.src2;
+                
+                ObjArray* structObj = allocateArray(count);
+                structObj->length = count;
+                
+                // Copy field values from consecutive registers
+                for (int i = 0; i < count; i++) {
+                    uint8_t fieldReg = firstFieldReg + i;
+                    if (fieldReg < REGISTER_COUNT) {
+                        structObj->elements[i] = rvm->registers[fieldReg];
+                    } else {
+                        structObj->elements[i] = NIL_VAL;  // Fallback for invalid register
+                    }
+                }
+                
+                rvm->registers[instr.dst] = ARRAY_VAL(structObj);
+                break;
+            }
+            case ROP_FIELD_GET: {
+                Value structVal = rvm->registers[instr.src1];
+                Value indexVal = rvm->registers[instr.src2];
+                
+                // Extract field index
+                int64_t fieldIndex = 0;
+                if (IS_I64(indexVal))       fieldIndex = AS_I64(indexVal);
+                else if (IS_I32(indexVal))  fieldIndex = AS_I32(indexVal);
+                else if (IS_U32(indexVal))  fieldIndex = (int64_t)AS_U32(indexVal);
+                else if (IS_U64(indexVal))  fieldIndex = (int64_t)AS_U64(indexVal);
+                else {
+                    vmRuntimeError("Expected integer field index.");
+                    goto check_error;
+                }
+
+                if (!IS_ARRAY(structVal)) {
+                    vmRuntimeError("Expected struct for field access.");
+                    goto check_error;
+                }
+
+                ObjArray* structObj = AS_ARRAY(structVal);
+                if (fieldIndex < 0 || fieldIndex >= structObj->length) {
+                    vmRuntimeError("Struct field index out of bounds.");
+                    goto check_error;
+                }
+
+                rvm->registers[instr.dst] = structObj->elements[fieldIndex];
+                break;
+            }
+            case ROP_FIELD_SET: {
+                Value structVal = rvm->registers[instr.dst];
+                Value indexVal = rvm->registers[instr.src1];
+                Value newValue = rvm->registers[instr.src2];
+                
+                // Extract field index
+                int64_t fieldIndex = 0;
+                if (IS_I64(indexVal))       fieldIndex = AS_I64(indexVal);
+                else if (IS_I32(indexVal))  fieldIndex = AS_I32(indexVal);
+                else if (IS_U32(indexVal))  fieldIndex = (int64_t)AS_U32(indexVal);
+                else if (IS_U64(indexVal))  fieldIndex = (int64_t)AS_U64(indexVal);
+                else {
+                    vmRuntimeError("Expected integer field index.");
+                    goto check_error;
+                }
+
+                if (!IS_ARRAY(structVal)) {
+                    vmRuntimeError("Expected struct for field assignment.");
+                    goto check_error;
+                }
+
+                ObjArray* structObj = AS_ARRAY(structVal);
+                if (fieldIndex < 0 || fieldIndex >= structObj->length) {
+                    vmRuntimeError("Struct field index out of bounds.");
+                    goto check_error;
+                }
+
+                structObj->elements[fieldIndex] = newValue;
+                break;
+            }
+            /* Format print operations - Phase 1.3.2 */
+            case ROP_FORMAT_PRINT: {
+                uint8_t base = instr.dst;    // Base register containing format string
+                uint8_t argc = instr.src1;   // Number of arguments for interpolation
+                
+                if (!IS_STRING(rvm->registers[base])) {
+                    vmRuntimeError("Format string must be a string.");
+                    goto check_error;
+                }
+                
+                ObjString* formatStr = AS_STRING(rvm->registers[base]);
+                int resultCapacity = formatStr->length * 2;
+                char* resultBuffer = (char*)malloc(resultCapacity);
+                if (!resultBuffer) {
+                    vmRuntimeError("Memory allocation failed for print buffer.");
+                    goto check_error;
+                }
+                
+                int resultLength = 0;
+                int formatIndex = 0;
+                int argIndex = 0;
+                
+                while (formatIndex < formatStr->length) {
+                    if (formatIndex + 1 < formatStr->length &&
+                        formatStr->chars[formatIndex] == '{' &&
+                        formatStr->chars[formatIndex + 1] == '}') {
+                        
+                        if (argIndex >= argc) {
+                            vmRuntimeError("Too few arguments for string interpolation.");
+                            free(resultBuffer);
+                            goto check_error;
+                        }
+                        
+                        Value arg = rvm->registers[base + 1 + argIndex];
+                        char valueStr[100];
+                        int valueLen = 0;
+                        
+                        switch (arg.type) {
+                            case VAL_I32:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%d", AS_I32(arg));
+                                break;
+                            case VAL_I64:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%lld", (long long)AS_I64(arg));
+                                break;
+                            case VAL_U32:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%u", AS_U32(arg));
+                                break;
+                            case VAL_U64:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%llu", (unsigned long long)AS_U64(arg));
+                                break;
+                            case VAL_F64:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%g", AS_F64(arg));
+                                break;
+                            case VAL_BOOL:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%s", AS_BOOL(arg) ? "true" : "false");
+                                break;
+                            case VAL_NIL:
+                                valueLen = 0; // Suppress nil values
+                                break;
+                            case VAL_STRING: {
+                                int strLen = AS_STRING(arg)->length;
+                                if (resultLength + strLen >= resultCapacity) {
+                                    resultCapacity = (resultLength + strLen) * 2;
+                                    resultBuffer = (char*)realloc(resultBuffer, resultCapacity);
+                                    if (!resultBuffer) {
+                                        vmRuntimeError("Memory reallocation failed for string argument.");
+                                        goto check_error;
+                                    }
+                                }
+                                memcpy(resultBuffer + resultLength, AS_STRING(arg)->chars, strLen);
+                                resultLength += strLen;
+                                valueLen = 0;
+                                break;
+                            }
+                            case VAL_ERROR:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "Error(%d): %s",
+                                                   AS_ERROR(arg)->type, AS_ERROR(arg)->message->chars);
+                                break;
+                            default:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "<unknown>");
+                                break;
+                        }
+                        
+                        if (valueLen > 0) {
+                            if (resultLength + valueLen >= resultCapacity) {
+                                resultCapacity = (resultLength + valueLen) * 2;
+                                resultBuffer = (char*)realloc(resultBuffer, resultCapacity);
+                                if (!resultBuffer) {
+                                    vmRuntimeError("Memory reallocation failed for value conversion.");
+                                    goto check_error;
+                                }
+                            }
+                            memcpy(resultBuffer + resultLength, valueStr, valueLen);
+                            resultLength += valueLen;
+                        }
+                        
+                        formatIndex += 2;
+                        argIndex++;
+                        
+                    } else {
+                        if (resultLength + 1 >= resultCapacity) {
+                            resultCapacity = (resultLength + 1) * 2;
+                            resultBuffer = (char*)realloc(resultBuffer, resultCapacity);
+                            if (!resultBuffer) {
+                                vmRuntimeError("Memory reallocation failed while copying character.");
+                                goto check_error;
+                            }
+                        }
+                        resultBuffer[resultLength++] = formatStr->chars[formatIndex++];
+                    }
+                }
+                
+                if (argIndex < argc) {
+                    vmRuntimeError("Too many arguments for string interpolation.");
+                    free(resultBuffer);
+                    goto check_error;
+                }
+                
+                // Null-terminate
+                if (resultLength + 1 >= resultCapacity) {
+                    resultCapacity = (resultLength + 1) * 2;
+                    resultBuffer = (char*)realloc(resultBuffer, resultCapacity);
+                    if (!resultBuffer) {
+                        vmRuntimeError("Memory reallocation failed during final null-termination.");
+                        goto check_error;
+                    }
+                }
+                resultBuffer[resultLength] = '\0';
+                
+                // Print with newline
+                printf("%s\n", resultBuffer);
+                fflush(stdout);
+                
+                free(resultBuffer);
+                break;
+            }
+            case ROP_FORMAT_PRINT_NO_NL: {
+                uint8_t base = instr.dst;    // Base register containing format string
+                uint8_t argc = instr.src1;   // Number of arguments for interpolation
+                
+                if (!IS_STRING(rvm->registers[base])) {
+                    vmRuntimeError("Format string must be a string.");
+                    goto check_error;
+                }
+                
+                ObjString* formatStr = AS_STRING(rvm->registers[base]);
+                int resultCapacity = formatStr->length * 2;
+                char* resultBuffer = (char*)malloc(resultCapacity);
+                if (!resultBuffer) {
+                    vmRuntimeError("Memory allocation failed for print buffer.");
+                    goto check_error;
+                }
+                
+                int resultLength = 0;
+                int formatIndex = 0;
+                int argIndex = 0;
+                
+                while (formatIndex < formatStr->length) {
+                    if (formatIndex + 1 < formatStr->length &&
+                        formatStr->chars[formatIndex] == '{' &&
+                        formatStr->chars[formatIndex + 1] == '}') {
+                        
+                        if (argIndex >= argc) {
+                            vmRuntimeError("Too few arguments for string interpolation.");
+                            free(resultBuffer);
+                            goto check_error;
+                        }
+                        
+                        Value arg = rvm->registers[base + 1 + argIndex];
+                        char valueStr[100];
+                        int valueLen = 0;
+                        
+                        switch (arg.type) {
+                            case VAL_I32:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%d", AS_I32(arg));
+                                break;
+                            case VAL_I64:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%lld", (long long)AS_I64(arg));
+                                break;
+                            case VAL_U32:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%u", AS_U32(arg));
+                                break;
+                            case VAL_U64:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%llu", (unsigned long long)AS_U64(arg));
+                                break;
+                            case VAL_F64:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%g", AS_F64(arg));
+                                break;
+                            case VAL_BOOL:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "%s", AS_BOOL(arg) ? "true" : "false");
+                                break;
+                            case VAL_NIL:
+                                valueLen = 0; // Suppress nil values
+                                break;
+                            case VAL_STRING: {
+                                int strLen = AS_STRING(arg)->length;
+                                if (resultLength + strLen >= resultCapacity) {
+                                    resultCapacity = (resultLength + strLen) * 2;
+                                    resultBuffer = (char*)realloc(resultBuffer, resultCapacity);
+                                    if (!resultBuffer) {
+                                        vmRuntimeError("Memory reallocation failed for string argument.");
+                                        goto check_error;
+                                    }
+                                }
+                                memcpy(resultBuffer + resultLength, AS_STRING(arg)->chars, strLen);
+                                resultLength += strLen;
+                                valueLen = 0;
+                                break;
+                            }
+                            case VAL_ERROR:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "Error(%d): %s",
+                                                   AS_ERROR(arg)->type, AS_ERROR(arg)->message->chars);
+                                break;
+                            default:
+                                valueLen = snprintf(valueStr, sizeof(valueStr), "<unknown>");
+                                break;
+                        }
+                        
+                        if (valueLen > 0) {
+                            if (resultLength + valueLen >= resultCapacity) {
+                                resultCapacity = (resultLength + valueLen) * 2;
+                                resultBuffer = (char*)realloc(resultBuffer, resultCapacity);
+                                if (!resultBuffer) {
+                                    vmRuntimeError("Memory reallocation failed for value conversion.");
+                                    goto check_error;
+                                }
+                            }
+                            memcpy(resultBuffer + resultLength, valueStr, valueLen);
+                            resultLength += valueLen;
+                        }
+                        
+                        formatIndex += 2;
+                        argIndex++;
+                        
+                    } else {
+                        if (resultLength + 1 >= resultCapacity) {
+                            resultCapacity = (resultLength + 1) * 2;
+                            resultBuffer = (char*)realloc(resultBuffer, resultCapacity);
+                            if (!resultBuffer) {
+                                vmRuntimeError("Memory reallocation failed while copying character.");
+                                goto check_error;
+                            }
+                        }
+                        resultBuffer[resultLength++] = formatStr->chars[formatIndex++];
+                    }
+                }
+                
+                if (argIndex < argc) {
+                    vmRuntimeError("Too many arguments for string interpolation.");
+                    free(resultBuffer);
+                    goto check_error;
+                }
+                
+                // Null-terminate
+                if (resultLength + 1 >= resultCapacity) {
+                    resultCapacity = (resultLength + 1) * 2;
+                    resultBuffer = (char*)realloc(resultBuffer, resultCapacity);
+                    if (!resultBuffer) {
+                        vmRuntimeError("Memory reallocation failed during final null-termination.");
+                        goto check_error;
+                    }
+                }
+                resultBuffer[resultLength] = '\0';
+                
+                // Print without newline
+                printf("%s", resultBuffer);
+                fflush(stdout);
+                
+                free(resultBuffer);
+                break;
+            }
+            /* Method call operations - Phase 1.2.1 */
+            case ROP_CALL_METHOD: {
+                uint8_t base = instr.dst;        // Base register where arguments start (self + args)
+                uint8_t globalIndex = instr.src1; // Index in global array for method function
+                uint8_t argc = instr.src2;        // Total number of arguments (including self)
+                
+                if (argc == 0) {
+                    vmRuntimeError("Method call requires at least 'self' parameter.");
+                    goto check_error;
+                }
+                
+                // Validate the global index and ensure it contains a function
+                if ((int)globalIndex >= UINT8_COUNT || !IS_I32(vm.globals[globalIndex])) {
+                    vmRuntimeError("Attempt to call a non-function method.");
+                    goto check_error;
+                }
+                
+                // Get the function index from the global
+                int funcIndex = AS_I32(vm.globals[globalIndex]);
+                if (funcIndex < 0 || funcIndex >= vm.regChunk.functionCount) {
+                    vmRuntimeError("Invalid method function index.");
+                    goto check_error;
+                }
+                
+                // Get the function's code offset
+                int target = vm.regChunk.functionOffsets[funcIndex];
+                if (target < 0) {
+                    vmRuntimeError("Missing register offset for method function.");
+                    goto check_error;
+                }
+                
+                // Push a new call frame
+                if (!pushRegisterFrame(rvm, rvm->ip + 1, rvm->chunk, base)) {
+                    goto check_error;
+                }
+                
+                // Set up execution context
+                rvm->chunk = &vm.regChunk;
+                rvm->ip = rvm->chunk->code + target;
+                
+                // Copy arguments to the first registers of the new frame
+                // First argument (self) goes to register 0, subsequent args to registers 1, 2, etc.
+                for (int i = 0; i < argc && i < REGISTER_COUNT; i++) {
+                    rvm->registers[i] = rvm->registers[base + i];
+                    rvm->i64_regs[i] = rvm->i64_regs[base + i];
+                    rvm->f64_regs[i] = rvm->f64_regs[base + i];
+                }
+                
+                // Clear unused registers
+                for (int r = argc; r < REGISTER_COUNT; r++) {
+                    rvm->registers[r] = NIL_VAL;
+                    rvm->i64_regs[r] = 0;
+                    rvm->f64_regs[r] = 0.0;
+                }
+                
+                break;
+            }
+            
+            /* Enum operations - Phase 2.1.2 */
+            case ROP_ENUM_LITERAL: {
+                // Create enum with variant index, no data
+                int variantIndex = AS_I32(regs[instr.src1]);
+                ObjString* typeName = AS_STRING(regs[instr.src2]);
+                ObjEnum* enumValue = allocateEnum(variantIndex, NULL, 0, typeName);
+                regs[instr.dst] = ENUM_VAL(enumValue);
+                ip++; DISPATCH();
+            }
+            
+            case ROP_ENUM_VARIANT: {
+                // Create enum with variant index and data
+                int variantIndex = AS_I32(regs[instr.src1]);
+                ObjString* typeName = AS_STRING(regs[instr.src2]);
+                // For now, create with no data - would need additional registers for data
+                ObjEnum* enumValue = allocateEnum(variantIndex, NULL, 0, typeName);
+                regs[instr.dst] = ENUM_VAL(enumValue);
+                ip++; DISPATCH();
+            }
+            
+            case ROP_ENUM_CHECK: {
+                // Check if enum matches variant
+                Value enumValue = regs[instr.src1];
+                int expectedVariant = AS_I32(regs[instr.src2]);
+                bool matches = false;
+                if (IS_ENUM(enumValue)) {
+                    matches = (AS_ENUM(enumValue)->variantIndex == expectedVariant);
+                }
+                regs[instr.dst] = BOOL_VAL(matches);
+                ip++; DISPATCH();
+            }
+            
+            /* Generic operations - Phase 3.1.2 */
+            case ROP_CALL_GENERIC: {
+                // Generic function call - similar to regular call but with type information
+                uint8_t base = instr.dst;        // Base register for arguments
+                uint8_t globalIndex = instr.src1; // Function index
+                uint8_t argc = instr.src2;        // Argument count
+                
+                // Validate global index
+                if ((int)globalIndex >= UINT8_COUNT || !IS_I32(vm.globals[globalIndex])) {
+                    vmRuntimeError("Attempt to call a non-function.");
+                    goto check_error;
+                }
+                
+                // Get function index and validate
+                int funcIndex = AS_I32(vm.globals[globalIndex]);
+                if (funcIndex < 0 || funcIndex >= vm.regChunk.functionCount) {
+                    vmRuntimeError("Invalid generic function index.");
+                    goto check_error;
+                }
+                
+                // Get function offset
+                int target = vm.regChunk.functionOffsets[funcIndex];
+                if (target < 0) {
+                    vmRuntimeError("Missing register offset for generic function.");
+                    goto check_error;
+                }
+                
+                // Push call frame
+                if (!pushRegisterFrame(rvm, rvm->ip + 1, rvm->chunk, base)) {
+                    goto check_error;
+                }
+                
+                // Set up execution context
+                rvm->chunk = &vm.regChunk;
+                rvm->ip = rvm->chunk->code + target;
+                
+                // Copy arguments to new frame
+                for (int i = 0; i < argc && i < REGISTER_COUNT; i++) {
+                    rvm->registers[i] = rvm->registers[base + i];
+                    rvm->i64_regs[i] = rvm->i64_regs[base + i];
+                    rvm->f64_regs[i] = rvm->f64_regs[base + i];
+                }
+                
+                // Clear unused registers
+                for (int r = argc; r < REGISTER_COUNT; r++) {
+                    rvm->registers[r] = NIL_VAL;
+                    rvm->i64_regs[r] = 0;
+                    rvm->f64_regs[r] = 0.0;
+                }
+                
+                break;
+            }
+            
+            /* Module operations - Phase 4.1.1 */
+            case ROP_IMPORT: {
+                // Import a module
+                // src1: module name string register
+                // src2: import alias register (optional)
+                // dst: result register for module object
+                
+                Value moduleNameValue = regs[instr.src1];
+                if (!IS_STRING(moduleNameValue)) {
+                    vmRuntimeError("Module name must be a string.");
+                    goto check_error;
+                }
+                
+                ObjString* moduleName = AS_STRING(moduleNameValue);
+                const char* path = moduleName->chars;
+                
+                // Try to load the module
+                InterpretResult result = compile_module_only(path);
+                if (result != INTERPRET_OK) {
+                    vmRuntimeError("Failed to load module '%s'", path);
+                    goto check_error;
+                }
+                
+                // Get the loaded module
+                Module* module = get_module(path);
+                if (!module) {
+                    vmRuntimeError("Module '%s' not found after loading", path);
+                    goto check_error;
+                }
+                
+                // Store module name as a string for later lookup
+                // This allows other opcodes to reference the module
+                regs[instr.dst] = STRING_VAL(allocateString(path, strlen(path)));
+                
+                ip++; DISPATCH();
+            }
+            
+            case ROP_MODULE_CALL: {
+                // Call a function from a module
+                // src1: module name string (from ROP_IMPORT)
+                // src2: function name register
+                // dst: base register for arguments (similar to regular function calls)
+                
+                Value moduleNameValue = regs[instr.src1];
+                Value functionNameValue = regs[instr.src2];
+                
+                if (!IS_STRING(moduleNameValue) || !IS_STRING(functionNameValue)) {
+                    vmRuntimeError("Module function call requires string arguments");
+                    goto check_error;
+                }
+                
+                const char* moduleName = AS_STRING(moduleNameValue)->chars;
+                const char* functionName = AS_STRING(functionNameValue)->chars;
+                
+                // Get the module
+                Module* module = get_module(moduleName);
+                if (!module) {
+                    vmRuntimeError("Module '%s' not found", moduleName);
+                    goto check_error;
+                }
+                
+                // Find the function export
+                Export* export = get_export(module, functionName);
+                if (!export) {
+                    vmRuntimeError("Module '%s' has no function named '%s'", moduleName, functionName);
+                    goto check_error;
+                }
+                
+                // Check if the export is a function (should be an I32 global index)
+                if (!IS_I32(export->value)) {
+                    vmRuntimeError("Export '%s' in module '%s' is not a function", functionName, moduleName);
+                    goto check_error;
+                }
+                
+                // Get the function index and call it
+                int funcIndex = AS_I32(export->value);
+                if (funcIndex < 0 || funcIndex >= vm.regChunk.functionCount) {
+                    vmRuntimeError("Invalid function index for '%s' in module '%s'", functionName, moduleName);
+                    goto check_error;
+                }
+                
+                // Get the function's code offset
+                int target = vm.regChunk.functionOffsets[funcIndex];
+                if (target < 0) {
+                    vmRuntimeError("Missing register offset for function '%s' in module '%s'", functionName, moduleName);
+                    goto check_error;
+                }
+                
+                // For now, just indicate successful function resolution
+                // In a complete implementation, we'd set up a call frame here
+                regs[instr.dst] = I32_VAL(funcIndex); // Return function index for now
+                
+                ip++; DISPATCH();
+            }
+            
+            case ROP_MODULE_ACCESS: {
+                // Access a member from a module
+                // src1: module name string (from ROP_IMPORT)
+                // src2: member name register
+                // dst: result register
+                
+                Value moduleNameValue = regs[instr.src1];
+                Value memberNameValue = regs[instr.src2];
+                
+                if (!IS_STRING(moduleNameValue) || !IS_STRING(memberNameValue)) {
+                    vmRuntimeError("Module access requires string arguments");
+                    goto check_error;
+                }
+                
+                const char* moduleName = AS_STRING(moduleNameValue)->chars;
+                const char* memberName = AS_STRING(memberNameValue)->chars;
+                
+                // Get the module
+                Module* module = get_module(moduleName);
+                if (!module) {
+                    vmRuntimeError("Module '%s' not found", moduleName);
+                    goto check_error;
+                }
+                
+                // Find the export
+                Export* export = get_export(module, memberName);
+                if (!export) {
+                    vmRuntimeError("Module '%s' has no export named '%s'", moduleName, memberName);
+                    goto check_error;
+                }
+                
+                // Return the exported value
+                regs[instr.dst] = export->value;
+                
+                ip++; DISPATCH();
+            }
+            
+            /* Advanced type operations - Phase 3.2.1 */
+            case ROP_GET_TYPE_INFO: {
+                // Get detailed type information about a value
+                // src1: value to inspect
+                // dst: string with detailed type info
+                
+                Value value = regs[instr.src1];
+                const char* typeName = getValueTypeName(value);
+                char typeInfo[256];
+                
+                // Create detailed type information
+                switch (value.type) {
+                    case VAL_I32:
+                        snprintf(typeInfo, sizeof(typeInfo), "i32 (value: %d)", AS_I32(value));
+                        break;
+                    case VAL_I64:
+                        snprintf(typeInfo, sizeof(typeInfo), "i64 (value: %lld)", (long long)AS_I64(value));
+                        break;
+                    case VAL_U32:
+                        snprintf(typeInfo, sizeof(typeInfo), "u32 (value: %u)", AS_U32(value));
+                        break;
+                    case VAL_U64:
+                        snprintf(typeInfo, sizeof(typeInfo), "u64 (value: %llu)", (unsigned long long)AS_U64(value));
+                        break;
+                    case VAL_F64:
+                        snprintf(typeInfo, sizeof(typeInfo), "f64 (value: %.6f)", AS_F64(value));
+                        break;
+                    case VAL_BOOL:
+                        snprintf(typeInfo, sizeof(typeInfo), "bool (value: %s)", AS_BOOL(value) ? "true" : "false");
+                        break;
+                    case VAL_STRING:
+                        snprintf(typeInfo, sizeof(typeInfo), "string (length: %d)", AS_STRING(value)->length);
+                        break;
+                    case VAL_ARRAY:
+                        snprintf(typeInfo, sizeof(typeInfo), "array (length: %d, capacity: %d)", AS_ARRAY(value)->length, AS_ARRAY(value)->capacity);
+                        break;
+                    case VAL_STRUCT:
+                        snprintf(typeInfo, sizeof(typeInfo), "struct (fields: %d)", AS_STRUCT(value)->fieldCount);
+                        break;
+                    case VAL_ENUM:
+                        snprintf(typeInfo, sizeof(typeInfo), "enum (variant: %d)", AS_ENUM(value)->variantIndex);
+                        break;
+                    default:
+                        snprintf(typeInfo, sizeof(typeInfo), "%s", typeName);
+                        break;
+                }
+                
+                regs[instr.dst] = STRING_VAL(allocateString(typeInfo, strlen(typeInfo)));
+                ip++; DISPATCH();
+            }
+            
+            case ROP_TYPE_CAST: {
+                // Enhanced type casting with safety checks
+                // src1: value to cast
+                // src2: target type name (string)
+                // dst: cast result
+                
+                Value value = regs[instr.src1];
+                Value typeNameValue = regs[instr.src2];
+                
+                if (!IS_STRING(typeNameValue)) {
+                    vmRuntimeError("Type cast target must be a string");
+                    goto check_error;
+                }
+                
+                const char* targetType = AS_STRING(typeNameValue)->chars;
+                Value result = NIL_VAL;
+                bool castSuccessful = false;
+                
+                // Enhanced type casting with validation
+                if (strcmp(targetType, "i32") == 0) {
+                    if (IS_I32(value)) {
+                        result = value;
+                        castSuccessful = true;
+                    } else if (IS_I64(value)) {
+                        int64_t val = AS_I64(value);
+                        if (val >= INT32_MIN && val <= INT32_MAX) {
+                            result = I32_VAL((int32_t)val);
+                            castSuccessful = true;
+                        }
+                    } else if (IS_F64(value)) {
+                        double val = AS_F64(value);
+                        if (val >= INT32_MIN && val <= INT32_MAX) {
+                            result = I32_VAL((int32_t)val);
+                            castSuccessful = true;
+                        }
+                    }
+                } else if (strcmp(targetType, "f64") == 0) {
+                    if (IS_F64(value)) {
+                        result = value;
+                        castSuccessful = true;
+                    } else if (IS_I32(value)) {
+                        result = F64_VAL((double)AS_I32(value));
+                        castSuccessful = true;
+                    } else if (IS_I64(value)) {
+                        result = F64_VAL((double)AS_I64(value));
+                        castSuccessful = true;
+                    }
+                } else if (strcmp(targetType, "string") == 0) {
+                    // Convert to string representation
+                    char buffer[64];
+                    const char* str = NULL;
+                    if (IS_I32(value)) {
+                        snprintf(buffer, sizeof(buffer), "%d", AS_I32(value));
+                        str = buffer;
+                    } else if (IS_I64(value)) {
+                        snprintf(buffer, sizeof(buffer), "%lld", (long long)AS_I64(value));
+                        str = buffer;
+                    } else if (IS_F64(value)) {
+                        snprintf(buffer, sizeof(buffer), "%.6f", AS_F64(value));
+                        str = buffer;
+                    } else if (IS_BOOL(value)) {
+                        str = AS_BOOL(value) ? "true" : "false";
+                    } else if (IS_STRING(value)) {
+                        result = value;
+                        castSuccessful = true;
+                    }
+                    
+                    if (str && !castSuccessful) {
+                        result = STRING_VAL(allocateString(str, strlen(str)));
+                        castSuccessful = true;
+                    }
+                }
+                
+                if (!castSuccessful) {
+                    vmRuntimeError("Cannot cast from %s to %s", getValueTypeName(value), targetType);
+                    goto check_error;
+                }
+                
+                regs[instr.dst] = result;
+                ip++; DISPATCH();
+            }
+            
+            /* Modern Array Operations - Phase 5.1.2 */
+            case ROP_ARRAY_NEW: {
+                // Create new array with specified capacity
+                // src1: initial capacity
+                // dst: new array
+                int capacity = AS_I32(regs[instr.src1]);
+                if (capacity < 0) {
+                    vmRuntimeError("Array capacity cannot be negative");
+                    goto check_error;
+                }
+                ObjArray* array = allocateArray(0);
+                if (capacity > 0) {
+                    array->elements = ALLOCATE(Value, capacity);
+                    array->capacity = capacity;
+                }
+                regs[instr.dst] = ARRAY_VAL(array);
+                ip++; DISPATCH();
+            }
+            
+            case ROP_ARRAY_GET: {
+                // Get element by index with bounds checking
+                // src1: array
+                // src2: index
+                // dst: element value
+                Value arrayVal = regs[instr.src1];
+                Value indexVal = regs[instr.src2];
+                
+                if (!IS_ARRAY(arrayVal)) {
+                    vmRuntimeError("Expected array for indexing");
+                    goto check_error;
+                }
+                
+                if (!IS_I32(indexVal)) {
+                    vmRuntimeError("Array index must be an integer");
+                    goto check_error;
+                }
+                
+                ObjArray* array = AS_ARRAY(arrayVal);
+                int index = AS_I32(indexVal);
+                
+                // Support negative indexing (Python-style)
+                if (index < 0) {
+                    index += array->length;
+                }
+                
+                if (index < 0 || index >= array->length) {
+                    vmRuntimeError("Array index %d out of bounds (length: %d)", index, array->length);
+                    goto check_error;
+                }
+                
+                regs[instr.dst] = array->elements[index];
+                ip++; DISPATCH();
+            }
+            
+            case ROP_ARRAY_SET: {
+                // Set element by index with bounds checking
+                // dst: array (modified in-place)
+                // src1: index
+                // src2: value
+                Value arrayVal = regs[instr.dst];
+                Value indexVal = regs[instr.src1];
+                Value value = regs[instr.src2];
+                
+                if (!IS_ARRAY(arrayVal)) {
+                    vmRuntimeError("Expected array for assignment");
+                    goto check_error;
+                }
+                
+                if (!IS_I32(indexVal)) {
+                    vmRuntimeError("Array index must be an integer");
+                    goto check_error;
+                }
+                
+                ObjArray* array = AS_ARRAY(arrayVal);
+                int index = AS_I32(indexVal);
+                
+                // Support negative indexing (Python-style)
+                if (index < 0) {
+                    index += array->length;
+                }
+                
+                if (index < 0 || index >= array->length) {
+                    vmRuntimeError("Array index %d out of bounds (length: %d)", index, array->length);
+                    goto check_error;
+                }
+                
+                array->elements[index] = value;
+                ip++; DISPATCH();
+            }
+            
+            case ROP_ARRAY_LEN: {
+                // Get array length
+                // src1: array
+                // dst: length (i32)
+                Value arrayVal = regs[instr.src1];
+                
+                if (!IS_ARRAY(arrayVal)) {
+                    vmRuntimeError("Expected array for length operation");
+                    goto check_error;
+                }
+                
+                ObjArray* array = AS_ARRAY(arrayVal);
+                regs[instr.dst] = I32_VAL(array->length);
+                ip++; DISPATCH();
+            }
+            
+            case ROP_ARRAY_PUSH: {
+                // Append element to array with dynamic growth
+                // dst: array (modified in-place)
+                // src1: value to append
+                Value arrayVal = regs[instr.dst];
+                Value value = regs[instr.src1];
+                
+                if (!IS_ARRAY(arrayVal)) {
+                    vmRuntimeError("Expected array for push operation");
+                    goto check_error;
+                }
+                
+                ObjArray* array = AS_ARRAY(arrayVal);
+                
+                // Grow array if needed
+                if (array->length >= array->capacity) {
+                    int newCapacity = array->capacity < 8 ? 8 : array->capacity * 2;
+                    Value* newElements = GROW_ARRAY(Value, array->elements, array->capacity, newCapacity);
+                    array->elements = newElements;
+                    array->capacity = newCapacity;
+                }
+                
+                array->elements[array->length++] = value;
+                ip++; DISPATCH();
+            }
+            
+            case ROP_ARRAY_POP: {
+                // Remove and return last element
+                // dst: array (modified in-place, also returns popped value)
+                Value arrayVal = regs[instr.dst];
+                
+                if (!IS_ARRAY(arrayVal)) {
+                    vmRuntimeError("Expected array for pop operation");
+                    goto check_error;
+                }
+                
+                ObjArray* array = AS_ARRAY(arrayVal);
+                
+                if (array->length == 0) {
+                    vmRuntimeError("Cannot pop from empty array");
+                    goto check_error;
+                }
+                
+                Value poppedValue = array->elements[--array->length];
+                regs[instr.dst] = poppedValue;
+                ip++; DISPATCH();
+            }
+            
+            case ROP_ARRAY_TO_STRING: {
+                // Convert array to string representation
+                // src1: array
+                // dst: string representation
+                Value arrayVal = regs[instr.src1];
+                
+                if (!IS_ARRAY(arrayVal)) {
+                    vmRuntimeError("Expected array for string conversion");
+                    goto check_error;
+                }
+                
+                regs[instr.dst] = convertToString(arrayVal);
+                ip++; DISPATCH();
+            }
+            
+            case ROP_TYPE_OF_ARRAY: {
+                // Get type name for array
+                // src1: array
+                // dst: "array" string
+                Value arrayVal = regs[instr.src1];
+                
+                if (!IS_ARRAY(arrayVal)) {
+                    vmRuntimeError("Expected array for type operation");
+                    goto check_error;
+                }
+                
+                regs[instr.dst] = STRING_VAL(allocateString("array", 5));
+                ip++; DISPATCH();
             }
         }
 
@@ -4059,39 +5160,6 @@ static VMResult handleDivI64(RegisterVM2* machine, RegisterInstr* instruction) {
     return VM_OK;
 }
 
-static int64_t normalizeArrayIndex(Value indexValue, int length) {
-    int64_t index;
-    switch (indexValue.type) {
-        case VAL_I32: index = AS_I32(indexValue); break;
-        case VAL_I64: index = AS_I64(indexValue); break;
-        case VAL_U32: index = (int64_t)AS_U32(indexValue); break;
-        case VAL_U64:
-            if (AS_U64(indexValue) > INT64_MAX) return -1;
-            index = (int64_t)AS_U64(indexValue);
-            break;
-        default:
-            return -1;
-    }
-    if (index < 0) index += length;
-    return (index >= 0 && index < length) ? index : -1;
-}
-
-static VMResult handleArrayGet(RegisterVM2* machine, RegisterInstr* instruction) {
-    Value arrayValue = machine->registerState.registers[instruction->src1];
-    Value indexValue = machine->registerState.registers[instruction->src2];
-    if (!IS_ARRAY(arrayValue)) {
-        return setVMError(&machine->errorState, "Expected array for indexing");
-    }
-    ObjArray* array = AS_ARRAY(arrayValue);
-    int64_t index = normalizeArrayIndex(indexValue, array->length);
-    if (index < 0) {
-        return setVMError(&machine->errorState, "Array index out of bounds");
-    }
-    machine->registerState.registers[instruction->dst] = array->elements[index];
-    machine->registerState.i64_valid[instruction->dst] = false;
-    machine->registerState.f64_valid[instruction->dst] = false;
-    return VM_OK;
-}
 
 static VMResult unhandledOpcode(RegisterVM2* machine, RegisterInstr* instruction) {
     (void)instruction;
@@ -4114,7 +5182,6 @@ VMResult runRegisterVM2(RegisterVM2* machine) {
         for (int i = 0; i < 256; i++) handlers[i] = unhandledOpcode;
         handlers[ROP_ADD_I64] = handleAddI64;
         handlers[ROP_DIVIDE_I64] = handleDivI64;
-        handlers[ROP_ARRAY_GET] = handleArrayGet;
         initialized = true;
     }
 

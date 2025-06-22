@@ -1,0 +1,9 @@
+fn main() {
+    let hex_with_f = 0x123Fu64
+    print("0x123Fu64 type:")
+    print(type_of(hex_with_f))
+    
+    let hex_no_f = 0x123Eu64
+    print("0x123Eu64 type:")
+    print(type_of(hex_no_f))
+}

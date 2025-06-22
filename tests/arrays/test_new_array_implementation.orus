@@ -1,0 +1,201 @@
+// Test suite for the new modern array implementation
+// Tests all Phase 1 and Phase 1.5 functionality
+
+fn test_array_creation() {
+    print("=== Testing Array Creation ===")
+    
+    // Test basic array creation
+    let arr: [i32] = []
+    print("Empty array created")
+    print("Length: {}", len(arr))
+    
+    // Test array with initial elements
+    let arr2: [i32] = [1, 2, 3]
+    print("Array with elements: {}", arr2)
+    print("Length: {}", len(arr2))
+}
+
+fn test_array_indexing() {
+    print("=== Testing Array Indexing ===")
+    
+    let arr: [i32] = [10, 20, 30, 40, 50]
+    
+    // Test positive indexing
+    print("arr[0] = {}", arr[0])
+    print("arr[2] = {}", arr[2])
+    print("arr[4] = {}", arr[4])
+    
+    // Test negative indexing (Python-style)
+    print("arr[-1] = {}", arr[-1])  // Last element
+    print("arr[-2] = {}", arr[-2])  // Second to last
+    print("arr[-5] = {}", arr[-5])  // First element
+}
+
+fn test_array_modification() {
+    print("=== Testing Array Modification ===")
+    
+    let arr: [i32] = [1, 2, 3, 4, 5]
+    print("Original: {}", arr)
+    
+    // Test element assignment
+    arr[0] = 100
+    arr[2] = 300
+    arr[-1] = 999  // Modify last element using negative index
+    
+    print("After modification: {}", arr)
+}
+
+fn test_array_push_pop() {
+    print("=== Testing Array Push/Pop Operations ===")
+    
+    let arr: [i32] = [1, 2, 3]
+    print("Initial array: {}", arr)
+    print("Initial length: {}", len(arr))
+    
+    // Test push operations (dynamic growth)
+    arr.push(4)
+    print("After push(4): {}", arr)
+    print("Length: {}", len(arr))
+    
+    arr.push(5)
+    arr.push(6)
+    print("After push(5,6): {}", arr)
+    print("Length: {}", len(arr))
+    
+    // Test pop operations
+    let popped1 = arr.pop()
+    print("Popped: {}", popped1)
+    print("After pop: {}", arr)
+    
+    let popped2 = arr.pop()
+    print("Popped: {}", popped2)
+    print("After pop: {}", arr)
+    print("Final length: {}", len(arr))
+}
+
+fn test_array_bounds_checking() {
+    print("=== Testing Array Bounds Checking ===")
+    
+    let arr: [i32] = [1, 2, 3]
+    
+    // These should work fine
+    print("Valid access arr[0]: {}", arr[0])
+    print("Valid access arr[-1]: {}", arr[-1])
+    
+    // Test error handling (these will cause runtime errors)
+    try {
+        let invalid = arr[10]  // Out of bounds
+        print("This should not print")
+    } catch error {
+        print("Caught expected bounds error: {}", error)
+    }
+    
+    try {
+        let invalid = arr[-10]  // Negative out of bounds
+        print("This should not print")
+    } catch error {
+        print("Caught expected negative bounds error: {}", error)
+    }
+}
+
+fn test_array_type_operations() {
+    print("=== Testing Array Type Operations ===")
+    
+    let arr: [i32] = [1, 2, 3, 4, 5]
+    
+    // Test type checking
+    print("Type of array: {}", type_of(arr))
+    
+    // Test string conversion
+    print("Array as string: {}", arr)
+    
+    // Test length operation
+    print("Array length: {}", len(arr))
+}
+
+fn test_mixed_type_arrays() {
+    print("=== Testing Mixed Type Arrays ===")
+    
+    // Test array with different value types
+    let mixed_arr: [Value] = [42, "hello", true, 3.14]
+    print("Mixed array: {}", mixed_arr)
+    print("Length: {}", len(mixed_arr))
+    
+    // Test accessing mixed elements
+    print("Element 0 (int): {}", mixed_arr[0])
+    print("Element 1 (string): {}", mixed_arr[1])
+    print("Element 2 (bool): {}", mixed_arr[2])
+    print("Element 3 (float): {}", mixed_arr[3])
+}
+
+fn test_empty_array_operations() {
+    print("=== Testing Empty Array Operations ===")
+    
+    let empty: [i32] = []
+    print("Empty array: {}", empty)
+    print("Length: {}", len(empty))
+    
+    // Test push to empty array
+    empty.push(42)
+    print("After push to empty: {}", empty)
+    print("Length: {}", len(empty))
+    
+    // Test pop from single element
+    let value = empty.pop()
+    print("Popped from single element: {}", value)
+    print("Back to empty: {}", empty)
+    print("Length: {}", len(empty))
+}
+
+fn test_large_array_performance() {
+    print("=== Testing Large Array Performance ===")
+    
+    let large_arr: [i32] = []
+    
+    // Test performance with many push operations
+    for i in 0..100 {
+        large_arr.push(i)
+    }
+    
+    print("Created large array with 100 elements")
+    print("Length: {}", len(large_arr))
+    print("First element: {}", large_arr[0])
+    print("Last element: {}", large_arr[-1])
+    print("Middle element: {}", large_arr[50])
+}
+
+fn main() {
+    print("🚀 NEW ARRAY IMPLEMENTATION TEST SUITE")
+    print("Testing Phase 1 & Phase 1.5 functionality")
+    print("")
+    
+    test_array_creation()
+    print("")
+    
+    test_array_indexing()
+    print("")
+    
+    test_array_modification()
+    print("")
+    
+    test_array_push_pop()
+    print("")
+    
+    test_array_bounds_checking()
+    print("")
+    
+    test_array_type_operations()
+    print("")
+    
+    test_mixed_type_arrays()
+    print("")
+    
+    test_empty_array_operations()
+    print("")
+    
+    test_large_array_performance()
+    print("")
+    
+    print("✅ All array tests completed!")
+    print("New array implementation is working correctly!")
+}

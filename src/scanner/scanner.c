@@ -54,14 +54,14 @@ void init_keyword_table() {
                               "fn",    "if",     "nil",      "or",    "not",  "print",
                               "return", "true",   "let", "mut", "const",
                               "while", "try",    "catch",    "i32", "i64",  "u32", "u64",  "f64",  "bool", "in",
-                              "struct", "impl",   "import",   "use",   "as",   "match", "pub", "static",
+                              "struct", "impl",   "import",   "use",   "as",   "match", "pub", "static", "enum",
                               NULL};
     TokenType types[] = {
         TOKEN_AND,  TOKEN_BREAK, TOKEN_CONTINUE, TOKEN_ELSE, TOKEN_ELIF, TOKEN_FALSE, TOKEN_FOR, TOKEN_FN,
         TOKEN_IF,   TOKEN_NIL,   TOKEN_OR,       TOKEN_NOT,  TOKEN_PRINT, TOKEN_RETURN,
         TOKEN_TRUE, TOKEN_LET,   TOKEN_MUT, TOKEN_CONST, TOKEN_WHILE,    TOKEN_TRY,  TOKEN_CATCH,
         TOKEN_INT, TOKEN_I64, TOKEN_U32, TOKEN_U64,   TOKEN_F64,      TOKEN_BOOL, TOKEN_IN,
-        TOKEN_STRUCT, TOKEN_IMPL, TOKEN_IMPORT, TOKEN_USE, TOKEN_AS, TOKEN_MATCH, TOKEN_PUB, TOKEN_STATIC,
+        TOKEN_STRUCT, TOKEN_IMPL, TOKEN_IMPORT, TOKEN_USE, TOKEN_AS, TOKEN_MATCH, TOKEN_PUB, TOKEN_STATIC, TOKEN_ENUM,
     };
 
     for (int i = 0; keywords[i] != NULL; i++) {
@@ -314,8 +314,30 @@ static Token number() {
                 advance();
             }
         }
+        // Handle type suffixes for hexadecimal numbers too
         if (peek() == 'u' || peek() == 'U') {
             advance();
+            // Check for specific unsigned suffixes (u32, u64)
+            if (peek() == '3' && peek_next() == '2') {
+                advance(); // '3'
+                advance(); // '2'
+            } else if (peek() == '6' && peek_next() == '4') {
+                advance(); // '6'
+                advance(); // '4'
+            }
+        } else if (peek() == 'i') {
+            advance(); // 'i'
+            // Check for specific signed suffixes (i32, i64)
+            if (peek() == '3' && peek_next() == '2') {
+                advance(); // '3'
+                advance(); // '2'
+            } else if (peek() == '6' && peek_next() == '4') {
+                advance(); // '6'
+                advance(); // '4'
+            } else {
+                // Just 'i' is not a valid suffix, back up
+                scanner.current--;
+            }
         }
         return make_token(TOKEN_NUMBER);
     }
@@ -375,12 +397,38 @@ static Token number() {
         }
     }
 
-    // Optional unsigned suffix
+    // Optional type suffix (u, i32, i64, u32, u64, f64)
     if (peek() == 'u' || peek() == 'U') {
         advance();
+        // Check for specific unsigned suffixes (u32, u64)
+        if (peek() == '3' && peek_next() == '2') {
+            advance(); // '3'
+            advance(); // '2'
+        } else if (peek() == '6' && peek_next() == '4') {
+            advance(); // '6'
+            advance(); // '4'
+        }
+    } else if (peek() == 'i') {
+        advance(); // 'i'
+        // Check for specific signed suffixes (i32, i64)
+        if (peek() == '3' && peek_next() == '2') {
+            advance(); // '3'
+            advance(); // '2'
+        } else if (peek() == '6' && peek_next() == '4') {
+            advance(); // '6'
+            advance(); // '4'
+        } else {
+            // Just 'i' is not a valid suffix, back up
+            scanner.current--;
+        }
+    } else if (peek() == 'f' && peek_next() == '6') {
+        // Check if we have enough characters left and the third character is '4'
+        if (!is_at_end() && scanner.current[1] != '\0' && scanner.current[2] == '4') {
+            advance(); // 'f'
+            advance(); // '6'
+            advance(); // '4'
+        }
     }
-
-    // Number contains underscores, which is allowed
 
     return make_token(TOKEN_NUMBER);
 }

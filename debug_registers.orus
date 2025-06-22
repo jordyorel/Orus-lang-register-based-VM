@@ -1,0 +1,5 @@
+fn main() {
+    print("Simple test")
+    print("With arg: {}", 42)
+    print("Two args: {} and {}", 1, 2)
+}

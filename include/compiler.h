@@ -43,11 +43,24 @@ typedef struct {
     ObjString** genericNames;
     GenericConstraint* genericConstraints;
     int genericCount;
+    
+    // Register VM compilation mode - Phase 1.1 enhancement
+    bool isRegisterMode;           // True when compiling directly to register VM
+    RegisterChunk* rchunk;         // Target register chunk when in register mode
+    uint8_t nextRegister;          // Next available register for allocation
+    uint8_t registerStack[256];    // Stack of allocated registers for expression evaluation
+    int registerStackTop;          // Top of register stack
 } Compiler;
 
 void initCompiler(Compiler* compiler, Chunk* chunk,
                   const char* filePath, const char* sourceCode);
 bool compile(ASTNode* ast, Compiler* compiler, bool requireMain);
+
+// Register VM compilation functions - Phase 1.1 enhancement
+void initRegisterCompiler(Compiler* compiler, RegisterChunk* rchunk,
+                         const char* filePath, const char* sourceCode);
+bool compileToRegisterDirect(ASTNode* ast, RegisterChunk* rchunk, 
+                            const char* filePath, const char* sourceCode, bool requireMain);
 bool compileToRegister(ASTNode* ast, RegisterChunk* rchunk,
                        const char* filePath, const char* sourceCode,
                        bool requireMain);

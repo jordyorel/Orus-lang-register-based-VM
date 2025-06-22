@@ -11,6 +11,7 @@ typedef struct ObjArray ObjArray;
 typedef struct ObjIntArray ObjIntArray;
 typedef struct ObjError ObjError;
 typedef struct ObjRangeIterator ObjRangeIterator;
+typedef struct ObjEnum ObjEnum;
 typedef struct Value Value;
 
 // Base object type for the garbage collector
@@ -22,6 +23,7 @@ typedef enum {
     OBJ_TYPE,
     OBJ_ERROR,
     OBJ_RANGE_ITERATOR,
+    OBJ_ENUM,
 } ObjType;
 
 struct Obj {
@@ -42,6 +44,7 @@ typedef enum {
     VAL_ARRAY,
     VAL_ERROR,
     VAL_RANGE_ITERATOR,
+    VAL_ENUM,
 } ValueType;
 
 typedef struct ObjString {
@@ -69,6 +72,14 @@ typedef struct ObjRangeIterator {
     int64_t end;
 } ObjRangeIterator;
 
+typedef struct ObjEnum {
+    Obj obj;
+    int variantIndex;    // Which variant this enum value represents
+    Value* data;         // Data carried by this variant (NULL for unit variants)
+    int dataCount;       // Number of data fields
+    ObjString* typeName; // Name of the enum type
+} ObjEnum;
+
 typedef ObjString String;
 typedef ObjArray Array;
 
@@ -85,6 +96,7 @@ typedef struct Value {
         ObjArray* array;
         ObjError* error;
         ObjRangeIterator* rangeIter;
+        ObjEnum* enumValue;
     } as;
 } Value;
 
@@ -100,6 +112,7 @@ typedef struct Value {
 #define ARRAY_VAL(obj)   ((Value){VAL_ARRAY, {.array = obj}})
 #define ERROR_VAL(obj)   ((Value){VAL_ERROR, {.error = obj}})
 #define RANGE_ITERATOR_VAL(obj) ((Value){VAL_RANGE_ITERATOR, {.rangeIter = obj}})
+#define ENUM_VAL(obj)    ((Value){VAL_ENUM, {.enumValue = obj}})
 
 // Value checking macros
 #define IS_I32(value)    ((value).type == VAL_I32)
@@ -113,6 +126,7 @@ typedef struct Value {
 #define IS_ARRAY(value)  ((value).type == VAL_ARRAY)
 #define IS_ERROR(value)  ((value).type == VAL_ERROR)
 #define IS_RANGE_ITERATOR(value) ((value).type == VAL_RANGE_ITERATOR)
+#define IS_ENUM(value)   ((value).type == VAL_ENUM)
 
 // Value extraction macros
 #define AS_I32(value)    ((value).as.i32)
@@ -125,6 +139,7 @@ typedef struct Value {
 #define AS_ARRAY(value)  ((value).as.array)
 #define AS_ERROR(value)  ((value).as.error)
 #define AS_RANGE_ITERATOR(value) ((value).as.rangeIter)
+#define AS_ENUM(value)   ((value).as.enumValue)
 
 // Generic dynamic array implementation used for storing Values.
 #include "generic_array.h"

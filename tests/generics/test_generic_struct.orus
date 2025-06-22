@@ -1,0 +1,17 @@
+// Test for generic struct functionality
+struct Container<T> {
+    value: T
+}
+
+fn main() {
+    // Test creating generic struct instances with explicit types
+    let intContainer = Container<i32> { value: 42 }
+    let stringContainer = Container<string> { value: "hello" }
+    let floatContainer = Container<f64> { value: 3.14 }
+    
+    print("Integer container: {}", intContainer.value)
+    print("String container: {}", stringContainer.value)
+    print("Float container: {}", floatContainer.value)
+    
+    print("Generic struct test complete!")
+}

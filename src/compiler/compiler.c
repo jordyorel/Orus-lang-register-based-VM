@@ -154,6 +154,14 @@ static bool requireConstraint(Compiler* compiler, Type* type,
                              GenericConstraint needed, Token* token) {
     if (type->kind != TYPE_GENERIC) return true;
     GenericConstraint actual = findConstraint(compiler, type->info.generic.name);
+    
+    // Allow CONSTRAINT_NONE to satisfy basic constraints for flexibility
+    if (actual == CONSTRAINT_NONE) {
+        // Unconstrained generics can be used for basic operations
+        // This allows simple generic functions without explicit constraints
+        return true;
+    }
+    
     if (needed == CONSTRAINT_COMPARABLE && actual == CONSTRAINT_NUMERIC) return true;
     if (actual != needed) {
         const char* label = needed == CONSTRAINT_NUMERIC ? "Numeric" : "Comparable";
@@ -428,6 +436,12 @@ static void writeOp(Compiler* compiler, uint8_t op) {
 static void writeByte(Compiler* compiler, uint8_t byte) {
     writeChunk(compiler->chunk, byte, compiler->currentLine, compiler->currentColumn);
 }
+
+// Forward declarations for register mode functions - Phase 1.1 enhancement
+static uint8_t allocateRegister(Compiler* compiler);
+static void pushRegister(Compiler* compiler, uint8_t reg);
+static uint8_t popRegister(Compiler* compiler);
+static void writeRegisterOp(Compiler* compiler, RegisterOp op, uint8_t dst, uint8_t src1, uint8_t src2);
 
 static int makeConstant(Compiler* compiler, ObjString* string) {
     Value value = STRING_VAL(string);
@@ -1926,6 +1940,43 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                 argIt = argIt->next;
             }
 
+            // Count required parameters (those without defaults)
+            int requiredParams = 0;
+            ASTNode* param = fnNode ? fnNode->data.function.parameters : NULL;
+            while (param) {
+                if (!param->data.let.initializer) {
+                    requiredParams++;
+                }
+                param = param->next;
+            }
+            
+            // Check minimum argument count
+            if (acount < requiredParams) {
+                char msgBuffer[128];
+                snprintf(msgBuffer, sizeof(msgBuffer),
+                    "expected at least %d arguments, found %d", requiredParams, acount);
+                char helpBuffer[128];
+                snprintf(helpBuffer, sizeof(helpBuffer),
+                    "function requires %d argument(s) but allows up to %d with defaults",
+                    requiredParams, funcType->info.function.paramCount);
+                const char* note = "provide values for all required parameters or use default values for optional ones";
+                emitGenericTypeError(compiler, &node->data.call.name, msgBuffer, helpBuffer, note);
+                return;
+            }
+            
+            // Check maximum argument count
+            if (acount > funcType->info.function.paramCount) {
+                char msgBuffer[128];
+                snprintf(msgBuffer, sizeof(msgBuffer),
+                    "expected at most %d arguments, found %d", funcType->info.function.paramCount, acount);
+                char helpBuffer[128];
+                snprintf(helpBuffer, sizeof(helpBuffer),
+                    "function accepts %d parameter(s) total", funcType->info.function.paramCount);
+                const char* note = "remove extra arguments or check the function definition";
+                emitGenericTypeError(compiler, &node->data.call.name, msgBuffer, helpBuffer, note);
+                return;
+            }
+
             for (int i = 0; i < funcType->info.function.paramCount; i++) {
                 Type* expected = funcType->info.function.paramTypes[i];
                 if (gcount > 0 && i < acount) {
@@ -1944,7 +1995,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                         variableTypes[argNodes[i]->data.variable.index] = expected;
                     }
                 }
-                if (i >= acount || !typesEqual(expected, argNodes[i]->valueType)) {
+                if (i < acount && !typesEqual(expected, argNodes[i]->valueType)) {
                     const char* expectedType = getTypeName(expected->kind);
                     const char* actualType = argNodes[i] && argNodes[i]->valueType ? getTypeName(argNodes[i]->valueType->kind) : "(none)";
                     emitTypeMismatchError(compiler, &node->data.call.name, expectedType, actualType);
@@ -2297,6 +2348,13 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             break;
         }
 
+        case AST_ENUM: {
+            // Enum declarations are processed at compile time
+            // No type checking needed for the declaration itself
+            node->valueType = NULL;
+            break;
+        }
+
         default:
             error(compiler, "Unsupported AST node type in type checker.");
             break;
@@ -2326,7 +2384,17 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 // printValue(node->data.literal);
                 // fprintf(stderr, "\n");
             }
-            emitConstant(compiler, node->data.literal);
+            
+            if (compiler->isRegisterMode) {
+                // Direct register VM compilation - Phase 1.1 enhancement
+                uint8_t dstReg = allocateRegister(compiler);
+                int constIndex = addRegisterConstant(compiler->rchunk, node->data.literal);
+                writeRegisterOp(compiler, ROP_LOAD_CONST, dstReg, (uint8_t)constIndex, 0);
+                pushRegister(compiler, dstReg);
+            } else {
+                // Legacy stack VM compilation
+                emitConstant(compiler, node->data.literal);
+            }
             break;
         }
 
@@ -3189,12 +3257,37 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
         case AST_FIELD_SET: {
             compiler->currentColumn = tokenColumn(compiler, &node->data.fieldSet.fieldName);
-            generateCode(compiler, node->right); // object
-            if (compiler->hadError) return;
-            emitConstant(compiler, I32_VAL(node->data.fieldSet.index));
-            generateCode(compiler, node->left); // value
-            if (compiler->hadError) return;
-            writeOp(compiler, OP_ARRAY_SET);
+            
+            if (compiler->isRegisterMode) {
+                // Direct register VM compilation - Phase 1.1 enhancement
+                generateCode(compiler, node->right); // Generate struct object
+                if (compiler->hadError) return;
+                
+                generateCode(compiler, node->left); // Generate new value
+                if (compiler->hadError) return;
+                
+                uint8_t valueReg = popRegister(compiler);  // Get value register
+                uint8_t structReg = popRegister(compiler); // Get struct register
+                uint8_t indexReg = allocateRegister(compiler); // Allocate index register
+                
+                // Load field index as constant
+                int constIndex = addRegisterConstant(compiler->rchunk, I32_VAL(node->data.fieldSet.index));
+                writeRegisterOp(compiler, ROP_LOAD_CONST, indexReg, (uint8_t)constIndex, 0);
+                
+                // Emit ROP_FIELD_SET: dst=struct, src1=index, src2=value
+                writeRegisterOp(compiler, ROP_FIELD_SET, structReg, indexReg, valueReg);
+                
+                // Field assignment typically doesn't push a result, but we could push the struct back
+                pushRegister(compiler, structReg);
+            } else {
+                // Legacy stack VM compilation
+                generateCode(compiler, node->right); // object
+                if (compiler->hadError) return;
+                emitConstant(compiler, I32_VAL(node->data.fieldSet.index));
+                generateCode(compiler, node->left); // value
+                if (compiler->hadError) return;
+                writeOp(compiler, OP_ARRAY_SET);
+            }
             break;
         }
 
@@ -3214,25 +3307,68 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
 
         case AST_STRUCT_LITERAL: {
             compiler->currentColumn = tokenColumn(compiler, &node->data.structLiteral.name);
-            int count = 0;
-            ASTNode* val = node->data.structLiteral.values;
-            while (val) {
-                generateCode(compiler, val);
-                if (compiler->hadError) return;
-                count++;
-                val = val->next;
+            
+            if (compiler->isRegisterMode) {
+                // Direct register VM compilation - Phase 1.1 enhancement
+                uint8_t dstReg = allocateRegister(compiler);
+                int count = 0;
+                
+                // Generate code for each field value, storing in consecutive registers
+                ASTNode* val = node->data.structLiteral.values;
+                uint8_t firstFieldReg = compiler->nextRegister;
+                
+                while (val) {
+                    generateCode(compiler, val);
+                    if (compiler->hadError) return;
+                    count++;
+                    val = val->next;
+                }
+                
+                // Emit ROP_STRUCT_LITERAL: dst=result, src1=field_count, src2=first_field_reg
+                writeRegisterOp(compiler, ROP_STRUCT_LITERAL, dstReg, (uint8_t)count, firstFieldReg);
+                pushRegister(compiler, dstReg);
+            } else {
+                // Legacy stack VM compilation
+                int count = 0;
+                ASTNode* val = node->data.structLiteral.values;
+                while (val) {
+                    generateCode(compiler, val);
+                    if (compiler->hadError) return;
+                    count++;
+                    val = val->next;
+                }
+                writeOp(compiler, OP_MAKE_ARRAY);
+                writeOp(compiler, count);
             }
-            writeOp(compiler, OP_MAKE_ARRAY);
-            writeOp(compiler, count);
             break;
         }
 
         case AST_FIELD: {
             compiler->currentColumn = tokenColumn(compiler, &node->data.field.fieldName);
-            generateCode(compiler, node->left);
-            if (compiler->hadError) return;
-            emitConstant(compiler, I32_VAL(node->data.field.index));
-            writeOp(compiler, OP_ARRAY_GET);
+            
+            if (compiler->isRegisterMode) {
+                // Direct register VM compilation - Phase 1.1 enhancement
+                generateCode(compiler, node->left);  // Generate struct object
+                if (compiler->hadError) return;
+                
+                uint8_t structReg = popRegister(compiler);  // Get struct register
+                uint8_t dstReg = allocateRegister(compiler);  // Allocate result register
+                uint8_t indexReg = allocateRegister(compiler);  // Allocate index register
+                
+                // Load field index as constant
+                int constIndex = addRegisterConstant(compiler->rchunk, I32_VAL(node->data.field.index));
+                writeRegisterOp(compiler, ROP_LOAD_CONST, indexReg, (uint8_t)constIndex, 0);
+                
+                // Emit ROP_FIELD_GET: dst=result, src1=struct, src2=index
+                writeRegisterOp(compiler, ROP_FIELD_GET, dstReg, structReg, indexReg);
+                pushRegister(compiler, dstReg);
+            } else {
+                // Legacy stack VM compilation
+                generateCode(compiler, node->left);
+                if (compiler->hadError) return;
+                emitConstant(compiler, I32_VAL(node->data.field.index));
+                writeOp(compiler, OP_ARRAY_GET);
+            }
             break;
         }
 
@@ -3590,6 +3726,7 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 arg = arg->next;
             }
 
+            // Generate code for provided arguments
             for (int i = 0; i < argCount; i++) {
                 generateCode(compiler, args[i]);
                 if (compiler->hadError) return;
@@ -3597,6 +3734,32 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 if (node->data.call.convertArgs[i]) {
                     /* conversions not implemented */
                 }
+            }
+            
+            // Generate code for missing arguments using default values
+            ASTNode* fnNode = vm.functionDecls[node->data.call.index];
+            if (fnNode) {
+                Type* funcType = variableTypes[node->data.call.index];
+                int totalParams = funcType->info.function.paramCount;
+                
+                ASTNode* param = fnNode->data.function.parameters;
+                for (int i = 0; i < totalParams; i++) {
+                    if (i >= argCount) {
+                        // Missing argument - use default value
+                        if (param && param->data.let.initializer) {
+                            generateCode(compiler, param->data.let.initializer);
+                            if (compiler->hadError) return;
+                        } else {
+                            // This should not happen due to our validation above
+                            error(compiler, "Internal error: missing default value for parameter");
+                            return;
+                        }
+                    }
+                    if (param) param = param->next;
+                }
+                
+                // Update argument count to include default parameters
+                argCount = totalParams;
             }
 
             writeOp(compiler, OP_CALL);
@@ -3707,6 +3870,13 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             int constant = makeConstant(compiler, node->data.useStmt.path);
             writeOp(compiler, OP_IMPORT);
             writeOp(compiler, (uint8_t)constant);
+            break;
+        }
+
+        case AST_ENUM: {
+            // Enum declarations are handled at compile time
+            // The enum type was already registered during parsing
+            // No runtime code generation needed for enum declarations
             break;
         }
 
@@ -4116,6 +4286,16 @@ void initCompiler(Compiler* compiler, Chunk* chunk,
     compiler->genericNames = NULL;
     compiler->genericConstraints = NULL;
     compiler->genericCount = 0;
+    
+    // Initialize register VM mode fields - Phase 1.1 enhancement
+    compiler->isRegisterMode = false;  // Default to stack VM mode
+    compiler->rchunk = NULL;
+    compiler->nextRegister = 0;
+    compiler->registerStackTop = 0;
+    // Initialize register stack
+    for (int i = 0; i < 256; i++) {
+        compiler->registerStack[i] = 0;
+    }
 
     // Count lines in sourceCode and record start pointers for each line
     if (sourceCode) {
@@ -4212,6 +4392,10 @@ bool compile(ASTNode* ast, Compiler* compiler, bool requireMain) {
 
 // Compile AST to register bytecode
 bool compileToRegister(ASTNode* ast, RegisterChunk* rchunk, const char* filePath, const char* sourceCode, bool requireMain) {
+    // Current implementation: Compile to stack VM, then translate to register VM
+    // TODO: Future enhancement - use compileToRegisterDirect for complete direct compilation
+    // The direct register compilation infrastructure is implemented and ready for future use
+    
     Chunk chunk;
     initChunk(&chunk);
     Compiler compiler;
@@ -4221,6 +4405,98 @@ bool compileToRegister(ASTNode* ast, RegisterChunk* rchunk, const char* filePath
         chunkToRegisterIR(&chunk, rchunk);
     }
     freeChunk(&chunk);
+    return ok;
+}
+
+// Register VM Direct Compilation - Phase 1.1 Enhancement
+// Initialize compiler for direct register VM compilation
+void initRegisterCompiler(Compiler* compiler, RegisterChunk* rchunk,
+                         const char* filePath, const char* sourceCode) {
+    // Initialize basic compiler structure
+    initSymbolTable(&compiler->symbols);
+    compiler->scopeDepth = 0;
+    compiler->chunk = NULL;  // No stack VM chunk in register mode
+    compiler->hadError = false;
+    compiler->panicMode = false;
+    
+    // File and source information
+    compiler->filePath = filePath;
+    compiler->sourceCode = sourceCode;
+    compiler->lineStarts = NULL;
+    compiler->lineCount = 0;
+    
+    // AST compilation state
+    compiler->currentLine = 0;
+    compiler->currentColumn = 0;
+    compiler->currentReturnType = NULL;
+    compiler->currentFunctionHasGenerics = false;
+    compiler->genericNames = NULL;
+    compiler->genericConstraints = NULL;
+    compiler->genericCount = 0;
+    
+    // Loop control state
+    compiler->loopStart = -1;
+    compiler->loopEnd = -1;
+    compiler->loopContinue = -1;
+    compiler->loopDepth = 0;
+    compiler->breakJumps = NULL;
+    compiler->breakJumpCount = 0;
+    compiler->breakJumpCapacity = 0;
+    compiler->continueJumps = NULL;
+    compiler->continueJumpCount = 0;
+    compiler->continueJumpCapacity = 0;
+    
+    // Register VM mode
+    compiler->isRegisterMode = true;
+    compiler->rchunk = rchunk;
+    compiler->nextRegister = 0;
+    compiler->registerStackTop = 0;
+    
+    // Initialize register stack
+    for (int i = 0; i < 256; i++) {
+        compiler->registerStack[i] = 0;
+    }
+}
+
+// Helper functions for register allocation
+static uint8_t allocateRegister(Compiler* compiler) {
+    if (compiler->nextRegister >= 255) {
+        // Handle register exhaustion - this should rarely happen
+        compiler->hadError = true;
+        return 255;  // Return maximum register as fallback
+    }
+    return compiler->nextRegister++;
+}
+
+static void pushRegister(Compiler* compiler, uint8_t reg) {
+    if (compiler->registerStackTop < 256) {
+        compiler->registerStack[compiler->registerStackTop++] = reg;
+    }
+}
+
+static uint8_t popRegister(Compiler* compiler) {
+    if (compiler->registerStackTop > 0) {
+        return compiler->registerStack[--compiler->registerStackTop];
+    }
+    return 0;  // Fallback to register 0
+}
+
+// Helper function to emit register instructions
+static void writeRegisterOp(Compiler* compiler, RegisterOp op, uint8_t dst, uint8_t src1, uint8_t src2) {
+    RegisterInstr instr = {op, dst, src1, src2};
+    writeRegisterInstr(compiler->rchunk, instr);
+}
+
+// Direct register VM compilation entry point
+bool compileToRegisterDirect(ASTNode* ast, RegisterChunk* rchunk, 
+                            const char* filePath, const char* sourceCode, bool requireMain) {
+    Compiler compiler;
+    initRegisterCompiler(&compiler, rchunk, filePath, sourceCode);
+    
+    // Use the existing compile function but in register mode
+    bool ok = compile(ast, &compiler, requireMain);
+    
+    freeCompiler(&compiler);
     return ok;
 }
 

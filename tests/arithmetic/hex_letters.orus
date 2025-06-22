@@ -1,0 +1,25 @@
+fn main() {
+    let a = 0xAu64
+    print("0xAu64:")
+    print(type_of(a))
+    
+    let b = 0xBu64  
+    print("0xBu64:")
+    print(type_of(b))
+    
+    let c = 0xCu64
+    print("0xCu64:")
+    print(type_of(c))
+    
+    let d = 0xDu64
+    print("0xDu64:")
+    print(type_of(d))
+    
+    let e = 0xEu64
+    print("0xEu64:")
+    print(type_of(e))
+    
+    let f = 0xFu64
+    print("0xFu64:")
+    print(type_of(f))
+}

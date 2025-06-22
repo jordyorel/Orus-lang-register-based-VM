@@ -1,0 +1,61 @@
+// Basic Method Calls Test
+// Tests fundamental impl block functionality with simple methods
+
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+impl Point {
+    fn new(x: i32, y: i32) -> Point {
+        return Point { x: x, y: y }
+    }
+    
+    fn get_x(self) -> i32 {
+        return self.x
+    }
+    
+    fn get_y(self) -> i32 {
+        return self.y
+    }
+    
+    fn set_x(self, new_x: i32) {
+        self.x = new_x
+    }
+    
+    fn set_y(self, new_y: i32) {
+        self.y = new_y
+    }
+    
+    fn distance_from_origin(self) -> f64 {
+        let x_squared: f64 = (self.x as f64) * (self.x as f64)
+        let y_squared: f64 = (self.y as f64) * (self.y as f64)
+        return sqrt(x_squared + y_squared)
+    }
+}
+
+fn main() {
+    // Test static method (constructor)
+    let p: Point = Point.new(3, 4)
+    print("Created point: ({}, {})", p.get_x(), p.get_y())
+    
+    // Test getter methods
+    let x: i32 = p.get_x()
+    let y: i32 = p.get_y()
+    print("Point coordinates: x={}, y={}", x, y)
+    
+    // Test setter methods
+    p.set_x(5)
+    p.set_y(12)
+    print("After setting: ({}, {})", p.get_x(), p.get_y())
+    
+    // Test method with computation
+    let distance: f64 = p.distance_from_origin()
+    print("Distance from origin: {}", distance)
+    
+    // Expected output:
+    // Created point: (3, 4)
+    // Point coordinates: x=3, y=4
+    // After setting: (5, 12)
+    // Distance from origin: 13
+}

@@ -95,6 +95,9 @@ struct ObjError* allocateError(ErrorType type, const char* message, SrcLocation 
 struct ASTNode* allocateASTNode();
 struct Type* allocateType();
 
+// Allocate enum value object
+ObjEnum* allocateEnum(int variantIndex, Value* data, int dataCount, ObjString* typeName);
+
 // Mark helpers for GC
 void markObject(Obj* object);
 void markValue(Value value);

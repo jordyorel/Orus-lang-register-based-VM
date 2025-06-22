@@ -322,6 +322,13 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             printf("%-16s %4d %4d\n", "OP_CALL_NATIVE", index, argCount);
             return offset + 3;
         }
+        
+        case OP_IMPORT:
+            return simpleInstruction("OP_IMPORT", offset);
+        case OP_MODULE_CALL:
+            return simpleInstruction("OP_MODULE_CALL", offset);
+        case OP_MODULE_ACCESS:
+            return simpleInstruction("OP_MODULE_ACCESS", offset);
 
         case OP_I32_TO_F64:
             return simpleInstruction("OP_I32_TO_F64", offset);
@@ -555,7 +562,6 @@ static const char* registerOpNames[] = {
     OP(ROP_U32_TO_STRING)
     OP(ROP_F64_TO_STRING)
     OP(ROP_BOOL_TO_STRING)
-    OP(ROP_ARRAY_TO_STRING)
     OP(ROP_PRINT)
     OP(ROP_PRINT_NO_NL)
     OP(ROP_LOAD_GLOBAL)
@@ -571,14 +577,8 @@ static const char* registerOpNames[] = {
     OP(ROP_BIT_NOT_I64)
     OP(ROP_SHL_I64)
     OP(ROP_SHR_I64)
-    OP(ROP_MAKE_ARRAY)
-    OP(ROP_ARRAY_GET)
-    OP(ROP_ARRAY_SET)
-    OP(ROP_ARRAY_PUSH)
-    OP(ROP_ARRAY_POP)
     OP(ROP_LEN)
     OP(ROP_I64_TO_STRING)
-    OP(ROP_ARRAY_RESERVE)
     OP(ROP_CONCAT)
     OP(ROP_TYPE_OF_I32)
     OP(ROP_TYPE_OF_I64)
@@ -587,7 +587,6 @@ static const char* registerOpNames[] = {
     OP(ROP_TYPE_OF_F64)
     OP(ROP_TYPE_OF_BOOL)
     OP(ROP_TYPE_OF_STRING)
-    OP(ROP_TYPE_OF_ARRAY)
     OP(ROP_GC_PAUSE)
     OP(ROP_GC_RESUME)
     /* Newly added opcodes */
@@ -626,13 +625,11 @@ static const char* registerOpNames[] = {
     OP(ROP_I64_CONST)
     OP(ROP_I64_TO_BOOL)
     OP(ROP_I64_TO_U64)
-    OP(ROP_IMPORT)
     OP(ROP_INC_I64)
     OP(ROP_ITER_NEXT_I64)
     OP(ROP_JUMP_IF_FALSE)
     OP(ROP_JUMP_IF_LT_I64)
     OP(ROP_JUMP_IF_TRUE)
-    OP(ROP_LEN_ARRAY)
     OP(ROP_LEN_STRING)
     OP(ROP_LESS_EQUAL_F64)
     OP(ROP_LESS_EQUAL_I32)
@@ -699,6 +696,59 @@ static const char* registerOpNames[] = {
     OP(ROP_U64_TO_STRING)
     OP(ROP_EQ_F64)
     OP(ROP_NE_F64)
+    /* Builtin function opcodes */
+    OP(ROP_RANGE)
+    OP(ROP_SUM)
+    OP(ROP_MIN)
+    OP(ROP_MAX)
+    OP(ROP_IS_TYPE)
+    OP(ROP_INPUT)
+    OP(ROP_INT)
+    OP(ROP_FLOAT)
+    OP(ROP_TIMESTAMP)
+    OP(ROP_SORTED)
+    OP(ROP_NATIVE_POW)
+    OP(ROP_NATIVE_SQRT)
+    OP(ROP_CALL_BUILTIN_SLICE)
+    OP(ROP_SPILL_REG)
+    OP(ROP_UNSPILL_REG)
+    /* Struct operations - Phase 1.1.1 */
+    OP(ROP_STRUCT_LITERAL)
+    OP(ROP_FIELD_GET)
+    OP(ROP_FIELD_SET)
+    /* Method call operations - Phase 1.2.1 */
+    OP(ROP_CALL_METHOD)
+    /* Enum operations - Phase 2.1.2 */
+    OP(ROP_ENUM_LITERAL)
+    OP(ROP_ENUM_VARIANT)
+    OP(ROP_ENUM_CHECK)
+    /* Pattern matching operations - Phase 2.1.3 */
+    OP(ROP_MATCH_BEGIN)
+    OP(ROP_MATCH_END)
+    /* Generic operations - Phase 3.1.2 */
+    OP(ROP_CALL_GENERIC)
+    /* Module operations - Phase 4.1.1 */
+    OP(ROP_IMPORT)
+    OP(ROP_MODULE_CALL)
+    OP(ROP_MODULE_ACCESS)
+    /* Advanced type operations - Phase 3.2.1 */
+    OP(ROP_GET_TYPE_INFO)
+    OP(ROP_TYPE_CAST)
+    /* Modern Array Operations - Phase 5.1.2 */
+    OP(ROP_ARRAY_NEW)
+    OP(ROP_ARRAY_GET)
+    OP(ROP_ARRAY_SET)
+    OP(ROP_ARRAY_LEN)
+    OP(ROP_ARRAY_PUSH)
+    OP(ROP_ARRAY_POP)
+    OP(ROP_ARRAY_INSERT)
+    OP(ROP_ARRAY_REMOVE)
+    OP(ROP_ARRAY_SLICE)
+    OP(ROP_ARRAY_CONCAT)
+    OP(ROP_ARRAY_REVERSE)
+    OP(ROP_ARRAY_SORT)
+    OP(ROP_ARRAY_TO_STRING)
+    OP(ROP_TYPE_OF_ARRAY)
 #undef OP
 };
 

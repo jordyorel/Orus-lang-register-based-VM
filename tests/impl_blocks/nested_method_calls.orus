@@ -1,0 +1,103 @@
+# Nested Method Calls Test
+# Tests calling methods within methods and complex method interactions
+
+struct Rectangle {
+    width: f64,
+    height: f64,
+}
+
+impl Rectangle {
+    fn new(width: f64, height: f64) -> Rectangle {
+        return Rectangle { width: width, height: height }
+    }
+    
+    fn area(self) -> f64 {
+        return self.width * self.height
+    }
+    
+    fn perimeter(self) -> f64 {
+        return 2.0 * (self.width + self.height)
+    }
+    
+    fn is_square(self) -> bool {
+        return self.width == self.height
+    }
+    
+    fn scale(self, factor: f64) {
+        self.width = self.width * factor
+        self.height = self.height * factor
+    }
+    
+    fn area_to_perimeter_ratio(self) -> f64 {
+        let area: f64 = self.area()      # Method call within method
+        let perimeter: f64 = self.perimeter()  # Method call within method
+        return area / perimeter
+    }
+    
+    fn describe(self) -> string {
+        let area: f64 = self.area()
+        let perimeter: f64 = self.perimeter()
+        let is_square: bool = self.is_square()
+        
+        if is_square {
+            return "Square with area {} and perimeter {}"
+        } else {
+            return "Rectangle with area {} and perimeter {}"
+        }
+    }
+    
+    fn compare_area(self, other: Rectangle) -> string {
+        let my_area: f64 = self.area()
+        let other_area: f64 = other.area()
+        
+        if my_area > other_area {
+            return "This rectangle is larger"
+        } else if my_area < other_area {
+            return "This rectangle is smaller"
+        } else {
+            return "Both rectangles have equal area"
+        }
+    }
+}
+
+fn main() {
+    # Create rectangles
+    let rect1: Rectangle = Rectangle.new(4.0, 3.0)
+    let rect2: Rectangle = Rectangle.new(2.0, 6.0)
+    let square: Rectangle = Rectangle.new(3.0, 3.0)
+    
+    # Test basic methods
+    print("Rect1 area: {}", rect1.area())
+    print("Rect1 perimeter: {}", rect1.perimeter())
+    print("Rect1 is square: {}", rect1.is_square())
+    
+    # Test method calling other methods
+    print("Rect1 area-to-perimeter ratio: {}", rect1.area_to_perimeter_ratio())
+    
+    # Test complex method with nested calls
+    print("Rect1 description: {}", rect1.describe())
+    print("Square description: {}", square.describe())
+    
+    # Test method with object parameter
+    print("Rect1 vs Rect2: {}", rect1.compare_area(rect2))
+    
+    # Test method modification and re-testing
+    rect1.scale(2.0)
+    print("After scaling rect1 by 2.0:")
+    print("New area: {}", rect1.area())
+    print("New perimeter: {}", rect1.perimeter())
+    print("Rect1 vs Rect2 now: {}", rect1.compare_area(rect2))
+    
+    # Expected output:
+    # Rect1 area: 12
+    # Rect1 perimeter: 14
+    # Rect1 is square: false
+    # Rect1 area-to-perimeter ratio: 0.857143
+    # Rect1 description: Rectangle with area 12 and perimeter 14
+    # Square description: Square with area 9 and perimeter 12
+    # Rect1 vs Rect2: equal area
+    # After scaling rect1 by 2.0:
+    # New area: 48
+    # New perimeter: 28
+    # Rect1 vs Rect2 now: larger
+}

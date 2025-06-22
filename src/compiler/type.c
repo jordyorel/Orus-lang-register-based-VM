@@ -105,6 +105,18 @@ Type* createStructType(ObjString* name, FieldInfo* fields, int fieldCount,
     return type;
 }
 
+Type* createEnumType(ObjString* name, VariantInfo* variants, int variantCount,
+                     ObjString** generics, int genericCount) {
+    Type* type = allocateType();
+    type->kind = TYPE_ENUM;
+    type->info.enumeration.name = name;
+    type->info.enumeration.variants = variants;
+    type->info.enumeration.variantCount = variantCount;
+    type->info.enumeration.genericParams = generics;
+    type->info.enumeration.genericCount = genericCount;
+    return type;
+}
+
 Type* createGenericType(ObjString* name) {
     Type* type = allocateType();
     type->kind = TYPE_GENERIC;
@@ -178,6 +190,10 @@ bool typesEqual(Type* a, Type* b) {
             return strcmp(a->info.structure.name->chars,
                           b->info.structure.name->chars) == 0;
 
+        case TYPE_ENUM:
+            return strcmp(a->info.enumeration.name->chars,
+                          b->info.enumeration.name->chars) == 0;
+
         case TYPE_GENERIC:
             return strcmp(a->info.generic.name->chars,
                           b->info.generic.name->chars) == 0;
@@ -201,6 +217,7 @@ const char* getTypeName(TypeKind kind) {
         case TYPE_ARRAY: return "array";
         case TYPE_FUNCTION: return "function";
         case TYPE_STRUCT: return "struct";
+        case TYPE_ENUM: return "enum";
         case TYPE_GENERIC: return "generic";
         default: return "unknown";
     }

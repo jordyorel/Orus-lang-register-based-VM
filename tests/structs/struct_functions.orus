@@ -1,0 +1,27 @@
+// Test structs passed to and returned from functions
+struct Rectangle {
+    width: i32,
+    height: i32,
+}
+
+fn print_rectangle(rect: Rectangle) {
+    print("Width: {}", rect.width)
+    print("Height: {}", rect.height)
+}
+
+fn create_square(size: i32) -> Rectangle {
+    return Rectangle {
+        width: size,
+        height: size,
+    }
+}
+
+fn main() {
+    let rect = Rectangle { width: 10, height: 5 }
+    print("Original rectangle:")
+    print_rectangle(rect)
+    
+    let square = create_square(7)
+    print("Created square:")
+    print_rectangle(square)
+}

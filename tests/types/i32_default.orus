@@ -1,0 +1,12 @@
+fn main() {
+    let a: i32 = 5
+    let b: i64 = 5
+    
+    print("a (explicit i32):")
+    print(a)
+    print(type_of(a))
+    
+    print("b (explicit i64):")
+    print(b)
+    print(type_of(b))
+}

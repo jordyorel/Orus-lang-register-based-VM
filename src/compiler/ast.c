@@ -649,6 +649,29 @@ ASTNode* createTryNode(ASTNode* tryBlock, Token errorName, ASTNode* catchBlock) 
 }
 
 /**
+ * Create an enum declaration node.
+ *
+ * @param name         Enum type name.
+ * @param variants     Linked list of variant names.
+ * @param variantCount Number of variants.
+ * @param isPublic     Whether enum is public.
+ * @return Newly allocated AST node.
+ */
+ASTNode* createEnumNode(Token name, ASTNode* variants, int variantCount, bool isPublic) {
+    ASTNode* node = allocateASTNode();
+    node->type = AST_ENUM;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.enumDecl.name = name;
+    node->data.enumDecl.variants = variants;
+    node->data.enumDecl.variantCount = variantCount;
+    node->data.enumDecl.isPublic = isPublic;
+    node->valueType = NULL;
+    return node;
+}
+
+/**
  * Free an AST node. The GC currently owns all nodes so this is a no-op.
  */
 void freeASTNode(ASTNode* node) {

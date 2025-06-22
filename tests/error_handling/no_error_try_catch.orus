@@ -1,0 +1,21 @@
+// Try-catch with no errors (normal execution)
+fn main() {
+    print("Testing try-catch with no errors...")
+    
+    try {
+        print("Inside try block")
+        let a = 10
+        let b = 2
+        let c = a / b
+        print("Division result: {}", c)
+        
+        let arr = [1, 2, 3, 4, 5]
+        print("Array element: {}", arr[2])
+        
+        print("Try block completed successfully")
+    } catch error {
+        print("This catch block should not execute: {}", error)
+    }
+    
+    print("Program completed normally")
+}

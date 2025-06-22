@@ -2052,6 +2052,12 @@ static InterpretResult run() {
                                                     (long long)AS_RANGE_ITERATOR(arg)->current,
                                                     (long long)AS_RANGE_ITERATOR(arg)->end);
                                 break;
+                            case VAL_ENUM: {
+                                ObjEnum* enumValue = AS_ENUM(arg);
+                                valueLen = snprintf(valueStr, sizeof(valueStr),
+                                                    "%s::%d", enumValue->typeName->chars, enumValue->variantIndex);
+                                break;
+                            }
                         }
 
                         if (valueLen > 0) {
@@ -2229,6 +2235,12 @@ static InterpretResult run() {
                                                     (long long)AS_RANGE_ITERATOR(arg)->current,
                                                     (long long)AS_RANGE_ITERATOR(arg)->end);
                                 break;
+                            case VAL_ENUM: {
+                                ObjEnum* enumValue = AS_ENUM(arg);
+                                valueLen = snprintf(valueStr, sizeof(valueStr),
+                                                    "%s::%d", enumValue->typeName->chars, enumValue->variantIndex);
+                                break;
+                            }
                         }
 
                         if (valueLen > 0) {

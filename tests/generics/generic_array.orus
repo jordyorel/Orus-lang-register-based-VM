@@ -1,0 +1,60 @@
+// Generic array operations test
+fn map<T, U>(arr: [T], fn transform: T -> U) -> [U] {
+    let result = []
+    for item in arr {
+        let transformed = transform(item)
+        result.push(transformed)
+    }
+    return result
+}
+
+fn filter<T>(arr: [T], fn predicate: T -> bool) -> [T] {
+    let result = []
+    for item in arr {
+        if predicate(item) {
+            result.push(item)
+        }
+    }
+    return result
+}
+
+fn reduce<T, U>(arr: [T], initial: U, fn accumulator: (U, T) -> U) -> U {
+    let result = initial
+    for item in arr {
+        result = accumulator(result, item)
+    }
+    return result
+}
+
+fn double(x: i32) -> i32 {
+    return x * 2
+}
+
+fn is_even(x: i32) -> bool {
+    return x % 2 == 0
+}
+
+fn sum(acc: i32, x: i32) -> i32 {
+    return acc + x
+}
+
+fn main() {
+    let numbers = [1, 2, 3, 4, 5]
+    
+    // Test map function
+    let doubled = map<i32, i32>(numbers, double)
+    print("doubled: {}", doubled)
+    
+    // Test filter function
+    let evens = filter<i32>(numbers, is_even)
+    print("evens: {}", evens)
+    
+    // Test reduce function
+    let total = reduce<i32, i32>(numbers, 0, sum)
+    print("total: {}", total)
+    
+    // Test with different types
+    let strings = ["hello", "world", "test"]
+    let lengths = map<string, i32>(strings, len)
+    print("string lengths: {}", lengths)
+}

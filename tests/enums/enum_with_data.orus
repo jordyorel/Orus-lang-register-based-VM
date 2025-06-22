@@ -1,0 +1,29 @@
+// Enum test with data variants
+enum Shape {
+    Circle(f64),           // radius
+    Rectangle(f64, f64),   // width, height
+    Point
+}
+
+fn main() {
+    let circle = Shape.Circle(5.0)
+    let rect = Shape.Rectangle(10.0, 20.0)
+    let point = Shape.Point
+    
+    print("circle: {}", circle)
+    print("rectangle: {}", rect)
+    print("point: {}", point)
+    
+    // Test variant checking
+    if circle == Shape.Circle {
+        print("circle is Circle variant - correct!")
+    }
+    
+    if rect == Shape.Rectangle {
+        print("rect is Rectangle variant - correct!")
+    }
+    
+    if point == Shape.Point {
+        print("point is Point variant - correct!")
+    }
+}

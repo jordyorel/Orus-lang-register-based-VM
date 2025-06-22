@@ -1,0 +1,35 @@
+// Error propagation through function calls
+fn divide_numbers(a: i32, b: i32) -> i32 {
+    return a / b  // Can throw division by zero error
+}
+
+fn safe_divide(x: i32, y: i32) -> i32 {
+    try {
+        return divide_numbers(x, y)
+    } catch error {
+        print("Error in safe_divide: {}", error)
+        return -1  // Return error value
+    }
+}
+
+fn main() {
+    print("Testing error propagation through functions...")
+    
+    // Test normal case
+    let result1 = safe_divide(10, 2)
+    print("10 / 2 = {}", result1)
+    
+    // Test error case
+    let result2 = safe_divide(10, 0)
+    print("10 / 0 = {} (error handled)", result2)
+    
+    // Test unhandled error propagation
+    try {
+        let result3 = divide_numbers(20, 0)
+        print("This should not print: {}", result3)
+    } catch error {
+        print("Caught propagated error: {}", error)
+    }
+    
+    print("Program completed successfully")
+}

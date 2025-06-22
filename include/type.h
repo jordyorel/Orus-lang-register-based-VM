@@ -17,6 +17,7 @@ typedef enum {
     TYPE_ARRAY,
     TYPE_FUNCTION,
     TYPE_STRUCT,
+    TYPE_ENUM,
     TYPE_GENERIC,
     TYPE_COUNT
 } TypeKind;
@@ -25,6 +26,13 @@ typedef struct FieldInfo {
     ObjString* name;
     struct Type* type;
 } FieldInfo;
+
+typedef struct VariantInfo {
+    ObjString* name;
+    struct Type** fieldTypes;  // Types of data carried by this variant
+    ObjString** fieldNames;    // Names of fields (for destructuring)
+    int fieldCount;            // Number of fields in this variant
+} VariantInfo;
 
 typedef struct Type {
     Obj obj;
@@ -48,6 +56,13 @@ typedef struct Type {
         struct {
             ObjString* name;
         } generic;
+        struct {
+            ObjString* name;
+            VariantInfo* variants;
+            int variantCount;
+            ObjString** genericParams;
+            int genericCount;
+        } enumeration;
     } info;
 } Type;
 
@@ -56,6 +71,8 @@ Type* createArrayType(Type* elementType);
 Type* createFunctionType(Type* returnType, Type** paramTypes, int paramCount);
 Type* createStructType(ObjString* name, FieldInfo* fields, int fieldCount,
                        ObjString** generics, int genericCount);
+Type* createEnumType(ObjString* name, VariantInfo* variants, int variantCount,
+                     ObjString** generics, int genericCount);
 Type* createGenericType(ObjString* name);
 Type* findStructType(const char* name);
 void freeType(Type* type);

@@ -1,0 +1,21 @@
+// Test for generic type inference
+struct Container<T> {
+    value: T
+}
+
+fn createContainer<T>(value: T) -> Container<T> {
+    return Container<T> { value: value }
+}
+
+fn main() {
+    // Test if we can infer types from function calls
+    let intContainer = createContainer(42)
+    let stringContainer = createContainer("hello")
+    let floatContainer = createContainer(3.14)
+    
+    print("Integer container: {}", intContainer.value)
+    print("String container: {}", stringContainer.value)
+    print("Float container: {}", floatContainer.value)
+    
+    print("Type inference test complete!")
+}

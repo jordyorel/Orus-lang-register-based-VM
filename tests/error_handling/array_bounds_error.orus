@@ -1,0 +1,19 @@
+// Array bounds error handling test
+fn main() {
+    print("Testing array bounds error handling...")
+    
+    let arr = [1, 2, 3, 4, 5]
+    
+    try {
+        print("Array length: {}", len(arr))
+        print("Valid access: {}", arr[2])
+        
+        // This should cause array bounds error
+        print("Invalid access: {}", arr[10])
+        print("This should not print")
+    } catch error {
+        print("Caught array bounds error: {}", error)
+    }
+    
+    print("Program continues after array error")
+}

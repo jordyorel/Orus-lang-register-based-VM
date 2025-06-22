@@ -1,0 +1,8 @@
+fn main() {
+    // Test each part of the complex expression
+    print("Part 1: {}", 5 * 3)
+    print("Part 2: {}", 5 / 2)  
+    print("Part 3: {}", 3 % 2)
+    print("Combined 1+2: {}", 5 * 3 + 5 / 2)
+    print("Combined 1+2-3: {}", 5 * 3 + 5 / 2 - 3 % 2)
+}

@@ -1,0 +1,24 @@
+// Simple module for testing
+pub fn greet(name: string) -> string {
+    return "Hello, " + name + "!"
+}
+
+pub fn add(a: i32, b: i32) -> i32 {
+    return a + b
+}
+
+pub fn multiply(x: f64, y: f64) -> f64 {
+    return x * y
+}
+
+pub const VERSION = "1.0.0"
+pub const PI = 3.14159
+
+fn private_helper() -> string {
+    return "This function is not exported"
+}
+
+fn main() {
+    print("Simple module loaded")
+    print("Module has {} public exports", 5)
+}

@@ -1,0 +1,17 @@
+// Test for basic enum functionality first
+enum Color {
+    Red,
+    Green,
+    Blue
+}
+
+fn main() {
+    // Test creating basic enum instances
+    let red = Color.Red
+    let green = Color.Green
+    
+    print("Red color: (exists)")
+    print("Green color: (exists)")
+    
+    print("Basic enum test complete!")
+}

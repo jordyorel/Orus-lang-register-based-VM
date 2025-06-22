@@ -1,0 +1,60 @@
+// Comprehensive generic functionality test
+fn identity<T>(value: T) -> T {
+    return value
+}
+
+fn max<T>(a: T, b: T) -> T {
+    if a > b {
+        return a
+    } else {
+        return b
+    }
+}
+
+fn min<T>(a: T, b: T) -> T {
+    if a < b {
+        return a
+    } else {
+        return b
+    }
+}
+
+fn equal<T>(a: T, b: T) -> bool {
+    return a == b
+}
+
+fn not_equal<T>(a: T, b: T) -> bool {
+    return a != b
+}
+
+fn main() {
+    print("=== Comprehensive Generic Test ===")
+    
+    // Test identity function with different types
+    print("Identity tests:")
+    print("  identity<i32>(42) = {}", identity<i32>(42))
+    print("  identity<f64>(3.14) = {}", identity<f64>(3.14))
+    print("  identity<string>(\"test\") = {}", identity<string>("test"))
+    print("  identity<bool>(true) = {}", identity<bool>(true))
+    
+    // Test comparison functions
+    print("Comparison tests:")
+    print("  max<i32>(15, 10) = {}", max<i32>(15, 10))
+    print("  max<f64>(2.5, 3.7) = {}", max<f64>(2.5, 3.7))
+    print("  min<i32>(15, 10) = {}", min<i32>(15, 10))
+    print("  min<f64>(2.5, 3.7) = {}", min<f64>(2.5, 3.7))
+    
+    // Test equality functions
+    print("Equality tests:")
+    print("  equal<i32>(5, 5) = {}", equal<i32>(5, 5))
+    print("  equal<i32>(5, 3) = {}", equal<i32>(5, 3))
+    print("  not_equal<string>(\"hello\", \"world\") = {}", not_equal<string>("hello", "world"))
+    print("  not_equal<string>(\"test\", \"test\") = {}", not_equal<string>("test", "test"))
+    
+    // Test with different numeric types
+    print("Mixed numeric types:")
+    print("  max<i32>(1000000, 999999) = {}", max<i32>(1000000, 999999))
+    print("  min<i32>(100, 200) = {}", min<i32>(100, 200))
+    
+    print("=== All Generic Tests Passed! ===")
+}

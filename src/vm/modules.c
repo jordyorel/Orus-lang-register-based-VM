@@ -9,6 +9,7 @@
 #include "../../include/vm.h"
 #include "../../include/builtin_stdlib.h"
 #include "../../include/bytecode_io.h"
+#include "../../include/reg_ir.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -121,6 +122,35 @@ Chunk* compile_module_ast(ASTNode* ast, const char* module_name) {
 }
 
 /**
+ * Compile an AST into register IR for a module.
+ *
+ * @param ast         Parsed AST of the module.
+ * @param module_name Module identifier.
+ * @return            Newly allocated register chunk or NULL on error.
+ */
+RegisterChunk* compile_module_ast_to_register(ASTNode* ast, const char* module_name) {
+    // First compile to stack VM bytecode
+    Chunk* stackChunk = compile_module_ast(ast, module_name);
+    if (!stackChunk) return NULL;
+    
+    // Then convert to register IR
+    RegisterChunk* regChunk = malloc(sizeof(RegisterChunk));
+    if (!regChunk) {
+        freeChunk(stackChunk);
+        free(stackChunk);
+        return NULL;
+    }
+    
+    chunkToRegisterIR(stackChunk, regChunk);
+    
+    // Clean up stack chunk
+    freeChunk(stackChunk);
+    free(stackChunk);
+    
+    return regChunk;
+}
+
+/**
  * Add a compiled module to the VM's cache.
  *
  * @param module Module descriptor.
@@ -229,6 +259,22 @@ InterpretResult compile_module_only(const char* path) {
         if (cacheFile) writeChunkToFile(chunk, cacheFile, mtime);
     }
 
+    // Compile to register IR as well
+    RegisterChunk* regChunk = NULL;
+    if (ast) {
+        regChunk = compile_module_ast_to_register(ast, path);
+        // If register compilation fails, we can still use stack VM
+        if (!regChunk) {
+            fprintf(stderr, "Warning: Register VM compilation failed for module %s, falling back to stack VM\n", path);
+        }
+    } else if (chunk) {
+        // If we loaded from cache, convert stack VM to register VM
+        regChunk = malloc(sizeof(RegisterChunk));
+        if (regChunk) {
+            chunkToRegisterIR(chunk, regChunk);
+        }
+    }
+
     Module mod;
     mod.module_name = strdup(path);
     const char* base = strrchr(path, '/');
@@ -239,6 +285,7 @@ InterpretResult compile_module_only(const char* path) {
     memcpy(mod.name, base, len);
     mod.name[len] = '\0';
     mod.bytecode = chunk;
+    mod.regBytecode = regChunk;  // Register VM bytecode
     mod.export_count = 0;
     mod.executed = false;
     mod.disk_path = diskPath;

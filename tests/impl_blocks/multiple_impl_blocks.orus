@@ -1,0 +1,157 @@
+# Multiple Impl Blocks Test
+# Tests having multiple impl blocks for the same struct
+
+struct Number {
+    value: i32,
+}
+
+# First impl block - basic operations
+impl Number {
+    fn new(value: i32) -> Number {
+        return Number { value: value }
+    }
+    
+    fn get_value(self) -> i32 {
+        return self.value
+    }
+    
+    fn set_value(self, new_value: i32) {
+        self.value = new_value
+    }
+}
+
+# Second impl block - arithmetic operations
+impl Number {
+    fn add(self, other: i32) -> Number {
+        return Number.new(self.value + other)
+    }
+    
+    fn subtract(self, other: i32) -> Number {
+        return Number.new(self.value - other)
+    }
+    
+    fn multiply(self, other: i32) -> Number {
+        return Number.new(self.value * other)
+    }
+}
+
+# Third impl block - comparison and utility methods
+impl Number {
+    fn is_positive(self) -> bool {
+        return self.value > 0
+    }
+    
+    fn is_negative(self) -> bool {
+        return self.value < 0
+    }
+    
+    fn is_zero(self) -> bool {
+        return self.value == 0
+    }
+    
+    fn abs(self) -> Number {
+        if self.is_negative() {
+            return Number.new(-self.value)
+        }
+        return Number.new(self.value)
+    }
+}
+
+# Fourth impl block - advanced operations
+impl Number {
+    fn power(self, exponent: i32) -> Number {
+        if exponent == 0 {
+            return Number.new(1)
+        }
+        
+        let result: i32 = self.value
+        for i in 1..exponent {
+            result = result * self.value
+        }
+        return Number.new(result)
+    }
+    
+    fn factorial(self) -> Number {
+        if self.value <= 1 {
+            return Number.new(1)
+        }
+        
+        let result: i32 = 1
+        for i in 2..(self.value + 1) {
+            result = result * i
+        }
+        return Number.new(result)
+    }
+    
+    fn is_even(self) -> bool {
+        return (self.value % 2) == 0
+    }
+}
+
+fn main() {
+    # Test methods from first impl block
+    let num: Number = Number.new(5)
+    print("Initial value: {}", num.get_value())
+    
+    num.set_value(10)
+    print("After setting to 10: {}", num.get_value())
+    
+    # Test methods from second impl block
+    let added: Number = num.add(3)
+    print("10 + 3 = {}", added.get_value())
+    
+    let subtracted: Number = num.subtract(4)
+    print("10 - 4 = {}", subtracted.get_value())
+    
+    let multiplied: Number = num.multiply(2)
+    print("10 * 2 = {}", multiplied.get_value())
+    
+    # Test methods from third impl block
+    print("10 is positive: {}", num.is_positive())
+    print("10 is negative: {}", num.is_negative())
+    print("10 is zero: {}", num.is_zero())
+    
+    let negative_num: Number = Number.new(-7)
+    let abs_val: Number = negative_num.abs()
+    print("Absolute value of -7: {}", abs_val.get_value())
+    
+    # Test methods from fourth impl block
+    let squared: Number = num.power(2)
+    print("10^2 = {}", squared.get_value())
+    
+    let cubed: Number = num.power(3)
+    print("10^3 = {}", cubed.get_value())
+    
+    let small_num: Number = Number.new(5)
+    let factorial: Number = small_num.factorial()
+    print("5! = {}", factorial.get_value())
+    
+    print("10 is even: {}", num.is_even())
+    print("5 is even: {}", small_num.is_even())
+    
+    # Test mixing methods from different impl blocks
+    let zero: Number = Number.new(0)
+    print("0 is zero: {}", zero.is_zero())
+    let zero_plus_five: Number = zero.add(5)
+    print("0 + 5 = {}", zero_plus_five.get_value())
+    print("(0 + 5) is positive: {}", zero_plus_five.is_positive())
+    
+    # Expected output:
+    # Initial value: 5
+    # After setting to 10: 10
+    # 10 + 3 = 13
+    # 10 - 4 = 6
+    # 10 * 2 = 20
+    # 10 is positive: true
+    # 10 is negative: false
+    # 10 is zero: false
+    # Absolute value of -7: 7
+    # 10^2 = 100
+    # 10^3 = 1000
+    # 5! = 120
+    # 10 is even: true
+    # 5 is even: false
+    # 0 is zero: true
+    # 0 + 5 = 5
+    # (0 + 5) is positive: true
+}

@@ -1,0 +1,9 @@
+// Very simple generic function test
+fn identity<T>(value: T) -> T {
+    return value
+}
+
+fn main() {
+    let result = identity<i32>(42)
+    print("Result: {}", result)
+}
