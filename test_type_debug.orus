@@ -1,0 +1,13 @@
+fn main() {
+    print("Testing for loop variable types")
+    
+    // Test different scenarios
+    for i in 1..4 {
+        print("i = {}, type should be i32", i)
+    }
+    
+    let n: i32 = 3
+    for j in 1..(n + 1) {
+        print("j = {}, type should be i32", j)
+    }
+}

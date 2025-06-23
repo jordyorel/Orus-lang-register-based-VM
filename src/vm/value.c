@@ -7,6 +7,7 @@
 
 #include "../../include/memory.h"
 #include "../../include/value.h"
+#include "../../include/type.h"
 
 
 /**
@@ -63,9 +64,15 @@ void printValue(Value value) {
         }
         case VAL_ENUM: {
             ObjEnum* enumValue = AS_ENUM(value);
-            // For now, print enum type and variant index
-            // TODO: Look up variant name from type system
-            printf("%s.%d", enumValue->typeName->chars, enumValue->variantIndex);
+            // Look up variant name from type system
+            Type* enumType = findEnumType(enumValue->typeName->chars);
+            if (enumType && enumValue->variantIndex < enumType->info.enumeration.variantCount) {
+                VariantInfo* variant = &enumType->info.enumeration.variants[enumValue->variantIndex];
+                printf("%s::%s", enumValue->typeName->chars, variant->name->chars);
+            } else {
+                // Fallback to showing type and index if lookup fails
+                printf("%s.%d", enumValue->typeName->chars, enumValue->variantIndex);
+            }
             if (enumValue->dataCount > 0) {
                 printf("(");
                 for (int i = 0; i < enumValue->dataCount; i++) {

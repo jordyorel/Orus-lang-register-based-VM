@@ -260,6 +260,12 @@ static bool statementAlwaysReturns(ASTNode* node) {
         }
         case AST_TERNARY:
             return false;
+        case AST_TRY: {
+            // A try-catch block always returns if both the try and catch blocks always return
+            bool tryReturns = statementAlwaysReturns(node->data.tryStmt.tryBlock);
+            bool catchReturns = statementAlwaysReturns(node->data.tryStmt.catchBlock);
+            return tryReturns && catchReturns;
+        }
         default:
             return false;
     }
@@ -3978,7 +3984,6 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
     int enclosingLoopEnd = compiler->loopEnd;
     int enclosingLoopContinue = compiler->loopContinue;
     int enclosingLoopDepth = compiler->loopDepth;
-    bool useTypedJump = false;
 
     Type* iterType = node->data.forStmt.startExpr->valueType;
     bool numericLoop = iterType &&
@@ -3988,52 +3993,43 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
         writeOp(compiler, OP_GC_PAUSE);
     }
 
-    // Generate code for the range start expression and store it in the iterator variable
+    // Generate and store start value
     generateCode(compiler, node->data.forStmt.startExpr);
     if (compiler->hadError) return;
-
-    // Define and initialize the iterator variable
     writeOp(compiler, OP_DEFINE_GLOBAL);
     writeOp(compiler, node->data.forStmt.iteratorIndex);
 
-    // Store the current position to jump back to for the loop condition
+    // Store loop start position
     int loopStart = compiler->chunk->count;
     compiler->loopStart = loopStart;
     compiler->loopDepth++;
 
-    // Get the iterator value for comparison
+    // Load iterator and end value for comparison
     writeOp(compiler, OP_GET_GLOBAL);
     writeOp(compiler, node->data.forStmt.iteratorIndex);
-
-    // Get the end value for comparison
     generateCode(compiler, node->data.forStmt.endExpr);
     if (compiler->hadError) return;
 
-    // Compare the iterator with the end value
-    int exitJump;
+    // Generate comparison and conditional jump
+    int exitJump = compiler->chunk->count;
     if (iterType->kind == TYPE_I32) {
         writeOp(compiler, OP_LESS_I32);
-        exitJump = compiler->chunk->count;
         writeOp(compiler, OP_JUMP_IF_FALSE);
-        writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
-        writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
+        writeChunk(compiler->chunk, 0xFF, 0, 1);
+        writeChunk(compiler->chunk, 0xFF, 0, 1);
         writeOp(compiler, OP_POP);
     } else if (iterType->kind == TYPE_I64) {
-        useTypedJump = true;
-        exitJump = compiler->chunk->count;
         writeOp(compiler, OP_JUMP_IF_LT_I64);
-        writeChunk(compiler->chunk, 0xFF, 0, 1);  // Placeholder for jump offset
+        writeChunk(compiler->chunk, 0xFF, 0, 1);
         writeChunk(compiler->chunk, 0xFF, 0, 1);
     } else if (iterType->kind == TYPE_U32) {
         writeOp(compiler, OP_LESS_U32);
-        exitJump = compiler->chunk->count;
         writeOp(compiler, OP_JUMP_IF_FALSE);
         writeChunk(compiler->chunk, 0xFF, 0, 1);
         writeChunk(compiler->chunk, 0xFF, 0, 1);
         writeOp(compiler, OP_POP);
     } else if (iterType->kind == TYPE_U64) {
         writeOp(compiler, OP_LESS_U64);
-        exitJump = compiler->chunk->count;
         writeOp(compiler, OP_JUMP_IF_FALSE);
         writeChunk(compiler->chunk, 0xFF, 0, 1);
         writeChunk(compiler->chunk, 0xFF, 0, 1);
@@ -4043,100 +4039,63 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
         return;
     }
 
-    // Generate code for the body
+    // Generate loop body
     generateCode(compiler, node->data.forStmt.body);
     if (compiler->hadError) return;
 
-    // Store the current position where we're about to emit the increment code
-    // This is where continue statements will jump to
+    // Continue point for continue statements
     compiler->loopContinue = compiler->chunk->count;
     patchContinueJumps(compiler);
 
-    // After the body, increment the iterator
-    // Get the current iterator value
+    // Increment iterator: load current value
     writeOp(compiler, OP_GET_GLOBAL);
     writeOp(compiler, node->data.forStmt.iteratorIndex);
 
-    // Add the step value
-    bool useIncI64 = false;
+    // Add step value (always use standard addition for consistency)
     if (node->data.forStmt.stepExpr) {
         generateCode(compiler, node->data.forStmt.stepExpr);
         if (compiler->hadError) return;
-        Type* stepType = node->data.forStmt.stepExpr->valueType;
-        if (stepType && stepType->kind != iterType->kind) {
-            if (iterType->kind == TYPE_I64) {
-                if (stepType->kind == TYPE_I32) {
-                    writeOp(compiler, OP_I32_TO_I64);
-                } else if (stepType->kind == TYPE_U32) {
-                    writeOp(compiler, OP_U32_TO_I64);
-                } else if (stepType->kind == TYPE_U64) {
-                    writeOp(compiler, OP_U64_TO_I64);
-                }
-            } else if (iterType->kind == TYPE_U64) {
-                if (stepType->kind == TYPE_I32) {
-                    writeOp(compiler, OP_I32_TO_U64);
-                } else if (stepType->kind == TYPE_U32) {
-                    writeOp(compiler, OP_U32_TO_U64);
-                }
-            }
-        }
     } else {
-        // Default step value is 1
-        if (iterType->kind == TYPE_I32) {
-            emitConstant(compiler, I32_VAL(1));
-        } else if (iterType->kind == TYPE_I64) {
-            useIncI64 = true;
-        } else if (iterType->kind == TYPE_U32) {
-            emitConstant(compiler, U32_VAL(1));
-        } else if (iterType->kind == TYPE_U64) {
-            emitConstant(compiler, U64_VAL(1));
+        // Default step is 1 with matching type
+        switch (iterType->kind) {
+            case TYPE_I32: emitConstant(compiler, I32_VAL(1)); break;
+            case TYPE_I64: emitConstant(compiler, I64_VAL(1)); break;
+            case TYPE_U32: emitConstant(compiler, U32_VAL(1)); break;
+            case TYPE_U64: emitConstant(compiler, U64_VAL(1)); break;
+            default: emitConstant(compiler, I32_VAL(1)); break;
         }
     }
 
-    // Add the step to the iterator
-    if (iterType->kind == TYPE_I32) {
-        writeOp(compiler, OP_ADD_I32);
-    } else if (iterType->kind == TYPE_I64) {
-        if (useIncI64) {
-            writeOp(compiler, OP_INC_I64);
-        } else {
-            writeOp(compiler, OP_ADD_I64);
-        }
-    } else if (iterType->kind == TYPE_U32) {
-        writeOp(compiler, OP_ADD_U32);
-    } else if (iterType->kind == TYPE_U64) {
-        writeOp(compiler, OP_ADD_U64);
+    // Perform addition
+    switch (iterType->kind) {
+        case TYPE_I32: writeOp(compiler, OP_ADD_I32); break;
+        case TYPE_I64: writeOp(compiler, OP_ADD_I64); break;
+        case TYPE_U32: writeOp(compiler, OP_ADD_U32); break;
+        case TYPE_U64: writeOp(compiler, OP_ADD_U64); break;
+        default: writeOp(compiler, OP_ADD_I32); break;
     }
 
-    // Store the incremented value back in the iterator variable
+    // Store incremented value - use a single atomic operation
     writeOp(compiler, OP_SET_GLOBAL);
     writeOp(compiler, node->data.forStmt.iteratorIndex);
-
-    // Pop the value from the stack after SET_GLOBAL (important for stack cleanliness!)
     writeOp(compiler, OP_POP);
 
-    // Jump back to the condition check
+    // Jump back to loop start
     writeOp(compiler, OP_LOOP);
     int offset = compiler->chunk->count - loopStart + 2;
-            writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0, 1);
-            writeChunk(compiler->chunk, offset & 0xFF, 0, 1);
+    writeChunk(compiler->chunk, (offset >> 8) & 0xFF, 0, 1);
+    writeChunk(compiler->chunk, offset & 0xFF, 0, 1);
 
-    // Patch the exit jump
+    // Patch exit jump
     int exitDest = compiler->chunk->count;
     compiler->chunk->code[exitJump + 1] = (exitDest - exitJump - 3) >> 8;
     compiler->chunk->code[exitJump + 2] = (exitDest - exitJump - 3) & 0xFF;
 
-    // Set the loop end position to the destination of the exit jump
     compiler->loopEnd = exitDest;
-
-    // Patch all break jumps to jump to the current position
     patchBreakJumps(compiler);
 
-    // Like while loops, the condition value remains on the stack when the loop
-    // exits via the jump-if-false above because the OP_POP directly after the
-    // jump is skipped. Emit a pop here to keep the stack balanced on exit for
-    // generic comparisons.
-    if (!useTypedJump) {
+    // Clean up stack for non-typed jumps
+    if (iterType->kind != TYPE_I64) {
         writeOp(compiler, OP_POP);
     }
 
@@ -4146,7 +4105,7 @@ static void emitForLoop(Compiler* compiler, ASTNode* node) {
 
     endScope(compiler);
 
-    // Restore the enclosing loop context
+    // Restore loop context
     compiler->loopStart = enclosingLoopStart;
     compiler->loopEnd = enclosingLoopEnd;
     compiler->loopContinue = enclosingLoopContinue;

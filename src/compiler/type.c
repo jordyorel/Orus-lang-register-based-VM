@@ -228,6 +228,8 @@ bool canImplicitlyConvert(Type* from, Type* to, ASTNode* node) {
     
     // Allow safe numeric conversions for literals
     if (node && node->type == AST_LITERAL) {
+        // Small integer literals can be safely promoted to larger types
+        
         // i32 literals can be implicitly converted to i64 if they fit
         if (from->kind == TYPE_I32 && to->kind == TYPE_I64) {
             return true;
@@ -236,6 +238,33 @@ bool canImplicitlyConvert(Type* from, Type* to, ASTNode* node) {
         // u32 literals can be implicitly converted to u64 if they fit  
         if (from->kind == TYPE_U32 && to->kind == TYPE_U64) {
             return true;
+        }
+        
+        // Small integer literals can be implicitly converted to other integer types
+        // if the value fits (for common cases like 0, 1, -1, small constants)
+        if ((from->kind == TYPE_I32 || from->kind == TYPE_U32) && 
+            (to->kind == TYPE_I32 || to->kind == TYPE_I64 || to->kind == TYPE_U32 || to->kind == TYPE_U64)) {
+            
+            // Get the literal value to check if it fits in the target type
+            Value val = node->data.literal;
+            
+            if (from->kind == TYPE_I32) {
+                int32_t i32Val = AS_I32(val);
+                
+                // Check if i32 value fits in target type
+                if (to->kind == TYPE_I64) return true; // i32 always fits in i64
+                if (to->kind == TYPE_U32 && i32Val >= 0) return true; // non-negative i32 fits in u32
+                if (to->kind == TYPE_U64 && i32Val >= 0) return true; // non-negative i32 fits in u64
+            }
+            
+            if (from->kind == TYPE_U32) {
+                uint32_t u32Val = AS_U32(val);
+                
+                // Check if u32 value fits in target type  
+                if (to->kind == TYPE_I64) return true; // u32 always fits in i64
+                if (to->kind == TYPE_U64) return true; // u32 always fits in u64
+                if (to->kind == TYPE_I32 && u32Val <= INT32_MAX) return true; // small u32 fits in i32
+            }
         }
         
         // i32 literals can be implicitly converted to f64

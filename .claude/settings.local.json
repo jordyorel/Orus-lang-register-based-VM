@@ -38,7 +38,8 @@
       "Bash(./run_impl_tests.sh:*)",
       "Bash(ORUS_TRACE=true ./orusc debug_params.orus)",
       "Bash(ORUS_TRACE=1 ./orusc test_enum_display.orus 2 >& 1)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(python3:*)"
     ],
     "deny": []
   }

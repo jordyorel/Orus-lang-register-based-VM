@@ -2,9 +2,9 @@ fn main() {
     let start = timestamp()
     let mut numbers: [i64] = []
     let mut sum: i64 = 0
-    for i in 0..1_000_000_0 {
-        sum = sum + (i as i64)
-        numbers.push(i as i64)
+    for i in 0i64..1_000_000_0i64 {
+        sum = sum + i
+        numbers.push(i)
     }
     print(sum)
     let elapsed = timestamp() - start

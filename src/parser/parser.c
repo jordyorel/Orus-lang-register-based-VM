@@ -526,6 +526,15 @@ static ASTNode* parseCall(Parser* parser, ASTNode* left) {
             expression(parser, &arg);
             if (parser->hadError) return NULL;
 
+            // Apply type inference for common array operations
+            if (tokenEquals(name, "push") && argCount == 1) {
+                // For array.push(value), try to infer value type from array type
+                // This would need more context from the array being operated on
+                // For now, we'll handle this in a later phase
+            } else if (tokenEquals(name, "len") && argCount == 0) {
+                // len() typically returns i32, but we can't infer argument types here
+            }
+
             if (!firstArgChecked) {
                 firstArgChecked = true;
                 if (firstArgNeedsString && argStart.type != TOKEN_STRING) {
@@ -1142,12 +1151,53 @@ static void forStatement(Parser* parser, ASTNode** ast) {
             // Parse the step expression
             expression(parser, &stepExpr);
         } else {
-            // Default step is 1 using the type of the start expression if known
+            // Infer the best type for the range based on both start and end expressions
             TypeKind kind = TYPE_I32;
-            if (startExpr->valueType) {
+            
+            // Check both start and end expressions for type hints
+            if (startExpr->valueType && endExpr->valueType) {
+                TypeKind startKind = startExpr->valueType->kind;
+                TypeKind endKind = endExpr->valueType->kind;
+                
+                // Promote to the "wider" type between start and end
+                if (startKind == TYPE_I64 || endKind == TYPE_I64) {
+                    kind = TYPE_I64;
+                } else if (startKind == TYPE_U64 || endKind == TYPE_U64) {
+                    kind = TYPE_U64;
+                } else if (startKind == TYPE_U32 || endKind == TYPE_U32) {
+                    kind = TYPE_U32;
+                } else {
+                    kind = TYPE_I32; // Default
+                }
+                
+                // Update literal types to match the inferred range type
+                if (startExpr->type == AST_LITERAL && startExpr->valueType->kind != kind) {
+                    TypeKind oldKind = startExpr->valueType->kind;
+                    startExpr->valueType = getPrimitiveType(kind);
+                    // Convert the value if needed
+                    if (kind == TYPE_I64 && oldKind == TYPE_I32) {
+                        int32_t val = AS_I32(startExpr->data.literal);
+                        startExpr->data.literal = I64_VAL((int64_t)val);
+                    }
+                }
+                
+                if (endExpr->type == AST_LITERAL && endExpr->valueType->kind != kind) {
+                    TypeKind oldKind = endExpr->valueType->kind;
+                    endExpr->valueType = getPrimitiveType(kind);
+                    // Convert the value if needed  
+                    if (kind == TYPE_I64 && oldKind == TYPE_I32) {
+                        int32_t val = AS_I32(endExpr->data.literal);
+                        endExpr->data.literal = I64_VAL((int64_t)val);
+                    }
+                }
+            } else if (startExpr->valueType) {
                 TypeKind st = startExpr->valueType->kind;
                 if (st == TYPE_I64 || st == TYPE_U32 || st == TYPE_U64 || st == TYPE_I32)
                     kind = st;
+            } else if (endExpr->valueType) {
+                TypeKind et = endExpr->valueType->kind;
+                if (et == TYPE_I64 || et == TYPE_U32 || et == TYPE_U64 || et == TYPE_I32)
+                    kind = et;
             }
             switch (kind) {
                 case TYPE_I64:
@@ -2300,6 +2350,9 @@ static Type* parseType(Parser* parser) {
             }
             if (!type) {
                 type = findStructType(name);
+                if (!type) {
+                    type = findEnumType(name);
+                }
                 if (!type) {
                     error(parser, "Unknown type name.");
                     return NULL;
