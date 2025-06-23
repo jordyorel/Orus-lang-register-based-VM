@@ -3274,8 +3274,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 int constIndex = addRegisterConstant(compiler->rchunk, I32_VAL(node->data.fieldSet.index));
                 writeRegisterOp(compiler, ROP_LOAD_CONST, indexReg, (uint8_t)constIndex, 0);
                 
-                // Emit ROP_FIELD_SET: dst=struct, src1=index, src2=value
-                writeRegisterOp(compiler, ROP_FIELD_SET, structReg, indexReg, valueReg);
+                // Emit ROP_ARRAY_SET: dst=struct, src1=index, src2=value (structs use same implementation as arrays)
+                writeRegisterOp(compiler, ROP_ARRAY_SET, structReg, indexReg, valueReg);
                 
                 // Field assignment typically doesn't push a result, but we could push the struct back
                 pushRegister(compiler, structReg);
@@ -3324,8 +3324,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                     val = val->next;
                 }
                 
-                // Emit ROP_STRUCT_LITERAL: dst=result, src1=field_count, src2=first_field_reg
-                writeRegisterOp(compiler, ROP_STRUCT_LITERAL, dstReg, (uint8_t)count, firstFieldReg);
+                // Emit ROP_MAKE_ARRAY: dst=result, src1=field_count, src2=first_field_reg (structs use same implementation as arrays)
+                writeRegisterOp(compiler, ROP_MAKE_ARRAY, dstReg, (uint8_t)count, firstFieldReg);
                 pushRegister(compiler, dstReg);
             } else {
                 // Legacy stack VM compilation
@@ -3359,8 +3359,8 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 int constIndex = addRegisterConstant(compiler->rchunk, I32_VAL(node->data.field.index));
                 writeRegisterOp(compiler, ROP_LOAD_CONST, indexReg, (uint8_t)constIndex, 0);
                 
-                // Emit ROP_FIELD_GET: dst=result, src1=struct, src2=index
-                writeRegisterOp(compiler, ROP_FIELD_GET, dstReg, structReg, indexReg);
+                // Emit ROP_ARRAY_GET: dst=result, src1=struct, src2=index (structs use same implementation as arrays)
+                writeRegisterOp(compiler, ROP_ARRAY_GET, dstReg, structReg, indexReg);
                 pushRegister(compiler, dstReg);
             } else {
                 // Legacy stack VM compilation

@@ -245,6 +245,15 @@ typedef enum {
     ROP_CALL_BUILTIN_SLICE,
     ROP_SPILL_REG,
     ROP_UNSPILL_REG,
+    /* Modern Array Operations - Phase 5.1.2 (added at end to preserve opcode numbering) */
+    ROP_ARRAY_NEW,              // Create new array with capacity
+    ROP_ARRAY_LEN,              // Get array length  
+    ROP_ARRAY_INSERT,           // Insert element at index
+    ROP_ARRAY_REMOVE,           // Remove element at index
+    ROP_ARRAY_SLICE,            // Create slice [start..end]
+    ROP_ARRAY_CONCAT,           // Concatenate arrays
+    ROP_ARRAY_REVERSE,          // Reverse array in-place
+    ROP_ARRAY_SORT,             // Sort array with comparator
 } RegisterOp;
 
 typedef struct {

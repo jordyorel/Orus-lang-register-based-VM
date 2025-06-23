@@ -397,6 +397,18 @@ Value runRegisterVM(RegisterVM* rvm) {
         &&op_MODULE_PATH,
         &&op_NATIVE_POW,
         &&op_NATIVE_SQRT,
+        &&op_CALL_BUILTIN_SLICE,
+        &&op_SPILL_REG,
+        &&op_UNSPILL_REG,
+        /* Modern Array Operations - Phase 5.1.2 */
+        &&op_ARRAY_NEW,
+        &&op_ARRAY_LEN,
+        &&op_ARRAY_INSERT,
+        &&op_ARRAY_REMOVE,
+        &&op_ARRAY_SLICE,
+        &&op_ARRAY_CONCAT,
+        &&op_ARRAY_REVERSE,
+        &&op_ARRAY_SORT,
     };
 #define DISPATCH()                                                         \
     do {                                                                  \
@@ -722,6 +734,7 @@ op_MOD_I64: {
         if (r < 0) r += (b < 0) ? -b : b;
         i64_regs[dest] = r;
     }
+    SYNC_I64_REG(dest);
 #ifdef DEBUG_TRACE_EXECUTION
     printf("[Debug] i64_regs[R%d] = %lld\n", dest, (long long)i64_regs[dest]);
 #endif
@@ -1719,6 +1732,15 @@ op_FORMAT_PRINT:
                     case VAL_RANGE_ITERATOR:
                         valueLen = snprintf(valueStr, sizeof(valueStr), "<range %lld..%lld>", (long long)AS_RANGE_ITERATOR(arg)->current, (long long)AS_RANGE_ITERATOR(arg)->end);
                         break;
+                    case VAL_ENUM: {
+                        ObjEnum* enumObj = AS_ENUM(arg);
+                        if (enumObj->dataCount > 0) {
+                            valueLen = snprintf(valueStr, sizeof(valueStr), "%s::%d", enumObj->typeName->chars, enumObj->variantIndex);
+                        } else {
+                            valueLen = snprintf(valueStr, sizeof(valueStr), "%s::%d", enumObj->typeName->chars, enumObj->variantIndex);
+                        }
+                        break;
+                    }
                 }
                 if (valueLen > 0) {
                     if (resultLength + valueLen >= resultCapacity) {
@@ -1839,6 +1861,15 @@ op_FORMAT_PRINT_NO_NL:
                     case VAL_RANGE_ITERATOR:
                         valueLen = snprintf(valueStr, sizeof(valueStr), "<range %lld..%lld>", (long long)AS_RANGE_ITERATOR(arg)->current, (long long)AS_RANGE_ITERATOR(arg)->end);
                         break;
+                    case VAL_ENUM: {
+                        ObjEnum* enumObj = AS_ENUM(arg);
+                        if (enumObj->dataCount > 0) {
+                            valueLen = snprintf(valueStr, sizeof(valueStr), "%s::%d", enumObj->typeName->chars, enumObj->variantIndex);
+                        } else {
+                            valueLen = snprintf(valueStr, sizeof(valueStr), "%s::%d", enumObj->typeName->chars, enumObj->variantIndex);
+                        }
+                        break;
+                    }
                 }
                 if (valueLen > 0) {
                     if (resultLength + valueLen >= resultCapacity) {
@@ -2396,6 +2427,59 @@ op_DIVIDE_NUMERIC: {
     ip++; DISPATCH();
 }
 
+/* Missing implementations for opcodes that were in enum but not dispatch table */
+op_CALL_BUILTIN_SLICE:
+    // TODO: Implement call builtin slice
+    ip++; DISPATCH();
+
+op_SPILL_REG:
+    // TODO: Implement spill register
+    ip++; DISPATCH();
+
+op_UNSPILL_REG:
+    // TODO: Implement unspill register
+    ip++; DISPATCH();
+
+/* Modern Array Operations - Phase 5.1.2 */
+op_ARRAY_NEW: {
+    int capacity = ip->src1;
+    ObjArray* array = allocateArray(capacity);
+    regs[ip->dst] = ARRAY_VAL(array);
+    ip++; DISPATCH();
+}
+
+op_ARRAY_LEN:
+    if (IS_ARRAY(regs[ip->src1])) {
+        regs[ip->dst] = I32_VAL(AS_ARRAY(regs[ip->src1])->length);
+    } else {
+        regs[ip->dst] = I32_VAL(0);
+    }
+    ip++; DISPATCH();
+
+op_ARRAY_INSERT:
+    // TODO: Implement array insert
+    ip++; DISPATCH();
+
+op_ARRAY_REMOVE:
+    // TODO: Implement array remove
+    ip++; DISPATCH();
+
+op_ARRAY_SLICE:
+    // TODO: Implement array slice
+    ip++; DISPATCH();
+
+op_ARRAY_CONCAT:
+    // TODO: Implement array concat
+    ip++; DISPATCH();
+
+op_ARRAY_REVERSE:
+    // TODO: Implement array reverse
+    ip++; DISPATCH();
+
+op_ARRAY_SORT:
+    // TODO: Implement array sort
+    ip++; DISPATCH();
+
 #else
     while (true) {
         if (++loop_guard > 10000000000LL) {
@@ -2658,10 +2742,12 @@ op_DIVIDE_NUMERIC: {
                 int64_t b = rvm->i64_regs[instr.src2];
                 if (b == 0) {
                     rvm->i64_regs[instr.dst] = 0;
+                    rvm->registers[instr.dst] = I64_VAL(0);
                 } else {
                     int64_t r = rvm->i64_regs[instr.src1] % b;
                     if (r < 0) r += (b < 0) ? -b : b;
                     rvm->i64_regs[instr.dst] = r;
+                    rvm->registers[instr.dst] = I64_VAL(r);
                 }
 #ifdef DEBUG_TRACE_EXECUTION
                 printf("[Debug] i64_regs[R%d] = %lld\n", instr.dst, (long long)rvm->i64_regs[instr.dst]);
@@ -4003,27 +4089,12 @@ static inline void setRegisterI64(RegisterState* state, uint8_t index, int64_t v
     state->f64_valid[index] = false;
 }
 
-static inline void setRegisterF64(RegisterState* state, uint8_t index, double value) {
-    state->registers[index] = F64_VAL(value);
-    state->f64_cache[index] = value;
-    state->f64_valid[index] = true;
-    state->i64_valid[index] = false;
-}
-
 static inline int64_t getRegisterI64(RegisterState* state, uint8_t index) {
     if (!state->i64_valid[index]) {
         state->i64_cache[index] = AS_I64(state->registers[index]);
         state->i64_valid[index] = true;
     }
     return state->i64_cache[index];
-}
-
-static inline double getRegisterF64(RegisterState* state, uint8_t index) {
-    if (!state->f64_valid[index]) {
-        state->f64_cache[index] = AS_F64(state->registers[index]);
-        state->f64_valid[index] = true;
-    }
-    return state->f64_cache[index];
 }
 
 static VMResult setVMError(VMErrorState* errorState, const char* message) {
@@ -4120,9 +4191,6 @@ VMResult runRegisterVM2(RegisterVM2* machine) {
 
     while (true) {
         RegisterInstr* instruction = machine->instructionPointer++;
-        if (instruction->opcode >= 256) {
-            return setVMError(&machine->errorState, "Invalid opcode");
-        }
 
         VMResult result = handlers[instruction->opcode](machine, instruction);
         if (result != VM_OK) {

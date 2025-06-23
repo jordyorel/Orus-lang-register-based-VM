@@ -712,42 +712,15 @@ static const char* registerOpNames[] = {
     OP(ROP_CALL_BUILTIN_SLICE)
     OP(ROP_SPILL_REG)
     OP(ROP_UNSPILL_REG)
-    /* Struct operations - Phase 1.1.1 */
-    OP(ROP_STRUCT_LITERAL)
-    OP(ROP_FIELD_GET)
-    OP(ROP_FIELD_SET)
-    /* Method call operations - Phase 1.2.1 */
-    OP(ROP_CALL_METHOD)
-    /* Enum operations - Phase 2.1.2 */
-    OP(ROP_ENUM_LITERAL)
-    OP(ROP_ENUM_VARIANT)
-    OP(ROP_ENUM_CHECK)
-    /* Pattern matching operations - Phase 2.1.3 */
-    OP(ROP_MATCH_BEGIN)
-    OP(ROP_MATCH_END)
-    /* Generic operations - Phase 3.1.2 */
-    OP(ROP_CALL_GENERIC)
-    /* Module operations - Phase 4.1.1 */
-    OP(ROP_IMPORT)
-    OP(ROP_MODULE_CALL)
-    OP(ROP_MODULE_ACCESS)
-    /* Advanced type operations - Phase 3.2.1 */
-    OP(ROP_GET_TYPE_INFO)
-    OP(ROP_TYPE_CAST)
     /* Modern Array Operations - Phase 5.1.2 */
     OP(ROP_ARRAY_NEW)
-    OP(ROP_ARRAY_GET)
-    OP(ROP_ARRAY_SET)
     OP(ROP_ARRAY_LEN)
-    OP(ROP_ARRAY_PUSH)
-    OP(ROP_ARRAY_POP)
     OP(ROP_ARRAY_INSERT)
     OP(ROP_ARRAY_REMOVE)
     OP(ROP_ARRAY_SLICE)
     OP(ROP_ARRAY_CONCAT)
     OP(ROP_ARRAY_REVERSE)
     OP(ROP_ARRAY_SORT)
-    OP(ROP_ARRAY_TO_STRING)
     OP(ROP_TYPE_OF_ARRAY)
 #undef OP
 };

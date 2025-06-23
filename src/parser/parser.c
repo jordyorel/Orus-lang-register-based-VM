@@ -1590,7 +1590,7 @@ static void enumDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
     
     // Register the enum type
     ObjString* enumName = allocateString(nameTok.start, nameTok.length);
-    Type* enumType = createEnumType(enumName, variantInfos, variantCount, NULL, 0);
+    createEnumType(enumName, variantInfos, variantCount, NULL, 0);
     
     // Create an enum AST node
     *ast = createEnumNode(nameTok, variants, variantCount, isPublic);

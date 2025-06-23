@@ -23,7 +23,11 @@
       "Bash(../../orusc manual_enum_test.orus)",
       "Bash(../../orusc simple_test.orus)",
       "Bash(../../orusc:*)",
-      "Bash(bash:*)"
+      "Bash(bash:*)",
+      "Bash(timeout:*)",
+      "Bash(gtimeout:*)",
+      "Bash(git checkout:*)",
+      "Bash(git stash:*)"
     ],
     "deny": []
   }

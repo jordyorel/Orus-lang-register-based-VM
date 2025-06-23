@@ -1,0 +1,23 @@
+fn main() {
+    let mut numbers: [i64] = []
+    
+    for i in 0..5 {
+        print("Loop variable i:")
+        print(i)
+        print("Type of i:")
+        print(type_of(i))
+        
+        // Try manual conversion
+        let i64_val: i64 = i as i64
+        print("Converted to i64:")
+        print(i64_val)
+        print("Type of converted:")
+        print(type_of(i64_val))
+        
+        numbers.push(i64_val)
+        break  // Just test first iteration
+    }
+    
+    print("Array after push:")
+    print(numbers)
+}

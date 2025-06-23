@@ -1,0 +1,9 @@
+fn main() {
+    let mut numbers: [i32] = [1, 2, 3]
+    print("Before:")
+    print(numbers)
+    
+    numbers.push(4)
+    print("After:")
+    print(numbers)
+}

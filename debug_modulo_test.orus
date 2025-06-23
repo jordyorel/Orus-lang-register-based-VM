@@ -1,0 +1,3 @@
+fn main() {
+    print("Simple modulo: {}", 3 % 2)
+}

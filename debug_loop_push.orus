@@ -1,0 +1,12 @@
+fn main() {
+    let mut numbers: [i64] = []
+    for i in 0..5 {
+        print("Pushing:")
+        print(i)
+        numbers.push(i)
+        print("Array:")
+        print(numbers)
+    }
+    print("Final array:")
+    print(numbers)
+}

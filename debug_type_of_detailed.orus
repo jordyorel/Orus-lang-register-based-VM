@@ -1,0 +1,21 @@
+fn main() {
+    let x: i32 = 5
+    let y: i64 = 10
+    
+    // Test what type_of returns
+    let x_type = type_of(x)
+    let y_type = type_of(y)
+    
+    print("Direct print:")
+    print(x_type)
+    print(y_type)
+    
+    print("Type check:")
+    print(type_of(x_type))
+    print(type_of(y_type))
+    
+    // Test interpolation with simple values first
+    print("Simple interpolation:")
+    print("Value: {}", x)
+    print("Value: {}", y)
+}

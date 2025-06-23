@@ -1,0 +1,9 @@
+fn main() {
+    let y: i64 = 10
+    print("y =")
+    print(y)
+    print("type of y:")
+    print(type_of(y))
+    print("Direct interpolation:")
+    print("type: {}", type_of(y))
+}
