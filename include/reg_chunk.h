@@ -82,6 +82,7 @@ typedef enum {
     ROP_U32_TO_STRING,
     ROP_F64_TO_STRING,
     ROP_BOOL_TO_STRING,
+    ROP_ARRAY_TO_STRING,
     ROP_PRINT,
     ROP_PRINT_NO_NL,
     ROP_LOAD_GLOBAL,
@@ -97,8 +98,14 @@ typedef enum {
     ROP_BIT_NOT_I64,
     ROP_SHL_I64,
     ROP_SHR_I64,
+    ROP_MAKE_ARRAY,
+    ROP_ARRAY_GET,
+    ROP_ARRAY_SET,
+    ROP_ARRAY_PUSH,
+    ROP_ARRAY_POP,
     ROP_LEN,
     ROP_I64_TO_STRING,
+    ROP_ARRAY_RESERVE,
     ROP_CONCAT,
     ROP_TYPE_OF_I32,
     ROP_TYPE_OF_I64,
@@ -107,6 +114,7 @@ typedef enum {
     ROP_TYPE_OF_F64,
     ROP_TYPE_OF_BOOL,
     ROP_TYPE_OF_STRING,
+    ROP_TYPE_OF_ARRAY,
     ROP_GC_PAUSE,
     ROP_GC_RESUME,
     /* Newly added opcodes */
@@ -145,11 +153,13 @@ typedef enum {
     ROP_I64_CONST,
     ROP_I64_TO_BOOL,
     ROP_I64_TO_U64,
+    ROP_IMPORT,
     ROP_INC_I64,
     ROP_ITER_NEXT_I64,
     ROP_JUMP_IF_FALSE,
     ROP_JUMP_IF_LT_I64,
     ROP_JUMP_IF_TRUE,
+    ROP_LEN_ARRAY,
     ROP_LEN_STRING,
     ROP_LESS_EQUAL_F64,
     ROP_LESS_EQUAL_I32,
@@ -228,49 +238,13 @@ typedef enum {
     ROP_FLOAT,
     ROP_TIMESTAMP,
     ROP_SORTED,
+    ROP_MODULE_NAME,
+    ROP_MODULE_PATH,
     ROP_NATIVE_POW,
     ROP_NATIVE_SQRT,
     ROP_CALL_BUILTIN_SLICE,
     ROP_SPILL_REG,
     ROP_UNSPILL_REG,
-    /* Struct operations - Phase 1.1.1 */
-    ROP_STRUCT_LITERAL,
-    ROP_FIELD_GET,
-    ROP_FIELD_SET,
-    /* Method call operations - Phase 1.2.1 */
-    ROP_CALL_METHOD,
-    /* Enum operations - Phase 2.1.1 */
-    ROP_ENUM_LITERAL,
-    ROP_ENUM_VARIANT,
-    ROP_ENUM_CHECK,
-    /* Pattern matching operations - Phase 2.1.3 */
-    ROP_MATCH_BEGIN,
-    ROP_MATCH_END,
-    /* Generic operations - Phase 3.1.2 */
-    ROP_CALL_GENERIC,
-    /* Module operations - Phase 4.1.1 */
-    ROP_IMPORT,
-    ROP_MODULE_CALL,
-    ROP_MODULE_ACCESS,
-    /* Advanced type operations - Phase 3.2.1 */
-    ROP_GET_TYPE_INFO,
-    ROP_TYPE_CAST,
-    /* Modern Array Operations - Phase 5.1.2 */
-    ROP_ARRAY_NEW,              // Create new array with capacity
-    ROP_ARRAY_GET,              // Get element by index  
-    ROP_ARRAY_SET,              // Set element by index
-    ROP_ARRAY_LEN,              // Get array length
-    ROP_ARRAY_PUSH,             // Append element
-    ROP_ARRAY_POP,              // Remove last element
-    ROP_ARRAY_INSERT,           // Insert element at index
-    ROP_ARRAY_REMOVE,           // Remove element at index
-    ROP_ARRAY_SLICE,            // Create slice [start..end]
-    ROP_ARRAY_CONCAT,           // Concatenate arrays
-    ROP_ARRAY_REVERSE,          // Reverse array in-place
-    ROP_ARRAY_SORT,             // Sort array with comparator
-    /* Array utility operations */
-    ROP_ARRAY_TO_STRING,        // Convert array to string representation
-    ROP_TYPE_OF_ARRAY,          // Get type name for arrays
 } RegisterOp;
 
 typedef struct {
