@@ -23,7 +23,7 @@ fn main() {
   print("Basic Function Tests:")
 
   // Call the functions
-  print(add(5 as i32, 7 as i32))
-  print(calculateSum(5 as i32))
+  print(add(5, 7))
+  print(calculateSum(5))
 }
 

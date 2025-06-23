@@ -1,5 +1,0 @@
-fn main() {
-    print("Testing simple array")
-    let arr: [i32] = [1, 2, 3]
-    print("Done")
-}

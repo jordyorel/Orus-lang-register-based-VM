@@ -1,8 +1,0 @@
-fn main() {
-    let result = 3 % 2
-    print("Result is:")
-    print(result)
-    
-    // Try interpolation with simple number
-    print("Number: {}", 5)
-}

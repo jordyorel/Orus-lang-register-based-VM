@@ -1,4 +1,0 @@
-fn main() {
-    let result = 3 % 2
-    print("Modulo result: {}", result)
-}

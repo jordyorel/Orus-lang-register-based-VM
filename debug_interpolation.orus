@@ -1,5 +1,0 @@
-fn main() {
-    // Simple test case
-    print("Hello")
-    print("Number: {}", 42)
-}

@@ -18,6 +18,8 @@
 Type* primitiveTypes[TYPE_COUNT] = {NULL};
 static Type* structTypes[UINT8_COUNT] = {NULL};
 static int structTypeCount = 0;
+static Type* enumTypes[UINT8_COUNT] = {NULL};
+static int enumTypeCount = 0;
 static bool typeSystemInitialized = false;
 
 /**
@@ -107,6 +109,7 @@ Type* createStructType(ObjString* name, FieldInfo* fields, int fieldCount,
 
 Type* createEnumType(ObjString* name, VariantInfo* variants, int variantCount,
                      ObjString** generics, int genericCount) {
+    if (enumTypeCount >= UINT8_COUNT) return NULL;
     Type* type = allocateType();
     type->kind = TYPE_ENUM;
     type->info.enumeration.name = name;
@@ -114,6 +117,7 @@ Type* createEnumType(ObjString* name, VariantInfo* variants, int variantCount,
     type->info.enumeration.variantCount = variantCount;
     type->info.enumeration.genericParams = generics;
     type->info.enumeration.genericCount = genericCount;
+    enumTypes[enumTypeCount++] = type;
     return type;
 }
 
@@ -133,6 +137,15 @@ Type* findStructType(const char* name) {
     return NULL;
 }
 
+Type* findEnumType(const char* name) {
+    for (int i = 0; i < enumTypeCount; i++) {
+        if (strcmp(enumTypes[i]->info.enumeration.name->chars, name) == 0) {
+            return enumTypes[i];
+        }
+    }
+    return NULL;
+}
+
 void freeType(Type* type) {
     (void)type; // GC-managed
 }
@@ -145,7 +158,11 @@ void freeTypeSystem(void) {
     for (int i = 0; i < structTypeCount; i++) {
         structTypes[i] = NULL;
     }
+    for (int i = 0; i < enumTypeCount; i++) {
+        enumTypes[i] = NULL;
+    }
     structTypeCount = 0;
+    enumTypeCount = 0;
     typeSystemInitialized = false;
 }
 
@@ -203,6 +220,39 @@ bool typesEqual(Type* a, Type* b) {
     }
 }
 
+bool canImplicitlyConvert(Type* from, Type* to, ASTNode* node) {
+    if (from == NULL || to == NULL) return false;
+    
+    // If types are already equal, no conversion needed
+    if (typesEqual(from, to)) return true;
+    
+    // Allow safe numeric conversions for literals
+    if (node && node->type == AST_LITERAL) {
+        // i32 literals can be implicitly converted to i64 if they fit
+        if (from->kind == TYPE_I32 && to->kind == TYPE_I64) {
+            return true;
+        }
+        
+        // u32 literals can be implicitly converted to u64 if they fit  
+        if (from->kind == TYPE_U32 && to->kind == TYPE_U64) {
+            return true;
+        }
+        
+        // i32 literals can be implicitly converted to f64
+        if (from->kind == TYPE_I32 && to->kind == TYPE_F64) {
+            return true;
+        }
+        
+        // u32 literals can be implicitly converted to f64
+        if (from->kind == TYPE_U32 && to->kind == TYPE_F64) {
+            return true;
+        }
+    }
+    
+    // No implicit conversion possible
+    return false;
+}
+
 const char* getTypeName(TypeKind kind) {
     switch (kind) {
         case TYPE_I32: return "i32";
@@ -229,6 +279,9 @@ void markTypeRoots() {
     }
     for (int i = 0; i < structTypeCount; i++) {
         if (structTypes[i]) markObject((Obj*)structTypes[i]);
+    }
+    for (int i = 0; i < enumTypeCount; i++) {
+        if (enumTypes[i]) markObject((Obj*)enumTypes[i]);
     }
 }
 

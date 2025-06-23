@@ -33,6 +33,7 @@ typedef struct {
     int start;          // Bytecode offset of the function body
     uint8_t arity;      // Number of parameters
     Chunk* chunk;       // Owning chunk for the function
+    uint8_t paramIndices[UINT8_COUNT];  // Global indices of parameters
 } Function;
 
 typedef struct VarName {

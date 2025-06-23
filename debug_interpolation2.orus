@@ -1,5 +1,0 @@
-fn main() {
-    // Test arithmetic with interpolation
-    print("2 + 3 = {}", 2 + 3)
-    print("Result: {}", 5 * 3 + 5 / 2 - 3 % 2)
-}

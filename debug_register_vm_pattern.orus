@@ -1,9 +1,0 @@
-fn main() {
-    let arr: [i32] = [100, 200, 300]
-    
-    // Test negative indexing from the failing test
-    print("arr[-1] = {}", arr[-1])
-    print("arr[-2] = {}", arr[-2])
-    
-    print("Register VM opcodes test - negative indexing works!")
-}

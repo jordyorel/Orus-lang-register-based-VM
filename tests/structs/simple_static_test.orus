@@ -1,0 +1,14 @@
+struct Test {
+    x: i32,
+}
+
+impl Test {
+    fn create(a: i32, b: i32) -> Test {
+        return Test { x: a + b }
+    }
+}
+
+fn main() {
+    let t: Test = Test.create(5, 6)
+    print(t.x)
+}

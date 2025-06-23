@@ -4,6 +4,9 @@
 #include <stdbool.h>
 #include "value.h"
 
+// Forward declaration
+typedef struct ASTNode ASTNode;
+
 typedef enum {
     TYPE_I32,
     TYPE_I64,
@@ -75,8 +78,10 @@ Type* createEnumType(ObjString* name, VariantInfo* variants, int variantCount,
                      ObjString** generics, int genericCount);
 Type* createGenericType(ObjString* name);
 Type* findStructType(const char* name);
+Type* findEnumType(const char* name);
 void freeType(Type* type);
 bool typesEqual(Type* a, Type* b);
+bool canImplicitlyConvert(Type* from, Type* to, ASTNode* node);
 const char* getTypeName(TypeKind kind);
 void initTypeSystem(void);
 void freeTypeSystem(void);  // Add this

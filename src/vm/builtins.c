@@ -191,6 +191,7 @@ static const char* getValueTypeName(Value val) {
         case VAL_ARRAY: return "array";
         case VAL_ERROR: return "error";
         case VAL_RANGE_ITERATOR: return "range";
+        case VAL_ENUM: return "enum";
         default:        return "unknown";
     }
 }

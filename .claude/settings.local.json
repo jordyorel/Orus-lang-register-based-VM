@@ -27,7 +27,18 @@
       "Bash(timeout:*)",
       "Bash(gtimeout:*)",
       "Bash(git checkout:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(./tests/enums/run_enum_tests.sh:*)",
+      "Bash(./tests/impl_blocks/run_impl_tests.sh:*)",
+      "Bash(./tests/generics/run_generic_tests.sh:*)",
+      "Bash(./run_enum_tests.sh:*)",
+      "Bash(python test_runner.py:*)",
+      "Bash(./run_all_tests.sh)",
+      "Bash(./run_array_tests.sh:*)",
+      "Bash(./run_impl_tests.sh:*)",
+      "Bash(ORUS_TRACE=true ./orusc debug_params.orus)",
+      "Bash(ORUS_TRACE=1 ./orusc test_enum_display.orus 2 >& 1)",
+      "Bash(awk:*)"
     ],
     "deny": []
   }

@@ -61,6 +61,21 @@ void printValue(Value value) {
                    (long long)AS_RANGE_ITERATOR(value)->end);
             break;
         }
+        case VAL_ENUM: {
+            ObjEnum* enumValue = AS_ENUM(value);
+            // For now, print enum type and variant index
+            // TODO: Look up variant name from type system
+            printf("%s.%d", enumValue->typeName->chars, enumValue->variantIndex);
+            if (enumValue->dataCount > 0) {
+                printf("(");
+                for (int i = 0; i < enumValue->dataCount; i++) {
+                    printValue(enumValue->data[i]);
+                    if (i < enumValue->dataCount - 1) printf(", ");
+                }
+                printf(")");
+            }
+            break;
+        }
         default:
             printf("unknown");
             break;

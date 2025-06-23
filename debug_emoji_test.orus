@@ -1,5 +1,0 @@
-fn main() {
-    print("Testing emoji in string:")
-    print("✅ This has an emoji")
-    print("Regular text")
-}

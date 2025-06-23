@@ -1,0 +1,42 @@
+// Enum test with functions and return values (simplified)
+enum Status {
+    Success,
+    Warning,
+    Error
+}
+
+// Note: Function return types with enums not yet supported
+// Using simple functions without enum return types
+
+fn main() {
+    // Test creating enum variants
+    let success = Status.Success
+    let warning = Status.Warning  
+    let error = Status.Error
+    
+    print("success: {}", success)
+    print("warning: {}", warning)
+    print("error: {}", error)
+    
+    // Test enum equality
+    if success == Status.Success {
+        print("success is Success - correct!")
+    }
+    
+    if warning == Status.Warning {
+        print("warning is Warning - correct!")
+    }
+    
+    if error == Status.Error {
+        print("error is Error - correct!")
+    }
+    
+    // Test different variants
+    if success == Status.Error {
+        print("success is Error - error!")
+    } else {
+        print("success is not Error - correct!")
+    }
+    
+    print("Enum functions test completed!")
+}

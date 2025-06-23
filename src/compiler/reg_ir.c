@@ -4,6 +4,7 @@
 #include "../../include/vm.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 extern VM vm;
 
@@ -1782,10 +1783,34 @@ void chunkToRegisterIR(Chunk* chunk, RegisterChunk* out) {
             }
             case OP_SET_GLOBAL: {
                 uint8_t idx = chunk->code[offset + 1];
-                if (sp < 1) { offset += 2; break; }
-                int src = stackRegs[sp - 1];
-                RegisterInstr instr = {ROP_STORE_GLOBAL, idx, (uint8_t)src, 0};
-                writeRegisterInstr(out, instr);
+                
+                // Check if this is parameter binding in a function
+                if (currentFunc >= 0 && vm.functions[currentFunc].arity > 0) {
+                    // For function parameters, we need to find the parameter indices stored in the function
+                    // The VM stores parameter global indices in vm.functions[currentFunc].paramIndices
+                    uint8_t paramIndex = UINT8_MAX;
+                    for (int p = 0; p < vm.functions[currentFunc].arity; p++) {
+                        if (vm.functions[currentFunc].paramIndices[p] == idx) {
+                            paramIndex = p;
+                            break;
+                        }
+                    }
+                    
+                    if (paramIndex < vm.functions[currentFunc].arity) {
+                        // Parameter binding: store from the corresponding parameter register
+                        RegisterInstr instr = {ROP_STORE_GLOBAL, idx, paramIndex, 0};
+                        writeRegisterInstr(out, instr);
+                    }
+                    // Note: If paramIndex is invalid, we skip this instruction (parameter not found)
+                } else if (sp < 1) { 
+                    // Skip if stack underflow (no value to store)
+                    offset += 2; break; 
+                } else {
+                    // Regular global assignment from stack
+                    int src = stackRegs[sp - 1];
+                    RegisterInstr instr = {ROP_STORE_GLOBAL, idx, (uint8_t)src, 0};
+                    writeRegisterInstr(out, instr);
+                }
                 offset += 2;
                 break;
             }

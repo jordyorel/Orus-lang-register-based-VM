@@ -1,0 +1,22 @@
+fn calculateSum(n: i32) -> i32 {
+    let mut sum: i32 = 0
+    print("Starting sum calculation for n =")
+    print(n)
+    
+    for i in (1 as i32)..(n + (1 as i32)) {
+        print("i =")
+        print(i)
+        sum = sum + i
+        if i > 10 {
+            print("Breaking to avoid infinite loop")
+            break
+        }
+    }
+    return sum
+}
+
+fn main() {
+    let result = calculateSum(5)
+    print("Result:")
+    print(result)
+}

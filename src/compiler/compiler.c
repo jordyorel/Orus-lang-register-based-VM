@@ -1995,7 +1995,7 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
                         variableTypes[argNodes[i]->data.variable.index] = expected;
                     }
                 }
-                if (i < acount && !typesEqual(expected, argNodes[i]->valueType)) {
+                if (i < acount && !canImplicitlyConvert(argNodes[i]->valueType, expected, argNodes[i])) {
                     const char* expectedType = getTypeName(expected->kind);
                     const char* actualType = argNodes[i] && argNodes[i]->valueType ? getTypeName(argNodes[i]->valueType->kind) : "(none)";
                     emitTypeMismatchError(compiler, &node->data.call.name, expectedType, actualType);
@@ -2352,6 +2352,37 @@ static void typeCheckNode(Compiler* compiler, ASTNode* node) {
             // Enum declarations are processed at compile time
             // No type checking needed for the declaration itself
             node->valueType = NULL;
+            break;
+        }
+
+        case AST_ENUM_VARIANT: {
+            // Type check enum variant construction/access
+            node->valueType = node->data.enumVariant.enumType;
+            
+            // If there are arguments, type check them
+            if (node->left) {
+                ASTNode* arg = node->left;
+                Type* enumType = node->data.enumVariant.enumType;
+                VariantInfo* variant = &enumType->info.enumeration.variants[node->data.enumVariant.variantIndex];
+                
+                int fieldIndex = 0;
+                while (arg && fieldIndex < variant->fieldCount) {
+                    typeCheckNode(compiler, arg);
+                    if (compiler->hadError) return;
+                    
+                    // Check argument type matches expected field type
+                    Type* expectedType = variant->fieldTypes[fieldIndex];
+                    Type* actualType = arg->valueType;
+                    
+                    if (!typesEqual(expectedType, actualType)) {
+                        error(compiler, "Argument type mismatch for enum variant field.");
+                        return;
+                    }
+                    
+                    arg = arg->next;
+                    fieldIndex++;
+                }
+            }
             break;
         }
 
@@ -3681,6 +3712,11 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             vm.functions[funcIndex].start = functionStart;
             vm.functions[funcIndex].arity = (uint8_t)paramCount;
             vm.functions[funcIndex].chunk = compiler->chunk;
+            
+            // Store parameter indices for proper argument passing
+            for (int i = 0; i < paramCount; i++) {
+                vm.functions[funcIndex].paramIndices[i] = paramList[i]->data.let.index;
+            }
 
             // Store function index in globals for lookup at runtime
             vm.globals[node->data.function.index] = I32_VAL(funcIndex);
@@ -3717,34 +3753,36 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             }
 
             // Generate code for each argument in source order
-            int argCount = 0;
+            // Use the parser-provided argCount instead of recounting
+            int providedArgCount = 0;
             ASTNode* arg = node->data.call.arguments;
 
             ASTNode* args[256];
             while (arg != NULL) {
-                args[argCount++] = arg;
+                args[providedArgCount++] = arg;
                 arg = arg->next;
             }
 
             // Generate code for provided arguments
-            for (int i = 0; i < argCount; i++) {
+            for (int i = 0; i < providedArgCount; i++) {
                 generateCode(compiler, args[i]);
                 if (compiler->hadError) return;
 
-                if (node->data.call.convertArgs[i]) {
+                if (i < node->data.call.argCount && node->data.call.convertArgs[i]) {
                     /* conversions not implemented */
                 }
             }
             
             // Generate code for missing arguments using default values
             ASTNode* fnNode = vm.functionDecls[node->data.call.index];
+            int finalArgCount = providedArgCount;
             if (fnNode) {
                 Type* funcType = variableTypes[node->data.call.index];
                 int totalParams = funcType->info.function.paramCount;
                 
                 ASTNode* param = fnNode->data.function.parameters;
                 for (int i = 0; i < totalParams; i++) {
-                    if (i >= argCount) {
+                    if (i >= providedArgCount) {
                         // Missing argument - use default value
                         if (param && param->data.let.initializer) {
                             generateCode(compiler, param->data.let.initializer);
@@ -3759,12 +3797,12 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
                 }
                 
                 // Update argument count to include default parameters
-                argCount = totalParams;
+                finalArgCount = totalParams;
             }
 
             writeOp(compiler, OP_CALL);
             writeOp(compiler, node->data.call.index);
-            writeOp(compiler, argCount);
+            writeOp(compiler, finalArgCount);
 
             break;
         }
@@ -3877,6 +3915,53 @@ static void generateCode(Compiler* compiler, ASTNode* node) {
             // Enum declarations are handled at compile time
             // The enum type was already registered during parsing
             // No runtime code generation needed for enum declarations
+            break;
+        }
+
+        case AST_ENUM_VARIANT: {
+            // Generate code to create enum variant value
+            Type* enumType = node->data.enumVariant.enumType;
+            VariantInfo* variant = &enumType->info.enumeration.variants[node->data.enumVariant.variantIndex];
+            
+            // Count arguments if any
+            int argCount = 0;
+            ASTNode* arg = node->left;
+            while (arg) {
+                argCount++;
+                arg = arg->next;
+            }
+            
+            // Generate code for arguments (in reverse order for stack)
+            if (node->left) {
+                // We need to generate arguments in order they appear
+                ASTNode* args[argCount];
+                arg = node->left;
+                for (int i = 0; i < argCount; i++) {
+                    args[i] = arg;
+                    arg = arg->next;
+                }
+                
+                // Generate code for each argument
+                for (int i = 0; i < argCount; i++) {
+                    generateCode(compiler, args[i]);
+                }
+            }
+            
+            // Generate enum variant index
+            Value indexValue = I32_VAL(node->data.enumVariant.variantIndex);
+            emitConstant(compiler, indexValue);
+            
+            // Generate enum type name
+            Value typeNameValue = STRING_VAL(enumType->info.enumeration.name);
+            emitConstant(compiler, typeNameValue);
+            
+            // Generate argument count
+            Value argCountValue = I32_VAL(argCount);
+            emitConstant(compiler, argCountValue);
+            
+            // Generate opcode to create enum (using OP_ENUM_VARIANT for now as placeholder)
+            // This will create an enum object with: argCount, typeName, variantIndex, arg1, arg2, ...
+            writeOp(compiler, OP_ENUM_VARIANT);
             break;
         }
 

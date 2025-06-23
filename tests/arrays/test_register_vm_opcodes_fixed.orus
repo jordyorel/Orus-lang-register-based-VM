@@ -77,7 +77,7 @@ fn test_array_to_string() {
     let multiple: [i32] = [1, 2, 3, 4, 5]
     print("Multiple elements: {}", multiple)
     
-    // Test with string arrays  
+    // Test with string arrays (instead of mixed Value type)
     let strings: [string] = ["hello", "world", "test"]
     print("String array: {}", strings)
 }

@@ -1,0 +1,9 @@
+fn main() {
+    print("Testing ranges:")
+    
+    for i in 1..4 {
+        print(i)
+    }
+    
+    print("Done")
+}

@@ -1,8 +1,0 @@
-enum Color {
-    Red,
-    Blue
-}
-
-fn main() {
-    print("simple enum test")
-}

@@ -1,3 +1,0 @@
-fn main() {
-    print("Testing inline modulo: {}", 3 % 2)
-}

@@ -122,7 +122,7 @@ void initVM() {
     const char* envDev = getenv("ORUS_DEV_MODE");
     vm.devMode = envDev && envDev[0] != '\0';
 
-    vm.useRegisterVM = true;
+    vm.useRegisterVM = false;
     initRegisterChunk(&vm.regChunk);
     initRegisterVM(&vm.regVM, &vm.regChunk);
     for (int i = 0; i < UINT8_COUNT; i++) {
@@ -1877,6 +1877,9 @@ static InterpretResult run() {
                 
                 frame->stackOffset = stackOffset;
                 frame->functionIndex = globalIndex;
+                
+                // Arguments will be handled by the function's parameter binding code
+                // The function itself contains OP_SET_GLOBAL instructions to bind parameters
 
                 // Initialize the stack if needed (this ensures we have enough space for local variables)
                 if (vm.stackTop == vm.stack) {
@@ -2374,6 +2377,41 @@ static InterpretResult run() {
                 vmPush(&vm, BOOL_VAL(!AS_BOOL(value)));
                 break;
             }
+            case OP_ENUM_VARIANT: {
+                // Create enum variant object from stack values
+                // Stack layout: arg1, arg2, ..., argN, variantIndex, typeName, argCount
+                Value argCountVal = vmPop(&vm);
+                Value typeNameVal = vmPop(&vm);
+                Value variantIndexVal = vmPop(&vm);
+                
+                if (!IS_I32(argCountVal) || !IS_STRING(typeNameVal) || !IS_I32(variantIndexVal)) {
+                    RUNTIME_ERROR("Invalid enum variant construction arguments.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                
+                int argCount = AS_I32(argCountVal);
+                ObjString* typeName = AS_STRING(typeNameVal);
+                int variantIndex = AS_I32(variantIndexVal);
+                
+                // Collect arguments from stack
+                Value* data = NULL;
+                if (argCount > 0) {
+                    data = (Value*)malloc(sizeof(Value) * argCount);
+                    // Pop arguments in reverse order (last pushed first)
+                    for (int i = argCount - 1; i >= 0; i--) {
+                        data[i] = vmPop(&vm);
+                    }
+                }
+                
+                // Create enum object
+                ObjEnum* enumObj = allocateEnum(variantIndex, data, argCount, typeName);
+                vmPush(&vm, ENUM_VAL(enumObj));
+                
+                if (data) {
+                    free(data);
+                }
+                break;
+            }
             default:
                 RUNTIME_ERROR("Unknown opcode: %d", instruction);
                 return INTERPRET_RUNTIME_ERROR;
@@ -2448,28 +2486,51 @@ InterpretResult interpret(const char* source) {
         return INTERPRET_COMPILE_ERROR;
     }
 
-    freeRegisterChunk(&vm.regChunk);
-    initRegisterChunk(&vm.regChunk);
     vm.filePath = "<exec>";
-
     vm.astRoot = ast;
 
-    bool success = compileToRegister(ast, &vm.regChunk, "<exec>", source, false);
-    vm.astRoot = NULL;
-
-    if (!success) {
-        freeRegisterChunk(&vm.regChunk);
-        return INTERPRET_COMPILE_ERROR;
-    }
-
-    initRegisterVM(&vm.regVM, &vm.regChunk);
     InterpretResult result = INTERPRET_OK;
-    runRegisterVM(&vm.regVM);
-    if (IS_ERROR(vm.lastError)) {
-        result = INTERPRET_RUNTIME_ERROR;
+
+    if (vm.useRegisterVM) {
+        freeRegisterChunk(&vm.regChunk);
+        initRegisterChunk(&vm.regChunk);
+
+        bool success = compileToRegister(ast, &vm.regChunk, "<exec>", source, false);
+        vm.astRoot = NULL;
+
+        if (!success) {
+            freeRegisterChunk(&vm.regChunk);
+            return INTERPRET_COMPILE_ERROR;
+        }
+
+        initRegisterVM(&vm.regVM, &vm.regChunk);
+        runRegisterVM(&vm.regVM);
+        if (IS_ERROR(vm.lastError)) {
+            result = INTERPRET_RUNTIME_ERROR;
+        }
+        freeRegisterVM(&vm.regVM);
+        freeRegisterChunk(&vm.regChunk);
+    } else {
+        // Use stack-based VM
+        Chunk chunk;
+        initChunk(&chunk);
+        Compiler compiler;
+        initCompiler(&compiler, &chunk, "<exec>", source);
+        
+        bool success = compile(ast, &compiler, false);
+        vm.astRoot = NULL;
+        
+        if (!success) {
+            freeChunk(&chunk);
+            return INTERPRET_COMPILE_ERROR;
+        }
+        
+        vm.chunk = &chunk;
+        vm.ip = chunk.code;
+        result = run();
+        freeChunk(&chunk);
     }
-    freeRegisterVM(&vm.regVM);
-    freeRegisterChunk(&vm.regChunk);
+
     vm.filePath = NULL;
     return result;
 }

@@ -36,7 +36,10 @@ typedef enum {
     AST_CONTINUE,
     AST_IMPORT,
     AST_USE,
-    AST_ENUM
+    AST_ENUM,
+    AST_ENUM_VARIANT,
+    AST_MATCH,
+    AST_MATCH_CASE
 } ASTNodeType;
 
 typedef struct {
@@ -186,6 +189,28 @@ typedef struct {
     bool isPublic;                 // Whether enum is public
 } EnumData;
 
+typedef struct {
+    Token enumName;                // Enum type name
+    Token variantName;             // Variant name
+    Type* enumType;                // Enum type (for validation)
+    int variantIndex;              // Index of variant in enum
+} EnumVariantData;
+
+typedef struct {
+    struct ASTNode* expr;          // Expression to match against
+    struct ASTNode* cases;         // Linked list of match cases
+    int caseCount;                 // Number of cases
+} MatchData;
+
+typedef struct {
+    Token enumName;                // Enum type name (e.g., Option)
+    Token variantName;             // Variant name (e.g., Some)
+    struct ASTNode* bindings;      // Variable bindings for variant data
+    struct ASTNode* body;          // Code to execute for this case
+    Type* enumType;                // Enum type for validation
+    int variantIndex;              // Index of variant in enum
+} MatchCaseData;
+
 typedef struct ASTNode {
     Obj obj;
     ASTNodeType type;
@@ -229,6 +254,9 @@ typedef struct ASTNode {
         UseData useStmt;
         CastData cast;
         EnumData enumDecl;
+        EnumVariantData enumVariant;
+        MatchData match;
+        MatchCaseData matchCase;
     } data;
     Type* valueType;
     int line; // Source line number for diagnostics
@@ -268,6 +296,9 @@ ASTNode* createContinueNode();
 ASTNode* createImportNode(Token path);
 ASTNode* createUseNode(UseData data);
 ASTNode* createEnumNode(Token name, ASTNode* variants, int variantCount, bool isPublic);
+ASTNode* createEnumVariantNode(Token enumName, Token variantName, Type* enumType, int variantIndex);
+ASTNode* createMatchNode(ASTNode* expr, ASTNode* cases, int caseCount);
+ASTNode* createMatchCaseNode(Token enumName, Token variantName, ASTNode* bindings, ASTNode* body, Type* enumType, int variantIndex);
 ASTNode* createCastNode(ASTNode* expr, Type* type);
 
 void freeASTNode(ASTNode* node);

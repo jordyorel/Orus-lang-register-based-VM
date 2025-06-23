@@ -836,6 +836,41 @@ static inline void compareOpAny(VM* vm, char op, InterpretResult* result) {
             } else {
                 value = false; // Different lengths means different strings
             }
+        } else if (IS_ENUM(a) && IS_ENUM(b)) {
+            // For enums, compare type name and variant index
+            ObjEnum* enumA = AS_ENUM(a);
+            ObjEnum* enumB = AS_ENUM(b);
+            
+            // First check if they're the same enum type
+            if (enumA->typeName->length == enumB->typeName->length &&
+                memcmp(enumA->typeName->chars, enumB->typeName->chars, enumA->typeName->length) == 0) {
+                // Same enum type, compare variant indices
+                value = (enumA->variantIndex == enumB->variantIndex);
+                
+                // If same variant, also compare data if any
+                if (value && enumA->dataCount > 0 && enumB->dataCount > 0) {
+                    if (enumA->dataCount == enumB->dataCount) {
+                        // Compare each data field
+                        for (int i = 0; i < enumA->dataCount; i++) {
+                            // Recursively compare data values
+                            vmPush(vm, enumA->data[i]);
+                            vmPush(vm, enumB->data[i]);
+                            compareOpAny(vm, '=', result);
+                            if (*result != INTERPRET_OK) return;
+                            
+                            Value cmpResult = vmPop(vm);
+                            if (!AS_BOOL(cmpResult)) {
+                                value = false;
+                                break;
+                            }
+                        }
+                    } else {
+                        value = false; // Different data counts
+                    }
+                }
+            } else {
+                value = false; // Different enum types
+            }
         } else {
             // Different types are never equal
             value = false;
@@ -862,6 +897,42 @@ static inline void compareOpAny(VM* vm, char op, InterpretResult* result) {
                 value = (memcmp(strA->chars, strB->chars, strA->length) != 0);
             } else {
                 value = true; // Different lengths means different strings
+            }
+        } else if (IS_ENUM(a) && IS_ENUM(b)) {
+            // For enums inequality, use the same logic as equality but negate result
+            ObjEnum* enumA = AS_ENUM(a);
+            ObjEnum* enumB = AS_ENUM(b);
+            
+            // First check if they're the same enum type
+            if (enumA->typeName->length == enumB->typeName->length &&
+                memcmp(enumA->typeName->chars, enumB->typeName->chars, enumA->typeName->length) == 0) {
+                // Same enum type, compare variant indices
+                bool equal = (enumA->variantIndex == enumB->variantIndex);
+                
+                // If same variant, also compare data if any
+                if (equal && enumA->dataCount > 0 && enumB->dataCount > 0) {
+                    if (enumA->dataCount == enumB->dataCount) {
+                        // Compare each data field
+                        for (int i = 0; i < enumA->dataCount; i++) {
+                            // Recursively compare data values
+                            vmPush(vm, enumA->data[i]);
+                            vmPush(vm, enumB->data[i]);
+                            compareOpAny(vm, '=', result);
+                            if (*result != INTERPRET_OK) return;
+                            
+                            Value cmpResult = vmPop(vm);
+                            if (!AS_BOOL(cmpResult)) {
+                                equal = false;
+                                break;
+                            }
+                        }
+                    } else {
+                        equal = false; // Different data counts
+                    }
+                }
+                value = !equal; // Negate for inequality
+            } else {
+                value = true; // Different enum types are not equal
             }
         } else {
             // Different types are never equal, so they're always not equal

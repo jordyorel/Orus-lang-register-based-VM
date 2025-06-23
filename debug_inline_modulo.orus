@@ -1,8 +1,0 @@
-fn main() {
-    // Test inline arithmetic without modulo
-    print("Addition: {}", 3 + 2)
-    print("Multiplication: {}", 3 * 2)
-    
-    // Test inline modulo
-    print("Modulo: {}", 3 % 2)
-}

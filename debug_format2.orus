@@ -1,6 +1,0 @@
-fn main() {
-    print("Testing exact problematic expression...")
-    
-    // Try the exact expression that's failing
-    print("5 * 3 + 5 / 2 - 3 % 2 = {}", 5 * 3 + 5 / 2 - 3 % 2)
-}

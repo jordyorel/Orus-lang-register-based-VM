@@ -672,6 +672,64 @@ ASTNode* createEnumNode(Token name, ASTNode* variants, int variantCount, bool is
 }
 
 /**
+ * Create a new enum variant access AST node.
+ *
+ * @param enumName     Enum type name.
+ * @param variantName  Variant name.
+ * @param enumType     Enum type for validation.
+ * @param variantIndex Index of variant in enum.
+ * @return Newly allocated AST node.
+ */
+ASTNode* createEnumVariantNode(Token enumName, Token variantName, Type* enumType, int variantIndex) {
+    ASTNode* node = allocateASTNode();
+    node->type = AST_ENUM_VARIANT;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.enumVariant.enumName = enumName;
+    node->data.enumVariant.variantName = variantName;
+    node->data.enumVariant.enumType = enumType;
+    node->data.enumVariant.variantIndex = variantIndex;
+    node->valueType = enumType;
+    return node;
+}
+
+/**
+ * Create a new match statement AST node.
+ */
+ASTNode* createMatchNode(ASTNode* expr, ASTNode* cases, int caseCount) {
+    ASTNode* node = allocateASTNode();
+    node->type = AST_MATCH;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.match.expr = expr;
+    node->data.match.cases = cases;
+    node->data.match.caseCount = caseCount;
+    node->valueType = NULL;
+    return node;
+}
+
+/**
+ * Create a new match case AST node.
+ */
+ASTNode* createMatchCaseNode(Token enumName, Token variantName, ASTNode* bindings, ASTNode* body, Type* enumType, int variantIndex) {
+    ASTNode* node = allocateASTNode();
+    node->type = AST_MATCH_CASE;
+    node->left = NULL;
+    node->right = NULL;
+    node->next = NULL;
+    node->data.matchCase.enumName = enumName;
+    node->data.matchCase.variantName = variantName;
+    node->data.matchCase.bindings = bindings;
+    node->data.matchCase.body = body;
+    node->data.matchCase.enumType = enumType;
+    node->data.matchCase.variantIndex = variantIndex;
+    node->valueType = NULL;
+    return node;
+}
+
+/**
  * Free an AST node. The GC currently owns all nodes so this is a no-op.
  */
 void freeASTNode(ASTNode* node) {

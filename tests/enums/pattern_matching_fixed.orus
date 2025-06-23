@@ -1,0 +1,45 @@
+// Pattern matching with enums (simplified without match statements)
+enum Option {
+    Some,
+    None
+}
+
+enum Result {
+    Ok,
+    Error
+}
+
+fn main() {
+    let some_val = Option.Some
+    let none_val = Option.None
+    
+    let ok_result = Result.Ok
+    let err_result = Result.Error
+    
+    print("Testing option values:")
+    print("some_val: {}", some_val)
+    print("none_val: {}", none_val)
+    
+    // Test pattern matching with if statements instead of match
+    if some_val == Option.Some {
+        print("Found Some value!")
+    }
+    
+    if none_val == Option.None {
+        print("Found None value!")
+    }
+    
+    print("Testing result values:")
+    print("ok_result: {}", ok_result)
+    print("err_result: {}", err_result)
+    
+    if ok_result == Result.Ok {
+        print("Result is Ok!")
+    }
+    
+    if err_result == Result.Error {
+        print("Result is Error!")
+    }
+    
+    print("Pattern matching test completed!")
+}

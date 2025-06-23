@@ -36,6 +36,7 @@ static ASTNode* parseCast(Parser* parser, ASTNode* left);
 static ASTNode* parseStructLiteral(Parser* parser, Token structName,
                                    Type** genericArgs, int genericArgCount);
 static Type* findStructTypeToken(Token token);
+static Type* findEnumTypeToken(Token token);
 static bool looksLikeGeneric();
 static ASTNode* parseBoolean(Parser* parser);
 static ASTNode* parseVariable(Parser* parser);
@@ -625,6 +626,74 @@ static ASTNode* parseDot(Parser* parser, ASTNode* left) {
         consume(parser, TOKEN_GREATER, "Expect '>' after generic arguments.");
     }
 
+    // Check if this is enum variant access/construction (EnumType.Variant or EnumType.Variant(args))
+    if (left->type == AST_VARIABLE) {
+        Type* enumType = findEnumTypeToken(left->data.variable.name);
+        if (enumType) {
+            // Find the variant index
+            char variantName[name.length + 1];
+            memcpy(variantName, name.start, name.length);
+            variantName[name.length] = '\0';
+            
+            int variantIndex = -1;
+            VariantInfo* variant = NULL;
+            for (int i = 0; i < enumType->info.enumeration.variantCount; i++) {
+                if (strcmp(enumType->info.enumeration.variants[i].name->chars, variantName) == 0) {
+                    variantIndex = i;
+                    variant = &enumType->info.enumeration.variants[i];
+                    break;
+                }
+            }
+            
+            if (variantIndex >= 0) {
+                // Check if this variant has data fields and if there are arguments
+                if (match(parser, TOKEN_LEFT_PAREN)) {
+                    // Parse arguments for enum variant construction
+                    ASTNode* arguments = NULL;
+                    ASTNode* lastArg = NULL;
+                    int argCount = 0;
+                    
+                    if (!check(parser, TOKEN_RIGHT_PAREN)) {
+                        do {
+                            ASTNode* arg;
+                            expression(parser, &arg);
+                            if (arguments == NULL) {
+                                arguments = arg;
+                            } else {
+                                lastArg->next = arg;
+                            }
+                            lastArg = arg;
+                            argCount++;
+                        } while (match(parser, TOKEN_COMMA));
+                    }
+                    
+                    consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after variant arguments.");
+                    
+                    // Validate argument count matches variant field count
+                    if (argCount != variant->fieldCount) {
+                        error(parser, "Incorrect number of arguments for enum variant.");
+                        return NULL;
+                    }
+                    
+                    // Create enum variant construction node with arguments
+                    ASTNode* node = createEnumVariantNode(left->data.variable.name, name, enumType, variantIndex);
+                    node->left = arguments; // Store arguments in left child
+                    node->line = name.line;
+                    return node;
+                } else {
+                    // Simple enum variant access without arguments
+                    ASTNode* node = createEnumVariantNode(left->data.variable.name, name, enumType, variantIndex);
+                    node->line = name.line;
+                    return node;
+                }
+            } else {
+                error(parser, "Unknown variant for enum.");
+                return NULL;
+            }
+        }
+    }
+
+    // Handle regular method calls and struct static methods
     if (match(parser, TOKEN_LEFT_PAREN)) {
         bool useReceiver = true;
         Type* staticType = NULL;
@@ -644,6 +713,10 @@ static ASTNode* parseDot(Parser* parser, ASTNode* left) {
             lastArg = left;
             argCount = 1;
         } else {
+            // Initialize for static method calls
+            arguments = NULL;
+            lastArg = NULL;
+            argCount = 0;
         }
 
         if (!check(parser, TOKEN_RIGHT_PAREN)) {
@@ -785,6 +858,13 @@ static Type* findStructTypeToken(Token token) {
     memcpy(name, token.start, token.length);
     name[token.length] = '\0';
     return findStructType(name);
+}
+
+static Type* findEnumTypeToken(Token token) {
+    char name[token.length + 1];
+    memcpy(name, token.start, token.length);
+    name[token.length] = '\0';
+    return findEnumType(name);
 }
 
 /**
@@ -1531,6 +1611,12 @@ static void structDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
 /**
  * Parse an `enum` type declaration.
  */
+// Temporary structure to hold variant field information during parsing
+typedef struct {
+    Type** fieldTypes;
+    int fieldCount;
+} TempVariantFields;
+
 static void enumDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
     consume(parser, TOKEN_IDENTIFIER, "Expect enum name.");
     Token nameTok = parser->previous;
@@ -1541,6 +1627,7 @@ static void enumDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
     ASTNode* variants = NULL;
     ASTNode* lastVariant = NULL;
     int variantCount = 0;
+    TempVariantFields* tempFields = NULL;
     
     while (!check(parser, TOKEN_RIGHT_BRACE) && !check(parser, TOKEN_EOF)) {
         // Skip any newlines between variants
@@ -1550,6 +1637,29 @@ static void enumDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
         
         consume(parser, TOKEN_IDENTIFIER, "Expect variant name.");
         Token variantTok = parser->previous;
+        
+        // Check for data fields in parentheses
+        Type** fieldTypes = NULL;
+        int fieldCount = 0;
+        
+        if (match(parser, TOKEN_LEFT_PAREN)) {
+            // Parse field types for variant with data
+            if (!check(parser, TOKEN_RIGHT_PAREN)) {
+                do {
+                    Type* fieldType = parseType(parser);
+                    if (parser->hadError) break;
+                    
+                    fieldTypes = realloc(fieldTypes, sizeof(Type*) * (fieldCount + 1));
+                    fieldTypes[fieldCount++] = fieldType;
+                } while (match(parser, TOKEN_COMMA));
+            }
+            consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after variant fields.");
+        }
+        
+        // Store field information in tempFields array
+        tempFields = realloc(tempFields, sizeof(TempVariantFields) * (variantCount + 1));
+        tempFields[variantCount].fieldTypes = fieldTypes;
+        tempFields[variantCount].fieldCount = fieldCount;
         
         // Create a literal node for the variant name
         ASTNode* variant = createLiteralNode(STRING_VAL(allocateString(variantTok.start, variantTok.length)));
@@ -1582,11 +1692,15 @@ static void enumDeclaration(Parser* parser, ASTNode** ast, bool isPublic) {
     for (int i = 0; i < variantCount; i++) {
         ObjString* variantName = AS_STRING(currentVariant->data.literal);
         variantInfos[i].name = variantName;
-        variantInfos[i].fieldTypes = NULL;     // Simple enums have no fields
-        variantInfos[i].fieldNames = NULL;
-        variantInfos[i].fieldCount = 0;
+        variantInfos[i].fieldTypes = tempFields[i].fieldTypes;
+        variantInfos[i].fieldNames = NULL; // Field names not used for enum variants
+        variantInfos[i].fieldCount = tempFields[i].fieldCount;
+        
         currentVariant = currentVariant->next;
     }
+    
+    // Clean up temporary storage
+    free(tempFields);
     
     // Register the enum type
     ObjString* enumName = allocateString(nameTok.start, nameTok.length);
