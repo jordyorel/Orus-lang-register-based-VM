@@ -1,0 +1,25 @@
+fn divide_simple(a: i32, b: i32) -> i32 {
+    return a / b
+}
+
+fn main() {
+    print("Testing function calls in try-catch:")
+    
+    // Test function call that should succeed
+    try {
+        let result = divide_simple(10, 2)
+        print("Success: result = {}", result)
+    } catch error {
+        print("Unexpected error: {}", error)
+    }
+    
+    // Test function call that should fail
+    try {
+        let result = divide_simple(10, 0)
+        print("This should not print: {}", result)
+    } catch error {
+        print("Expected error: {}", error)
+    }
+    
+    print("Done")
+}

@@ -810,6 +810,8 @@ op_ARRAY_GET: {
     printf("[DEBUG] GET index: i64[%d] = %ld, array length = %d\n",
            ip->src2, index, arr->length);
 #endif
+    // Support negative indexing (Python-style)
+    if (index < 0) index += arr->length;
     if (index < 0 || index >= arr->length) {
         vmRuntimeError("Array index out of bounds.");
         goto HANDLE_RUNTIME_ERROR;
@@ -843,6 +845,8 @@ op_ARRAY_SET: {
     printf("[DEBUG] SET index: i64[%d] = %ld, array length = %d\n",
            ip->src1, index, arr->length);
 #endif
+    // Support negative indexing (Python-style)
+    if (index < 0) index += arr->length;
     if (index < 0 || index >= arr->length) {
         vmRuntimeError("Array index out of bounds.");
         goto HANDLE_RUNTIME_ERROR;
@@ -2816,6 +2820,8 @@ op_ARRAY_SORT:
                 printf("[DEBUG] GET index: i64[%d] = %ld, array length = %d\n",
                        instr.src2, index, arr->length);
 #endif
+                // Support negative indexing (Python-style)
+                if (index < 0) index += arr->length;
                 if (index < 0 || index >= arr->length) {
                     vmRuntimeError("Array index out of bounds.");
                     goto check_error;
@@ -2848,6 +2854,8 @@ op_ARRAY_SORT:
                 printf("[DEBUG] SET index: i64[%d] = %ld, array length = %d\n",
                        instr.src1, index, arr->length);
 #endif
+                // Support negative indexing (Python-style)
+                if (index < 0) index += arr->length;
                 if (index < 0 || index >= arr->length) {
                     vmRuntimeError("Array index out of bounds.");
                     goto check_error;

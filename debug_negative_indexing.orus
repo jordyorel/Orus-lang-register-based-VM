@@ -1,0 +1,27 @@
+fn main() {
+    let arr = [10, 20, 30, 40, 50]
+    
+    print("Array:")
+    print(arr)
+    print("Length:")
+    print(len(arr))
+    
+    print("Positive indexing:")
+    print("arr[0] =")
+    print(arr[0])
+    print("arr[4] =")  
+    print(arr[4])
+    
+    print("Negative indexing:")
+    print("arr[-1] =")
+    print(arr[-1])
+    print("arr[-2] =")
+    print(arr[-2])
+    print("arr[-5] =")
+    print(arr[-5])
+    
+    print("Negative indexing assignment:")
+    arr[-1] = 999
+    print("After arr[-1] = 999:")
+    print(arr)
+}

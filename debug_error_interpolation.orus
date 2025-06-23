@@ -1,0 +1,16 @@
+fn main() {
+    print("Testing error interpolation:")
+    
+    // Test basic array access error
+    let arr = [1, 2, 3]
+    
+    try {
+        let val = arr[10]  // Out of bounds
+        print("This should not print")
+    } catch error {
+        print("Caught error (no interpolation):")
+        print(error)
+        print("Now testing interpolation:")
+        print("Error details: {}", error)
+    }
+}
