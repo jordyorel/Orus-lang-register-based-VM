@@ -2066,11 +2066,32 @@ op_INC_I64:
 #endif
     ip++; DISPATCH();
 
-op_ITER_NEXT_I64:
+op_ITER_NEXT_I64: {
+    Value iteratorValue = regs[ip->src1];
+    if (!IS_RANGE_ITERATOR(iteratorValue)) {
+        vmRuntimeError("ITER_NEXT_I64 expects range iterator.");
+        ip++; DISPATCH();
+    }
+    ObjRangeIterator* iterator = AS_RANGE_ITERATOR(iteratorValue);
+    if (iterator->current >= iterator->end) {
+        regs[ip->src2] = BOOL_VAL(false);
+        regs[ip->dst] = NIL_VAL;
+    } else {
+        int64_t value = iterator->current++;
+        regs[ip->dst] = I64_VAL(value);
+        i64_regs[ip->dst] = value;
+        regs[ip->src2] = BOOL_VAL(true);
+    }
+#ifdef DEBUG_TRACE_EXECUTION
+    if (IS_BOOL(regs[ip->src2]) && AS_BOOL(regs[ip->src2])) {
+        printf("[Debug] iter_next produced %lld\n", (long long)AS_I64(regs[ip->dst]));
+    }
+#endif
     ip++; DISPATCH();
+}
 
 op_JUMP_IF_LT_I64:
-    if (i64_regs[ip->src1] < i64_regs[ip->src2])
+    if (i64_regs[ip->src1] >= i64_regs[ip->src2])
         ip = rvm->chunk->code + ip->dst;
     else
         ip++;
@@ -3939,10 +3960,31 @@ op_ARRAY_SORT:
                 printf("[Debug] i64_regs[R%d] = %lld\n", instr.dst, (long long)i64_regs[instr.dst]);
 #endif
                 break;
-            case ROP_ITER_NEXT_I64:
+            case ROP_ITER_NEXT_I64: {
+                Value iterVal = rvm->registers[instr.src1];
+                if (!IS_RANGE_ITERATOR(iterVal)) {
+                    vmRuntimeError("ITER_NEXT_I64 expects range iterator.");
+                    break;
+                }
+                ObjRangeIterator* it = AS_RANGE_ITERATOR(iterVal);
+                if (it->current >= it->end) {
+                    rvm->registers[instr.src2] = BOOL_VAL(false);
+                    rvm->registers[instr.dst] = NIL_VAL;
+                } else {
+                    int64_t value = it->current++;
+                    rvm->registers[instr.dst] = I64_VAL(value);
+                    rvm->i64_regs[instr.dst] = value;
+                    rvm->registers[instr.src2] = BOOL_VAL(true);
+                }
+#ifdef DEBUG_TRACE_EXECUTION
+                if (IS_BOOL(rvm->registers[instr.src2]) && AS_BOOL(rvm->registers[instr.src2])) {
+                    printf("[Debug] iter_next produced %lld\n", (long long)AS_I64(rvm->registers[instr.dst]));
+                }
+#endif
                 break;
+            }
             case ROP_JUMP_IF_LT_I64:
-                if (i64_regs[instr.src1] < i64_regs[instr.src2])
+                if (i64_regs[instr.src1] >= i64_regs[instr.src2])
                     rvm->ip = rvm->chunk->code + instr.dst;
                 break;
             case ROP_LEN_ARRAY:
