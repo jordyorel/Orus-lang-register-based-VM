@@ -45,10 +45,14 @@
 // =============================================================================
 
 static ExecutionResult execute_instruction(RegisterVM* vm, uint32_t instruction);
+static bool setup_call_frame(RegisterVM* vm, uint32_t function_address, uint8_t param_count);
+static void cleanup_call_frame(RegisterVM* vm);
 static bool check_register_bounds(uint8_t reg);
 static void update_flags_arithmetic(RegisterVM* vm, Value result);
 static void update_flags_comparison(RegisterVM* vm, int comparison_result);
 static Value perform_arithmetic_operation(RegisterOpcode op, Value a, Value b, bool* error);
+static Value perform_comparison_operation(RegisterOpcode op, Value a, Value b, bool* error);
+static bool handle_exception(RegisterVM* vm, Value exception);
 static void trace_instruction(const RegisterVM* vm, uint32_t instruction);
 
 // =============================================================================

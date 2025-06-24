@@ -47,43 +47,43 @@ typedef enum {
     VAL_ENUM,
 } ValueType;
 
-struct ObjString {
+typedef struct ObjString {
     Obj obj;
     int length;
     char* chars;
-};
+} ObjString;
 
-struct ObjArray {
+typedef struct ObjArray {
     Obj obj;
     int length;
     int capacity;
     Value* elements;
-};
+} ObjArray;
 
-struct ObjIntArray {
+typedef struct ObjIntArray {
     Obj obj;
     int length;
     int64_t* elements;
-};
+} ObjIntArray;
 
-struct ObjRangeIterator {
+typedef struct ObjRangeIterator {
     Obj obj;
     int64_t current;
     int64_t end;
-};
+} ObjRangeIterator;
 
-struct ObjEnum {
+typedef struct ObjEnum {
     Obj obj;
     int variantIndex;    // Which variant this enum value represents
     Value* data;         // Data carried by this variant (NULL for unit variants)
     int dataCount;       // Number of data fields
     ObjString* typeName; // Name of the enum type
-};
+} ObjEnum;
 
 typedef ObjString String;
 typedef ObjArray Array;
 
-struct Value {
+typedef struct Value {
     ValueType type;
     union {
         int32_t i32;
@@ -98,7 +98,7 @@ struct Value {
         ObjRangeIterator* rangeIter;
         ObjEnum* enumValue;
     } as;
-};
+} Value;
 
 // Value creation macros
 #define I32_VAL(value)   ((Value){VAL_I32, {.i32 = value}})

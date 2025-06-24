@@ -1,8 +1,8 @@
-#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "../include/chunk.h"
 #include "../include/common.h"
 #include "../include/compiler.h"
 #include "../include/debug.h"
@@ -13,12 +13,11 @@
 #include "../include/error.h"
 #include "../include/string_utils.h"
 #include "../include/version.h"
-#include "../include/vm.h"
 #include <limits.h>
-#include <linux/limits.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
+extern VM vm;
 
 static void deriveRuntimeHelp(const char* message,
                               char** helpOut,
@@ -101,6 +100,8 @@ static void printError(ObjError* err) {
     if (help) free(help);
 }
 
+extern VM vm;
+
 static void repl() {
     char buffer[4096]; // Larger buffer for multiline input
     char line[1024];
@@ -172,8 +173,15 @@ static void repl() {
             } else {
                 printf("Runtime error.\n");
             }
+        } else if (!isPrintStmt && vm.stackTop > vm.stack &&
+                   !IS_NIL(*(vm.stackTop - 1))) {
+            // Print the result of the expression if there's a value on the stack
+            // that isn't nil and it's not a print statement (which already outputs its value)
+            printValue(*(vm.stackTop - 1));  // Print the top value on the stack
+            printf("\n");
         }
 
+        vm.stackTop = vm.stack;  // Reset stack after execution
         fflush(stdout);
     }
 }
@@ -428,6 +436,7 @@ int main(int argc, const char* argv[]) {
         return 0;
     }
 
+    vm.useRegisterVM = true;
     if (projectDir) {
         runProject(projectDir);
     } else if (!path) {

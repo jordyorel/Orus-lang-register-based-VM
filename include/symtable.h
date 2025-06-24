@@ -4,8 +4,7 @@
 #include "common.h"
 #include "type.h"
 #include "scanner.h"
-
-// Forward declarations - Module defined in modules.h
+// Forward declarations
 typedef struct Module Module;
 
 typedef struct {

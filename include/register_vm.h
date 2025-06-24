@@ -25,7 +25,9 @@
 #include "value.h"
 #include "memory.h"
 #include "error.h"
-#include "register_chunk.h"
+
+// Forward declarations to avoid circular dependencies
+typedef struct RegisterChunk RegisterChunk;
 
 #ifdef __cplusplus
 extern "C" {
