@@ -1,7 +1,6 @@
 #ifndef MODULES_H
 #define MODULES_H
 
-#include "chunk.h"
 #include "register_chunk.h"
 #include "ast.h"
 #include "value.h"
@@ -18,7 +17,6 @@ typedef struct {
 struct Module {
     char* module_name; // full path
     char* name;        // base module name
-    Chunk* bytecode;            // Stack VM bytecode
     RegisterChunk* regBytecode; // Register VM bytecode
     Export exports[UINT8_COUNT];
     uint8_t export_count;
@@ -34,7 +32,6 @@ char* load_module_source(const char* resolved_path);
 char* load_module_with_fallback(const char* path, char** disk_path, long* mtime,
                                 bool* from_embedded);
 ASTNode* parse_module_source(const char* source_code, const char* module_name);
-Chunk* compile_module_ast(ASTNode* ast, const char* module_name);
 RegisterChunk* compile_module_ast_to_register(ASTNode* ast, const char* module_name);
 bool register_module(Module* module);
 Module* get_module(const char* name);

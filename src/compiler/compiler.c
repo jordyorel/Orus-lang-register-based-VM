@@ -16,8 +16,9 @@ bool compileToRegister(ASTNode* ast, RegisterChunk* rchunk,
 /**
  * @brief Stub implementation of compileToRegisterDirect
  */
-bool compileToRegisterDirect(ASTNode* ast, RegisterChunk* rchunk, 
-                            const char* filePath, const char* sourceCode) {
+bool compileToRegisterDirect(ASTNode* ast, RegisterChunk* rchunk,
+                            const char* filePath, const char* sourceCode,
+                            bool requireMain) {
     // TODO: Implement direct register compilation
     printf("Warning: compileToRegisterDirect is not yet implemented\n");
     return true;
