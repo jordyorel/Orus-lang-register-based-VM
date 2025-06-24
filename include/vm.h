@@ -14,21 +14,15 @@ extern "C" {
 struct ASTNode;
 
 /**
- * @brief Main VM structure that contains both stack and register VM components
+ * @brief Main VM structure for the register VM
  */
 typedef struct {
     // Register VM components
     RegisterChunk regChunk;
     RegisterVM regVM;
     
-    // Stack VM components (for compatibility)
-    Chunk chunk;
-    Value* stack;
-    Value* stackTop;
-    
     // Global state
     bool initialized;
-    bool useRegisterVM;
     
     // File and module management
     const char* filePath;

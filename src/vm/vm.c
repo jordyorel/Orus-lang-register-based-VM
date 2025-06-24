@@ -18,7 +18,6 @@ bool traceImports = false;
 void initVM(void) {
     memset(&vm, 0, sizeof(VM));
     vm.initialized = true;
-    vm.useRegisterVM = false;
     vm.filePath = NULL;
     vm.loadedModules = NULL;
     vm.moduleCount = 0;
@@ -27,10 +26,6 @@ void initVM(void) {
     vm.trace = false;
     vm.devMode = false;
     vm.stdPath = NULL;
-    
-    // Initialize stack VM components
-    vm.stack = NULL;
-    vm.stackTop = NULL;
 }
 
 void freeVM(void) {
@@ -70,7 +65,3 @@ void runRegisterVM(RegisterVM* vm) {
     registervm_execute(vm);
 }
 
-void disassembleRegisterChunk(RegisterChunk* chunk, const char* name) {
-    if (!chunk || !name) return;
-    register_chunk_disassemble(chunk, true);
-}

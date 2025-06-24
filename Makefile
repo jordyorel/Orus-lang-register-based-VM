@@ -1,6 +1,6 @@
 CC=gcc
 all: debug
-CFLAGS=-I./include -Wall -g -std=c99
+CFLAGS=-I./include -Wall -g -std=c99 -D_POSIX_C_SOURCE=200809L
 SRC=$(shell find src -name '*.c')
 STDLIBC=src/vm/builtin_stdlib.c
 STDLIBH=include/builtin_stdlib.h
