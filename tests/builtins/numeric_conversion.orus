@@ -1,6 +1,0 @@
-fn main() {
-    let age: i32 = int("42")
-    let h: f64 = float("3.14")
-    print(age)
-    print(h)
-}

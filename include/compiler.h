@@ -3,7 +3,6 @@
 
 #include "ast.h"
 #include "chunk.h"
-#include "reg_chunk.h"
 #include "symtable.h"
 #include "type.h"
 #include "value.h"
@@ -46,7 +45,7 @@ typedef struct {
     
     // Register VM compilation mode - Phase 1.1 enhancement
     bool isRegisterMode;           // True when compiling directly to register VM
-    RegisterChunk* rchunk;         // Target register chunk when in register mode
+    struct RegisterChunk* rchunk;  // Target register chunk when in register mode
     uint8_t nextRegister;          // Next available register for allocation
     uint8_t registerStack[256];    // Stack of allocated registers for expression evaluation
     int registerStackTop;          // Top of register stack
@@ -57,11 +56,11 @@ void initCompiler(Compiler* compiler, Chunk* chunk,
 bool compile(ASTNode* ast, Compiler* compiler, bool requireMain);
 
 // Register VM compilation functions - Phase 1.1 enhancement
-void initRegisterCompiler(Compiler* compiler, RegisterChunk* rchunk,
+void initRegisterCompiler(Compiler* compiler, struct RegisterChunk* rchunk,
                          const char* filePath, const char* sourceCode);
-bool compileToRegisterDirect(ASTNode* ast, RegisterChunk* rchunk, 
+bool compileToRegisterDirect(ASTNode* ast, struct RegisterChunk* rchunk, 
                             const char* filePath, const char* sourceCode, bool requireMain);
-bool compileToRegister(ASTNode* ast, RegisterChunk* rchunk,
+bool compileToRegister(ASTNode* ast, struct RegisterChunk* rchunk,
                        const char* filePath, const char* sourceCode,
                        bool requireMain);
 uint8_t resolveVariable(Compiler* compiler, Token name);       // Added

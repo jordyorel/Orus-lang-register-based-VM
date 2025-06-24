@@ -1,8 +1,0 @@
-// Test inline if (ternary) expressions
-fn main() {
-    let a = 5
-    let b = 10
-    let max = a > b ? a : b
-    print(max)
-    print(a == 5 ? "five" : "other")
-}

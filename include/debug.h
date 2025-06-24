@@ -7,7 +7,7 @@ void disassembleChunk(Chunk* chunk, const char* name);
 int disassembleInstruction(Chunk* chunk, int offset);
 
 /* Register-based VM disassembly helpers */
-#include "reg_chunk.h"
+#include "register_chunk.h"
 void disassembleRegisterChunk(RegisterChunk* chunk, const char* name);
 int disassembleRegisterInstruction(RegisterChunk* chunk, int offset);
 

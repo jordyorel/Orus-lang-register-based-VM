@@ -2,10 +2,10 @@
 #define MODULES_H
 
 #include "chunk.h"
-#include "reg_chunk.h"
+#include "register_chunk.h"
 #include "ast.h"
 #include "value.h"
-#include "vm.h"
+#include "register_vm.h"
 #include <stdbool.h>
 #include <time.h>
 
@@ -15,7 +15,7 @@ typedef struct {
     uint8_t index; // Global variable index
 } Export;
 
-typedef struct {
+struct Module {
     char* module_name; // full path
     char* name;        // base module name
     Chunk* bytecode;            // Stack VM bytecode
@@ -26,7 +26,7 @@ typedef struct {
     char* disk_path;   // path on disk if loaded from file
     long mtime;        // modification time
     bool from_embedded; // true if loaded from embedded table
-} Module;
+};
 
 Export* get_export(Module* module, const char* name);
 

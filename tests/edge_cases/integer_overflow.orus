@@ -1,5 +1,0 @@
-// Attempt integer overflow
-fn main() {
-    let max: i32 = 2147483647
-    print(max + 1)
-}

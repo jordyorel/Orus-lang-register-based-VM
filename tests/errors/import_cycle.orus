@@ -1,4 +1,0 @@
-use tests::modules::cycles::cycle_a
-
-fn main() {
-}

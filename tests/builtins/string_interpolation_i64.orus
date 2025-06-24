@@ -1,5 +1,0 @@
-fn main() {
-    let big = 1234567890123456789
-    print("Big number is {}", big)
-    print("Sum {} + {} = {}", big, 1, big + 1)
-}

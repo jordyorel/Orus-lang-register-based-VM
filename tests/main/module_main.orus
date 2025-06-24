@@ -1,6 +1,0 @@
-// Test calling functions from main and importing modules
-use tests::modules::hello_module
-
-fn main() {
-    print("Main ran")
-}

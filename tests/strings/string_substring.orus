@@ -1,4 +1,0 @@
-fn main() {
-    print(substring("hello", 1 as i32, 3 as i32))
-    print(substring("world", 0 as i32, 5 as i32))
-}

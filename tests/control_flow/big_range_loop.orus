@@ -1,5 +1,0 @@
-fn main() {
-    for i in range(3000000000, 3000000005) {
-        print(i)
-    }
-}

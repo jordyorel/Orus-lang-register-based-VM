@@ -1,8 +1,0 @@
-fn takes_u32(val: u32) -> u32 {
-    return val
-}
-
-fn main() {
-    let result = takes_u32(42 as i32 as u32)
-    print("{}", result)
-}

@@ -8,19 +8,16 @@
 #include "../include/debug.h"
 #include "../include/parser.h"
 #include "../include/file_utils.h"
-#include "../include/vm.h"
-#include "../include/reg_ir.h"
-#include "../include/reg_vm.h"
 #include "../include/modules.h"
 #include "../include/builtin_stdlib.h"
 #include "../include/error.h"
 #include "../include/string_utils.h"
 #include "../include/version.h"
+#include "../include/vm.h"
 #include <limits.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
-extern VM vm;
 
 static void deriveRuntimeHelp(const char* message,
                               char** helpOut,
@@ -102,8 +99,6 @@ static void printError(ObjError* err) {
 
     if (help) free(help);
 }
-
-extern VM vm;
 
 static void repl() {
     char buffer[4096]; // Larger buffer for multiline input

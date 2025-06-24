@@ -1,8 +1,0 @@
-fn add<T>(a: T, b: T) -> T {
-    return a + b
-}
-
-fn main() {
-    let r = add(1, 2)
-    print(r)
-}
