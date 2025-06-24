@@ -1,0 +1,94 @@
+struct Recursive {}
+
+impl Recursive {
+    // Factorial implementation using recursion
+    fn factorial(n: i32) -> i32 {
+        if n <= (1 as i32) {
+            return 1 as i32
+        }
+        return n * factorial(n - (1 as i32))
+    }
+    
+    // Fibonacci implementation using recursion
+    fn fibonacci(n: i32) -> i32 {
+        if n <= (0 as i32) {
+            return 0 as i32
+        }
+        if n == (1 as i32) {
+            return 1 as i32
+        }
+        return fibonacci(n - (1 as i32)) + fibonacci(n - (2 as i32))
+    }
+    
+    // Fibonacci implementation using iteration (more efficient)
+    fn fibonacci_iter(n: i32) -> i32 {
+        if n <= (0 as i32) {
+            return 0 as i32
+        }
+        if n == (1 as i32) {
+            return 1 as i32
+        }
+        
+        let mut a: i32 = 0
+        let mut b: i32 = 1
+        let mut c: i32 = 0
+        let mut i: i32 = 2
+        
+        while i <= n {
+            c = a + b
+            a = b
+            b = c
+            i = i + (1 as i32)
+        }
+        
+        return b
+    }
+    
+    // Greatest Common Divisor using Euclidean algorithm
+    fn gcd(a: i32, b: i32) -> i32 {
+        if b == (0 as i32) {
+            return a
+        }
+        return gcd(b, a % b)
+    }
+}
+
+fn main() {
+    // Test factorial function
+    print("Factorial examples:")
+    print("5! = {}", Recursive.factorial(5 as i32))  // 120
+    print("7! = {}", Recursive.factorial(7 as i32))  // 5040
+    
+    // Test fibonacci functions
+    print("\nFibonacci sequence (recursive):")
+    let mut i: i32 = 0
+    let mut result1: string = "["
+    while i <= (10 as i32) {
+        result1 = result1 + Recursive.fibonacci(i)
+        if i < (10 as i32) {
+            result1 = result1 + ", "
+        }
+        i = i + (1 as i32)
+    }
+    result1 = result1 + "]"
+    print("{}", result1)
+    
+    print("\nFibonacci sequence (iterative):")
+    i = 0
+    let mut result2: string = "["
+    while i <= (15 as i32) {
+        result2 = result2 + Recursive.fibonacci_iter(i)
+        if i < (15 as i32) {
+            result2 = result2 + ", "
+        }
+        i = i + (1 as i32)
+    }
+    result2 = result2 + "]"
+    print("{}", result2)
+    
+    // Test GCD
+    print("\nGreatest Common Divisor examples:")
+    print("GCD of 48 and 18: {}", Recursive.gcd(48 as i32, 18 as i32))  // 6
+    print("GCD of 42 and 56: {}", Recursive.gcd(42 as i32, 56 as i32))  // 14
+    print("GCD of 31 and 17: {}", Recursive.gcd(31 as i32, 17 as i32))  // 1
+}

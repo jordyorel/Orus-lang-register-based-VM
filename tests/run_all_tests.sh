@@ -58,11 +58,10 @@ run_category_tests() {
             
             # Check if the test has an accompanying .in file to provide stdin
             input_file="${test_file%.orus}.in"
-            cmd="$ORUS_EXECUTABLE \"$test_file\""
             if [ -f "$input_file" ]; then
-                output=$(eval $cmd < "$input_file" 2>&1)
+                output=$($ORUS_EXECUTABLE "$test_file" < "$input_file" 2>&1)
             else
-                output=$(eval $cmd 2>&1)
+                output=$($ORUS_EXECUTABLE "$test_file" 2>&1)
             fi
             exit_code=$?
 

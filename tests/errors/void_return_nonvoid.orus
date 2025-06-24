@@ -1,0 +1,5 @@
+fn qux() -> string {
+    return
+}
+
+fn main() {}

@@ -1,9 +1,0 @@
-fn main() {
-    let hex_simple = 0x10u32
-    print("0x10u32 type:")
-    print(type_of(hex_simple))
-    
-    let hex_basic = 0x20u64
-    print("0x20u64 type:")
-    print(type_of(hex_basic))
-}

@@ -1,0 +1,11 @@
+struct Math {}
+
+impl Math {
+    fn add2(n: i32) -> i32 {
+        return n + (2 as i32)
+    }
+}
+
+fn main() {
+    print(add2(3 as i32))
+}

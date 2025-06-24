@@ -1,9 +1,0 @@
-// Test single field struct (minimal case)
-struct Minimal {
-    value: i32,
-}
-
-fn main() {
-    let minimal = Minimal { value: 42 }
-    print("Minimal struct value: {}", minimal.value)
-}

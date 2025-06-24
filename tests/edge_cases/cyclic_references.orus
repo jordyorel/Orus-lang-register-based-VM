@@ -1,0 +1,15 @@
+// Simulate cyclic references using indices
+struct Node {
+    value: i32,
+    next: i32
+}
+
+fn main() {
+    let n1: Node = Node{value: 1 as i32, next: 1 as i32}
+    let n2: Node = Node{value: 2 as i32, next: 0 as i32}
+    let nodes: [Node; 2] = [n1, n2]
+
+    let start: i32 = 0
+    let second_index: i32 = nodes[start].next
+    print(nodes[second_index].value)
+}

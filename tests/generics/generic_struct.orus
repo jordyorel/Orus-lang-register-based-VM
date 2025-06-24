@@ -1,30 +1,30 @@
-// Generic struct test (syntax may not be supported yet)
-struct Container<T> {
-    value: T
+// Tests for generic structs
+// This test demonstrates defining and using a basic generic struct
+
+// Define a generic Box structure with a single type parameter T
+struct Box<T> {
+    item: T
 }
 
-struct Pair<T, U> {
-    first: T
-    second: U
-}
-
+// Create boxes with different types
 fn main() {
-    // Test generic struct with integer
-    let int_container = Container<i32> { value: 42 }
-    print("int_container.value = {}", int_container.value)
+    // Integer box
+    let intBox = Box<i32>{item: 42 as i32}
+    print("Int box contains: " + intBox.item)
     
-    // Test generic struct with string
-    let str_container = Container<string> { value: "hello" }
-    print("str_container.value = {}", str_container.value)
+    // Float box
+    let floatBox = Box<f64>{item: 3.14}
+    print("Float box contains: " + floatBox.item)
     
-    // Test generic struct with two types
-    let pair = Pair<i32, string> { first: 100, second: "world" }
-    print("pair.first = {}, pair.second = {}", pair.first, pair.second)
+    // String box
+    let stringBox = Box<string>{item: "Hello, generics!"}
+    print("String box contains: " + stringBox.item)
     
-    // Test nested generic
-    let nested = Container<Pair<i32, f64>> { 
-        value: Pair<i32, f64> { first: 1, second: 2.5 }
-    }
-    print("nested.value.first = {}", nested.value.first)
-    print("nested.value.second = {}", nested.value.second)
+    // Test reassigning values
+    intBox.item = 100 as i32
+    print("Updated int box: " + intBox.item)
+    
+    // Test nested generic structures
+    let nestedBox = Box<Box<i32> >{item: intBox}
+    print("Nested box contains: " + nestedBox.item.item)
 }

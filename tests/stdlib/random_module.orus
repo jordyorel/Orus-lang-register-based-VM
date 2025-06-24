@@ -1,0 +1,15 @@
+use std::random
+
+fn main() {
+    print(random.randint(1 as i32, 10 as i32))
+    print(random.randint(1 as i32, 10 as i32))
+    print(random.randint(1 as i32, 10 as i32))
+    let colors = ["red", "green", "blue"]
+    print(random.choice(colors))
+    let nums = [1, 2, 3, 4]
+    random.shuffle(nums)
+    print(nums[0 as i32])
+    print(nums[1 as i32])
+    print(nums[2 as i32])
+    print(nums[3 as i32])
+}

@@ -1,0 +1,8 @@
+fn main() {
+    print("Starting for loop test")
+    for i in 1..3 {
+        print("i is:")
+        print(i)
+    }
+    print("Done")
+}

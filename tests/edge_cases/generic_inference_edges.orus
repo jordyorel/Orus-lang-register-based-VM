@@ -1,0 +1,18 @@
+// Edge Case Generic Inference Test
+// Ensures generics are deduced correctly when some arguments
+// provide no type information (e.g. empty arrays).
+
+fn first_or<T>(arr: [T], default: T) -> T {
+    if (len(arr) > (0 as i32)) {
+        return arr[0 as i32]
+    }
+    return default
+}
+
+fn main() {
+    let nums = []
+    print(first_or(nums, 42))
+
+    let strs = []
+    print(first_or(strs, "fallback"))
+}

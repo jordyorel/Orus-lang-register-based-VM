@@ -1,0 +1,10 @@
+// Dynamic array stress test with large growth
+fn main() {
+    let arr: [i32; 1] = [0]
+    for i in 1..1000 {
+        push(arr, i as i32)
+    }
+    print(len(arr))
+    print(arr[0 as i32])
+    print(arr[999 as i32])
+}

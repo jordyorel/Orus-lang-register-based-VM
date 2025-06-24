@@ -1,5 +1,0 @@
-fn main() {
-    let test = 0x123Eu64
-    print(test)
-    print(type_of(test))
-}

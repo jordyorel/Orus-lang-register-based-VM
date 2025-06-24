@@ -1,36 +1,147 @@
-// Basic stack and queue operations using arrays
-// Advanced impl block features are commented out for Phase 3
+// Implementation of Stack and Queue data structures using arrays and structs
+
+// A simple Stack implementation
+struct Stack {
+    data: [i32; 10],
+    top: i32
+}
+
+impl Stack {
+    fn new() -> Stack {
+        return Stack{
+            data: [0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32],
+            top: -1 as i32
+        }
+    }
+    
+    fn push(self, value: i32) -> bool {
+        if self.top >= (9 as i32) {
+            // Stack overflow
+            return false
+        }
+        
+        self.top = self.top + (1 as i32)
+        self.data[self.top] = value
+        return true
+    }
+    
+    fn pop(self) -> i32 {
+        if self.top < (0 as i32) {
+            // Stack underflow
+            return -1 as i32
+        }
+        
+        let value: i32 = self.data[self.top]
+        self.top = self.top - (1 as i32)
+        return value
+    }
+    
+    fn peek(self) -> i32 {
+        if self.top < (0 as i32) {
+            return -1 as i32
+        }
+        return self.data[self.top]
+    }
+    
+    fn is_empty(self) -> bool {
+        return self.top < (0 as i32)
+    }
+    
+    fn size(self) -> i32 {
+        return self.top + (1 as i32)
+    }
+}
+
+// A simple Queue implementation
+struct Queue {
+    data: [i32; 10],
+    front: i32,
+    rear: i32,
+    count: i32
+}
+
+impl Queue {
+    fn create() -> Queue {
+        return Queue{
+            data: [0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32, 0 as i32],
+            front: 0 as i32,
+            rear: -1 as i32,
+            count: 0 as i32
+        }
+    }
+    
+    fn enqueue(self, value: i32) -> bool {
+        if self.count >= (10 as i32) {
+            // Queue is full
+            return false
+        }
+        
+        self.rear = (self.rear + (1 as i32)) % (10 as i32)
+        self.data[self.rear] = value
+        self.count = self.count + (1 as i32)
+        return true
+    }
+    
+    fn dequeue(self) -> i32 {
+        if self.count <= (0 as i32) {
+            // Queue is empty
+            return -1 as i32
+        }
+        
+        let value: i32 = self.data[self.front]
+        self.front = (self.front + (1 as i32)) % (10 as i32)
+        self.count = self.count - (1 as i32)
+        return value
+    }
+    
+    fn peek(self) -> i32 {
+        if self.count <= (0 as i32) {
+            return -1 as i32
+        }
+        return self.data[self.front]
+    }
+    
+    fn is_empty(self) -> bool {
+        return self.count == (0 as i32)
+    }
+    
+    fn size(self) -> i32 {
+        return self.count
+    }
+}
+
+// Test: Stack and Queue operations in Orus
 
 fn main() {
-    // Stack (LIFO) - using basic array operations
+    // Stack (LIFO)
     let stack = []
     stack.push(1)
-    stack.push(2) 
+    stack.push(2)
     stack.push(3)
-    
-    print("Stack operations:")
-    print("Length after pushes:")
-    print(len(stack))
-    
+    print("Stack after pushes: " + stack)
     let s1 = stack.pop()
-    print("Popped from stack:")
-    print(s1)
-    print("Length after pop:")
-    print(len(stack))
+    print("Popped from stack: " + (s1 as string))
+    print("Stack now: " + stack)
 
-    // Queue (FIFO) - using basic array operations  
+    // Queue (FIFO)
     let mut queue = []
     queue.push(10)
     queue.push(20)
     queue.push(30)
-    
-    print("Queue operations:")
-    print("Length after pushes:")
-    print(len(queue))
-    
-    let q1 = queue[0]
-    print("First element (dequeue):")
-    print(q1)
-    
-    print("Stack and Queue basic operations completed")
+    print("Queue after pushes: " + queue)
+    let q1 = queue[0 as i32]
+    queue = queue[(1 as i32)..len(queue)]
+    print("Dequeued from queue: " + (q1 as string))
+    print("Queue now: " + queue)
+
+    // Iterate stack
+    print("Iterate stack:")
+    for i in (0 as i32)..len(stack) {
+        print("stack[" + (i as string) + "]: " + (stack[i] as string))
+    }
+    // Iterate queue
+    print("Iterate queue:")
+    for i in (0 as i32)..len(queue) {
+        print("queue[" + (i as string) + "]: " + (queue[i] as string))
+    }
 }

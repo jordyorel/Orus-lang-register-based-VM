@@ -1,0 +1,11 @@
+fn main() {
+    let nums = [1, 2, 3, 4]
+    let a = nums[(0 as i32)..(2 as i32)]
+    print(len(a))
+    let b = nums[..(2 as i32)]
+    print(len(b))
+    let c = nums[(2 as i32)..]
+    print(len(c))
+    let d = nums[..]
+    print(len(d))
+}

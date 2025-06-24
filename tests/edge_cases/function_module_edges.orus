@@ -1,0 +1,10 @@
+use tests::edge_cases::module_a
+use tests::edge_cases::module_b
+
+fn local_fn(a: i32, b: i32) -> i32 {
+    return a + b
+}
+
+fn main() {
+    print(local_fn(1 as i32, 2 as i32))
+}

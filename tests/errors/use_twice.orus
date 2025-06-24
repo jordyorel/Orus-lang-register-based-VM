@@ -1,0 +1,6 @@
+use tests::modules::hello_module
+use tests::modules::hello_module::{greet}
+
+fn main() {
+    greet()
+}

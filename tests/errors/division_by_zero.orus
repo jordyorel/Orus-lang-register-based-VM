@@ -1,0 +1,15 @@
+// Test division by zero error handling
+
+fn main() {
+    let a: i64 = 10
+    let b: i64 = 0
+
+    print("Division by Zero Test:")
+    print("Attempting to divide 10 by 0...")
+
+    // This should produce a runtime error
+    let result = a / b
+}
+
+
+

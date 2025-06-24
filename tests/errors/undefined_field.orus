@@ -1,0 +1,5 @@
+struct Foo { a: i32 }
+fn main() {
+    let f: Foo = Foo{a: 1}
+    print(f.b)
+}

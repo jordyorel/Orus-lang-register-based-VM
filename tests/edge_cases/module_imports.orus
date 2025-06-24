@@ -1,0 +1,6 @@
+use tests::edge_cases::module_a
+use tests::edge_cases::module_b
+
+fn main() {
+    // Modules are imported for side effects only
+}

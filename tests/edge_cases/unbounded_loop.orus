@@ -1,0 +1,9 @@
+// Execute a loop that exceeds the previous iteration limit to ensure
+// the VM no longer stops execution after 10k iterations.
+fn main() {
+    let mut i: i64 = 0
+    while i < 20000 {
+        i = i + 1
+    }
+    print(i)
+}
